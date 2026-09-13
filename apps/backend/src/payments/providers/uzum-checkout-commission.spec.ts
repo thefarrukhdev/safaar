@@ -32,20 +32,26 @@ describe('UZUM_CHECKOUT_COMMISSION_RATE / UZUM_CHECKOUT_FEE_BEARER / UZUM_CHECKO
 
 describe('calculateUzumCheckoutCommission — vazifada berilgan aniq misollar', () => {
   it.each([
-    [100_000, 1_500, 98_500],
-    [500_000, 7_500, 492_500],
-    [1_000_000, 15_000, 985_000],
-    [10_000_000, 150_000, 9_850_000],
+    [100_000, 1_500, 98_500, 101_500],
+    [400_000, 6_000, 394_000, 406_000],
+    [500_000, 7_500, 492_500, 507_500],
+    [1_000_000, 15_000, 985_000, 1_015_000],
+    [10_000_000, 150_000, 9_850_000, 10_150_000],
   ])(
-    'gross=%d -> commission=%d, net=%d',
-    (gross, expectedCommission, expectedNet) => {
+    'gross=%d -> commission=%d, net=%d, customerTotal=%d',
+    (gross, expectedCommission, expectedNet, expectedCustomerTotal) => {
       const r = calculateUzumCheckoutCommission(gross);
       expect(r.grossAmountSom).toBe(gross);
       expect(r.commissionRate).toBe(0.015);
       expect(r.commissionAmountSom).toBe(expectedCommission);
       expect(r.netSettlementAmountSom).toBe(expectedNet);
+      expect(r.customerTotalAmountSom).toBe(expectedCustomerTotal);
       // gross = commission + net har doim aniq saqlanishi kerak (tiyin darajasida)
       expect(r.commissionAmountSom + r.netSettlementAmountSom).toBe(gross);
+      // customerTotal = gross + commission (USER_PAYS: mijoz jami shuncha to'laydi)
+      expect(r.grossAmountSom + r.commissionAmountSom).toBe(
+        r.customerTotalAmountSom,
+      );
     },
   );
 });
@@ -57,9 +63,13 @@ describe('calculateUzumCheckoutCommission — yaxlitlash (tiyin darajasida, suzu
     const r = calculateUzumCheckoutCommission(33_333.33);
     expect(r.commissionAmountSom).toBe(500);
     expect(r.netSettlementAmountSom).toBe(32_833.33);
+    expect(r.customerTotalAmountSom).toBe(33_833.33);
     expect(
       Math.round((r.commissionAmountSom + r.netSettlementAmountSom) * 100),
     ).toBe(Math.round(r.grossAmountSom * 100));
+    expect(Math.round((r.grossAmountSom + r.commissionAmountSom) * 100)).toBe(
+      Math.round(r.customerTotalAmountSom * 100),
+    );
   });
 
   it("kichik summa (1 so'm) uchun ham komissiya tiyin darajasida hisoblanadi", () => {
@@ -67,12 +77,14 @@ describe('calculateUzumCheckoutCommission — yaxlitlash (tiyin darajasida, suzu
     const r = calculateUzumCheckoutCommission(1);
     expect(r.commissionAmountSom).toBe(0.02);
     expect(r.netSettlementAmountSom).toBe(0.98);
+    expect(r.customerTotalAmountSom).toBe(1.02);
   });
 
   it('string kirish ("150000") ham qo\'llab-quvvatlanadi', () => {
     const r = calculateUzumCheckoutCommission('150000');
     expect(r.commissionAmountSom).toBe(2_250);
     expect(r.netSettlementAmountSom).toBe(147_750);
+    expect(r.customerTotalAmountSom).toBe(152_250);
   });
 
   it("suzuvchi nuqta xatosiga misol bo'lishi mumkin bo'lgan qiymat (0.1+0.2 klassi) to'g'ri ishlaydi", () => {
@@ -80,6 +92,7 @@ describe('calculateUzumCheckoutCommission — yaxlitlash (tiyin darajasida, suzu
     // tiyin=99999999; commission=round(99999999*150/10000)=round(1499999.985)=1500000 -> 15000.00
     expect(r.commissionAmountSom).toBe(15_000);
     expect(r.netSettlementAmountSom).toBe(984_999.99);
+    expect(r.customerTotalAmountSom).toBe(1_014_999.99);
   });
 });
 

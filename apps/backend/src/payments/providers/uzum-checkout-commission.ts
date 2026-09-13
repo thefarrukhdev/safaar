@@ -111,7 +111,7 @@ export const UZUM_CHECKOUT_SETTLEMENT_MODEL: UzumCheckoutSettlementModel =
   'REQUIRES_UZUM_CONFIRMATION';
 
 export interface UzumCheckoutCommissionBreakdown {
-  /** Mijoz to'lagan/to'lashi kerak bo'lgan to'liq summa (so'm). O'ZGARTIRILMAYDI. */
+  /** Bron/booking'ning O'Z gross summasi (so'm) — bu qiymat HECH QACHON o'zgarmaydi/oshirilmaydi. */
   grossAmountSom: number;
   /** Qo'llanilgan stavka (masalan 0.015 = 1.5%). */
   commissionRate: number;
@@ -126,6 +126,22 @@ export interface UzumCheckoutCommissionBreakdown {
    * KAFOLATLANMAYDI (`UZUM_CHECKOUT_SETTLEMENT_MODEL`ga qarang).
    */
   netSettlementAmountSom: number;
+  /**
+   * gross + commission (so'm) — "mijoz KONSEPTUAL jihatdan jami qancha
+   * to'laydi" degan BIZNES/hisobot tushunchasi (2026-09-13 tasdiqlangan
+   * misol: 400,000 gross + 6,000 fee = 406,000). BUTUN TIYIN arifmetikasida
+   * hisoblanadi (suzuvchi nuqta xatosisiz).
+   *
+   * ⚠️ MUHIM — bu Uzum'ning `/payment/register` so'roviga yuboriladigan
+   * `amount` MAYDONI EMAS (u hamon FAQAT `grossAmountSom`/`booking.total_amount`
+   * — qarang `payments.service.ts::createUzumCheckoutPayment`). Uzum
+   * Checkout'ning o'zi checkout paytida bu 1.5%ni qanday texnik yo'l bilan
+   * undirishi (mijozga alohida ustama sifatida ko'rsatadimi, o'zining
+   * checkout SDK/UI'sida qo'shadimi, yoki boshqacha) — rasmiy contract'dan
+   * TASDIQLANMAGAN, shuning uchun bu maydon HECH QANDAY tashqi so'rovga
+   * avtomatik ulanmaydi — FAQAT SAFAAR ICHKI hisobot/ko'rsatish uchun.
+   */
+  customerTotalAmountSom: number;
 }
 
 /**
@@ -158,11 +174,13 @@ export function calculateUzumCheckoutCommission(
   const rateBasisPoints = Math.round(UZUM_CHECKOUT_COMMISSION_RATE * 10_000);
   const commissionTiyin = Math.round((grossTiyin * rateBasisPoints) / 10_000);
   const netTiyin = grossTiyin - commissionTiyin;
+  const customerTotalTiyin = grossTiyin + commissionTiyin;
 
   return {
     grossAmountSom: grossTiyin / 100,
     commissionRate: UZUM_CHECKOUT_COMMISSION_RATE,
     commissionAmountSom: commissionTiyin / 100,
     netSettlementAmountSom: netTiyin / 100,
+    customerTotalAmountSom: customerTotalTiyin / 100,
   };
 }

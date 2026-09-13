@@ -257,6 +257,23 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
     ).toBe(1_000_000);
     // Uzum fee — FAQAT informativ (mijoz Uzum checkout'da alohida to'laydi).
     expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
+    // customerTotal = gross + Uzum fee — mijoz KONSEPTUAL jami shuncha to'laydi.
+    expect(breakdown.customerTotalAmountSom).toBe(1_015_000);
+  });
+
+  it('400,000 so‘m, SAFAAR 10% — vazifada berilgan ikkinchi aniq misol: SAFAAR=40000, hamkor=360000, Uzum fee=6000, customerTotal=406000', () => {
+    const breakdown = calculatePaymentBreakdown({
+      grossAmountSom: 400_000,
+      safaarCommissionRatePercent: 10,
+    });
+
+    expect(breakdown.grossAmountSom).toBe(400_000);
+    expect(breakdown.safaarCommissionAmountSom).toBe(40_000);
+    expect(breakdown.partnerNetAmountSom).toBe(360_000);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(6_000);
+    expect(breakdown.customerTotalAmountSom).toBe(406_000);
+    // Booking/payment gross'ning o'zi customerTotal bilan ARALASHTIRILMAYDI.
+    expect(breakdown.grossAmountSom).not.toBe(breakdown.customerTotalAmountSom);
   });
 
   it('Uzum fee: 1,000,000 → 15,000 (vazifada berilgan aniq test-case, informativ maydon)', () => {
@@ -333,6 +350,26 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
       expect(
         breakdown.safaarCommissionAmountSom + breakdown.partnerNetAmountSom,
       ).toBe(gross);
+      // customerTotal = gross + Uzum fee, tiyin darajasida ANIQ (suzuvchi
+      // nuqta xatosisiz) — hamkor/SAFAAR bo'linishiga TA'SIR qilmaydi.
+      expect(breakdown.customerTotalAmountSom).toBe(
+        Math.round((gross + breakdown.uzumUserFeeAmountSom) * 100) / 100,
+      );
     }
+  });
+
+  it('nol/manfiy gross summasi rad etiladi (Uzum komissiya modulidagi mavjud himoya orqali)', () => {
+    expect(() =>
+      calculatePaymentBreakdown({
+        grossAmountSom: 0,
+        safaarCommissionRatePercent: 10,
+      }),
+    ).toThrow(RangeError);
+    expect(() =>
+      calculatePaymentBreakdown({
+        grossAmountSom: -400_000,
+        safaarCommissionRatePercent: 10,
+      }),
+    ).toThrow(RangeError);
   });
 });

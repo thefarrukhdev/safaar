@@ -160,6 +160,18 @@ export interface PaymentBreakdown {
    * arxitektura bilan IZCHIL.
    */
   partnerNetAmountSom: number;
+  /**
+   * gross + Uzum user fee (so'm) — "mijoz KONSEPTUAL jihatdan jami qancha
+   * to'laydi" (2026-09-13 tasdiqlangan misol: 400,000 + 6,000 = 406,000).
+   *
+   * ⚠️ MUHIM: bu Uzum'ning `/payment/register` so'roviga yuboriladigan
+   * `amount` EMAS (u hamon FAQAT `grossAmountSom` — `payments.service.ts`
+   * o'zgartirilmagan). Uzum bu 1.5%ni texnik jihatdan checkout paytida
+   * QANDAY undirishi (SDK/UI ustama, boshqa mexanizm) rasmiy contract'dan
+   * TASDIQLANMAGAN — shu sabab bu maydon HECH QANDAY tashqi so'rovga
+   * avtomatik ulanmaydi, FAQAT SAFAAR ICHKI hisobot/ko'rsatish uchun.
+   */
+  customerTotalAmountSom: number;
 }
 
 /**
@@ -178,6 +190,11 @@ export interface PaymentBreakdown {
  *     hisob-kitobiga (`bookings.service.ts`, `partners.service.ts`) MOS.
  *   - `uzumUserFeeRatePercent`/`uzumUserFeeAmountSom` FAQAT informativ —
  *     "mijoz Uzum checkout'da yana shuncha to'laydi" degan REFERENCE raqam.
+ *   - `customerTotalAmountSom = gross + uzumUserFeeAmountSom` — "mijoz
+ *     KONSEPTUAL jami qancha to'laydi" degan ALOHIDA biznes tushuncha
+ *     (2026-09-13 tasdiqlangan). Bu Uzum'ning register so'roviga
+ *     yuboriladigan `amount` EMAS — o'sha hamon FAQAT gross
+ *     (`payments.service.ts::createUzumCheckoutPayment`, o'zgartirilmagan).
  * Bu — KIM TO'LAYDI (biznes) savoliga javob; Uzum bilan SAFAAR o'rtasidagi
  * bank SETTLEMENT texnik mexanizmi (`UZUM_CHECKOUT_SETTLEMENT_MODEL`) ESA
  * ALOHIDA, hali ochiq savol — bu funksiya u haqida HECH NARSA TAXMIN QILMAYDI.
@@ -207,6 +224,7 @@ export function calculatePaymentBreakdown(
     uzumUserFeeRatePercent: uzum.commissionRate * 100,
     uzumUserFeeAmountSom: uzum.commissionAmountSom,
     partnerNetAmountSom: input.grossAmountSom - safaarCommissionAmountSom,
+    customerTotalAmountSom: uzum.customerTotalAmountSom,
   };
 }
 

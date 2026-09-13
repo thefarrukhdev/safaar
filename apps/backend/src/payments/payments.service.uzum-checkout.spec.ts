@@ -569,6 +569,23 @@ describe('PaymentsService.createUzumCheckoutPayment (register seam)', () => {
       'https://checkout.ipt-merch.com/?orderId=order-real-1',
     ); // payment_url
     expect(params).toContain('uzum_checkout:order-real-1'); // idempotency_key
+
+    // USER_PAYS audit (2026-09-13): Uzum'ga yuboriladigan register so'rovi
+    // `amount`i HAMON faqat GROSS (150000 so'm = 15_000_000 tiyin) —
+    // 1.5% Uzum user fee HECH QACHON bu yerga avtomatik qo'shilmasligi
+    // kerak (item 12 — "provider register amount" hali BLOCKED/rasmiy
+    // contract kutmoqda, taxmin bilan o'zgartirilmaydi).
+    const fetchMock = globalThis.fetch as jest.Mock<
+      Promise<Response>,
+      [string, { body: string }]
+    >;
+    const [, fetchInit] = fetchMock.mock.calls[0];
+    const registerBody = JSON.parse(fetchInit.body) as {
+      amount: number;
+      merchantParams: { cart: { total: number } };
+    };
+    expect(registerBody.amount).toBe(15_000_000); // gross tiyin, EMAS 15_225_000 (gross+1.5%)
+    expect(registerBody.merchantParams.cart.total).toBe(15_000_000);
   });
 });
 

@@ -228,6 +228,79 @@ describe('resolveAccommodationCommissionRate — SAFAAR Excel komissiya jadvali 
   });
 });
 
+describe("Excel'ning HAQIQIY binary fayli bilan to'liq end-to-end tekshiruv (2026-09-13, Komissiya.xlsx dan bevosita o'qilgan)", () => {
+  // Bu jadval qo'lda qayta yozilmagan — /home/laziz/Downloads/Komissiya.xlsx
+  // faylining xl/sharedStrings.xml + xl/worksheets/sheet1.xml (B3:F6)
+  // qismlari Python stdlib (zipfile + xml.etree, uchinchi-tomon kutubxonasiz)
+  // bilan bevosita o'qib chiqilgan va shu qatorlar TOPILDI (boshqa qator/ustun
+  // YO'Q — dimension aynan B3:F6, bitta sheet "Sheet1"):
+  //   [header]    Mehmonxonalar (4-5 yulduz) | Mehmonxonalar | Guest House | Hostel
+  //   Samarqand   0.12                       | 0.1           | 0.08        | 0.07
+  //   Toshkent    0.14                       | 0.12          | 0.08        | 0.08
+  //   Boshqa      0.1                        | 0.1           | 0.08        | 0.07
+  // Bu — SAFAAR_ACCOMMODATION_COMMISSION_TABLE (finance.ts) bilan BAYT
+  // DARAJASIDA (foizgacha) AYNAN BIR XIL — hech qanday farq topilmadi.
+  const EXCEL_TABLE_FROM_BINARY: Record<
+    'samarqand' | 'tashkent' | 'other',
+    Record<'star_4_5' | 'hotel' | 'guesthouse' | 'hostel', number>
+  > = {
+    samarqand: { star_4_5: 12, hotel: 10, guesthouse: 8, hostel: 7 },
+    tashkent: { star_4_5: 14, hotel: 12, guesthouse: 8, hostel: 8 },
+    other: { star_4_5: 10, hotel: 10, guesthouse: 8, hostel: 7 },
+  };
+
+  const GROSS = 1_000_000;
+
+  it.each([
+    ['samarqand', 'hotel', 5, 'star_4_5'],
+    ['samarqand', 'hotel', 2, 'hotel'],
+    ['samarqand', 'guesthouse', null, 'guesthouse'],
+    ['samarqand', 'hostel', null, 'hostel'],
+    ['tashkent', 'hotel', 4, 'star_4_5'],
+    ['tashkent', 'hotel', 1, 'hotel'],
+    ['tashkent', 'guesthouse', null, 'guesthouse'],
+    ['tashkent', 'hostel', null, 'hostel'],
+    ['buxoro', 'hotel', 5, 'star_4_5'],
+    ['buxoro', 'hotel', 3, 'hotel'],
+    ['buxoro', 'guesthouse', null, 'guesthouse'],
+    ['buxoro', 'hostel', null, 'hostel'],
+  ] as const)(
+    "city=%s type=%s stars=%s (tier=%s) — Excel'dagi HAQIQIY foiz bilan to'liq breakdown",
+    (citySlug, partnerOrganizationType, stars, expectedTier) => {
+      const regionKey =
+        citySlug === 'samarqand'
+          ? 'samarqand'
+          : citySlug === 'tashkent'
+            ? 'tashkent'
+            : 'other';
+      const expectedRate = EXCEL_TABLE_FROM_BINARY[regionKey][expectedTier];
+
+      const resolved = resolveAccommodationCommissionRate({
+        citySlug,
+        partnerOrganizationType,
+        stars,
+      });
+      expect(resolved).toMatchObject({
+        matched: true,
+        ratePercent: expectedRate,
+        propertyTier: expectedTier,
+      });
+
+      const breakdown = calculatePaymentBreakdown({
+        grossAmountSom: GROSS,
+        safaarCommissionRatePercent: resolved.ratePercent as number,
+      });
+      const expectedSafaar = Math.round((GROSS * expectedRate) / 100);
+      expect(breakdown.safaarCommissionAmountSom).toBe(expectedSafaar);
+      expect(breakdown.partnerNetAmountSom).toBe(GROSS - expectedSafaar);
+      // Uzum fee HAR DOIM bir xil (12 ta kategoriyaning barchasida) — u
+      // SAFAAR stavkasidan MUSTAQIL, USER_PAYS.
+      expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
+      expect(breakdown.customerTotalAmountSom).toBe(GROSS + 15_000);
+    },
+  );
+});
+
 describe('UZUM_CHECKOUT_FEE_BEARER — USER_PAYS biznes qoidasi (2026-09-13 tasdiqlangan)', () => {
   it("kim to'laydi konstantasi 'USER' (na PARTNER, na SAFAAR)", () => {
     expect(UZUM_CHECKOUT_FEE_BEARER).toBe('USER');
@@ -259,6 +332,25 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
     expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
     // customerTotal = gross + Uzum fee — mijoz KONSEPTUAL jami shuncha to'laydi.
     expect(breakdown.customerTotalAmountSom).toBe(1_015_000);
+  });
+
+  it('400,000 so‘m, Samarqand 4-5 yulduz (12%, resolveAccommodationCommissionRate orqali) — 2026-09-13 vazifada berilgan aniq misol: SAFAAR=48000, hamkor=352000, Uzum fee=6000, customerTotal=406000', () => {
+    const rate = resolveAccommodationCommissionRate({
+      citySlug: 'samarqand',
+      partnerOrganizationType: 'hotel',
+      stars: 5,
+    });
+    expect(rate.ratePercent).toBe(12);
+
+    const breakdown = calculatePaymentBreakdown({
+      grossAmountSom: 400_000,
+      safaarCommissionRatePercent: rate.ratePercent as number,
+    });
+
+    expect(breakdown.safaarCommissionAmountSom).toBe(48_000);
+    expect(breakdown.partnerNetAmountSom).toBe(352_000);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(6_000);
+    expect(breakdown.customerTotalAmountSom).toBe(406_000);
   });
 
   it('400,000 so‘m, SAFAAR 10% — vazifada berilgan ikkinchi aniq misol: SAFAAR=40000, hamkor=360000, Uzum fee=6000, customerTotal=406000', () => {

@@ -43,6 +43,14 @@ export function normalizeCommissionRate(
  *  Toshkent       14%          12%           8%          8%
  *  Boshqa         10%          10%           8%          7%
  *
+ * QAYTA TASDIQLANDI (2026-09-13, ikkinchi audit): asl `Komissiya.xlsx`
+ * binary fayli (`docProps`dagi metadata EMAS — `xl/sharedStrings.xml` +
+ * `xl/worksheets/sheet1.xml`, dimension B3:F6, bitta "Sheet1") Python
+ * stdlib (`zipfile`+`xml.etree`, uchinchi-tomon kutubxonasiz) bilan
+ * to'g'ridan-to'g'ri o'qib chiqildi — natija yuqoridagi jadval bilan
+ * FOIZGACHA AYNAN BIR XIL, boshqa qator/ustun/kategoriya YO'Q edi (qarang
+ * `finance.spec.ts`dagi "Excel'ning HAQIQIY binary fayli bilan..." bloki).
+ *
  * Bu jadval FAQAT quyidagi `PartnerOrganizationType` qiymatlari uchun
  * amal qiladi: `hotel` (yulduziga qarab 4-5-star YOKI oddiy "Mehmonxona"
  * qatoriga tushadi), `guesthouse`, `hostel`. BOSHQA HAR QANDAY tur

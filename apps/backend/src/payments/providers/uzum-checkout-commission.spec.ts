@@ -1,5 +1,6 @@
 import {
   UZUM_CHECKOUT_COMMISSION_RATE,
+  UZUM_CHECKOUT_FEE_BEARER,
   UZUM_CHECKOUT_SETTLEMENT_MODEL,
   calculateUzumCheckoutCommission,
 } from './uzum-checkout-commission';
@@ -10,9 +11,18 @@ import {
  * kontrakti EMAS (u hali tasdiqlanmagan, qarang modul faylidagi izoh).
  */
 
-describe('UZUM_CHECKOUT_COMMISSION_RATE / UZUM_CHECKOUT_SETTLEMENT_MODEL', () => {
+describe('UZUM_CHECKOUT_COMMISSION_RATE / UZUM_CHECKOUT_FEE_BEARER / UZUM_CHECKOUT_SETTLEMENT_MODEL', () => {
   it('stavka 1.5% (biznes kelishuv)', () => {
     expect(UZUM_CHECKOUT_COMMISSION_RATE).toBe(0.015);
+  });
+
+  it("USER_PAYS: 1.5%ni MIJOZ/USER to'laydi (2026-09-13 biznes tomonidan TASDIQLANGAN — na hamkor, na SAFAAR)", () => {
+    expect(UZUM_CHECKOUT_FEE_BEARER).toBe('USER');
+  });
+
+  it("kim to'laydi (USER_PAYS, tasdiqlangan) va Uzum-SAFAAR bank settlement mexanizmi (hali tasdiqlanmagan) — IKKI MUSTAQIL savol: biri tasdiqlangani ikkinchisini hal qilmaydi", () => {
+    expect(UZUM_CHECKOUT_FEE_BEARER).toBe('USER');
+    expect(UZUM_CHECKOUT_SETTLEMENT_MODEL).toBe('REQUIRES_UZUM_CONFIRMATION');
   });
 
   it('settlement mexanizmi TASDIQLANMAGAN deb ATAYLAB belgilangan', () => {

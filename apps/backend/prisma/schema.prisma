@@ -949,6 +949,17 @@ model Payment {
   // TASDIQLANMAGAN — shu sabab bu migratsiya productionga QO'LLANILMAGAN
   // (docs/payments-uzum-checkout.md'ga qarang, avvalgi
   // `uzum_checkout_payment_method` migratsiyasi bilan bir xil siyosat).
+  // ⚠️ NOMLANISH XAVFI (2026-09-13): biznes Uzum Checkout 1.5% komissiyasini
+  // MIJOZ/USER to'lashini tasdiqladi (`UZUM_CHECKOUT_FEE_BEARER='USER'`,
+  // `uzum-checkout-commission.ts`) — ya'ni bu "provider fee" merchant
+  // (SAFAAR)dan olinadigan xarajat EMAS. Shu sabab `provider_fee_*` nomi
+  // chalkash: bu ustunlar (agar/qachon to'ldirilsa) faqat SAFAAR-Uzum bank
+  // SETTLEMENT texnik detalini ifodalashi mumkin, HECH QACHON
+  // `partner_payable`/`commission_amount`ga ta'sir qilmasligi kerak. Hali
+  // hech qayerda yozilmagani va productionga qo'llanilmagani uchun bu
+  // migratsiya/nom HOZIRCHA o'zgartirilmadi — kelgusida to'ldirilsa, aniqroq
+  // nom (masalan `uzum_bank_settlement_deduction`) bilan qayta ko'rib
+  // chiqilishi tavsiya etiladi.
   providerFeeRate     Decimal?      @map("provider_fee_rate") @db.Decimal(6, 4)
   providerFeeAmount   Decimal?      @map("provider_fee_amount") @db.Decimal(18, 2)
   netSettlementAmount Decimal?      @map("net_settlement_amount") @db.Decimal(18, 2)

@@ -16,9 +16,28 @@
  * (admin/export/moliya) uchun GROSS/KOMISSIYA/NET ni hisoblab beradi.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * REQUIRES_UZUM_CONFIRMATION — quyidagilar KODDAN TAXMIN QILINMAGAN:
+ * KIM TO'LAYDI (BIZNES, TASDIQLANGAN) vs QANDAY SETTLEMENT BO'LADI (TEXNIK, OCHIQ)
  * ─────────────────────────────────────────────────────────────────────────────
- *  1. SETTLEMENT MEXANIZMI: Uzum 1.5%ni settlement'dan AVTOMATIK ushlab
+ * Bu ikkita savol MUSTAQIL, bir-biriga bog'liq EMAS:
+ *
+ *  (A) KIM IQTISODIY JIHATDAN KO'TARADI — 2026-09-13, biznes tomonidan
+ *      TASDIQLANGAN: `UZUM_CHECKOUT_FEE_BEARER = 'USER'`. Uzum Checkout 1.5%
+ *      komissiyasini TO'G'RIDAN-TO'G'RI MIJOZ/USER to'laydi — na hamkor
+ *      (`partner_payable`dan AYRILMAYDI), na SAFAAR (`commission_amount`ga
+ *      TA'SIR QILMAYDI). Shu sabab `partner_ledger_entries`/`bookings.partner_payable`
+ *      FAQAT SAFAAR komissiyasini ayiradi — bu ALLAQACHON to'g'ri (o'zgarishsiz).
+ *
+ *  (B) UZUM QANDAY TEXNIK SETTLEMENT QILADI — HALI TASDIQLANMAGAN, taxmin
+ *      qilinmaydi. (A) bandi "kim to'laydi"ga javob bersa-da, bu SAFAAR'ning
+ *      Uzum bilan bo'lgan BANK hisob-kitobiga (necha pul kelishi kerakligiga)
+ *      to'g'ridan-to'g'ri javob bermaydi — masalan, mijoz checkout paytida
+ *      qo'shimcha 1.5% ustama sifatida alohida to'lashi mumkin (bu holda
+ *      SAFAAR'ning bank hisobiga booking summasi TO'LIQ keladi, Uzum fee
+ *      hech qachon SAFAAR pulini "kesib" o'tmaydi), YOKI Uzum o'z ichki
+ *      protsessingida boshqacha yo'l tutishi mumkin. `UZUM_CHECKOUT_SETTLEMENT_MODEL`
+ *      FAQAT shu (B) texnik savolni ifodalaydi — (A) band bilan
+ *      ARALASHTIRILMASLIGI SHART:
+ *   1. SETTLEMENT MEXANIZMI: Uzum 1.5%ni settlement'dan AVTOMATIK ushlab
  *     qoladimi (SAFAAR faqat NET oladi), yoki to'liq GROSS'ni o'tkazib,
  *     alohida invoice/hisob-faktura bilan komissiyani so'raydimi? Bu ikkala
  *     holat ham buxgalteriya yozuvlarida TUBDAN farq qiladi (birinchisida
@@ -33,16 +52,21 @@
  *     refund summasiga ham qo'llanilishi mumkin (bir xil formula), lekin bu
  *     FAQAT SAFAAR'ning "agar simmetrik bo'lsa" degan ICHKI taxminiy hisobi —
  *     Uzum'ning haqiqiy siyosati tasdiqlanmaguncha moliyaviy qaror sifatida
- *     ishlatilmasligi kerak.
+ *     ishlatilmasligi kerak. MUHIM: (A) band tufayli bu — hatto tasdiqlansa
+ *     ham — hamkor ledgeriga HECH QACHON tegmaydi (fee hamkordan olinmagan,
+ *     demak qaytarishda ham hamkorga tegishli emas).
  *  3. YAXLITLASH QOIDASI: Uzum o'z tomonida komissiyani qanday yaxlitlaydi
  *     (round-half-up / banker's rounding / kesish) — NOMA'LUM. Bu yerda
  *     SAFAAR'ning boshqa joylaridagi mavjud konventsiya (`UzumProvider.toTiyin()`
  *     — `Math.round`, ya'ni "round half away from zero") ATAYLAB qayta
  *     ishlatilgan — ICHKI IZCHILLIK uchun, Uzum'ning haqiqiy yaxlitlashi
  *     sifatida EMAS.
- *  4. MIJOZGA KO'RSATISH: komissiya customer to'lov summasiga qo'shiladimi
- *     yoki merchant (SAFAAR) o'zi ko'taradimi — bu BIZNES qaror, bu fayl
- *     HECH QANDAY customer-facing summani o'zgartirmaydi/oshirmaydi.
+ *  4. MIJOZGA KO'RSATISH/UNDIRISH OQIMI: (A) band bo'yicha USER to'laydi
+ *     degan biznes qaror TASDIQLANGAN, lekin buning TEXNIK amalga oshirilishi
+ *     (checkout summasiga alohida ustama sifatida qo'shiladimi, yoki boshqa
+ *     mexanizm bilanmi) — Uzum'ning rasmiy checkout/registratsiya
+ *     contract'idan TASDIQLANMAGUNCHA taxmin qilinmaydi. Bu fayl HECH QANDAY
+ *     customer-facing (checkout so'rovi) summani o'zgartirmaydi/oshirmaydi.
  *
  * Rasmiy Uzum Checkout shartnomasi/spec'i kelganda: shu fayldagi
  * `UZUM_CHECKOUT_SETTLEMENT_MODEL` va yaxlitlash qoidasi bank ko'chirmalari
@@ -53,9 +77,28 @@
 export const UZUM_CHECKOUT_COMMISSION_RATE = 0.015;
 
 /**
- * Uzum'ning HAQIQIY settlement mexanizmi tasdiqlanmagan — taxmin qilinmaydi.
- * `'REQUIRES_UZUM_CONFIRMATION'` bo'lib qolaveradi toki quyidagilardan biri
- * rasmiy ravishda tasdiqlanmaguncha:
+ * KIM IQTISODIY JIHATDAN 1.5% Uzum Checkout komissiyasini KO'TARADI —
+ * 2026-09-13, BIZNES TOMONIDAN TASDIQLANGAN (taxmin EMAS): mijoz/user
+ * to'g'ridan-to'g'ri o'zi to'laydi. Na hamkor (`partner_payable`), na SAFAAR
+ * (`commission_amount`) bu summani ko'tarmaydi/undan ayirmaydi.
+ *
+ * MUHIM: bu (A) — "kim to'laydi" — degan BIZNES savolga javob; Uzum bilan
+ * SAFAAR o'rtasidagi bank SETTLEMENT texnik mexanizmi (B, quyida
+ * `UZUM_CHECKOUT_SETTLEMENT_MODEL`) BUTUNLAY ALOHIDA, hali ochiq savol —
+ * bittasi tasdiqlanishi ikkinchisini AVTOMATIK hal qilmaydi.
+ */
+export type UzumCheckoutFeeBearer = 'USER' | 'PARTNER' | 'SAFAAR';
+export const UZUM_CHECKOUT_FEE_BEARER: UzumCheckoutFeeBearer = 'USER';
+
+/**
+ * Uzum'ning HAQIQIY (SAFAAR bilan Uzum o'rtasidagi bank) settlement
+ * mexanizmi TASDIQLANMAGAN — taxmin qilinmaydi. `UZUM_CHECKOUT_FEE_BEARER`
+ * bilan ARALASHTIRILMASIN: "kim to'laydi" allaqachon tasdiqlangan (USER),
+ * lekin bu shuni ANGLATMAYDIKI, SAFAAR'ning Uzum'dan oladigan bank
+ * ko'chirmasi avtomatik ravishda "to'liq gross" bo'ladi — bu ALOHIDA,
+ * texnik, hali rasmiy tasdiqlanmagan savol. `'REQUIRES_UZUM_CONFIRMATION'`
+ * bo'lib qolaveradi toki quyidagilardan biri rasmiy ravishda
+ * tasdiqlanmaguncha:
  *   'NET_SETTLEMENT'      — Uzum 1.5%ni avtomatik ushlab qoladi, bankka NET keladi
  *   'GROSS_WITH_INVOICE'  — Uzum to'liq GROSS'ni o'tkazadi, komissiya alohida so'raladi
  */
@@ -72,10 +115,13 @@ export interface UzumCheckoutCommissionBreakdown {
   grossAmountSom: number;
   /** Qo'llanilgan stavka (masalan 0.015 = 1.5%). */
   commissionRate: number;
-  /** gross × rate, tiyin darajasida yaxlitlangan (so'm). */
+  /** gross × rate, tiyin darajasida yaxlitlangan (so'm). USER to'laydi (`UZUM_CHECKOUT_FEE_BEARER`). */
   commissionAmountSom: number;
   /**
-   * gross − commission (so'm). MUHIM: bu SAFAAR'ning ICHKI hisob-kitobi —
+   * gross − commission (so'm). MUHIM: bu Uzum bilan SAFAAR o'rtasidagi bank
+   * SETTLEMENT haqidagi ICHKI/REFERENCE hisob-kitob — `UZUM_CHECKOUT_FEE_BEARER`
+   * ("kim to'laydi") bilan ARALASHTIRILMASIN. Bu summa `partner_payable`ga
+   * HECH QACHON YOZILMAYDI (hamkor ledgeri faqat SAFAAR komissiyasini biladi);
    * Uzum'ning haqiqiy bank ko'chirmasi shu summaga teng bo'lishi ILGARIDAN
    * KAFOLATLANMAYDI (`UZUM_CHECKOUT_SETTLEMENT_MODEL`ga qarang).
    */

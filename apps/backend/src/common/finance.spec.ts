@@ -5,7 +5,10 @@ import {
   normalizeCommissionRate,
   resolveAccommodationCommissionRate,
 } from './finance';
-import { UZUM_CHECKOUT_COMMISSION_RATE } from '../payments/providers/uzum-checkout-commission';
+import {
+  UZUM_CHECKOUT_COMMISSION_RATE,
+  UZUM_CHECKOUT_FEE_BEARER,
+} from '../payments/providers/uzum-checkout-commission';
 
 describe('normalizeCommissionRate / calculateCommission (mavjud, o‘zgarishsiz)', () => {
   it('yaroqsiz (NaN/manfiy) qiymatlar uchun standart 12%ga tushadi', () => {
@@ -225,8 +228,14 @@ describe('resolveAccommodationCommissionRate — SAFAAR Excel komissiya jadvali 
   });
 });
 
-describe("calculatePaymentBreakdown — gross → SAFAAR komissiya → Uzum fee → partner net (task'da berilgan aniq misollar)", () => {
-  it('1,000,000 so‘m, Samarqand 4-5 yulduz (12%) — vazifada berilgan aniq misol: SAFAAR=120000, Uzum=15000, jami=135000, partner=865000', () => {
+describe('UZUM_CHECKOUT_FEE_BEARER — USER_PAYS biznes qoidasi (2026-09-13 tasdiqlangan)', () => {
+  it("kim to'laydi konstantasi 'USER' (na PARTNER, na SAFAAR)", () => {
+    expect(UZUM_CHECKOUT_FEE_BEARER).toBe('USER');
+  });
+});
+
+describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor net (USER_PAYS, 2026-09-13 biznes tomonidan tasdiqlangan)', () => {
+  it('1,000,000 so‘m, Samarqand 4-5 yulduz (12%) — vazifada berilgan aniq misol: SAFAAR=120000, hamkor=880000, Uzum fee (mijoz to‘laydi, alohida)=15000', () => {
     const rate = resolveAccommodationCommissionRate({
       citySlug: 'samarqand',
       partnerOrganizationType: 'hotel',
@@ -240,63 +249,89 @@ describe("calculatePaymentBreakdown — gross → SAFAAR komissiya → Uzum fee 
     });
 
     expect(breakdown.safaarCommissionAmountSom).toBe(120_000);
-    expect(breakdown.uzumFeeAmountSom).toBe(15_000);
+    // USER_PAYS: Uzum fee hamkor/SAFAAR bo'linishiga TA'SIR QILMAYDI —
+    // partnerNet = gross - SAFAAR komissiya, Uzum fee AYIRILMAYDI.
+    expect(breakdown.partnerNetAmountSom).toBe(880_000);
     expect(
-      breakdown.safaarCommissionAmountSom + breakdown.uzumFeeAmountSom,
-    ).toBe(135_000);
-    expect(breakdown.partnerNetAmountSom).toBe(865_000);
+      breakdown.safaarCommissionAmountSom + breakdown.partnerNetAmountSom,
+    ).toBe(1_000_000);
+    // Uzum fee — FAQAT informativ (mijoz Uzum checkout'da alohida to'laydi).
+    expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
   });
 
-  it('Uzum fee: 1,000,000 → 15,000 (vazifada berilgan aniq test-case)', () => {
+  it('Uzum fee: 1,000,000 → 15,000 (vazifada berilgan aniq test-case, informativ maydon)', () => {
     expect(
       calculatePaymentBreakdown({
         grossAmountSom: 1_000_000,
         safaarCommissionRatePercent: 0,
-      }).uzumFeeAmountSom,
+      }).uzumUserFeeAmountSom,
     ).toBe(15_000);
   });
 
-  it('Uzum fee: 500,000 → 7,500 (vazifada berilgan aniq test-case)', () => {
+  it('Uzum fee: 500,000 → 7,500 (vazifada berilgan aniq test-case, informativ maydon)', () => {
     expect(
       calculatePaymentBreakdown({
         grossAmountSom: 500_000,
         safaarCommissionRatePercent: 0,
-      }).uzumFeeAmountSom,
+      }).uzumUserFeeAmountSom,
     ).toBe(7_500);
   });
 
-  it('uzumFeeRatePercent doim 1.5 (UZUM_CHECKOUT_COMMISSION_RATE bilan izchil)', () => {
+  it('uzumUserFeeRatePercent doim 1.5 (UZUM_CHECKOUT_COMMISSION_RATE bilan izchil)', () => {
     expect(
       calculatePaymentBreakdown({
         grossAmountSom: 100_000,
         safaarCommissionRatePercent: 10,
-      }).uzumFeeRatePercent,
+      }).uzumUserFeeRatePercent,
     ).toBe(UZUM_CHECKOUT_COMMISSION_RATE * 100);
   });
 
-  it('partnerNetAmountSom HECH QACHON manfiy bo‘lmasligi kerak (yuqori komissiya + fee holatida ham) — sog‘lik tekshiruvi', () => {
+  it("hamkor to'lovi (partnerNetAmountSom) Uzum fee STAVKASI/SUMMASIGA BOG'LIQ EMAS — faqat gross va SAFAAR komissiyasidan hisoblanadi (USER_PAYS regression guard)", () => {
+    // Uzum fee turlicha bo'lsa ham (turli gross summalar orqali turlicha
+    // uzumUserFeeAmountSom chiqadi), partnerNet FAQAT gross-safaarCommission
+    // formulasiga rioya qilishi kerak — Uzum raqami bilan HECH QANDAY
+    // arifmetik bog'liqlik bo'lmasligi kerak.
+    for (const gross of [10_000, 250_000, 1_000_000, 7_777_777]) {
+      const breakdown = calculatePaymentBreakdown({
+        grossAmountSom: gross,
+        safaarCommissionRatePercent: 12,
+      });
+      expect(breakdown.partnerNetAmountSom).toBe(
+        gross - breakdown.safaarCommissionAmountSom,
+      );
+    }
+  });
+
+  it("SAFAAR komissiyasi (safaarCommissionAmountSom) Uzum fee'dan MUSTAQIL — faqat gross va stavkaga bog'liq", () => {
+    expect(
+      calculatePaymentBreakdown({
+        grossAmountSom: 1_000_000,
+        safaarCommissionRatePercent: 12,
+      }).safaarCommissionAmountSom,
+    ).toBe(calculateCommission(1_000_000, 12));
+  });
+
+  it('partnerNetAmountSom HECH QACHON manfiy bo‘lmasligi kerak (yuqori komissiyada ham) — sog‘lik tekshiruvi', () => {
     const breakdown = calculatePaymentBreakdown({
       grossAmountSom: 100_000,
       safaarCommissionRatePercent: 14,
     });
     expect(breakdown.partnerNetAmountSom).toBeGreaterThan(0);
+    // MUHIM: Uzum fee bu invariantda ISHTIROK ETMAYDI (USER_PAYS) —
+    // gross = SAFAAR komissiya + hamkor net, boshqa hech narsa emas.
     expect(
-      breakdown.safaarCommissionAmountSom +
-        breakdown.uzumFeeAmountSom +
-        breakdown.partnerNetAmountSom,
+      breakdown.safaarCommissionAmountSom + breakdown.partnerNetAmountSom,
     ).toBe(breakdown.grossAmountSom);
   });
 
-  it('boundary/rounding: g‘alati (tiyin darajasida yaxlitlanishi kerak bo‘lgan) summalarda ham gross = commission + fee + net (1 so‘mlik ham yo‘qolib ketmaydi)', () => {
+  it('boundary/rounding: g‘alati (tiyin darajasida yaxlitlanishi kerak bo‘lgan) summalarda ham gross = commission + partner net (1 so‘mlik ham yo‘qolib ketmaydi)', () => {
     for (const gross of [1, 3, 7, 99, 1001, 33_333, 999_999]) {
       const breakdown = calculatePaymentBreakdown({
         grossAmountSom: gross,
         safaarCommissionRatePercent: 8,
       });
       expect(
-        breakdown.safaarCommissionAmountSom +
-          breakdown.uzumFeeAmountSom +
-          breakdown.partnerNetAmountSom,
+        breakdown.safaarCommissionAmountSom + breakdown.partnerNetAmountSom,
       ).toBe(gross);
     }
   });

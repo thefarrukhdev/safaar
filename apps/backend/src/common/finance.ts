@@ -1,4 +1,7 @@
-import { calculateUzumCheckoutCommission } from '../payments/providers/uzum-checkout-commission';
+import {
+  calculateUzumCheckoutCommission,
+  UZUM_CHECKOUT_FEE_BEARER,
+} from '../payments/providers/uzum-checkout-commission';
 
 /**
  * Komissiya hisob-kitobi butun backend uchun bitta joyda — avval har bir
@@ -139,34 +142,45 @@ export interface PaymentBreakdown {
   grossAmountSom: number;
   safaarCommissionRatePercent: number;
   safaarCommissionAmountSom: number;
-  /** Biznes kelishuv bo'yicha doim 1.5% (`UZUM_CHECKOUT_COMMISSION_RATE`). */
-  uzumFeeRatePercent: number;
-  uzumFeeAmountSom: number;
   /**
-   * gross − SAFAAR komissiya − Uzum fee. MUHIM: bu FAQAT REFERENCE/hisobot
-   * uchun — hamkorga HAQIQATAN to'lanadigan summa (`bookings.partner_payable`,
-   * `partner_ledger_entries`) BU QIYMATGA TENGLASHTIRILMAGAN, chunki Uzum
-   * 1.5%ni kim (SAFAAR yoki hamkor) haqiqatan ko'tarishi TASDIQLANMAGAN
-   * (`UZUM_CHECKOUT_SETTLEMENT_MODEL`ga qarang). Shu sabab `partnerNetAmountSom`
-   * — "agar Uzum fee hamkordan ushlab qolinsa, taxminan shuncha qolar edi"
-   * degan ILLUSTRATIV raqam, HALI HAQIQIY moliyaviy yozuv EMAS.
+   * Biznes kelishuv bo'yicha doim 1.5% (`UZUM_CHECKOUT_COMMISSION_RATE`).
+   * 2026-09-13 TASDIQLANGAN: bu fee'ni MIJOZ/USER to'laydi
+   * (`UZUM_CHECKOUT_FEE_BEARER === 'USER'`) — na hamkor, na SAFAAR. Shu
+   * sabab bu ikkita maydon FAQAT INFORMATIV/hisobot uchun: `partnerNetAmountSom`
+   * hisoblashda ISHTIROK ETMAYDI (pastga qarang).
+   */
+  uzumUserFeeRatePercent: number;
+  uzumUserFeeAmountSom: number;
+  /**
+   * gross − SAFAAR komissiya (Uzum fee AYIRILMAYDI — uni mijoz alohida
+   * to'laydi, `UZUM_CHECKOUT_FEE_BEARER`ga qarang, 2026-09-13 biznes
+   * tomonidan tasdiqlangan). Bu qiymat `bookings.partner_payable`/
+   * `partner_ledger_entries`dagi HAQIQIY hisob-kitobga MOS KELADI (ikkalasi
+   * ham faqat SAFAAR komissiyasini ayiradi) — endi ILLUSTRATIV emas, REAL
+   * arxitektura bilan IZCHIL.
    */
   partnerNetAmountSom: number;
 }
 
 /**
  * SAFAAR komissiyasi + Uzum Checkout 1.5% to'lov haqini bitta joyda
- * hisoblab, to'liq taqsimotni qaytaradi (gross → SAFAAR komissiya → Uzum
- * fee → hamkor net). Mavjud, alohida tasdiqlangan ikkita hisoblagichni
+ * hisoblab, to'liq taqsimotni qaytaradi: gross → SAFAAR komissiya →
+ * hamkor net (Uzum fee bu ikkalasiga TA'SIR QILMAYDI — mijoz to'laydi,
+ * pastga qarang). Mavjud, alohida tasdiqlangan ikkita hisoblagichni
  * (`calculateCommission` — SAFAAR, `calculateUzumCheckoutCommission` —
  * Uzum) QAYTA ISHLATADI, formulani takrorlamaydi.
  *
- * MUHIM (2026-09-13 audit): bu funksiya FAQAT hisobot/ko'rsatish uchun —
- * `partnerNetAmountSom`ni `bookings.partner_payable`ga YOZMAYDI/ALMASHTIRMAYDI.
- * Hozirgi haqiqiy `partner_payable` hisob-kitobi (`bookings.service.ts`,
- * `partners.service.ts`) FAQAT SAFAAR komissiyasini ayiradi — Uzum fee
- * hamkordan ushlab qolinishi HALI TASDIQLANMAGAN (yuqoridagi izohga
- * qarang), shuning uchun bu ATAYLAB o'zgartirilmagan.
+ * MUHIM (2026-09-13, biznes tomonidan TASDIQLANGAN — `UZUM_CHECKOUT_FEE_BEARER`):
+ * Uzum 1.5% komissiyasini MIJOZ/USER to'g'ridan-to'g'ri to'laydi — na
+ * hamkor (`partner_payable`), na SAFAAR (`commission_amount`). Shu sabab:
+ *   - `partnerNetAmountSom = gross − safaarCommissionAmountSom` (Uzum fee
+ *     YO'Q formulaning bu qismida) — bu haqiqiy `bookings.partner_payable`
+ *     hisob-kitobiga (`bookings.service.ts`, `partners.service.ts`) MOS.
+ *   - `uzumUserFeeRatePercent`/`uzumUserFeeAmountSom` FAQAT informativ —
+ *     "mijoz Uzum checkout'da yana shuncha to'laydi" degan REFERENCE raqam.
+ * Bu — KIM TO'LAYDI (biznes) savoliga javob; Uzum bilan SAFAAR o'rtasidagi
+ * bank SETTLEMENT texnik mexanizmi (`UZUM_CHECKOUT_SETTLEMENT_MODEL`) ESA
+ * ALOHIDA, hali ochiq savol — bu funksiya u haqida HECH NARSA TAXMIN QILMAYDI.
  */
 export function calculatePaymentBreakdown(
   input: PaymentBreakdownInput,
@@ -177,16 +191,22 @@ export function calculatePaymentBreakdown(
   );
   const uzum = calculateUzumCheckoutCommission(input.grossAmountSom);
 
+  if (UZUM_CHECKOUT_FEE_BEARER !== 'USER') {
+    // Bu funksiya faqat "USER to'laydi" modeli uchun yozilgan (2026-09-13
+    // tasdiqlangan). Agar bu konstanta kelajakda o'zgarsa, formula qayta
+    // ko'rib chiqilmaguncha noto'g'ri natija berish o'rniga aniq xato beradi.
+    throw new Error(
+      `calculatePaymentBreakdown: UZUM_CHECKOUT_FEE_BEARER="${UZUM_CHECKOUT_FEE_BEARER}" uchun formula tasdiqlanmagan`,
+    );
+  }
+
   return {
     grossAmountSom: input.grossAmountSom,
     safaarCommissionRatePercent: input.safaarCommissionRatePercent,
     safaarCommissionAmountSom,
-    uzumFeeRatePercent: uzum.commissionRate * 100,
-    uzumFeeAmountSom: uzum.commissionAmountSom,
-    partnerNetAmountSom:
-      input.grossAmountSom -
-      safaarCommissionAmountSom -
-      uzum.commissionAmountSom,
+    uzumUserFeeRatePercent: uzum.commissionRate * 100,
+    uzumUserFeeAmountSom: uzum.commissionAmountSom,
+    partnerNetAmountSom: input.grossAmountSom - safaarCommissionAmountSom,
   };
 }
 

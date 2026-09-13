@@ -1,0 +1,303 @@
+import {
+  calculateCommission,
+  calculatePaymentBreakdown,
+  DEFAULT_COMMISSION_RATE_PERCENT,
+  normalizeCommissionRate,
+  resolveAccommodationCommissionRate,
+} from './finance';
+import { UZUM_CHECKOUT_COMMISSION_RATE } from '../payments/providers/uzum-checkout-commission';
+
+describe('normalizeCommissionRate / calculateCommission (mavjud, o‘zgarishsiz)', () => {
+  it('yaroqsiz (NaN/manfiy) qiymatlar uchun standart 12%ga tushadi', () => {
+    // MUHIM: `Number(null) === 0` — bu haqiqiy, moliyaviy ma'noda (0%
+    // komissiya) yaroqli qiymat, shuning uchun mavjud funksiya buni
+    // standartga ALMASHTIRMAYDI (o'zgarishsiz, mavjud xulq).
+    expect(normalizeCommissionRate(null)).toBe(0);
+    expect(normalizeCommissionRate(undefined)).toBe(
+      DEFAULT_COMMISSION_RATE_PERCENT,
+    );
+    expect(normalizeCommissionRate('abc')).toBe(
+      DEFAULT_COMMISSION_RATE_PERCENT,
+    );
+    expect(normalizeCommissionRate(-5)).toBe(DEFAULT_COMMISSION_RATE_PERCENT);
+  });
+
+  it('haqiqiy stavkani to‘g‘ri qo‘llaydi', () => {
+    expect(calculateCommission(200_000, 10)).toBe(20_000);
+  });
+});
+
+describe('resolveAccommodationCommissionRate — SAFAAR Excel komissiya jadvali (2026-09-13 business source of truth)', () => {
+  // ============ SAMARQAND ============
+  it('Samarqand + hotel + 4 yulduz => 12% (4-5 yulduz qatori)', () => {
+    const r = resolveAccommodationCommissionRate({
+      citySlug: 'samarqand',
+      partnerOrganizationType: 'hotel',
+      stars: 4,
+    });
+    expect(r).toMatchObject({
+      matched: true,
+      ratePercent: 12,
+      regionTier: 'samarqand',
+      propertyTier: 'star_4_5',
+    });
+  });
+
+  it('Samarqand + hotel + 5 yulduz => 12%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'samarqand',
+        partnerOrganizationType: 'hotel',
+        stars: 5,
+      }).ratePercent,
+    ).toBe(12);
+  });
+
+  it('Samarqand + hotel + 3 yulduz (4dan kam) => oddiy "mehmonxona" qatori 10%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'samarqand',
+        partnerOrganizationType: 'hotel',
+        stars: 3,
+      }).ratePercent,
+    ).toBe(10);
+  });
+
+  it('Samarqand + guesthouse => 8%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'samarqand',
+        partnerOrganizationType: 'guesthouse',
+        stars: null,
+      }).ratePercent,
+    ).toBe(8);
+  });
+
+  it('Samarqand + hostel => 7%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'samarqand',
+        partnerOrganizationType: 'hostel',
+        stars: null,
+      }).ratePercent,
+    ).toBe(7);
+  });
+
+  // ============ TOSHKENT ============
+  it('Toshkent + hotel + 5 yulduz => 14%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: 'hotel',
+        stars: 5,
+      }).ratePercent,
+    ).toBe(14);
+  });
+
+  it('Toshkent + hotel + 2 yulduz => 12% (oddiy mehmonxona)', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: 'hotel',
+        stars: 2,
+      }).ratePercent,
+    ).toBe(12);
+  });
+
+  it('Toshkent + guesthouse => 8%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: 'guesthouse',
+        stars: null,
+      }).ratePercent,
+    ).toBe(8);
+  });
+
+  it('Toshkent + hostel => 8%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: 'hostel',
+        stars: null,
+      }).ratePercent,
+    ).toBe(8);
+  });
+
+  // ============ BOSHQA BARCHA VILOYAT VA SHAHARLAR ============
+  it('Buxoro (na Toshkent, na Samarqand) + hotel + 5 yulduz => "Boshqa" qatori 10%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'buxoro',
+        partnerOrganizationType: 'hotel',
+        stars: 5,
+      }).ratePercent,
+    ).toBe(10);
+  });
+
+  it('"Boshqa" + hotel (4dan kam yulduz) => 10%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'buxoro',
+        partnerOrganizationType: 'hotel',
+        stars: 3,
+      }).ratePercent,
+    ).toBe(10);
+  });
+
+  it('"Boshqa" + guesthouse => 8%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'buxoro',
+        partnerOrganizationType: 'guesthouse',
+        stars: null,
+      }).ratePercent,
+    ).toBe(8);
+  });
+
+  it('"Boshqa" + hostel => 7%', () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: 'buxoro',
+        partnerOrganizationType: 'hostel',
+        stars: null,
+      }).ratePercent,
+    ).toBe(7);
+  });
+
+  // ============ NOMA'LUM HUDUD / TUR (unknown region / property type) ============
+  it("noma'lum/bo'sh city_slug ATAYLAB xavfsiz \"Boshqa\" qatoriga tushadi (taxmin qilinmaydi, Excel'ning o'z fallback qoidasi)", () => {
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: null,
+        partnerOrganizationType: 'hostel',
+        stars: null,
+      }),
+    ).toMatchObject({ matched: true, ratePercent: 7, regionTier: 'other' });
+    expect(
+      resolveAccommodationCommissionRate({
+        citySlug: undefined,
+        partnerOrganizationType: 'hostel',
+        stars: null,
+      }).regionTier,
+    ).toBe('other');
+  });
+
+  it("Excel'da UMUMAN yo'q propertyType (motel/dacha/sanatorium/resort/restaurant/mixed/bus) => matched:false, HECH QANDAY stavka taxmin qilinmaydi", () => {
+    for (const type of [
+      'motel',
+      'dacha',
+      'sanatorium',
+      'resort',
+      'restaurant',
+      'mixed',
+      'bus',
+      'totally-unknown-type',
+      null,
+      undefined,
+    ]) {
+      const r = resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: type,
+        stars: 5,
+      });
+      expect(r.matched).toBe(false);
+      expect(r.ratePercent).toBeNull();
+      expect(r.propertyTier).toBeNull();
+    }
+  });
+
+  it('yaroqsiz stars qiymatlari (NaN/manfiy/matn) xavfsiz "4dan kam" deb hisoblanadi, yiqilib tushmaydi', () => {
+    for (const stars of [
+      NaN,
+      -1,
+      'abc' as unknown as number,
+      null,
+      undefined,
+    ]) {
+      const r = resolveAccommodationCommissionRate({
+        citySlug: 'tashkent',
+        partnerOrganizationType: 'hotel',
+        stars,
+      });
+      expect(r.ratePercent).toBe(12); // Toshkent oddiy "mehmonxona" qatori
+    }
+  });
+});
+
+describe("calculatePaymentBreakdown — gross → SAFAAR komissiya → Uzum fee → partner net (task'da berilgan aniq misollar)", () => {
+  it('1,000,000 so‘m, Samarqand 4-5 yulduz (12%) — vazifada berilgan aniq misol: SAFAAR=120000, Uzum=15000, jami=135000, partner=865000', () => {
+    const rate = resolveAccommodationCommissionRate({
+      citySlug: 'samarqand',
+      partnerOrganizationType: 'hotel',
+      stars: 5,
+    });
+    expect(rate.ratePercent).toBe(12);
+
+    const breakdown = calculatePaymentBreakdown({
+      grossAmountSom: 1_000_000,
+      safaarCommissionRatePercent: rate.ratePercent as number,
+    });
+
+    expect(breakdown.safaarCommissionAmountSom).toBe(120_000);
+    expect(breakdown.uzumFeeAmountSom).toBe(15_000);
+    expect(
+      breakdown.safaarCommissionAmountSom + breakdown.uzumFeeAmountSom,
+    ).toBe(135_000);
+    expect(breakdown.partnerNetAmountSom).toBe(865_000);
+  });
+
+  it('Uzum fee: 1,000,000 → 15,000 (vazifada berilgan aniq test-case)', () => {
+    expect(
+      calculatePaymentBreakdown({
+        grossAmountSom: 1_000_000,
+        safaarCommissionRatePercent: 0,
+      }).uzumFeeAmountSom,
+    ).toBe(15_000);
+  });
+
+  it('Uzum fee: 500,000 → 7,500 (vazifada berilgan aniq test-case)', () => {
+    expect(
+      calculatePaymentBreakdown({
+        grossAmountSom: 500_000,
+        safaarCommissionRatePercent: 0,
+      }).uzumFeeAmountSom,
+    ).toBe(7_500);
+  });
+
+  it('uzumFeeRatePercent doim 1.5 (UZUM_CHECKOUT_COMMISSION_RATE bilan izchil)', () => {
+    expect(
+      calculatePaymentBreakdown({
+        grossAmountSom: 100_000,
+        safaarCommissionRatePercent: 10,
+      }).uzumFeeRatePercent,
+    ).toBe(UZUM_CHECKOUT_COMMISSION_RATE * 100);
+  });
+
+  it('partnerNetAmountSom HECH QACHON manfiy bo‘lmasligi kerak (yuqori komissiya + fee holatida ham) — sog‘lik tekshiruvi', () => {
+    const breakdown = calculatePaymentBreakdown({
+      grossAmountSom: 100_000,
+      safaarCommissionRatePercent: 14,
+    });
+    expect(breakdown.partnerNetAmountSom).toBeGreaterThan(0);
+    expect(
+      breakdown.safaarCommissionAmountSom +
+        breakdown.uzumFeeAmountSom +
+        breakdown.partnerNetAmountSom,
+    ).toBe(breakdown.grossAmountSom);
+  });
+
+  it('boundary/rounding: g‘alati (tiyin darajasida yaxlitlanishi kerak bo‘lgan) summalarda ham gross = commission + fee + net (1 so‘mlik ham yo‘qolib ketmaydi)', () => {
+    for (const gross of [1, 3, 7, 99, 1001, 33_333, 999_999]) {
+      const breakdown = calculatePaymentBreakdown({
+        grossAmountSom: gross,
+        safaarCommissionRatePercent: 8,
+      });
+      expect(
+        breakdown.safaarCommissionAmountSom +
+          breakdown.uzumFeeAmountSom +
+          breakdown.partnerNetAmountSom,
+      ).toBe(gross);
+    }
+  });
+});

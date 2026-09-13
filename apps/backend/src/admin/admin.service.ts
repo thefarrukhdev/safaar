@@ -3009,13 +3009,27 @@ export class AdminService {
         status: string;
         partner_organization_id: string;
         partner_payable: string | number;
+        total_amount: string | number;
         currency: string;
       }>(
         `SELECT id::text, status::text, partner_organization_id::text,
-                partner_payable, currency
+                partner_payable, total_amount, currency
          FROM bookings WHERE id = $1::uuid FOR UPDATE`,
         [refund.booking_id],
       );
+
+      // Pul xavfsizligi: tasdiqlangan summa bookingning haqiqiy to'langan
+      // summasidan OSHIB KETMASLIGI SHART — ilgari bu yerda YUQORI chegara
+      // tekshiruvi UMUMAN yo'q edi (faqat `>0` tekshirilardi).
+      if (
+        booking &&
+        approvedAmount > Number(booking.total_amount) + 0.001 // tiyin darajasidagi yaxlitlash farqiga tolerantlik
+      ) {
+        throw new BadRequestException({
+          code: 'REFUND_AMOUNT_INVALID',
+          message: "Tasdiqlangan summa bron to'lov summasidan oshmasligi kerak",
+        });
+      }
 
       if (booking) {
         // MUHIM (double-ledger-debit bugini tuzatish): shu bookingga bir
@@ -3049,6 +3063,26 @@ export class AdminService {
         }
 
         if (paymentActuallyRefunded) {
+          // MUHIM (qisman refund uchun proporsional ledger reversi): ilgari
+          // bu yerda approvedAmount qancha bo'lishidan qat'i nazar HAR DOIM
+          // butun `partner_payable` manfiylanardi — bu qisman refundda
+          // hamkor ledgerini haqiqiy qaytarilgan summadan KO'PROQ kamaytirib
+          // yuborardi. Booking-darajasida qisman-refund holati (schema'da
+          // yo'q — `PaymentStatus`/`RefundStatus` enumlarida "partially_refunded"
+          // umuman yo'q) sxemasini o'zgartirmasdan, faqat REVERSAL SUMMASINI
+          // tasdiqlangan ulushga PROPORSIONAL qilib tuzatildi:
+          //   reversal = partner_payable * (approvedAmount / total_amount)
+          // To'liq refundda approvedAmount===total_amount => ratio 1 =>
+          // avvalgi (to'g'ri) xulq aynan saqlanadi.
+          const totalAmount = Number(booking.total_amount);
+          const refundRatio =
+            Number.isFinite(totalAmount) && totalAmount > 0
+              ? Math.min(1, approvedAmount / totalAmount)
+              : 1;
+          const reversalAmountSom = Math.round(
+            Number(booking.partner_payable) * refundRatio,
+          );
+
           await tx.query(
             `INSERT INTO partner_ledger_entries (id, organization_id, booking_id, type, amount, currency, created_at)
              VALUES ($1, $2, $3, 'refund', $4, $5, $6)`,
@@ -3056,7 +3090,7 @@ export class AdminService {
               randomUUID(),
               booking.partner_organization_id,
               booking.id,
-              -Number(booking.partner_payable),
+              -reversalAmountSom,
               booking.currency,
               now,
             ],

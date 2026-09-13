@@ -205,9 +205,16 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.payment.status).toBe('awaiting_cash');
   });
 
-  it('uses the organization default_commission_rate instead of a hardcoded 12% (regression: admin commission setting was ignored)', async () => {
+  it("SAFAAR Excel komissiya jadvali (hudud+tur+yulduz) partner_organizations.default_commission_rate'dan USTUN — 2026-09-13 biznes tomonidan tasdiqlangan qaror (regression: bu hotel/hostel/guesthouse turlari uchun org'ning qo'lda sozlangan stavkasini e'tiborsiz qoldirishi SHART)", async () => {
     pg.query
-      .mockResolvedValueOnce([{ ...hotelRow, commission_rate: 20 }])
+      .mockResolvedValueOnce([
+        {
+          ...hotelRow,
+          commission_rate: 20, // org'da qo'lda sozlangan — Excel bo'lgani uchun E'TIBORGA OLINMASLIGI kerak
+          stars: 5,
+          city_slug: 'tashkent',
+        },
+      ])
       .mockResolvedValueOnce([
         {
           id: 'room-1',
@@ -230,7 +237,46 @@ describe('BookingsService.createHotel guest checkout', () => {
       rooms: 1,
     });
 
-    // subtotal = 100000 * 2 nights * 1 room = 200000; 20% komissiya = 40000
+    // subtotal = 100000 * 2 nights * 1 room = 200000; Toshkent + 5 yulduz
+    // (hotel + stars>=4) = 14% Excel bo'yicha (org'ning 20%i EMAS) = 28000
+    expect(result.booking.commission_amount).toBe(28000);
+    expect(result.booking.partner_payable).toBe(172000);
+  });
+
+  it("Excel jadvali qamrab OLMAYDIGAN turlar (masalan `dacha`) uchun default_commission_rate hamon ishlatiladi (fallback o'zgarishsiz qoladi)", async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          ...hotelRow,
+          partner_type: 'dacha',
+          commission_rate: 20,
+          stars: null,
+          city_slug: 'tashkent',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      rooms: 1,
+    });
+
+    // subtotal = 200000; `dacha` Excel'da yo'q -> org'ning 20% stavkasi = 40000
     expect(result.booking.commission_amount).toBe(40000);
     expect(result.booking.partner_payable).toBe(160000);
   });
@@ -268,10 +314,12 @@ describe('BookingsService.createHotel guest checkout', () => {
     });
 
     expect(promos.redeem).toHaveBeenCalledWith('SUMMER10', expect.anything());
-    // subtotal 200000, 10% chegirma = 20000 -> total 180000, 12% komissiya = 21600
+    // subtotal 200000, 10% chegirma = 20000 -> total 180000.
+    // hotelRow: partner_type='hotel', city_slug/stars yo'q -> "Boshqa"
+    // hudud + oddiy "hotel" qatori (Excel) = 10% komissiya = 18000.
     expect(result.booking.discount_amount).toBe(20000);
     expect(result.booking.total_amount).toBe(180000);
-    expect(result.booking.commission_amount).toBe(21600);
+    expect(result.booking.commission_amount).toBe(18000);
   });
 
   it('rejects an invalid/expired promo code with 400 before touching inventory', async () => {

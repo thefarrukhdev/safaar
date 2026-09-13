@@ -846,6 +846,134 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 
+  describe('refundApprove — qisman refund proporsional ledger reversi (SAFAAR komissiya + Uzum fee auditi, item 8)', () => {
+    const refundId = '00000000-0000-0000-0000-000000000020';
+    const bookingId = '00000000-0000-0000-0000-000000000021';
+    const partnerId = '00000000-0000-0000-0000-000000000022';
+
+    it("QISMAN refund (approved_amount < total_amount) — partner ledger FAQAT proporsional ulush bo'yicha revers qilinadi, butun partner_payable emas", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '50000',
+            currency: 'UZS',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 50000 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000, // 100000 - 12% komissiya
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded
+        .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
+        .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (proportional)
+
+      const result = await service.refundApprove(actor, refundId, {
+        approved_amount: 50000,
+      });
+
+      expect(result).toMatchObject({ status: 'approved' });
+
+      const ledgerInsert = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO partner_ledger_entries'),
+      );
+      expect(ledgerInsert).toBeDefined();
+      // 50000/100000 = 0.5 ulush => 88000 * 0.5 = 44000 (butun 88000 EMAS)
+      expect(ledgerInsert?.[1]).toEqual([
+        expect.any(String),
+        partnerId,
+        bookingId,
+        -44000,
+        'UZS',
+        expect.any(String),
+      ]);
+    });
+
+    it("TO'LIQ refund (approved_amount === total_amount) — butun partner_payable revers qilinadi (regression saqlanadi)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '100000',
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 100000 },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([{ id: 'payment-1' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.refundApprove(actor, refundId, {});
+
+      const ledgerInsert = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO partner_ledger_entries'),
+      );
+      expect(ledgerInsert?.[1]).toEqual([
+        expect.any(String),
+        partnerId,
+        bookingId,
+        -88000,
+        'UZS',
+        expect.any(String),
+      ]);
+    });
+
+    it("approved_amount booking.total_amount'dan OSHSA rad etiladi (pul xavfsizligi — ilgari yuqori chegara tekshiruvi yo'q edi)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '50000',
+            currency: 'UZS',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 999999 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ]); // SELECT booking FOR UPDATE
+
+      await expect(
+        service.refundApprove(actor, refundId, { approved_amount: 999999 }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
   describe('refundReject / refundRetry (regression: retry wrote a non-existent enum value and crashed every time)', () => {
     const refundId = '00000000-0000-0000-0000-000000000013';
 

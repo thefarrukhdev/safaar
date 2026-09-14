@@ -6,9 +6,11 @@ import type { BookingStatus } from '@safaar/types';
 
 export type AdminRole =
   | 'SUPER_ADMIN'
+  | 'ADMIN'
   | 'MODERATOR'
   | 'FINANCE_ADMIN'
-  | 'CONTENT_ADMIN';
+  | 'CONTENT_ADMIN'
+  | 'SUPPORT_ADMIN';
 
 export interface AdminUser {
   id: string;

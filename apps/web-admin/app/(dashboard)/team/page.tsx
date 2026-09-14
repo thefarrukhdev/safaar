@@ -17,24 +17,40 @@ const teamUserSchema = z.object({
   fullName: z.string().min(2, "F.I.SH kamida 2 harfdan iborat bo'lishi kerak"),
   email: z.string().email("Yaroqli elektron pochta kiriting"),
   phone: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "MODERATOR", "FINANCE_ADMIN", "CONTENT_ADMIN"]),
+  role: z.enum([
+    "SUPER_ADMIN",
+    "ADMIN",
+    "MODERATOR",
+    "FINANCE_ADMIN",
+    "CONTENT_ADMIN",
+    "SUPPORT_ADMIN",
+  ]),
   password: z.string().optional(),
 });
 
 type TeamUserFormValues = z.infer<typeof teamUserSchema>;
 
+// 2026-09-14 SAFAAR ADMIN audit: backenddagi `Role` enum'ida (`packages/types`)
+// ALLAQACHON mavjud bo'lgan, lekin bu yerda YO'Q edi — `ADMIN`/`SUPPORT_ADMIN`
+// tanlab bo'lmasdi (backend qabul qiladi, lekin UI orqali hech qachon
+// tanlanmas edi). "PARTNER_MANAGER" — mavjud `MODERATOR` roliga moslashtirildi
+// (backend `common/permissions.ts`ga qarang, yangi parallel rol yaratilmadi).
 const ROLE_LABELS: Record<AdminRole, string> = {
   SUPER_ADMIN: "Super Admin",
-  MODERATOR: "Moderator",
-  FINANCE_ADMIN: "Moliya Admini",
-  CONTENT_ADMIN: "Kontent Admini",
+  ADMIN: "Admin",
+  MODERATOR: "Hamkor menejeri",
+  FINANCE_ADMIN: "Moliya menejeri",
+  CONTENT_ADMIN: "Kontent menejeri",
+  SUPPORT_ADMIN: "Qo'llab-quvvatlash menejeri",
 };
 
 const ROLE_COLORS: Record<AdminRole, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-700 border-purple-200",
+  ADMIN: "bg-slate-100 text-slate-700 border-slate-200",
   MODERATOR: "bg-blue-100 text-blue-700 border-blue-200",
   FINANCE_ADMIN: "bg-emerald-100 text-emerald-700 border-emerald-200",
   CONTENT_ADMIN: "bg-amber-100 text-amber-700 border-amber-200",
+  SUPPORT_ADMIN: "bg-cyan-100 text-cyan-700 border-cyan-200",
 };
 
 export default function TeamPage() {

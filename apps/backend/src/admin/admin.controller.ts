@@ -238,6 +238,30 @@ export class AdminController {
     return this.adminService.roomAvailabilityUnblock(actor, id, body);
   }
 
+  @Get('reviews')
+  @Permissions(Permission.ReviewsRead)
+  reviewsList(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.reviewsList(query);
+  }
+
+  @Post('reviews/:id/publish')
+  @Permissions(Permission.ReviewsModerate)
+  reviewPublish(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.reviewModerate(actor, id, 'publish');
+  }
+
+  @Post('reviews/:id/hide')
+  @Permissions(Permission.ReviewsModerate)
+  reviewHide(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.reviewModerate(actor, id, 'hide');
+  }
+
   @Post('partners/:id/adjustment')
   @Permissions(Permission.FinanceWrite)
   partnerAdjustment(

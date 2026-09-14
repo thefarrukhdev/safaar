@@ -54,6 +54,9 @@ const adminPermissions: PermissionValue[] = [
   Permission.SupportRead,
   Permission.AuditLogsRead,
   Permission.AvailabilityRead,
+  Permission.ReviewsRead,
+  Permission.TranslationsRead,
+  Permission.SeoRead,
 ];
 
 /**

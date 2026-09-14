@@ -2339,6 +2339,112 @@ export class AdminService {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Admin reviews moderation (2026-09-14 SAFAAR ADMIN — gap closure Part 6)
+  //
+  // `reviews` table + customer-facing create/update/reply (`src/reviews/`)
+  // already existed and are real, unchanged. What was missing was purely
+  // the ADMIN side: no list, no permission-gated publish/hide. The
+  // customer-facing `DELETE /reviews/:id` (soft-delete to status='hidden')
+  // already allows any `actorType==='admin'`, but with no permission
+  // granularity and no audit — these new endpoints give CONTENT_ADMIN a
+  // properly scoped, audited moderation path without touching that
+  // existing, working customer route.
+  // ---------------------------------------------------------------------------
+
+  async reviewsList(query: QueryLike = {}) {
+    const status = this.optionalQueryString(query, 'status');
+    const targetType = this.optionalQueryString(query, 'target_type');
+    const minRating = query['min_rating'] ? Number(query['min_rating']) : null;
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (status) {
+      params.push(status);
+      where.push(`r.status::text = $${params.length}`);
+    }
+    if (targetType) {
+      params.push(targetType);
+      where.push(`r.target_type = $${params.length}`);
+    }
+    if (minRating !== null && Number.isFinite(minRating)) {
+      params.push(minRating);
+      where.push(`r.rating >= $${params.length}`);
+    }
+    const whereSql = where.length ? `where ${where.join(' and ')}` : '';
+
+    return this.rows(
+      `
+        select
+          r.id::text,
+          r.user_id::text,
+          coalesce(nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''), u.phone, 'Mijoz') as user_name,
+          r.booking_id::text,
+          r.target_type,
+          r.target_id::text,
+          coalesce(ht.name, '—') as target_name,
+          r.rating::float8,
+          r.cleanliness::float8,
+          r.staff::float8,
+          r.location::float8,
+          r.value_for_money::float8,
+          r.photos,
+          r.body,
+          r.status::text,
+          r.created_at,
+          r.updated_at
+        from reviews r
+        left join users u on u.id = r.user_id
+        left join hotels h on r.target_type = 'hotel' and h.id = r.target_id
+        left join hotel_translations ht on ht.hotel_id = h.id and ht.language = 'uz'
+        ${whereSql}
+        order by r.created_at desc
+        ${this.limitClause(query)}
+      `,
+      params,
+    );
+  }
+
+  private optionalQueryString(query: QueryLike, key: string): string | null {
+    const value = (query as Record<string, unknown>)[key];
+    if (value === undefined || value === null || value === '') return null;
+    return String(value);
+  }
+
+  async reviewModerate(
+    actor: RequestActor | undefined,
+    id: string,
+    action: 'publish' | 'hide',
+  ) {
+    const [existing] = await this.rows(
+      `select id::text, status::text from reviews where id = $1::uuid`,
+      [id],
+    );
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'REVIEW_NOT_FOUND',
+        message: 'Sharh topilmadi',
+      });
+    }
+    const nextStatus = action === 'publish' ? 'published' : 'hidden';
+    const now = new Date().toISOString();
+    const rows = await this.rows(
+      `update reviews set status = $2, updated_at = $3
+       where id = $1::uuid
+       returning id::text, status::text, updated_at`,
+      [id, nextStatus, now],
+    );
+    await this.auditChange(
+      `review.${action}`,
+      actor,
+      'review',
+      id,
+      { status: existing.status },
+      { status: nextStatus },
+    );
+    this.invalidateAdminCache();
+    return rows[0];
+  }
+
   async partnerLedger(id: string) {
     return this.rows(
       `

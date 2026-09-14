@@ -1,10 +1,18 @@
 import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { hashSecret } from './security';
 
-export type OtpPurpose = 'user_login' | 'partner_login' | 'password_reset';
+export type OtpPurpose =
+  | 'user_login'
+  | 'partner_login'
+  | 'password_reset'
+  | 'partner_email_verify';
 
 export interface OtpChallenge {
   id: string;
+  /** Despite the name, this is any opaque delivery-channel identifier the
+   * caller passes in — a phone number for every purpose except
+   * 'partner_email_verify', where it's an email address. Nothing in this
+   * store validates format; that happens at the DTO layer. */
   phone: string;
   purpose: OtpPurpose;
   codeHash: string;

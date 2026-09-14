@@ -16,6 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Role } from '@safaar/types';
 import type { Request, Response } from 'express';
 import { CurrentActor, type RequestActor } from '../common/actor';
+import { EmailOtpThrottleGuard } from '../common/email-throttle.guard';
 import { PhoneOtpThrottleGuard } from '../common/phone-throttle.guard';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
@@ -28,6 +29,10 @@ import {
   LoginDto,
   OAuthExchangeDto,
   OAuthTokenDto,
+  PartnerEmailOtpRequestDto,
+  PartnerEmailOtpVerifyDto,
+  PartnerPasswordLoginDto,
+  PartnerSetPasswordDto,
   RefreshTokenDto,
   ResetPasswordDto,
   SendOtpDto,
@@ -233,6 +238,37 @@ export class AuthController {
   partnerResetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.passwordResetConfirm(
       'partner',
+      body as unknown as Record<string, unknown>,
+    );
+  }
+
+  @Post('partner/password-login')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  partnerPasswordLogin(@Body() body: PartnerPasswordLoginDto) {
+    return this.authService.partnerPasswordLogin(
+      body as unknown as Record<string, unknown>,
+    );
+  }
+
+  @Post('partner/set-password')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  partnerSetPassword(@Body() body: PartnerSetPasswordDto) {
+    return this.authService.partnerSetPassword(
+      body as unknown as Record<string, unknown>,
+    );
+  }
+
+  @Post('partner/email-otp/request')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(EmailOtpThrottleGuard)
+  requestPartnerEmailOtp(@Body() body: PartnerEmailOtpRequestDto) {
+    return this.authService.partnerEmailOtpRequest(body.email);
+  }
+
+  @Post('partner/email-otp/verify')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  verifyPartnerEmailOtp(@Body() body: PartnerEmailOtpVerifyDto) {
+    return this.authService.partnerEmailOtpVerify(
       body as unknown as Record<string, unknown>,
     );
   }

@@ -247,6 +247,63 @@ export class ResetPasswordDto {
   password!: string;
 }
 
+export class PartnerEmailOtpRequestDto {
+  @ApiProperty({ example: 'partner@safaar.uz' })
+  @IsEmail()
+  email!: string;
+}
+
+export class PartnerEmailOtpVerifyDto {
+  @ApiProperty({ example: 'partner@safaar.uz' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: '482913' })
+  @IsString()
+  @Length(6, 6)
+  code!: string;
+
+  @ApiPropertyOptional({ example: 'otp-challenge-id' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+}
+
+export class PartnerPasswordLoginDto {
+  @ApiProperty({ example: '+998901234567' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+
+  @ApiProperty({ example: 'password' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
+export class PartnerSetPasswordDto {
+  @ApiProperty({ example: '+998901234567' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+
+  @ApiProperty({ example: '482913' })
+  @IsString()
+  @Length(6, 6)
+  code!: string;
+
+  @ApiPropertyOptional({ example: 'otp-challenge-id' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiProperty({ example: 'N3wP@ssw0rd!' })
+  @IsString()
+  @IsNotEmpty()
+  @IsStrongPassword()
+  password!: string;
+}
+
 export class Verify2faDto {
   @ApiPropertyOptional({ example: 'challenge-id' })
   @IsOptional()

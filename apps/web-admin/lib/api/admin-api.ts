@@ -38,6 +38,8 @@ import {
   AdminReviewStatus,
   CmsEntry,
   CmsEntrySeo,
+  AdminBanner,
+  CmsDestination,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
 import apiClient from './client';
@@ -587,6 +589,7 @@ function toListing(row: ApiRecord): AdminListing {
     latitude: asOptionalNumber(row.latitude),
     longitude: asOptionalNumber(row.longitude),
     stars: asNumber(row.stars),
+    featured: asBoolean(row.featured, false),
     photos,
     description: localizedText(
       row.description ?? row.full_description ?? row.short_description,
@@ -725,6 +728,7 @@ function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
       row.publishedAt ?? row.published_at ?? row.created_at,
       new Date().toISOString(),
     ),
+    metadata: isRecord(row.metadata) ? row.metadata : undefined,
   };
 }
 
@@ -1669,6 +1673,72 @@ export const AdminApi = {
       toCmsArticle(asRecord(row), 'offer'),
     );
   },
+  createCmsOffer: async (
+    offer: Omit<CmsArticle, 'id'>,
+  ): Promise<CmsArticle> => {
+    const payload = {
+      slug: offer.slug,
+      status: offer.status,
+      title: { uz: offer.title, ru: offer.title, en: offer.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: offer.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/offers', payload);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+  updateCmsOffer: async (
+    id: string,
+    offer: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (offer.slug !== undefined) payload.slug = offer.slug;
+    if (offer.status !== undefined) payload.status = offer.status;
+    if (offer.title !== undefined) payload.title = { uz: offer.title, ru: offer.title, en: offer.title };
+    if (offer.metadata !== undefined) payload.metadata = offer.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/offers/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+  deleteCmsOffer: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/offers/${id}`);
+  },
+  setCmsOfferStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/offers/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+
+  // Destinations (Mashhur yo'nalishlar) Mocks
+  getCmsDestinations: async (): Promise<CmsDestination[]> => {
+    return [
+      { id: "1", city: "Toshkent", imageUrl: "/images/destinations/tashkent.jpg", sortOrder: 1, isActive: true, createdAt: new Date().toISOString() },
+      { id: "2", city: "Samarqand", imageUrl: "/images/destinations/samarkand.jpg", sortOrder: 2, isActive: true, createdAt: new Date().toISOString() },
+      { id: "3", city: "Buxoro", imageUrl: "/images/destinations/bukhara.jpg", sortOrder: 3, isActive: true, createdAt: new Date().toISOString() },
+    ] as any;
+  },
+
+  createCmsDestination: async (payload: Partial<CmsDestination>): Promise<CmsDestination> => {
+    console.log("Mock createCmsDestination", payload);
+    return { ...payload, id: Date.now().toString(), createdAt: new Date().toISOString() } as CmsDestination;
+  },
+
+  updateCmsDestination: async (id: string, payload: Partial<CmsDestination>): Promise<CmsDestination> => {
+    console.log("Mock updateCmsDestination", id, payload);
+    return { ...payload, id, createdAt: new Date().toISOString() } as CmsDestination;
+  },
+
+  deleteCmsDestination: async (id: string): Promise<void> => {
+    console.log("Mock deleteCmsDestination", id);
+    return Promise.resolve();
+  },
+
+  setCmsDestinationStatus: async (id: string, isActive: boolean): Promise<CmsDestination> => {
+    console.log("Mock setCmsDestinationStatus", id, isActive);
+    return { id, isActive, city: "Mock City", imageUrl: "", sortOrder: 1, createdAt: new Date().toISOString() } as CmsDestination;
+  },
   createCmsBanner: async (
     banner: Omit<CmsBanner, 'id'>,
   ): Promise<CmsBanner> => {
@@ -1980,5 +2050,61 @@ export const AdminApi = {
       metadata: { seo },
     });
     return toCmsEntry(asRecord(data));
+  },
+
+  // develop (ce07fc27) independently added mocked getReviews/updateReviewStatus/
+  // deleteReview, getTranslations/createTranslation/updateTranslation/
+  // deleteTranslation and getSeoSettings/updateSeoSetting — all explicitly
+  // labeled "MOCKED - BACKEND ENDPOINT YETISHMAYDI". Dropped in favor of
+  // the real, backend-connected getReviews/publishReview/hideReview and
+  // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
+  // (verified live against the QA backend this session).
+  updateListing: async (id: string, payload: Partial<AdminListing>): Promise<AdminListing> => {
+    // Mock
+    console.log(`Mock: Updated listing ${id}`, payload);
+    return Promise.resolve({ id, ...payload } as AdminListing);
+  },
+
+  toggleListingFeatured: async (id: string, featured: boolean) => {
+    console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
+    return Promise.resolve({ success: true, featured });
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // BANNERS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // ────────────────────────────────────────────────────────────────────────
+
+  getBanners: async (): Promise<AdminBanner[]> => {
+    return [
+      {
+        id: 'banner-1',
+        title: 'Asosiy sahifa - Registon maydoni',
+        imageUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=2952&auto=format&fit=crop',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'banner-2',
+        title: 'Qishki takliflar - Amirsoy',
+        imageUrl: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=2940&auto=format&fit=crop',
+        isActive: false,
+        createdAt: new Date().toISOString()
+      }
+    ];
+  },
+
+  createBanner: async (payload: Omit<AdminBanner, 'id' | 'createdAt'>): Promise<AdminBanner> => {
+    // Mock
+    return Promise.resolve({ id: `banner-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
+  },
+
+  updateBanner: async (id: string, payload: Partial<AdminBanner>): Promise<AdminBanner> => {
+    // Mock
+    return Promise.resolve({ id, title: 'mock', imageUrl: 'mock', isActive: true, createdAt: new Date().toISOString(), ...payload });
+  },
+
+  deleteBanner: async (id: string): Promise<void> => {
+    // Mock
+    return Promise.resolve();
   },
 };

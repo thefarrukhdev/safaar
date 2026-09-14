@@ -15,6 +15,7 @@ export type AdminRole =
 export interface AdminUser {
   id: string;
   fullName: string;
+  name?: string;
   email: string;
   role: AdminRole;
   phone: string;
@@ -34,6 +35,7 @@ export interface AdminListing {
   latitude?: number;
   longitude?: number;
   stars: number;
+  featured?: boolean;
   photos?: string[];
   description?: string;
   amenities?: string[];
@@ -570,6 +572,16 @@ export interface CmsArticle {
   slug: string;
   status: 'published' | 'draft';
   publishedAt: string;
+  metadata?: any;
+}
+
+export interface CmsDestination {
+  id: string;
+  city: string;
+  imageUrl: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 /* ────────────────────────────────────────────
@@ -622,6 +634,23 @@ export interface PromoCode {
    ──────────────────────────────────────────── */
 
 export type TicketStatus = 'open' | 'in_progress' | 'closed';
+
+// develop (ce07fc27) independently added a shallower AdminReview here
+// (hotelId/hotelName/comment/status: 'published'|'hidden'|'spam') plus
+// AdminTranslation and AdminSeo, all backing mocked-only AdminApi methods
+// ("MOCKED - BACKEND ENDPOINT YETISHMAYDI"). Dropped as part of the merge
+// resolution in favor of the real AdminReview (line ~155) and the
+// CmsEntry/CmsEntrySeo-based translations/SEO model, both backed by the
+// actual /admin/reviews and /admin/cms/:resource routes verified live
+// against the QA backend this session.
+
+export interface AdminBanner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt: string;
+}
 
 export interface TicketMessage {
   id: string;

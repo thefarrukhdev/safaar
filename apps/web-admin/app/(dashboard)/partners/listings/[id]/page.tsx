@@ -133,6 +133,11 @@ export default function ListingDetailsPage() {
               Availability
             </Button>
           </Link>
+          <Link href={`/partners/listings/${listing.id}/edit`}>
+            <Button variant="secondary" icon={<Info size={16} />}>
+              Tahrirlash
+            </Button>
+          </Link>
           {listing.status === "under_review" && (
             <>
               <Button variant="secondary" className="text-[var(--danger)] border-[var(--danger)]/20 hover:bg-[var(--danger)]/5" icon={<XCircle size={16} />} onClick={handleReject}>

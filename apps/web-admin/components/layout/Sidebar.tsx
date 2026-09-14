@@ -195,6 +195,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     };
   }, [pathname]);
 
+  // develop independently added a hardcoded role-based filter here
+  // (FINANCE/SUPPORT/CONTENT — the same wrong, non-"_ADMIN" role names
+  // fixed in lib/store/auth.ts and types/admin.ts) as a coarser
+  // alternative to this. Kept the granular permission-based filter:
+  // it's driven by the real backend permissions map (GET /admin/roles)
+  // rather than a hardcoded role/label list, so it can't silently drift
+  // from what RolesGuard actually enforces.
   const sidebarItems = useMemo(
     () =>
       filterByPermission(SIDEBAR_ITEMS, grantedPermissions).map((item) =>

@@ -4,13 +4,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyRound, Phone, FlaskConical } from 'lucide-react';
+import { Phone, Lock, KeyRound } from 'lucide-react';
 import {
   usePartnerPhoneOtpRequest,
-  usePartnerPhoneOtpVerify,
+  usePartnerPasswordLogin,
+  usePartnerSetPassword,
 } from '../../_hooks/use-auth';
-
-
 
 const loginSchema = z.object({
   phone: z
@@ -21,6 +20,7 @@ const loginSchema = z.object({
       const digits = val.replace(/\D/g, '');
       return digits.length === 9 || (digits.startsWith('998') && digits.length === 12);
     }, "Noto'g'ri telefon raqami formati. Masalan: +998901234567"),
+  password: z.string().optional(),
   code: z.string().optional(),
 });
 
@@ -34,20 +34,32 @@ interface PhoneChallenge {
 }
 
 export function LoginForm() {
+  const [mode, setMode] = useState<'login' | 'reset_request' | 'reset_verify'>('login');
   const [challenge, setChallenge] = useState<PhoneChallenge | null>(null);
 
-  const [watchedPhone, setWatchedPhone] = useState('');
   const otpRequest = usePartnerPhoneOtpRequest();
-  const otpVerify = usePartnerPhoneOtpVerify();
+  const passwordLogin = usePartnerPasswordLogin();
+  const setPassword = usePartnerSetPassword();
+  
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { phone: '+998', code: '' },
+    defaultValues: { phone: '+998', password: '', code: '' },
   });
 
-
-
   const onSubmit = form.handleSubmit(async (values) => {
-    if (!challenge) {
+    if (mode === 'login') {
+      if (!values.password) {
+        form.setError('password', { message: 'Parolni kiriting' });
+        return;
+      }
+      await passwordLogin.mutateAsync({
+        phone: values.phone,
+        password: values.password,
+      });
+      return;
+    }
+
+    if (mode === 'reset_request') {
       try {
         const result = await otpRequest.mutateAsync(values.phone);
         setChallenge({
@@ -56,56 +68,53 @@ export function LoginForm() {
           partnerType: result.partnerType,
           devCode: result.devCode,
         });
-        form.setValue('phone', result.phone);
+        setMode('reset_verify');
       } catch (error) {
         form.setError('phone', {
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Kod yuborishda xatolik yuz berdi',
+          message: error instanceof Error ? error.message : 'Kod yuborishda xatolik yuz berdi',
         });
       }
       return;
     }
 
-    const code = String(values.code ?? '').trim();
-    if (code.length < 4) {
-      form.setError('code', {
-        message: 'Telefon raqamga yuborilgan kodni kiriting',
-      });
-      return;
-    }
+    if (mode === 'reset_verify' && challenge) {
+      const code = String(values.code ?? '').trim();
+      const pwd = String(values.password ?? '').trim();
+      if (code.length < 4) {
+        form.setError('code', { message: 'Kodni to\'g\'ri kiriting' });
+        return;
+      }
+      if (pwd.length < 6) {
+        form.setError('password', { message: 'Yangi parol kamida 6 ta belgidan iborat bo\'lishi kerak' });
+        return;
+      }
 
-    try {
-      await otpVerify.mutateAsync({
+      await setPassword.mutateAsync({
         phone: challenge.phone,
         code,
         challengeId: challenge.challengeId,
-        partnerType: challenge.partnerType,
-      });
-    } catch (error) {
-      form.setError('code', {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Kod noto'g'ri yoki muddati tugagan",
+        password: pwd,
+      }).catch((err) => {
+        form.setError('code', {
+          message: err instanceof Error ? err.message : "Xatolik yuz berdi",
+        });
       });
     }
   });
 
-  const resetChallenge = () => {
+  const resetToLogin = () => {
+    setMode('login');
     setChallenge(null);
     form.setValue('code', '');
-    form.setFocus('phone');
+    form.setValue('password', '');
   };
 
-  const loading = otpRequest.isPending || otpVerify.isPending;
+  const loading = otpRequest.isPending || passwordLogin.isPending || setPassword.isPending;
 
   return (
     <form
       className="flex flex-col gap-4 fade-in"
       onSubmit={onSubmit}
-      aria-label="Telefon raqam bilan kirish"
       noValidate
     >
       <div className="flex flex-col gap-1.5">
@@ -113,108 +122,133 @@ export function LoginForm() {
           Telefon raqam
         </label>
         <div className="relative">
-          <Phone
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            aria-hidden
-          />
+          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             id="phone"
             type="tel"
-            autoComplete="tel"
-            inputMode="tel"
             placeholder="+998 90 123 45 67"
             className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50"
-            disabled={Boolean(challenge)}
-            aria-invalid={Boolean(form.formState.errors.phone)}
-            aria-describedby="phone-help phone-error"
-            {...form.register('phone', {
-              onChange: (e) => setWatchedPhone(e.target.value),
-            })}
+            disabled={mode === 'reset_verify'}
+            {...form.register('phone')}
           />
         </div>
-        <p id="phone-help" className="text-[11px] text-slate-500 font-medium">
-          Admin tasdiqlagan telefon raqam bilan kabinetga kirasiz.
-        </p>
         {form.formState.errors.phone && (
-          <p id="phone-error" role="alert" className="text-xs text-rose-600 font-semibold">
-            {form.formState.errors.phone.message}
-          </p>
+          <p className="text-xs text-rose-600 font-semibold">{form.formState.errors.phone.message}</p>
         )}
       </div>
 
-
-
-      {challenge ? (
+      {mode === 'login' && (
         <div className="flex flex-col gap-1.5 animate-fade-in">
-          <label htmlFor="code" className="text-xs font-bold text-slate-700">
-            Tasdiqlash kodi
+          <label htmlFor="password" className="text-xs font-bold text-slate-700">
+            Parol
           </label>
           <div className="relative">
-            <KeyRound
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              aria-hidden
-            />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              id="code"
-              type="text"
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              placeholder="6 xonali kod"
-              className="w-full pl-10 pr-4 py-3 tracking-[0.3em] font-mono text-center text-lg rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
-              aria-invalid={Boolean(form.formState.errors.code)}
-              aria-describedby="code-help code-error"
-              {...form.register('code', {
-                onChange: (event) => {
-                  event.target.value = event.target.value
-                    .replace(/\D/g, '')
-                    .slice(0, 6);
-                },
-              })}
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              className="w-full pl-10 pr-4 py-3 text-sm tracking-widest rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+              {...form.register('password')}
             />
           </div>
-          <p id="code-help" className="text-[11px] text-slate-500 font-medium">
-            {`Kod ${challenge.phone} raqamiga yuborildi.`}
-          </p>
-          
-          {challenge.devCode && (
-            <div className="mt-1 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">
-              <p className="text-xs font-medium text-emerald-800 flex items-center justify-between">
-                <span>🛠️ Dasturlash rejimi kodi:</span>
-                <strong className="text-sm tracking-widest bg-emerald-600 text-white px-2 py-0.5 rounded-lg shadow-sm">{challenge.devCode}</strong>
-              </p>
-            </div>
-          )}
-
-          {form.formState.errors.code && (
-            <p id="code-error" role="alert" className="text-xs text-rose-600 font-semibold">
-              {form.formState.errors.code.message}
-            </p>
+          {form.formState.errors.password && (
+            <p className="text-xs text-rose-600 font-semibold">{form.formState.errors.password.message}</p>
           )}
         </div>
-      ) : null}
+      )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 active:bg-blue-800 transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
-      >
-        {loading ? (
-          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        ) : (
-          challenge ? 'Kabinetga kirish' : 'SMS Kodini yuborish'
-        )}
-      </button>
+      {mode === 'reset_verify' && (
+        <div className="flex flex-col gap-4 animate-fade-in">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="code" className="text-xs font-bold text-slate-700">
+              SMS Tasdiqlash kodi
+            </label>
+            <div className="relative">
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="code"
+                type="text"
+                placeholder="000000"
+                className="w-full pl-10 pr-4 py-3 text-sm tracking-widest font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+                {...form.register('code')}
+              />
+            </div>
+            {form.formState.errors.code && (
+              <p className="text-xs text-rose-600 font-semibold">{form.formState.errors.code.message}</p>
+            )}
+            {challenge?.devCode && (
+              <div className="mt-1 rounded-xl bg-emerald-50 p-2.5 border border-emerald-200">
+                <p className="text-xs font-medium text-emerald-800 flex items-center justify-between">
+                  <span>🛠️ Dasturlash rejimi kodi:</span>
+                  <strong className="text-sm tracking-widest bg-emerald-600 text-white px-2 py-0.5 rounded-lg shadow-sm">{challenge.devCode}</strong>
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="new_password" className="text-xs font-bold text-slate-700">
+              Yangi parol
+            </label>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="new_password"
+                type="password"
+                placeholder="Yangi parolni kiriting"
+                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+                {...form.register('password')}
+              />
+            </div>
+            {form.formState.errors.password && (
+              <p className="text-xs text-rose-600 font-semibold">{form.formState.errors.password.message}</p>
+            )}
+          </div>
+        </div>
+      )}
 
-      {challenge ? (
+      <div className="flex flex-col gap-3 mt-2">
         <button
-          type="button"
+          type="submit"
           disabled={loading}
-          onClick={resetChallenge}
-          className="w-full py-2.5 px-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors cursor-pointer"
+          className="relative w-full rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          Telefon raqamini o'zgartirish
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              Biroz kuting...
+            </span>
+          ) : mode === 'login' ? (
+            "Tizimga kirish"
+          ) : mode === 'reset_request' ? (
+            "Kodni yuborish"
+          ) : (
+            "Parolni saqlash va kirish"
+          )}
         </button>
-      ) : null}
+
+        {mode === 'login' && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('reset_request');
+              form.clearErrors();
+            }}
+            className="text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors py-2"
+          >
+            Parolni unutdingizmi yoki endi o'rnatmoqchimisiz?
+          </button>
+        )}
+        {(mode === 'reset_request' || mode === 'reset_verify') && (
+          <button
+            type="button"
+            onClick={resetToLogin}
+            className="text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors py-2"
+          >
+            Orqaga (Kirish oynasi)
+          </button>
+        )}
+      </div>
     </form>
   );
 }

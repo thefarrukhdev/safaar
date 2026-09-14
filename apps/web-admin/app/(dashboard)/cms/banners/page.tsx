@@ -1,176 +1,121 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import type { CmsBanner } from "@/types/admin";
+import { toast } from "sonner";
+import { AdminApi } from "@/lib/api/admin-api";
+import type { AdminBanner } from "@/types/admin";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import { Plus, Edit2, Trash2, Power } from "lucide-react";
-import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
-import { AdminApi } from "@/lib/api/admin-api";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Plus, Edit2, Trash2, Save, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
 
-const bannerSchema = z.object({
-  title: z.string().min(2, "Kamida 2 ta belgi kiriting"),
-  link: z.string().min(1, "Havolani kiriting"),
-  imageUrl: z.string().min(5, "Rasm havolasini kiriting").url("Noto'g'ri havola formati (http:// yoki https:// dan boshlanishi kerak)"),
-  order: z.number().int().min(1, "Kamida 1 bo'lishi kerak"),
-  isActive: z.boolean(),
-});
-type BannerFormValues = z.infer<typeof bannerSchema>;
-
-function hasRenderableImage(value: string) {
-  if (!value) return false;
-  return value.startsWith("http://") || value.startsWith("https://");
-}
-
-function BannerImage({
-  src,
-  title,
-  className = "",
-}: {
-  src: string;
-  title: string;
-  className?: string;
-}) {
-  if (hasRenderableImage(src)) {
-    return (
-      <Image
-        src={src}
-        alt={title}
-        fill
-        unoptimized
-        sizes="100vw"
-        className={`object-cover ${className}`}
-      />
-    );
-  }
-
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--primary)]/15 via-white to-[var(--accent)]/15 px-2 text-center text-[10px] font-semibold text-[var(--primary)]">
-      {title || "Banner"}
-    </div>
-  );
-}
-
-export default function CmsBannersPage() {
-  const banners = useAdminStore((s) => s.cmsBanners);
-  const setCmsBanners = useAdminStore((s) => s.setCmsBanners);
+export default function BannersPage() {
+  const [items, setItems] = useState<AdminBanner[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const fetchBanners = () => {
-    setLoading(true);
-    setError(false);
-    AdminApi.getCmsBanners()
-      .then((items) => setCmsBanners(items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  };
-
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<CmsBanner | null>(null);
+  const [editingItem, setEditingItem] = useState<AdminBanner | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<BannerFormValues>({
-    resolver: zodResolver(bannerSchema),
-    defaultValues: {
-      title: "",
-      link: "",
-      imageUrl: "",
-      order: 1,
-      isActive: true,
+  // Form states
+  const [title, setTitle] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [isActive, setIsActive] = useState(true);
+
+  const fetchBanners = async () => {
+    try {
+      const data = await AdminApi.getBanners();
+      setItems(data);
+    } catch (error) {
+      toast.error("Bannerlarni yuklashda xatolik yuz berdi");
+    } finally {
+      setLoading(false);
     }
-  });
+  };
 
   useEffect(() => {
-    let cancelled = false;
-    const load = () => {
-      setLoading(true);
-      setError(false);
-      AdminApi.getCmsBanners()
-        .then((items) => {
-          if (!cancelled) setCmsBanners(items);
-        })
-        .catch(() => {
-          if (!cancelled) setError(true);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [setCmsBanners]);
+    fetchBanners();
+  }, []);
 
-  const openNewModal = () => {
-    form.reset({ title: "", link: "", imageUrl: "", order: banners.length + 1, isActive: true });
-    setEditingBanner(null);
+  const handleEdit = (item: AdminBanner) => {
+    setEditingItem(item);
+    setTitle(item.title);
+    setImageUrl(item.imageUrl);
+    setIsActive(item.isActive);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (banner: CmsBanner) => {
-    form.reset({
-      title: banner.title,
-      link: banner.link,
-      imageUrl: banner.imageUrl,
-      order: banner.order,
-      isActive: banner.isActive,
-    });
-    setEditingBanner(banner);
+  const handleAddNew = () => {
+    setEditingItem(null);
+    setTitle("");
+    setImageUrl("");
+    setIsActive(true);
     setIsModalOpen(true);
-  };
-
-  const onSubmit = form.handleSubmit(async (values) => {
-    setSaving(true);
-    try {
-      if (editingBanner) {
-        const updated = await AdminApi.updateCmsBanner(editingBanner.id, values);
-        setCmsBanners(banners.map((banner) => banner.id === updated.id ? updated : banner));
-        toast.success("Banner muvaffaqiyatli saqlandi!");
-      } else {
-        const created = await AdminApi.createCmsBanner(values);
-        setCmsBanners([...banners, created].sort((a, b) => a.order - b.order));
-        toast.success("Yangi banner qo'shildi!");
-      }
-      setIsModalOpen(false);
-    } catch (err) {
-      toast.error("Bannerni saqlashda xatolik yuz berdi");
-    } finally {
-      setSaving(false);
-    }
-  });
-
-  const handleToggle = async (banner: CmsBanner) => {
-    const updated = await AdminApi.setCmsBannerActive(banner.id, !banner.isActive);
-    setCmsBanners(banners.map((item) => item.id === updated.id ? updated : item));
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Rostdan ham ushbu bannerni o'chirmoqchimisiz?")) {
-      await AdminApi.deleteCmsBanner(id);
-      setCmsBanners(banners.filter((banner) => banner.id !== id));
+    if (!confirm("Haqiqatan ham bu bannerni o'chirmoqchimisiz?")) return;
+    try {
+      await AdminApi.deleteBanner(id);
       toast.success("Banner o'chirildi");
+      setItems(items.filter((t) => t.id !== id));
+    } catch (error) {
+      toast.error("O'chirishda xatolik yuz berdi");
     }
   };
 
-  const columns: Column<CmsBanner>[] = [
-    { key: "order", label: "Tartib", render: (row) => <span className="font-medium text-lg">{row.order}</span> },
-    { key: "imageUrl", label: "Rasm", render: (row) => <div className="relative w-24 h-12 bg-[var(--bg-tertiary)] rounded overflow-hidden" title={row.imageUrl}><BannerImage src={row.imageUrl} title={row.title} /></div> },
-    { key: "title", label: "Sarlavha", render: (row) => <span className="font-medium">{row.title}</span> },
-    { key: "link", label: "Havola (Link)", render: (row) => <span className="text-sm text-[var(--primary)] underline">{row.link}</span> },
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = { title, imageUrl, isActive };
+      if (editingItem) {
+        const updated = await AdminApi.updateBanner(editingItem.id, payload);
+        setItems(items.map((t) => (t.id === updated.id ? updated : t)));
+        toast.success("Banner yangilandi");
+      } else {
+        const created = await AdminApi.createBanner(payload);
+        setItems([created, ...items]);
+        toast.success("Yangi banner qo'shildi");
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error("Saqlashda xatolik yuz berdi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns: Column<AdminBanner>[] = [
+    {
+      key: "imageUrl",
+      label: "Rasm",
+      render: (row) => (
+        <div className="relative w-24 h-12 rounded overflow-hidden bg-gray-100 border border-[var(--border)]">
+          {row.imageUrl ? (
+            <img src={row.imageUrl} alt={row.title} className="object-cover w-full h-full" />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-gray-400">
+              <ImageIcon size={16} />
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "title",
+      label: "Sarlavha",
+      render: (row) => <div className="font-medium text-[var(--foreground)]">{row.title}</div>,
+      sortable: true,
+    },
     {
       key: "isActive",
       label: "Holat",
       render: (row) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${row.isActive ? "bg-[var(--success)]/10 text-[var(--success)]" : "bg-[var(--text-muted)]/10 text-[var(--text-secondary)]"}`}>
-          {row.isActive ? "Faol" : "Nofaol"}
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+          {row.isActive ? 'Faol' : 'Nofaol'}
         </span>
       ),
     },
@@ -179,108 +124,109 @@ export default function CmsBannersPage() {
       label: "",
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <button onClick={() => handleToggle(row)} title={row.isActive ? "Nofaol qilish" : "Faol qilish"} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${row.isActive ? "text-[var(--warning)] hover:bg-[var(--warning)]/10" : "text-[var(--success)] hover:bg-[var(--success)]/10"}`}>
-            <Power size={14} />
-          </button>
-          <button onClick={() => openEditModal(row)} className="w-8 h-8 rounded flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/10">
-            <Edit2 size={14} />
-          </button>
-          <button onClick={() => handleDelete(row.id)} className="w-8 h-8 rounded flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger)]/10">
-            <Trash2 size={14} />
-          </button>
+          <Button size="sm" variant="secondary" onClick={() => handleEdit(row)} title="Tahrirlash">
+            <Edit2 size={16} />
+          </Button>
+          <Button size="sm" variant="secondary" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(row.id)} title="O'chirish">
+            <Trash2 size={16} />
+          </Button>
         </div>
       ),
     },
   ];
 
   return (
-    <>
-      <div className="max-w-[1200px] mx-auto flex flex-col gap-6 animate-fade-in">
-        <div className="flex justify-end">
-          <Button size="sm" icon={<Plus size={14} />} onClick={openNewModal}>Yangi Banner</Button>
+    <div className="p-6 max-w-[1400px] mx-auto animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">Bannerlar</h1>
+          <p className="text-[var(--muted-foreground)] mt-1">
+            Safaar platformasining asosiy sahifasidagi orqa fon va slayder rasmlarini boshqarish
+          </p>
         </div>
-        
-        <DataTable 
-          columns={columns} 
-          data={banners} 
-          keyField="id" 
-          emptyMessage="Bannerlar topilmadi" 
-          isLoading={loading}
-          isError={error}
-          onRetry={fetchBanners}
-        />
+        <Button onClick={handleAddNew} icon={<Plus size={16} />}>
+          Yangi banner qo'shish
+        </Button>
+      </div>
+
+      <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] shadow-sm">
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
+          </div>
+        ) : (
+          <DataTable
+            data={items}
+            columns={columns}
+            keyField="id"
+            emptyMessage="Bannerlar topilmadi"
+          />
+        )}
       </div>
 
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingBanner ? "Bannerni tahrirlash" : "Yangi Banner"}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} disabled={saving}>Bekor qilish</Button>
-            <Button onClick={onSubmit} disabled={saving}>
+        title={editingItem ? "Bannerni tahrirlash" : "Yangi banner"}
+        size="md"
+      >
+        <form onSubmit={handleSave} className="space-y-4 pt-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--foreground)]">Sarlavha</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masalan: Qishki takliflar"
+              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--foreground)]">Rasm yuklash</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setImageUrl(URL.createObjectURL(file));
+                }
+              }}
+              className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
+              required={!imageUrl}
+            />
+            {imageUrl && (
+              <div className="mt-2 relative w-full h-32 rounded border border-[var(--border)] overflow-hidden">
+                <img src={imageUrl} alt="Preview" className="object-cover w-full h-full" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]"
+            />
+            <label htmlFor="isActive" className="text-sm font-medium text-[var(--foreground)] cursor-pointer">
+              Faol holatda (saytda ko'rsatiladi)
+            </label>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3 border-t border-[var(--border)] mt-4">
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" disabled={saving} icon={<Save size={16} />}>
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
-          </>
-        }
-      >
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Input 
-              label="Sarlavha" 
-              placeholder="Katta chegirmalar..." 
-              {...form.register("title")} 
-            />
-            {form.formState.errors.title && <span className="text-xs text-red-500">{form.formState.errors.title.message}</span>}
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <Input
-              label="Rasm URL"
-              placeholder="https://cdn.safaar.uz/banners/..."
-              {...form.register("imageUrl")}
-            />
-            {form.formState.errors.imageUrl && <span className="text-xs text-red-500">{form.formState.errors.imageUrl.message}</span>}
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <Input 
-              label="Yo'naltirish havolasi (Link)" 
-              placeholder="/hotels?discount=true" 
-              {...form.register("link")} 
-            />
-            {form.formState.errors.link && <span className="text-xs text-red-500">{form.formState.errors.link.message}</span>}
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <Input 
-              type="number"
-              label="Tartib raqami" 
-              {...form.register("order", { valueAsNumber: true })} 
-            />
-            {form.formState.errors.order && <span className="text-xs text-red-500">{form.formState.errors.order.message}</span>}
-          </div>
-          
-          <div className="flex flex-col gap-1.5 mt-2">
-            <label className="text-sm font-medium text-[var(--text-primary)]">Holat</label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Controller
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <input 
-                    type="checkbox" 
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                    className="w-4 h-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                  />
-                )}
-              />
-              <span className="text-sm text-[var(--text-muted)]">Faol</span>
-            </label>
           </div>
         </form>
       </Modal>
-    </>
+    </div>
   );
 }

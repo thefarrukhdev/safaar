@@ -858,7 +858,7 @@ function RoomListingsPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {onAddRoomType && (
+            {onAddRoomType && roomAds.length > 0 && (
               <Button size="sm" onClick={onAddRoomType} variant="outline">
                 + Yangi variant qo'shish
               </Button>

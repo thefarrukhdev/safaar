@@ -25,8 +25,13 @@ export function useSocket(options?: UseSocketOptions) {
   const enabled = options?.enabled !== false;
 
   useEffect(() => {
-    if (!enabled || typeof window === "undefined" || !accessToken) return;
+    // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+    // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
+    return;
+    // ────────────────────────────────────────────────────────────────────────
 
+    if (!enabled || typeof window === "undefined" || !accessToken) return;
+    
     const nextSocket = io(WS_URL, {
       auth: { token: accessToken },
       transports: ["websocket", "polling"],

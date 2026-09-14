@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: safaar
+      POSTGRES_USER: safaar
+      POSTGRES_PASSWORD: safaar
+    ports:
+      - '5432:5432'
+    volumes:
+      - safaar-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U safaar -d safaar']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8
+    ports:
+      - '6379:6379'
+    volumes:
+      - safaar-redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    env_file:
+      - apps/backend/.env
+    environment:
+      DATABASE_URL: postgresql://safaar:safaar@postgres:5432/safaar
+      REDIS_URL: redis://redis:6379/0
+      QUEUE_REDIS_URL: redis://redis:6379/1
+      PORT: 4000
+      API_PREFIX: v1
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  safaar-postgres:
+  safaar-redis:

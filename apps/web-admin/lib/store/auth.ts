@@ -11,7 +11,11 @@ export interface AdminUser {
   // SUPPORT_ADMIN silently passed through untyped (`data.admin?.role`
   // in admin-api.ts's login() is effectively `any`). Widened to the
   // same AdminRole used everywhere else so permission-matrix logic can
-  // rely on it.
+  // rely on it. (develop independently attempted the same fix with an
+  // inline union, but used FINANCE/SUPPORT/CONTENT instead of the
+  // backend's actual FINANCE_ADMIN/SUPPORT_ADMIN/CONTENT_ADMIN — this
+  // shared AdminRole type is the one that actually matches the backend
+  // Role enum, so it wins here.)
   role: AdminRole;
   has2FA?: boolean;
 }

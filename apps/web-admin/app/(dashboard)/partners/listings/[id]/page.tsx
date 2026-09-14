@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell, type LucideIcon } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell, CalendarClock, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -127,16 +127,23 @@ export default function ListingDetailsPage() {
           </div>
         </div>
 
-        {listing.status === "under_review" && (
-          <div className="flex gap-3">
-            <Button variant="secondary" className="text-[var(--danger)] border-[var(--danger)]/20 hover:bg-[var(--danger)]/5" icon={<XCircle size={16} />} onClick={handleReject}>
-              Rad etish
+        <div className="flex gap-3">
+          <Link href={`/partners/listings/${listing.id}/availability`}>
+            <Button variant="secondary" icon={<CalendarClock size={16} />}>
+              Availability
             </Button>
-            <Button className="bg-[var(--success)] hover:bg-[var(--success)]/90" icon={<CheckCircle2 size={16} />} onClick={handleApprove}>
-              Tasdiqlash va Nashr qilish
-            </Button>
-          </div>
-        )}
+          </Link>
+          {listing.status === "under_review" && (
+            <>
+              <Button variant="secondary" className="text-[var(--danger)] border-[var(--danger)]/20 hover:bg-[var(--danger)]/5" icon={<XCircle size={16} />} onClick={handleReject}>
+                Rad etish
+              </Button>
+              <Button className="bg-[var(--success)] hover:bg-[var(--success)]/90" icon={<CheckCircle2 size={16} />} onClick={handleApprove}>
+                Tasdiqlash va Nashr qilish
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {listing.completeness && !listing.completeness.isPublishable && (

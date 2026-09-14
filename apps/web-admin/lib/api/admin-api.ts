@@ -29,6 +29,15 @@ import {
   PartnerLedgerEntry,
   DeveloperApiKey,
   DeveloperWebhook,
+  AdminRoomType,
+  AdminRoom,
+  RoomAvailability,
+  AvailabilityDay,
+  AvailabilityDayStatus,
+  AdminReview,
+  AdminReviewStatus,
+  CmsEntry,
+  CmsEntrySeo,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
 import apiClient from './client';
@@ -454,6 +463,89 @@ function toBookingDetail(row: ApiRecord): BookingDetail {
   };
 }
 
+function toRoomTypes(value: unknown): AdminRoomType[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((rawType) => {
+    const type = asRecord(rawType);
+    const rawRooms = Array.isArray(type.rooms) ? type.rooms : [];
+    return {
+      id: asString(type.id),
+      code: asString(type.code),
+      name: localizedText(type.name, asString(type.code, 'Xona turi')),
+      rooms: rawRooms.map((rawRoom): AdminRoom => {
+        const room = asRecord(rawRoom);
+        return {
+          id: asString(room.id),
+          code: asString(room.code),
+          name: localizedText(room.name, asString(room.code, 'Xona')),
+          totalInventory: asNumber(room.total_inventory),
+          basePrice: asNumber(room.base_price),
+          status: asString(room.status, 'active'),
+        };
+      }),
+    };
+  });
+}
+
+function toI18nRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [lang, text] of Object.entries(value)) {
+    if (typeof text === 'string') out[lang] = text;
+  }
+  return out;
+}
+
+function toCmsEntry(row: ApiRecord): CmsEntry {
+  const metadata = isRecord(row.metadata) ? row.metadata : {};
+  const rawSeo = isRecord(metadata.seo) ? metadata.seo : {};
+  const seo: CmsEntrySeo = {
+    metaTitle: typeof rawSeo.metaTitle === 'string' ? rawSeo.metaTitle : undefined,
+    metaDescription:
+      typeof rawSeo.metaDescription === 'string' ? rawSeo.metaDescription : undefined,
+    canonical: typeof rawSeo.canonical === 'string' ? rawSeo.canonical : undefined,
+    robots: typeof rawSeo.robots === 'string' ? rawSeo.robots : undefined,
+    ogTitle: typeof rawSeo.ogTitle === 'string' ? rawSeo.ogTitle : undefined,
+    ogDescription:
+      typeof rawSeo.ogDescription === 'string' ? rawSeo.ogDescription : undefined,
+    ogImage: typeof rawSeo.ogImage === 'string' ? rawSeo.ogImage : undefined,
+  };
+  return {
+    id: asString(row.id),
+    type: asString(row.type),
+    slug: row.slug ? asString(row.slug) : null,
+    title: toI18nRecord(row.title_i18n ?? row.title),
+    body: toI18nRecord(row.body_i18n ?? row.body),
+    status: asString(row.status, 'draft'),
+    metadata,
+    seo,
+    updatedAt: asString(row.updated_at, new Date().toISOString()),
+  };
+}
+
+function toReview(row: ApiRecord): AdminReview {
+  const status = asString(row.status, 'published');
+  return {
+    id: asString(row.id),
+    userId: asString(row.user_id),
+    userName: asString(row.user_name, 'Mijoz'),
+    bookingId: row.booking_id ? asString(row.booking_id) : null,
+    targetType: asString(row.target_type),
+    targetId: asString(row.target_id),
+    targetName: asString(row.target_name, '—'),
+    rating: asNumber(row.rating),
+    body: asString(row.body),
+    photos: Array.isArray(row.photos)
+      ? row.photos.map((p) => String(p))
+      : [],
+    status: (['published', 'hidden', 'pending_review'].includes(status)
+      ? status
+      : 'published') as AdminReviewStatus,
+    createdAt: asString(row.created_at, new Date().toISOString()),
+    updatedAt: asString(row.updated_at, new Date().toISOString()),
+  };
+}
+
 function toListing(row: ApiRecord): AdminListing {
   const partner = asRecord(row.partner);
   const rawRules = isRecord(row.rules) ? row.rules : undefined;
@@ -536,6 +628,7 @@ function toListing(row: ApiRecord): AdminListing {
         roomSummary.active_room_count ??
         roomSummary.total_inventory,
     ),
+    roomTypes: toRoomTypes(row.room_types),
     type:
       row.type || partner.type || row.listing_type
         ? asString(row.type ?? partner.type ?? row.listing_type)
@@ -1226,6 +1319,22 @@ export const AdminApi = {
     await apiClient.post(`/admin/admin-users/${id}/reset-2fa`);
   },
 
+  // Real backend permission matrix — GET /admin/roles reads directly from
+  // `common/permissions.ts`'s `rolePermissions` (the actual enforcement
+  // map RolesGuard uses), not a separately-maintained/fake list.
+  getRoles: async (): Promise<{ id: string; permissions: string[] }[]> => {
+    const { data } = await apiClient.get('/admin/roles');
+    return unknownItems(data).map((row) => {
+      const r = asRecord(row);
+      return {
+        id: asString(r.id),
+        permissions: Array.isArray(r.permissions)
+          ? r.permissions.map((p) => String(p))
+          : [],
+      };
+    });
+  },
+
   // Bookings
   getBookings: async (): Promise<AdminHotelBooking[]> => {
     const { data } = await apiClient.get('/admin/bookings');
@@ -1740,5 +1849,136 @@ export const AdminApi = {
       reason: reason ?? '',
     });
     return data;
+  },
+
+  // ── Availability (2026-09-14 gap closure) ───────────────────────────
+  // Backend: GET/POST/DELETE /admin/rooms/:id/... (admin.controller.ts,
+  // roomAvailabilityCalendar/Block/Unblock in admin.service.ts) — reuses
+  // the existing `room_inventory` table, no mock.
+  getRoomAvailability: async (
+    roomId: string,
+    from: string,
+    to: string,
+  ): Promise<RoomAvailability> => {
+    const { data } = await apiClient.get(`/admin/rooms/${roomId}/availability`, {
+      params: { from, to },
+    });
+    const row = asRecord(data);
+    const rawDays = Array.isArray(row.days) ? row.days : [];
+    return {
+      roomId: asString(row.room_id, roomId),
+      hotelId: asString(row.hotel_id),
+      totalInventory: asNumber(row.total_inventory),
+      days: rawDays.map((rawDay): AvailabilityDay => {
+        const day = asRecord(rawDay);
+        const status = asString(day.status, 'available');
+        return {
+          date: asString(day.date),
+          totalCount: asNumber(day.total_count),
+          bookedCount: asNumber(day.booked_count),
+          blocked: Boolean(day.blocked),
+          status: (['available', 'booked', 'blocked', 'partially_occupied'].includes(
+            status,
+          )
+            ? status
+            : 'available') as AvailabilityDayStatus,
+          sellableCount: asNumber(day.sellable_count),
+        };
+      }),
+    };
+  },
+
+  blockRoomAvailability: async (
+    roomId: string,
+    startDate: string,
+    endDate: string,
+    reason: string,
+  ) => {
+    const { data } = await apiClient.post(`/admin/rooms/${roomId}/block`, {
+      start_date: startDate,
+      end_date: endDate,
+      reason,
+    });
+    return data;
+  },
+
+  unblockRoomAvailability: async (
+    roomId: string,
+    startDate: string,
+    endDate: string,
+  ) => {
+    const { data } = await apiClient.delete(`/admin/rooms/${roomId}/block`, {
+      data: { start_date: startDate, end_date: endDate },
+    });
+    return data;
+  },
+
+  // ── Reviews (2026-09-14 gap closure) ────────────────────────────────
+  getReviews: async (filters?: {
+    status?: AdminReviewStatus | '';
+    targetType?: string;
+    minRating?: number;
+  }): Promise<AdminReview[]> => {
+    const { data } = await apiClient.get('/admin/reviews', {
+      params: {
+        status: filters?.status || undefined,
+        target_type: filters?.targetType || undefined,
+        min_rating: filters?.minRating || undefined,
+      },
+    });
+    return unknownItems(data).map((row) => toReview(asRecord(row)));
+  },
+
+  // Backend returns only {id, status, updated_at} (not a full review row) —
+  // typed narrowly here so callers don't mistake this for the complete
+  // AdminReview shape and accidentally overwrite good fields with defaults.
+  publishReview: async (
+    id: string,
+  ): Promise<{ id: string; status: AdminReviewStatus }> => {
+    const { data } = await apiClient.post(`/admin/reviews/${id}/publish`);
+    const row = asRecord(data);
+    return { id: asString(row.id, id), status: 'published' };
+  },
+
+  hideReview: async (
+    id: string,
+  ): Promise<{ id: string; status: AdminReviewStatus }> => {
+    const { data } = await apiClient.post(`/admin/reviews/${id}/hide`);
+    const row = asRecord(data);
+    return { id: asString(row.id, id), status: 'hidden' };
+  },
+
+  // ── Generic CMS entries (2026-09-14 gap closure — Translations/SEO) ──
+  // Reuses the EXISTING generic /admin/cms/:resource[/:id] backend
+  // (title/body Json + metadata Json, cmsList/cmsOne/cmsUpdate) — same
+  // data the resource-specific banners/news/pages/offers pages already
+  // read, just kept in its full {uz,ru,en} shape instead of flattened.
+  getCmsEntries: async (resource: string): Promise<CmsEntry[]> => {
+    const { data } = await apiClient.get(`/admin/cms/${resource}`);
+    return unknownItems(data).map((row) => toCmsEntry(asRecord(row)));
+  },
+
+  updateCmsEntryTranslations: async (
+    resource: string,
+    id: string,
+    title: Record<string, string>,
+    body: Record<string, string>,
+  ): Promise<CmsEntry> => {
+    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
+      title,
+      body,
+    });
+    return toCmsEntry(asRecord(data));
+  },
+
+  updateCmsEntrySeo: async (
+    resource: string,
+    id: string,
+    seo: CmsEntrySeo,
+  ): Promise<CmsEntry> => {
+    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
+      metadata: { seo },
+    });
+    return toCmsEntry(asRecord(data));
   },
 };

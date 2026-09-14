@@ -3,13 +3,14 @@
 import { cn } from "@/lib/utils";
 import { SIDEBAR_ITEMS, type NavItem } from "@/lib/constants";
 import { AdminApi, type AdminNotificationSummary } from "@/lib/api/admin-api";
+import { useAuthStore } from "@/lib/store/auth";
 import SidebarItem from "./SidebarItem";
 import {
   LayoutDashboard, Users, Building2, CalendarCheck, Wallet, PanelsTopLeft,
   MapPin, Ticket, MessageCircle, Settings, ScrollText, FileText, List,
   Hotel, Bus, BarChart3, ArrowDownToLine, FileSpreadsheet, ImageIcon, Tag,
   Newspaper, Mail, Settings2, CreditCard, Send, ShieldCheck,
-  ChevronLeft, History, UtensilsCrossed
+  ChevronLeft, History, UtensilsCrossed, Star, Languages, Search
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -43,6 +44,9 @@ const ICON_MAP: Record<string, ReactNode> = {
   ShieldCheck: <ShieldCheck size={16} />,
   History: <History size={18} />,
   UtensilsCrossed: <UtensilsCrossed size={16} />,
+  Star: <Star size={18} />,
+  Languages: <Languages size={16} />,
+  Search: <Search size={16} />,
 };
 
 function getIcon(name: string): ReactNode {
@@ -74,6 +78,67 @@ function applyLiveBadges(
   };
 }
 
+/**
+ * 2026-09-14 SAFAAR admin gap closure — sidebar visibility now reflects
+ * the REAL backend permission a role has (`common/permissions.ts`
+ * `rolePermissions`, fetched via GET /admin/roles), not a second,
+ * hand-maintained list. This is UX only — hiding a link is never the
+ * security boundary, the backend guard is (see RolesGuard); a role that
+ * can't see "Moliya" here still gets 403 if it calls the API directly.
+ * Only sections with an unambiguous 1:1 backend permission are gated;
+ * everything else (catalog/promos/settings/developer) stays visible to
+ * every admin rather than risk hiding something a role legitimately needs.
+ */
+const NAV_PERMISSION_BY_HREF: Record<string, string> = {
+  "/users": "users:read",
+  "/team": "admins:read",
+  "/partners": "partners:read",
+  "/partners/requests": "partners:read",
+  "/partners/list": "partners:read",
+  "/partners/listings": "partners:read",
+  "/bookings": "bookings:read",
+  "/bookings/hotels": "bookings:read",
+  "/bookings/restaurants": "bookings:read",
+  "/bookings/buses": "bookings:read",
+  "/finance": "finance:read",
+  "/finance/overview": "finance:read",
+  "/finance/payments": "finance:read",
+  "/finance/refunds": "finance:read",
+  "/finance/withdrawals": "finance:read",
+  "/finance/reports": "finance:read",
+  "/cms": "cms:read",
+  "/cms/banners": "cms:read",
+  "/cms/offers": "cms:read",
+  "/cms/news": "cms:read",
+  "/cms/pages": "cms:read",
+  "/cms/templates": "cms:read",
+  "/cms/broadcasts": "cms:read",
+  "/cms/translations": "translations:read",
+  "/cms/seo": "seo:read",
+  "/reviews": "reviews:read",
+  "/support": "support:read",
+  "/audit": "audit-logs:read",
+};
+
+function filterByPermission(
+  items: NavItem[],
+  granted: Set<string> | null,
+): NavItem[] {
+  // granted === null -> ruxsatlar hali yuklanmagan (yoki SUPER_ADMIN,
+  // fetch shart emas) -> hech narsa yashirilmaydi (fail-open UX; real
+  // himoya baribir backendda).
+  if (!granted) return items;
+  return items.flatMap((item) => {
+    const required = NAV_PERMISSION_BY_HREF[item.href];
+    if (required && !granted.has(required)) return [];
+    const children = item.children
+      ? filterByPermission(item.children, granted)
+      : undefined;
+    if (item.children && children && children.length === 0) return [];
+    return [{ ...item, children }];
+  });
+}
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -82,6 +147,30 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [summary, setSummary] = useState<AdminNotificationSummary | null>(null);
+  const currentRole = useAuthStore((state) => state.user?.role);
+  const [grantedPermissions, setGrantedPermissions] = useState<Set<string> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const load = () => {
+      if (!currentRole || currentRole === "SUPER_ADMIN") {
+        // SUPER_ADMIN har doim hamma narsani ko'radi — sorov shart emas.
+        setGrantedPermissions(null);
+        return;
+      }
+      AdminApi.getRoles()
+        .then((roles) => {
+          const match = roles.find((r) => r.id.toUpperCase() === currentRole);
+          setGrantedPermissions(match ? new Set(match.permissions) : null);
+        })
+        .catch((error) => {
+          console.error("Failed to load role permission matrix", error);
+          setGrantedPermissions(null);
+        });
+    };
+    load();
+  }, [currentRole]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,8 +196,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   }, [pathname]);
 
   const sidebarItems = useMemo(
-    () => SIDEBAR_ITEMS.map((item) => applyLiveBadges(item, summary)),
-    [summary],
+    () =>
+      filterByPermission(SIDEBAR_ITEMS, grantedPermissions).map((item) =>
+        applyLiveBadges(item, summary),
+      ),
+    [summary, grantedPermissions],
   );
 
   return (

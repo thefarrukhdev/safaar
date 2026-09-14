@@ -179,4 +179,19 @@ Admin panel (CMS) va boshqa qismlardan rasmlarni to'g'ridan-to'g'ri serverga yuk
 
 ---
 
-Ushbu endpointlar backend jamoasi tomonidan taqdim etilgandan so'ng, `apps/web-admin/lib/api/admin-api.ts` faylidagi **Mock** funksiyalar API so'rovlariga o'zgartirilishi kerak.
+## 11. Hamkor (Partner) Tizimiga Kirish (Auth)
+Hamkorlar uchun parol orqali kirish va parolni o'rnatish tizimi.
+
+- **Method:** `POST`
+- **URL:** `/v1/auth/partner/password-login`
+- **Payload:** `{ "phone": "+998901234567", "password": "yangi_parol" }`
+- **Response:** `PartnerPhoneLoginResponse` (accessToken, refreshToken va h.k)
+
+- **Method:** `POST`
+- **URL:** `/v1/auth/partner/set-password`
+- **Payload:** `{ "phone": "+998901234567", "code": "123456", "challenge_id": "...", "password": "yangi_parol" }`
+- **Response:** `PartnerPhoneLoginResponse`
+
+---
+
+Ushbu endpointlar backend jamoasi tomonidan taqdim etilgandan so'ng, `apps/web-admin/lib/api/admin-api.ts` va `apps/web-partner/app/_lib/api/endpoints/auth.ts` fayllaridagi **Mock** funksiyalar API so'rovlariga o'zgartirilishi kerak.

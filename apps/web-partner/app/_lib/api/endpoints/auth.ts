@@ -76,3 +76,29 @@ export function verifyPartnerEmailOtp(
     body: dto,
   });
 }
+
+export function partnerPasswordLogin(
+  phone: string,
+  password?: string,
+): Promise<PartnerPhoneLoginResponse> {
+  return request<PartnerPhoneLoginResponse>('/auth/partner/password-login', {
+    method: 'POST',
+    body: { phone, password },
+  });
+}
+
+export interface PartnerSetPasswordDto {
+  phone: string;
+  code: string;
+  challenge_id: string;
+  password?: string;
+}
+
+export function partnerSetPassword(
+  dto: PartnerSetPasswordDto,
+): Promise<PartnerPhoneLoginResponse> {
+  return request<PartnerPhoneLoginResponse>('/auth/partner/set-password', {
+    method: 'POST',
+    body: dto,
+  });
+}

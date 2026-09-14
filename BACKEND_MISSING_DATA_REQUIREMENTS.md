@@ -180,15 +180,25 @@ Admin panel (CMS) va boshqa qismlardan rasmlarni to'g'ridan-to'g'ri serverga yuk
 ---
 
 ## 11. Hamkor (Partner) Tizimiga Kirish (Auth)
-Hamkorlar uchun parol orqali kirish va parolni o'rnatish tizimi.
+### 2. Parol bilan kirish (`POST /v1/auth/partner/password-login`)
+* **Status**: Yo'q.
+* **Maqsad**: SMS bilan emas, tizimga har doim parol bilan kirish (yangi dizayn talabi).
+* **Kutilayotgan Body**:
+  ```ts
+  {
+    phone: string; // masalan, +998901234567
+    password: string; 
+  }
+  ```
+* **Qaytarishi kerak**: Tokenlar va foydalanuvchi ma'lumotlari xuddi `POST /v1/auth/partner/login` dagi kabi.
 
-- **Method:** `POST`
-- **URL:** `/v1/auth/partner/password-login`
-- **Payload:** `{ "phone": "+998901234567", "password": "yangi_parol" }`
-- **Response:** `PartnerPhoneLoginResponse` (accessToken, refreshToken va h.k)
+### 2.1 Yangi hamkor ro'yxatdan o'tishida parol
+* **Status**: O'zgartirish kerak.
+* **Maqsad**: Hamkor ariza qoldirayotganda (`submitPartnerApplication`) yangi `password` maydoni kiritilishi kerak.
+* **O'zgartirish**: `SubmitPartnerApplicationDto` ga `password: string` qo'shilsin.
+* **Qaytarishi kerak**: Oldingi kabi.
 
-- **Method:** `POST`
-- **URL:** `/v1/auth/partner/set-password`
+### 3. Parolni yangilash (`POST /v1/auth/partner/set-password`)
 - **Payload:** `{ "phone": "+998901234567", "code": "123456", "challenge_id": "...", "password": "yangi_parol" }`
 - **Response:** `PartnerPhoneLoginResponse`
 

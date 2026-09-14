@@ -103,6 +103,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       ])
       // sana-ziddiyat tekshiruvi (bo'sh = ziddiyat yo'q)
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment (none)
@@ -151,6 +152,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -185,6 +187,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }]) // conflict check
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history (created)
       .mockResolvedValueOnce([]) // existing pending payment check
@@ -224,6 +227,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -263,6 +267,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -299,6 +304,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
@@ -374,6 +380,71 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(pg.query).toHaveBeenCalledTimes(3);
   });
 
+  it("admin/hamkor 'room_inventory.closed=true' bilan bloklagan sanaga YANGI bron yaratib bo'lmaydi (2026-09-14 SAFAAR ADMIN Part 2 — booking engine real blockni hisobga olishi shart, avval bu tekshiruv UMUMAN yo'q edi)", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 10,
+        },
+      ])
+      // haqiqiy bron ziddiyati yo'q...
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      // ...lekin shu oraliqdagi bitta sana admin/hamkor tomonidan bloklangan
+      .mockResolvedValueOnce([{ blocked_count: 1 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        rooms: 1,
+        guest_email: 'guest@example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'ROOM_DATES_BLOCKED' },
+    });
+
+    // Bloklangan sana topilgach INSERT chaqirilmasligi kerak (faqat 4 ta
+    // so'rov: hotel, room-lock, conflict-check, block-check).
+    expect(pg.query).toHaveBeenCalledTimes(4);
+  });
+
+  it("bloklanmagan (yopiq bo'lmagan) sanalar hamon oddiy tarzda bron qilinaveradi (regression guard — block-check false-positive bermasligi kerak)", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 10,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // hech qanday sana bloklanmagan
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT booking_status_history
+      .mockResolvedValueOnce([]) // SELECT existing pending payment
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      rooms: 1,
+      guest_email: 'guest@example.com',
+    });
+
+    expect(result.booking.room_id).toBe('room-1');
+  });
+
   it('total_inventory=10 bo\'lgan xona turida 1 ta bron qilingandan keyin ham qolgan 9 tasini sotib bo\'ladi (regression: "soxta sold-out" — ilgari LIMIT 1 tufayli BITTA bron ham qolgan barcha inventarni "band" qilib qo\'yardi)', async () => {
     pg.query
       .mockResolvedValueOnce([hotelRow])
@@ -388,6 +459,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       // Shu sanalarga allaqachon 1 ta xona band qilingan (10 tadan) — bu
       // ENDI ziddiyat HISOBLANMASLIGI kerak, chunki 1 + 1 <= 10.
       .mockResolvedValueOnce([{ booked_count: 1 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
@@ -521,6 +593,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }]) // slot conflict check — bo'sh
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // existing pending payment check
@@ -1292,6 +1365,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
         },
       ]) // room lookup (FOR UPDATE)
       .mockResolvedValueOnce([{ booked_count: 0 }]) // sana-ziddiyat tekshiruvi
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment

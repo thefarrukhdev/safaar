@@ -3471,6 +3471,35 @@ export class PartnersService {
               : 'Bu xona tanlangan sanalarda band',
           });
         }
+
+        // `room_inventory.closed` — xuddi shu tekshiruv mijoz oqimida
+        // (`bookings.service.ts::createHotelInternal`) ham qo'shilgan;
+        // hamkor walk-in/naqd bron oqimi ham bloklangan sanalarga bron
+        // yaratmasligi kerak (masalan admin overbooking tufayli bloklagan
+        // bo'lsa, hamkorning o'zi ham o'sha sanaga yangi bron qo'sha
+        // olmasligi shart).
+        const [{ blocked_count: blockedCountRaw }] = isRestaurant
+          ? await tx.query<{ blocked_count: string | number }>(
+              `SELECT COUNT(*) AS blocked_count
+               FROM room_inventory
+               WHERE room_id = $1::uuid AND date = $2::date AND closed = true`,
+              [room.id, checkIn],
+            )
+          : await tx.query<{ blocked_count: string | number }>(
+              `SELECT COUNT(*) AS blocked_count
+               FROM room_inventory
+               WHERE room_id = $1::uuid
+                 AND date >= $2::date AND date < $3::date
+                 AND closed = true`,
+              [room.id, checkIn, checkOut],
+            );
+        if (Number(blockedCountRaw) > 0) {
+          throw new ConflictException({
+            code: 'ROOM_DATES_BLOCKED',
+            message:
+              'Tanlangan sanalarning bir qismi vaqtincha sotuvdan bloklangan',
+          });
+        }
       }
 
       await tx.query(

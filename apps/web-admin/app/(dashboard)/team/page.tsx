@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search, MoreVertical, Key, Edit, Ban, CheckCircle2, Mail, Phone, Calendar, Check, X, ShieldQuestion } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -472,8 +472,8 @@ export default function TeamPage() {
                   </thead>
                   <tbody>
                     {[...grouped.entries()].map(([domainLabel, permissions]) => (
-                      <>
-                        <tr key={`group-${domainLabel}`}>
+                      <Fragment key={domainLabel}>
+                        <tr>
                           <td
                             colSpan={roleIds.length + 1}
                             className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]"
@@ -509,7 +509,7 @@ export default function TeamPage() {
                             })}
                           </tr>
                         ))}
-                      </>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -563,8 +563,9 @@ export default function TeamPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Rol</label>
+                <label htmlFor="team-role-select" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Rol</label>
                 <select
+                  id="team-role-select"
                   {...register("role")}
                   disabled={isEditingSelf}
                   className="w-full px-4 py-2 text-sm rounded-lg border border-[var(--border)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"

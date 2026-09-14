@@ -1054,6 +1054,86 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 
+  describe('reviewsList / reviewModerate (2026-09-14 SAFAAR ADMIN Part 6 — admin review moderation)', () => {
+    const reviewId = '00000000-0000-0000-0000-0000000000e1';
+
+    it('reviewsList applies status/target_type/min_rating filters to the SQL', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({
+        status: 'pending_review',
+        target_type: 'hotel',
+        min_rating: '4',
+      });
+      const [sql, params] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('r.status::text = $1');
+      expect(String(sql)).toContain('r.target_type = $2');
+      expect(String(sql)).toContain('r.rating >= $3');
+      expect(params).toEqual(['pending_review', 'hotel', 4]);
+    });
+
+    it('reviewsList with no filters queries all reviews (no WHERE clause)', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({});
+      const [sql, params] = pgMock.query.mock.calls[0];
+      expect(String(sql)).not.toContain('where');
+      expect(params).toEqual([]);
+    });
+
+    it("reviewModerate('publish') sets status=published and writes old/new audit", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: reviewId, status: 'pending_review' }]) // SELECT existing
+        .mockResolvedValueOnce([
+          {
+            id: reviewId,
+            status: 'published',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ]) // UPDATE
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.reviewModerate(actor, reviewId, 'publish');
+      expect(result).toMatchObject({ status: 'published' });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      const [, params] = auditCall!;
+      const paramsArr = params as unknown[];
+      expect(paramsArr[3]).toBe('review.publish');
+      expect(paramsArr[4]).toBe('review');
+      expect(
+        (JSON.parse(paramsArr[6] as string) as { status: string }).status,
+      ).toBe('pending_review');
+      expect(
+        (JSON.parse(paramsArr[7] as string) as { status: string }).status,
+      ).toBe('published');
+    });
+
+    it("reviewModerate('hide') sets status=hidden", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: reviewId, status: 'published' }])
+        .mockResolvedValueOnce([
+          {
+            id: reviewId,
+            status: 'hidden',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.reviewModerate(actor, reviewId, 'hide');
+      expect(result).toMatchObject({ status: 'hidden' });
+    });
+
+    it('reviewModerate on a non-existent review throws 404', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // SELECT existing — bo'sh
+
+      await expect(
+        service.reviewModerate(actor, reviewId, 'publish'),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+  });
+
   it('creates an admin export job without a DB NOT NULL violation (regression: H-1)', async () => {
     pgMock.query.mockResolvedValueOnce([
       {

@@ -162,4 +162,38 @@ describe('actorHasPermissions — granular business-role matrix (2026-09-14 SAFA
       );
     }
   });
+
+  // 6. Unauthorized user cannot block availability
+  it('FINANCE_ADMIN/CONTENT_ADMIN/SUPPORT_ADMIN availability bloklay olmaydi (faqat MODERATOR/SUPER_ADMIN)', () => {
+    for (const role of [
+      Role.FINANCE_ADMIN,
+      Role.CONTENT_ADMIN,
+      Role.SUPPORT_ADMIN,
+    ]) {
+      expect(
+        actorHasPermissions(admin(role), [Permission.AvailabilityBlock]),
+      ).toBe(false);
+    }
+    expect(
+      actorHasPermissions(admin(Role.MODERATOR), [
+        Permission.AvailabilityBlock,
+      ]),
+    ).toBe(true);
+  });
+
+  // 7. Unauthorized user cannot change commission
+  it("CONTENT_ADMIN/SUPPORT_ADMIN/MODERATOR partner commissionini o'zgartira olmaydi (finance:write faqat FINANCE_ADMIN/SUPER_ADMIN)", () => {
+    for (const role of [
+      Role.CONTENT_ADMIN,
+      Role.SUPPORT_ADMIN,
+      Role.MODERATOR,
+    ]) {
+      expect(actorHasPermissions(admin(role), [Permission.FinanceWrite])).toBe(
+        false,
+      );
+    }
+    expect(
+      actorHasPermissions(admin(Role.FINANCE_ADMIN), [Permission.FinanceWrite]),
+    ).toBe(true);
+  });
 });

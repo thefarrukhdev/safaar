@@ -515,6 +515,7 @@ describe('PartnersService frontend action endpoints', () => {
         ]) // hotel_rooms (roomNumber bo'yicha)
         .mockResolvedValueOnce([{ id: roomId }]) // FOR UPDATE qulf
         .mockResolvedValueOnce([]) // ziddiyat tekshiruvi — bo'sh, ziddiyat yo'q
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
         .mockResolvedValueOnce([]) // INSERT bookings
         .mockResolvedValueOnce([]) // INSERT payments
         .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
@@ -573,6 +574,7 @@ describe('PartnersService frontend action endpoints', () => {
         ])
         .mockResolvedValueOnce([{ id: roomId }])
         .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
         .mockResolvedValueOnce([]) // INSERT bookings
         .mockResolvedValueOnce([]) // INSERT payments
         .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
@@ -626,6 +628,7 @@ describe('PartnersService frontend action endpoints', () => {
         ])
         .mockResolvedValueOnce([{ id: roomId }])
         .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
         .mockResolvedValueOnce([]) // INSERT bookings
         .mockResolvedValueOnce([]) // INSERT payments
         .mockResolvedValueOnce([]) // INSERT partner_ledger_entries

@@ -521,6 +521,38 @@ export class BookingsService {
         });
       }
 
+      // MUHIM (2026-09-14 audit topilmasi): `room_inventory.closed` —
+      // hamkorning `blackoutDates()` orqali (va endi admin
+      // `roomAvailabilityBlock()` orqali ham) belgilaydigan "sotuvdan
+      // vaqtincha bloklangan sana" bayrog'i — ILGARI bu yerda UMUMAN
+      // tekshirilmas edi. Ya'ni hamkor/admin bir sanani "yopiq" deb
+      // belgilasa ham, real booking baribir yaratilaverardi — bloklash
+      // faqat "frontend status" bo'lib qolgan, booking engine uni hisobga
+      // OLMAGAN edi. Endi shu yerda, xuddi shu FOR UPDATE qulflangan
+      // tranzaksiya ichida, aniq tekshiriladi.
+      const [{ blocked_count: blockedCountRaw }] = isRestaurant
+        ? await tx.query<{ blocked_count: string | number }>(
+            `SELECT COUNT(*) AS blocked_count
+             FROM room_inventory
+             WHERE room_id = $1::uuid AND date = $2::date AND closed = true`,
+            [room.id, checkIn],
+          )
+        : await tx.query<{ blocked_count: string | number }>(
+            `SELECT COUNT(*) AS blocked_count
+             FROM room_inventory
+             WHERE room_id = $1::uuid
+               AND date >= $2::date AND date < $3::date
+               AND closed = true`,
+            [room.id, checkIn, checkOut],
+          );
+      if (Number(blockedCountRaw) > 0) {
+        throw new ConflictException({
+          code: 'ROOM_DATES_BLOCKED',
+          message:
+            'Tanlangan sanalarning bir qismi vaqtincha sotuvdan bloklangan',
+        });
+      }
+
       const subtotal = Number(room.base_price) * nights * rooms;
       const discountAmount = promo
         ? calculatePromoDiscount(

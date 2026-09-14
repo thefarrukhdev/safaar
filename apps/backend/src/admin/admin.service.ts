@@ -1,15 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { BookingStatus } from '@safaar/types';
+import { BookingStatus, Role } from '@safaar/types';
 import { randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import type { RequestActor } from '../common/actor';
 import { rolePermissions } from '../common/permissions';
+import { resolveAccommodationCommissionRate } from '../common/finance';
 import {
   limitOffsetSql,
   paginateArray,
@@ -514,6 +516,42 @@ export class AdminService {
         actor?.actorType ?? 'system',
         actor && isUuid(actor.id) ? actor.id : null,
         action,
+        JSON.stringify(meta),
+      ],
+    );
+  }
+
+  /**
+   * `audit()`ning "entity + old/new value" bilan kengaytirilgan shakli —
+   * `audit_logs` jadvalida bu ustunlar (`entity_type`, `entity_id`,
+   * `old_value`, `new_value`) ALLAQACHON bor edi (schema.prisma'ga qarang),
+   * lekin `audit()` ularni HECH QACHON to'ldirmagan. 2026-09-14 SAFAAR
+   * ADMIN vazifasi ("commission/availability/role o'zgarganida OLD va NEW
+   * qiymat saqlansin") uchun qo'shildi — YANGI migratsiya SHART EMAS,
+   * mavjud ustunlar shunchaki endi to'ldiriladi.
+   */
+  private async auditChange(
+    action: string,
+    actor: RequestActor | undefined,
+    entityType: string,
+    entityId: string | null,
+    oldValue: unknown,
+    newValue: unknown,
+    meta: Record<string, unknown> = {},
+  ): Promise<void> {
+    await this.postgres.query(
+      `insert into audit_logs
+         (id, actor_type, actor_id, action, entity_type, entity_id, old_value, new_value, metadata)
+       values ($1::uuid, $2, $3::uuid, $4, $5, $6::uuid, ($7)::jsonb, ($8)::jsonb, ($9)::jsonb)`,
+      [
+        randomUUID(),
+        actor?.actorType ?? 'system',
+        actor && isUuid(actor.id) ? actor.id : null,
+        action,
+        entityType,
+        entityId && isUuid(entityId) ? entityId : null,
+        JSON.stringify(oldValue ?? null),
+        JSON.stringify(newValue ?? null),
         JSON.stringify(meta),
       ],
     );
@@ -1911,7 +1949,51 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const rate = Number(body.rate ?? body.default_commission_rate ?? 12);
+    const rawRate = body.rate ?? body.default_commission_rate;
+    if (rawRate === undefined || rawRate === null || rawRate === '') {
+      throw new BadRequestException({
+        code: 'COMMISSION_RATE_REQUIRED',
+        message: 'Komissiya foizi kiritilishi shart',
+      });
+    }
+    const rate = Number(rawRate);
+    // Pul xavfsizligi (2026-09-14 audit topilmasi): ilgari bu yerda
+    // HECH QANDAY tasdiqlash yo'q edi — `Number('garbage')` = NaN,
+    // manfiy yoki 100%dan katta qiymat ham to'g'ridan-to'g'ri DB'ga
+    // yozilardi. `partner_organizations.default_commission_rate`
+    // `Decimal(5,2)` — shu aniqlikka mos 2 xonagacha yaxlitlanadi.
+    if (!Number.isFinite(rate)) {
+      throw new BadRequestException({
+        code: 'COMMISSION_RATE_INVALID',
+        message: "Komissiya foizi haqiqiy son bo'lishi kerak",
+      });
+    }
+    if (rate < 0) {
+      throw new BadRequestException({
+        code: 'COMMISSION_RATE_NEGATIVE',
+        message: 'Komissiya foizi manfiy bo‘lishi mumkin emas',
+      });
+    }
+    if (rate > 100) {
+      throw new BadRequestException({
+        code: 'COMMISSION_RATE_TOO_HIGH',
+        message: 'Komissiya foizi 100% dan oshmasligi kerak',
+      });
+    }
+    const normalizedRate = Math.round(rate * 100) / 100;
+
+    const [existing] = await this.rows(
+      `select id::text, default_commission_rate::float8
+       from partner_organizations where id = $1::uuid`,
+      [id],
+    );
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
     const rows = await this.rows(
       `
         update partner_organizations
@@ -1925,22 +2007,336 @@ export class AdminService {
           default_commission_rate::float8,
           updated_at
       `,
-      [id, rate],
+      [id, normalizedRate],
     );
 
-    if (!rows[0]) {
+    await this.auditChange(
+      'partner.commission',
+      actor,
+      'partner_organization',
+      id,
+      { default_commission_rate: existing.default_commission_rate },
+      { default_commission_rate: normalizedRate },
+    );
+    this.invalidateAdminCache();
+    return rows[0];
+  }
+
+  /**
+   * "Effective commission" — hamkor darajasida BITTA raqam sifatida
+   * KO'RSATISH XATO bo'lardi: Excel jadvali (`resolveAccommodationCommissionRate`)
+   * har bir MEHMONXONA uchun hudud+tur+yulduzga qarab ALOHIDA stavka
+   * beradi (bitta partner tashkilotida bir nechta, HAR XIL shaharda/
+   * yulduzda mehmonxona bo'lishi mumkin). Shuning uchun bu yerda:
+   *  - `default_commission_rate` — tashkilot darajasidagi qiymat, FAQAT
+   *    Excel QAMRAB OLMAGAN turlar (masalan restaurant) uchun HAQIQIY
+   *    qo'llaniladi (`hotel`/`hostel`/`guesthouse` uchun Excel HAR DOIM
+   *    ustun — 2026-09-13 tasdiqlangan qoida, finance.ts'ga qarang).
+   *  - `hotels` — HAR BIR mehmonxona uchun Excel'dan HAQIQIY qo'llanilgan
+   *    stavka, aniq manba (`excel` yoki `partner_default`) bilan birga.
+   * Bu — admin UI'da "Default/Automatic" holatini soxta yagona foiz
+   * bilan emas, HAQIQIY manbaga ko'ra ko'rsatish imkonini beradi.
+   */
+  async partnerCommissionDetail(id: string) {
+    const [partner] = await this.rows(
+      `select id::text, type::text, default_commission_rate::float8
+       from partner_organizations where id = $1::uuid`,
+      [id],
+    );
+    if (!partner) {
       throw new NotFoundException({
         code: 'PARTNER_NOT_ACTIVE',
         message: 'Partner topilmadi',
       });
     }
 
-    await this.audit('partner.commission', actor, {
-      partner_id: id,
-      rate,
+    const hotelRows = await this.postgres.query<{
+      id: string;
+      name: string;
+      stars: number | null;
+      city_slug: string | null;
+      partner_type: string;
+    }>(
+      `select h.id::text, coalesce(ht.name, '') as name, h.stars, c.slug as city_slug,
+              po.type::text as partner_type
+       from hotels h
+       join partner_organizations po on po.id = h.partner_organization_id
+       left join cities c on c.id = h.city_id
+       left join hotel_translations ht on ht.hotel_id = h.id and ht.language = 'uz'
+       where h.partner_organization_id = $1::uuid and h.deleted_at is null`,
+      [id],
+    );
+
+    const hotels = hotelRows.map((h) => {
+      const resolved = resolveAccommodationCommissionRate({
+        citySlug: h.city_slug,
+        partnerOrganizationType: h.partner_type,
+        stars: h.stars,
+      });
+      return {
+        hotel_id: h.id,
+        hotel_name: h.name,
+        effective_rate_percent: resolved.matched
+          ? resolved.ratePercent
+          : Number(partner.default_commission_rate),
+        source: resolved.matched ? 'excel' : 'partner_default',
+      };
     });
+
+    return {
+      partner_id: partner.id,
+      partner_type: partner.type,
+      default_commission_rate: Number(partner.default_commission_rate),
+      hotels,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin availability blocking (2026-09-14 SAFAAR ADMIN — Part 2)
+  //
+  // ATAYLAB yangi jadval yaratilmadi: `room_inventory` (`roomId, date,
+  // totalCount, heldCount, bookedCount, closed`) allaqachon MAVJUD edi va
+  // hamkor tomonidan `blackoutDates()`/`updateInventory()` orqali
+  // to'ldirilardi — lekin booking engine bu bayroqni HECH QACHON
+  // tekshirmagan edi (real audit topilmasi, `bookings.service.ts` va
+  // `partners.service.ts`dagi tuzatishga qarang). Admin availability
+  // blokini ham AYNAN SHU jadval/ustun orqali amalga oshiramiz — bitta
+  // haqiqat manbai, ikkita parallel mexanizm emas.
+  // ---------------------------------------------------------------------------
+
+  private async assertRoomExists(roomId: string): Promise<{
+    id: string;
+    hotel_id: string;
+    total_inventory: number;
+  }> {
+    const [room] = await this.rows(
+      `select id::text, hotel_id::text, total_inventory
+       from hotel_rooms where id = $1::uuid`,
+      [roomId],
+    );
+    if (!room) {
+      throw new NotFoundException({
+        code: 'ROOM_NOT_FOUND',
+        message: 'Xona topilmadi',
+      });
+    }
+    return room as { id: string; hotel_id: string; total_inventory: number };
+  }
+
+  private validateBlockRange(body: Record<string, unknown>): {
+    startDate: string;
+    endDate: string;
+  } {
+    const startDate = String(body.start_date ?? body.startDate ?? '');
+    const endDate = String(body.end_date ?? body.endDate ?? '');
+    const startMs = Date.parse(startDate);
+    const endMs = Date.parse(endDate);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_DATES_INVALID',
+        message: "start_date/end_date noto'g'ri",
+      });
+    }
+    if (endMs <= startMs) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_DATES_INVALID',
+        message: 'end_date start_date dan keyin bo‘lishi kerak',
+      });
+    }
+    // O'tgan sanaga bron yaratish taqiqlangani bilan BIR XIL konvensiya
+    // (`bookings.service.ts::createVehicleRentalInternal`, kechagi va
+    // undan oldingi sanalar rad etiladi, bugungi kun ruxsat etiladi) —
+    // admin BUGUNGI/kelajakdagi sotuvni bloklaydi, o'tmishni EMAS.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (startDate < todayIso) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_DATES_PAST',
+        message: "O'tgan sanalarni bloklab bo'lmaydi",
+      });
+    }
+    // Sog'lik tekshiruvi — tasodifiy juda katta oraliq (masalan yillar)
+    // butun `room_inventory`ni to'ldirib yubormasligi uchun oqilona chegara.
+    const rangeDays = Math.round((endMs - startMs) / 86_400_000);
+    if (rangeDays > 366) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_RANGE_TOO_LONG',
+        message: 'Oraliq 366 kundan oshmasligi kerak',
+      });
+    }
+    return { startDate, endDate };
+  }
+
+  /**
+   * `[from, to)` oralig'idagi har bir sana uchun: umumiy inventar, shu
+   * kunga real bandlik (`bookings`dan hisoblangan, xuddi booking-yaratish
+   * yo'lidagi FORMULA bilan bir xil), va admin/hamkor bloki (`closed`).
+   * `sellable = blocked ? 0 : max(0, total_inventory - booked_count)`.
+   */
+  async roomAvailabilityCalendar(
+    roomId: string,
+    query: Record<string, unknown>,
+  ) {
+    const room = await this.assertRoomExists(roomId);
+    const from = String(query.from ?? new Date().toISOString().slice(0, 10));
+    const to = String(
+      query.to ??
+        new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    );
+    if (
+      !Number.isFinite(Date.parse(from)) ||
+      !Number.isFinite(Date.parse(to))
+    ) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_DATES_INVALID',
+        message: "from/to noto'g'ri",
+      });
+    }
+
+    const rows = await this.postgres.query<{
+      date: string;
+      total_count: number;
+      blocked: boolean;
+      booked_count: string | number;
+    }>(
+      `select gs.date::date::text as date,
+              coalesce(ri.total_count, $4) as total_count,
+              coalesce(ri.closed, false) as blocked,
+              coalesce(bk.booked_count, 0) as booked_count
+       from generate_series($2::date, $3::date - interval '1 day', interval '1 day') as gs(date)
+       left join room_inventory ri on ri.room_id = $1::uuid and ri.date = gs.date
+       left join lateral (
+         select coalesce(sum(coalesce((price_snapshot->>'rooms')::int, 1)), 0) as booked_count
+         from bookings
+         where room_id = $1::uuid
+           and status not in ('cancelled', 'expired', 'completed')
+           and check_in <= gs.date and gs.date < check_out
+       ) bk on true
+       order by gs.date`,
+      [roomId, from, to, room.total_inventory],
+    );
+
+    return {
+      room_id: roomId,
+      hotel_id: room.hotel_id,
+      total_inventory: room.total_inventory,
+      days: rows.map((r) => {
+        const bookedCount = Number(r.booked_count);
+        const sellable = r.blocked
+          ? 0
+          : Math.max(0, r.total_count - bookedCount);
+        return {
+          date: r.date,
+          total_count: r.total_count,
+          booked_count: bookedCount,
+          blocked: r.blocked,
+          status: r.blocked
+            ? 'blocked'
+            : bookedCount === 0
+              ? 'available'
+              : sellable > 0
+                ? 'partially_occupied'
+                : 'booked',
+          sellable_count: sellable,
+        };
+      }),
+    };
+  }
+
+  /**
+   * `[start_date, end_date)` oraliqdagi HAR BIR sana uchun `room_inventory
+   * .closed=true` qiladi (hamkorning `blackoutDates()`si bilan bir xil
+   * mexanizm/ustun — mavjud, tasdiqlangan pattern). `reason` MAJBURIY
+   * (task talabi) — DB'da alohida ustun sifatida SAQLANMAYDI (yangi
+   * migratsiya SHART EMAS), buning o'rniga `audit_logs.metadata`ga
+   * yoziladi (bu ustun ALLAQACHON mavjud, `auditChange()`ga qarang).
+   */
+  async roomAvailabilityBlock(
+    actor: RequestActor | undefined,
+    roomId: string,
+    body: Record<string, unknown>,
+  ) {
+    const room = await this.assertRoomExists(roomId);
+    const { startDate, endDate } = this.validateBlockRange(body);
+    const reason = String(body.reason ?? '').trim();
+    if (!reason) {
+      throw new BadRequestException({
+        code: 'AVAILABILITY_BLOCK_REASON_REQUIRED',
+        message: 'Bloklash sababi kiritilishi shart',
+      });
+    }
+
+    const rows = await this.postgres.query<{ date: string }>(
+      `insert into room_inventory (id, room_id, date, total_count, closed)
+       select gen_random_uuid(), $1::uuid, d.date, $4, true
+       from generate_series($2::date, $3::date - interval '1 day', interval '1 day') as d(date)
+       on conflict (room_id, date) do update
+         set closed = true, version = room_inventory.version + 1
+       returning date::text`,
+      [roomId, startDate, endDate, room.total_inventory],
+    );
+
+    await this.auditChange(
+      'availability.block',
+      actor,
+      'room_inventory',
+      roomId,
+      { blocked: false },
+      { blocked: true, start_date: startDate, end_date: endDate },
+      { reason, dates: rows.map((r) => r.date) },
+    );
     this.invalidateAdminCache();
-    return rows[0];
+    return {
+      room_id: roomId,
+      start_date: startDate,
+      end_date: endDate,
+      reason,
+      dates_blocked: rows.map((r) => r.date),
+    };
+  }
+
+  /**
+   * `[start_date, end_date)` oraliqni ochadi (`closed=false`). Faqat
+   * ALLAQACHON mavjud `room_inventory` qatorlariga tegadi (`update ...
+   * where`) — boshqa admin/hamkor tomonidan boshqa sabab bilan
+   * bloklangan yoki UMUMAN bloklanmagan sanani "noto'g'ri buzish" xavfi
+   * yo'q, chunki bu FAQAT `closed=true -> false` ONE-WAY amal — idempotent
+   * (allaqachon ochiq sanaga qayta chaqirilsa 0 qator o'zgaradi, xato
+   * bermaydi).
+   */
+  async roomAvailabilityUnblock(
+    actor: RequestActor | undefined,
+    roomId: string,
+    body: Record<string, unknown>,
+  ) {
+    await this.assertRoomExists(roomId);
+    const { startDate, endDate } = this.validateBlockRange(body);
+
+    const rows = await this.postgres.query<{ date: string }>(
+      `update room_inventory
+       set closed = false, version = version + 1
+       where room_id = $1::uuid
+         and date >= $2::date and date < $3::date
+         and closed = true
+       returning date::text`,
+      [roomId, startDate, endDate],
+    );
+
+    await this.auditChange(
+      'availability.unblock',
+      actor,
+      'room_inventory',
+      roomId,
+      { blocked: true },
+      { blocked: false, start_date: startDate, end_date: endDate },
+      { dates: rows.map((r) => r.date) },
+    );
+    this.invalidateAdminCache();
+    return {
+      room_id: roomId,
+      start_date: startDate,
+      end_date: endDate,
+      dates_unblocked: rows.map((r) => r.date),
+    };
   }
 
   async partnerLedger(id: string) {
@@ -4366,7 +4762,28 @@ export class AdminService {
     `);
   }
 
-  async adminUserCreate(body: Record<string, unknown>) {
+  /**
+   * `auth.service.ts::normalizeAdminRole()` bilan BIR XIL alias jadvali —
+   * lekin U yerda noma'lum qiymat JIM RAVISHDA `Role.ADMIN`ga tushadi
+   * (mavjud, login vaqtidagi "fail-safe" xulq, o'zgartirilmagan). BU YERDA
+   * — YOZISH vaqtida — buni ATAYLAB QAYTARMAYMIZ: noma'lum/yaroqsiz rol
+   * qiymati ANIQ rad etilishi kerak (2026-09-14 audit: ilgari
+   * `adminUserUpdate` ISTALGAN satrni `role` ustuniga yozar edi, hech
+   * qanday tasdiqlashsiz).
+   */
+  private normalizeRoleInput(value: unknown): Role | null {
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, '_');
+    const validRoles: string[] = Object.values(Role);
+    return validRoles.includes(normalized) ? (normalized as Role) : null;
+  }
+
+  async adminUserCreate(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
     const email = String(body.email ?? '')
       .trim()
       .toLowerCase();
@@ -4374,6 +4791,30 @@ export class AdminService {
       throw new BadRequestException({
         code: 'ADMIN_EMAIL_REQUIRED',
         message: 'Email kiritilishi shart',
+      });
+    }
+
+    const requestedRole = this.normalizeRoleInput(body.role ?? Role.MODERATOR);
+    if (!requestedRole) {
+      throw new BadRequestException({
+        code: 'ADMIN_ROLE_INVALID',
+        message: "Noto'g'ri rol qiymati",
+      });
+    }
+    // Faqat SUPER_ADMIN boshqa foydalanuvchiga SUPER_ADMIN bera oladi —
+    // aks holda istalgan `admin-users:write`ga ega admin o'zi yoki
+    // boshqasini "eng yuqori" darajaga ko'tarishi mumkin bo'lar edi
+    // (privilege escalation, task item 5/9/10 — "Normal admin cannot
+    // grant itself SUPER_ADMIN" / "Permission escalation attempt →
+    // rejected").
+    if (
+      requestedRole === Role.SUPER_ADMIN &&
+      actor?.role !== Role.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException({
+        code: 'ADMIN_ROLE_ESCALATION_DENIED',
+        message:
+          'Faqat SUPER_ADMIN boshqa foydalanuvchiga SUPER_ADMIN bera oladi',
       });
     }
 
@@ -4392,20 +4833,76 @@ export class AdminService {
         email,
         passwordHash,
         String(body.full_name ?? body.name ?? ''),
-        String(body.role ?? 'moderator'),
+        requestedRole.toLowerCase(),
         now,
       ],
     );
     this.invalidateAdminCache();
+    await this.auditChange(
+      'admin_user.create',
+      actor,
+      'admin_user',
+      (rows[0]?.id as string | undefined) ?? null,
+      null,
+      { email, role: requestedRole, status: 'active' },
+    );
     return { ...rows[0], temporary_password: temporaryPassword };
   }
 
-  async adminUserUpdate(id: string, body: Record<string, unknown>) {
+  async adminUserUpdate(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const [existing] = await this.rows(
+      `select id::text, email, full_name, role, status, created_at, updated_at
+       from admin_users where id = $1::uuid and deleted_at is null`,
+      [id],
+    );
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'ADMIN_USER_NOT_FOUND',
+        message: 'Admin foydalanuvchi topilmadi',
+      });
+    }
+
+    let nextRole: string | null = null;
+    if (body.role !== undefined && body.role !== null && body.role !== '') {
+      const requestedRole = this.normalizeRoleInput(body.role);
+      if (!requestedRole) {
+        throw new BadRequestException({
+          code: 'ADMIN_ROLE_INVALID',
+          message: "Noto'g'ri rol qiymati",
+        });
+      }
+      // O'z-o'zini o'zgartirish TAQIQLANADI (rol yo'nalishidan qat'iy
+      // nazar) — bu faqat self-escalation'ni emas, balki "bittagina
+      // SUPER_ADMIN o'zini tasodifan pastroq rolga tushirib, tizimni
+      // boshqarib bo'lmaydigan holga keltirish" xavfini ham yopadi.
+      if (actor && actor.id === id && actor.actorType === 'admin') {
+        throw new ForbiddenException({
+          code: 'ADMIN_SELF_ROLE_CHANGE_DENIED',
+          message: "O'zingizning rolingizni o'zgartira olmaysiz",
+        });
+      }
+      if (
+        requestedRole === Role.SUPER_ADMIN &&
+        actor?.role !== Role.SUPER_ADMIN
+      ) {
+        throw new ForbiddenException({
+          code: 'ADMIN_ROLE_ESCALATION_DENIED',
+          message:
+            'Faqat SUPER_ADMIN boshqa foydalanuvchiga SUPER_ADMIN bera oladi',
+        });
+      }
+      nextRole = requestedRole.toLowerCase();
+    }
+
     const rows = await this.rows(
       `update admin_users
        set email = coalesce(nullif($2, ''), email),
            full_name = coalesce(nullif($3, ''), full_name),
-           role = coalesce(nullif($4, ''), role),
+           role = coalesce($4, role),
            updated_at = now()
        where id = $1::uuid and deleted_at is null
        returning id::text, email, full_name, role, status, created_at, updated_at`,
@@ -4413,26 +4910,57 @@ export class AdminService {
         id,
         body.email ? String(body.email).toLowerCase() : null,
         body.full_name ? String(body.full_name) : null,
-        body.role ? String(body.role) : null,
+        nextRole,
       ],
     );
     this.invalidateAdminCache();
+    await this.auditChange(
+      'admin_user.update',
+      actor,
+      'admin_user',
+      id,
+      existing,
+      rows[0] ?? existing,
+    );
     return rows[0] ?? { id, ...body, updated_at: new Date().toISOString() };
   }
 
-  async adminUserStatus(id: string, body: Record<string, unknown>) {
+  async adminUserStatus(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    if (actor && actor.id === id && actor.actorType === 'admin') {
+      throw new ForbiddenException({
+        code: 'ADMIN_SELF_STATUS_CHANGE_DENIED',
+        message: "O'zingizning statusingizni o'zgartira olmaysiz",
+      });
+    }
+    const [existing] = await this.rows(
+      `select id::text, status from admin_users where id = $1::uuid`,
+      [id],
+    );
+    const nextStatus = String(body.status ?? 'active');
     const rows = await this.rows(
       `update admin_users
        set status = $2, updated_at = now()
        where id = $1::uuid
        returning id::text, email, full_name, role, status, created_at, updated_at`,
-      [id, String(body.status ?? 'active')],
+      [id, nextStatus],
     );
     this.invalidateAdminCache();
+    await this.auditChange(
+      'admin_user.status',
+      actor,
+      'admin_user',
+      id,
+      existing ?? null,
+      { id, status: nextStatus },
+    );
     return (
       rows[0] ?? {
         id,
-        status: String(body.status ?? 'active'),
+        status: nextStatus,
         updated_at: new Date().toISOString(),
       }
     );

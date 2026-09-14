@@ -33,7 +33,21 @@ const ADMIN_PASSWORD = readFileSync(
   'utf8',
 ).trim();
 
-async function adminToken(request: APIRequestContext): Promise<string> {
+interface QaAdminAuth {
+  token: string;
+  user: { id: string; name: string; email: string; role: string; has2FA: boolean };
+}
+
+/** Memoized across the whole file (single worker) — POST /auth/admin/login
+ * is rate-limited (@Throttle 10/60s); calling it once per test (the
+ * original approach) reliably exceeded that limit by the 7th-8th test in
+ * one run and made `login()` hang on waitForURL. This is not a product
+ * bug — it's this suite generating more login traffic than a real admin
+ * session ever would in that time window. */
+let cachedAuth: QaAdminAuth | null = null;
+
+async function adminAuth(request: APIRequestContext): Promise<QaAdminAuth> {
+  if (cachedAuth) return cachedAuth;
   const res = await request.post(`${QA_API}/auth/admin/login`, {
     data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
   });
@@ -41,7 +55,22 @@ async function adminToken(request: APIRequestContext): Promise<string> {
   const body = await res.json();
   const token = body?.data?.accessToken as string | undefined;
   expect(token, 'admin login response missing accessToken').toBeTruthy();
-  return token!;
+  const admin = body?.data?.admin ?? {};
+  cachedAuth = {
+    token: token!,
+    user: {
+      id: admin.id ?? 'admin',
+      name: admin.full_name ?? admin.email ?? 'Admin',
+      email: admin.email ?? ADMIN_EMAIL,
+      role: admin.role ?? 'SUPER_ADMIN',
+      has2FA: admin.has_2fa ?? false,
+    },
+  };
+  return cachedAuth;
+}
+
+async function adminToken(request: APIRequestContext): Promise<string> {
+  return (await adminAuth(request)).token;
 }
 
 /** True when `path` 404s with Nest's router-level "Cannot GET ..." body —
@@ -58,11 +87,24 @@ async function routeMissing(request: APIRequestContext, token: string, path: str
   return message.startsWith('Cannot ');
 }
 
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login');
-  await page.getByPlaceholder('admin').fill(ADMIN_EMAIL);
-  await page.getByPlaceholder('••••••••').fill(ADMIN_PASSWORD);
-  await page.getByRole('button', { name: 'Boshqaruv Paneliga Kirish' }).click();
+/** Seeds the exact same client state a real UI login produces —
+ * apps/web-admin/app/(auth)/login/page.tsx sets `admin_token` as a plain
+ * (non-httpOnly) js-cookie and calls useAuthStore().login(user), which
+ * zustand/persist mirrors into localStorage key "admin-auth-storage".
+ * Reuses the one real login from adminAuth() instead of driving the form
+ * (and hitting the throttled endpoint) in every test. */
+async function login(page: import('@playwright/test').Page, request: APIRequestContext) {
+  const { token, user } = await adminAuth(request);
+  await page.context().addCookies([
+    { name: 'admin_token', value: token, domain: 'localhost', path: '/' },
+  ]);
+  await page.addInitScript((authUser) => {
+    window.localStorage.setItem(
+      'admin-auth-storage',
+      JSON.stringify({ state: { user: authUser, isAuthenticated: true }, version: 0 }),
+    );
+  }, user);
+  await page.goto('/dashboard');
   await page.waitForURL(/\/dashboard/, { timeout: 15_000 });
 }
 
@@ -78,13 +120,19 @@ test.describe('Admin gap-closure — Availability Calendar', () => {
     );
   });
 
-  test('listing -> availability -> calendar renders with a room selected', async ({ page }) => {
+  test('listing -> availability -> calendar renders with a room selected', async ({ page, request }) => {
     test.skip(blocked, 'ENVIRONMENT BLOCKED: GET /admin/rooms/:id/availability 404s on the QA backend (not yet redeployed with 55849e8b)');
     const issues = trackPageIssues(page);
-    await login(page);
+    await login(page, request);
 
     await page.goto('/partners/listings');
     await page.waitForLoadState('networkidle');
+    // apps/web-admin/app/(dashboard)/partners/listings/page.tsx: Tabs
+    // defaults to the FIRST tab ("Kutilmoqda" / under_review), which is
+    // empty for this QA fixture set — the one "published" hotel only
+    // shows under "Tasdiqlangan". Confirmed via GET /admin/hotels (test
+    // bug, not a missing route or missing data).
+    await page.getByRole('button', { name: 'Tasdiqlangan' }).click();
     const firstListingLink = page.locator('a[href^="/partners/listings/"]').first();
     await expect(firstListingLink).toBeVisible({ timeout: 10_000 });
     await firstListingLink.click();
@@ -102,24 +150,40 @@ test.describe('Admin gap-closure — Availability Calendar', () => {
     expect(issues.consoleErrors, `Console errors: ${issues.consoleErrors.join(' | ')}`).toHaveLength(0);
   });
 
-  test('block requires a reason and rejects an inverted date range', async ({ page }) => {
+  test('block requires a reason and rejects an inverted date range', async ({ page, request }) => {
     test.skip(blocked, 'ENVIRONMENT BLOCKED: GET /admin/rooms/:id/availability 404s on the QA backend (not yet redeployed with 55849e8b)');
-    await login(page);
+    await login(page, request);
     await page.goto('/partners/listings');
     await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: 'Tasdiqlangan' }).click();
     const firstListingLink = page.locator('a[href^="/partners/listings/"]').first();
+    await expect(firstListingLink).toBeVisible({ timeout: 10_000 });
     await firstListingLink.click();
     await page.waitForURL(/\/partners\/listings\/[^/]+$/);
     await page.getByRole('link', { name: 'Availability' }).click();
     await page.waitForURL(/\/availability$/);
+    // Kalendar hotel + room-list + GET /admin/rooms/:id/availability
+    // ketma-ket so'rovlaridan keyin render bo'ladi — QA backend sovuq
+    // keshda sezilarli sekinroq javob berishi mumkin (CACHE_DEFAULT_TTL
+    // =60s), shuning uchun aniq API javobini kutamiz (taxminiy vaqt
+    // o'rniga) — backend/UI xatosi emas, flaky kutish edi.
+    await page
+      .waitForResponse(
+        (res) => res.url().includes('/admin/rooms/') && res.url().includes('/availability'),
+        { timeout: 30_000 },
+      )
+      .catch(() => null);
 
     const blockButton = page.getByRole('button', { name: "Sana(lar)ni bloklash" });
-    if (!(await blockButton.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    if (!(await blockButton.isVisible({ timeout: 15_000 }).catch(() => false))) {
       test.skip(true, "Bu hotelda faol xona yo'q — block flow sinab bo'lmaydi");
       return;
     }
     await blockButton.click();
-    await page.getByRole('button', { name: 'Bloklash' }).click();
+    // exact:true — "Bloklash" substring-matches BOTH the trigger button
+    // ("Sana(lar)ni bloklash") and the modal's submit button; the modal is
+    // now open so only its own exact-text button should be targeted.
+    await page.getByRole('button', { name: 'Bloklash', exact: true }).click();
     // reason bo'sh, backend/HTML5 required tekshiruvi form yuborilishini
     // to'xtatadi — modal ochiq qolishi kerak.
     await expect(page.getByText('Sanalarni bloklash')).toBeVisible();
@@ -127,9 +191,9 @@ test.describe('Admin gap-closure — Availability Calendar', () => {
 });
 
 test.describe('Admin gap-closure — RBAC Permission Matrix', () => {
-  test('team page shows a real, non-empty role/permission matrix', async ({ page }) => {
+  test('team page shows a real, non-empty role/permission matrix', async ({ page, request }) => {
     const issues = trackPageIssues(page);
-    await login(page);
+    await login(page, request);
 
     await page.goto('/team');
     await expect(page.getByText('Rollar va ruxsatlar')).toBeVisible({ timeout: 10_000 });
@@ -142,8 +206,8 @@ test.describe('Admin gap-closure — RBAC Permission Matrix', () => {
     expect(issues.consoleErrors, `Console errors: ${issues.consoleErrors.join(' | ')}`).toHaveLength(0);
   });
 
-  test('editing your own row disables the role select', async ({ page }) => {
-    await login(page);
+  test('editing your own row disables the role select', async ({ page, request }) => {
+    await login(page, request);
     await page.goto('/team');
     await page.waitForLoadState('networkidle');
     const selfRow = page.locator('tr', { hasText: 'Siz' }).first();
@@ -179,12 +243,12 @@ test.describe('Admin gap-closure — Commission overrides', () => {
       : true;
   });
 
-  test('partner detail page: commission modal validates and saves', async ({ page }) => {
+  test('partner detail page: commission modal validates and saves', async ({ page, request }) => {
     test.skip(
       blocked,
       'ENVIRONMENT BLOCKED: GET/PATCH /admin/partners/:id/commission 404s on the QA backend (not yet redeployed with 55849e8b)',
     );
-    await login(page);
+    await login(page, request);
     await page.goto(`/partners/${partnerId}`);
     // apps/web-admin/app/(dashboard)/partners/[id]/page.tsx: the
     // "Komissiya" info card has an icon-only edit button (Pencil, no
@@ -218,10 +282,10 @@ test.describe('Admin gap-closure — Reviews moderation', () => {
     blocked = await routeMissing(request, token, '/admin/reviews');
   });
 
-  test('reviews list loads with real backend data (no mock placeholder)', async ({ page }) => {
+  test('reviews list loads with real backend data (no mock placeholder)', async ({ page, request }) => {
     test.skip(blocked, 'ENVIRONMENT BLOCKED: GET /admin/reviews 404s on the QA backend (not yet redeployed with f30969be)');
     const issues = trackPageIssues(page);
-    await login(page);
+    await login(page, request);
 
     const responsePromise = page.waitForResponse(
       (res) => res.url().includes('/admin/reviews') && res.request().method() === 'GET',
@@ -249,8 +313,8 @@ test.describe('Admin gap-closure — Reviews moderation', () => {
 });
 
 test.describe('Admin gap-closure — Translations & SEO', () => {
-  test('translations page loads and resource switch re-fetches', async ({ page }) => {
-    await login(page);
+  test('translations page loads and resource switch re-fetches', async ({ page, request }) => {
+    await login(page, request);
     await page.goto('/cms/translations');
     await expect(page.getByRole('heading', { name: 'Tarjimalar' })).toBeVisible({ timeout: 10_000 });
 
@@ -265,8 +329,9 @@ test.describe('Admin gap-closure — Translations & SEO', () => {
 
   test('SEO page loads and (for "pages") discloses it is actually wired to the public site', async ({
     page,
+    request,
   }) => {
-    await login(page);
+    await login(page, request);
     await page.goto('/cms/seo');
     await expect(page.getByRole('heading', { name: 'SEO' })).toBeVisible({ timeout: 10_000 });
     // 2026-09-14 public SEO closure: default resource is "pages", which is

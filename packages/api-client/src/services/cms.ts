@@ -1,6 +1,6 @@
 import { rawApi } from "../client";
 import { camelizeKeys } from "../case";
-import type { CmsPageView, Locale } from "../types";
+import type { CmsEntrySeoView, CmsPageView, Locale } from "../types";
 
 export interface PublicStatsView {
   totalHotels: number;
@@ -51,6 +51,16 @@ interface RawDeal {
   status?: string;
 }
 
+interface RawCmsSeo {
+  metaTitle?: string;
+  metaDescription?: string;
+  canonical?: string;
+  robots?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+}
+
 interface RawCmsPage {
   id?: string;
   slug?: string;
@@ -61,6 +71,10 @@ interface RawCmsPage {
   content?: string;
   status?: string;
   metadata?: {
+    seo?: RawCmsSeo;
+    /** @deprecated — legacy flat naming, never actually populated by the
+     * real admin SEO editor (apps/web-admin/app/(dashboard)/cms/seo), kept
+     * only as a defensive fallback for any pre-existing row shaped this way. */
     seoTitle?: string;
     seoDescription?: string;
     excerpt?: string;
@@ -69,6 +83,47 @@ interface RawCmsPage {
   seoDescription?: string;
   publishedAt?: string;
   updatedAt?: string;
+}
+
+/** Konservativ tekshiruv — admin SEO panelidagi (cms/seo/page.tsx)
+ * containsUnsafeMarkup bilan bir xil qoida: <script>/on*=/javascript: rad etiladi. */
+function containsUnsafeMarkup(value: string): boolean {
+  return /<script|<\/script|on\w+\s*=|javascript:/i.test(value);
+}
+
+/** admin SEO panelidagi isSafeUrl bilan bir xil — faqat http/https ruxsat. */
+function isSafeUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value, "https://safaar.uz");
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function sanitizedText(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return containsUnsafeMarkup(value) ? undefined : value;
+}
+
+function sanitizedUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  if (containsUnsafeMarkup(value)) return undefined;
+  return isSafeUrl(value) ? value : undefined;
+}
+
+function toSeoView(raw: RawCmsSeo | undefined): CmsEntrySeoView {
+  if (!raw) return {};
+  return {
+    metaTitle: sanitizedText(raw.metaTitle),
+    metaDescription: sanitizedText(raw.metaDescription),
+    canonical: sanitizedUrl(raw.canonical),
+    robots: sanitizedText(raw.robots),
+    ogTitle: sanitizedText(raw.ogTitle),
+    ogDescription: sanitizedText(raw.ogDescription),
+    ogImage: sanitizedUrl(raw.ogImage),
+  };
 }
 
 function toDealView(raw: RawDeal, locale: Locale): DealView {
@@ -90,7 +145,15 @@ function toCmsPageView(raw: RawCmsPage, locale: Locale): CmsPageView {
   const title = raw.titleText || pickLocale(raw.title, locale);
   const content =
     raw.content || raw.bodyText || pickLocale(raw.body, locale) || "";
-  const seoTitle = raw.seoTitle || raw.metadata?.seoTitle || title;
+  const seo = toSeoView(raw.metadata?.seo);
+  const seoTitle =
+    seo.metaTitle || raw.seoTitle || raw.metadata?.seoTitle || title;
+  const seoDescription =
+    seo.metaDescription ||
+    raw.seoDescription ||
+    raw.metadata?.seoDescription ||
+    raw.metadata?.excerpt ||
+    "";
 
   return {
     id: raw.id ?? "",
@@ -101,8 +164,8 @@ function toCmsPageView(raw: RawCmsPage, locale: Locale): CmsPageView {
     publishedAt: raw.publishedAt ?? "",
     updatedAt: raw.updatedAt ?? "",
     seoTitle,
-    seoDescription:
-      raw.seoDescription || raw.metadata?.seoDescription || raw.metadata?.excerpt || "",
+    seoDescription,
+    seo,
   };
 }
 

@@ -22,13 +22,24 @@ import { CMS_RESOURCES, type CmsEntry, type CmsEntrySeo, type CmsResource } from
  * (shallow JSONB merge, confirmed in admin.service.ts::cmsUpdate). No new
  * migration was needed.
  *
- * IMPORTANT, VERIFIED LIMITATION: `apps/web-user` (the public site) does
- * NOT currently read `cms_entries.metadata.seo` anywhere — its
- * `generateMetadata()` builds meta tags independently. Saving SEO fields
- * here persists them correctly, but they have NO live effect on the
- * public site's actual <head> tags until web-user is wired to read them
- * (a separate, unstarted piece of work — not done here since it touches
- * web-user, and was not something this admin-panel task asked to change).
+ * 2026-09-14 UPDATE (public SEO closure): `apps/web-user` now reads this
+ * data for the "pages" resource — `GET /cms/pages/:slug` already returned
+ * the full `metadata` column, and
+ * apps/web-user/app/[lang]/(main)/pages/[slug]/page.tsx::generateMetadata()
+ * (via lib/seo/cms-metadata.ts) maps metaTitle/metaDescription/canonical/
+ * robots/ogTitle/ogDescription/ogImage into the real <head>, with locale
+ * fallback (i18n/config pickLocale) and defense-in-depth sanitization at
+ * packages/api-client/src/services/cms.ts (unsafe markup and non-http(s)
+ * URLs are dropped even if a direct API call bypasses this form's
+ * client-side validate()). Verified live against the QA backend — see
+ * e2e/tests/qa-user/seo-metadata.spec.ts.
+ *
+ * REMAINING LIMITATION (honest, not fixed here): banners/offers/news/
+ * templates/broadcasts have no public detail route in web-user yet, so
+ * SEO saved for those resources does not affect any live <head> — only
+ * "pages" is wired. Also, these fields are locale-agnostic (one shared
+ * override across uz/ru/en) since the underlying schema has no per-locale
+ * SEO storage; only the page's own content/title is genuinely per-locale.
  */
 
 const RESOURCE_LABELS: Record<CmsResource, string> = {
@@ -200,8 +211,8 @@ export default function SeoPage() {
             <Search size={22} aria-hidden /> SEO
           </h1>
           <p className="text-[var(--text-secondary)] text-sm mt-1">
-            Meta ma&apos;lumotlarni boshqarish — hozircha faqat saqlanadi,
-            public saytda avtomatik ishlatilishi alohida ulanishi kerak
+            Meta ma&apos;lumotlarni boshqarish — &quot;Sahifalar&quot; turi
+            uchun public saytda (/[til]/pages/:slug) avtomatik ishlatiladi
           </p>
         </div>
         <div className="w-56">
@@ -217,10 +228,25 @@ export default function SeoPage() {
       <div className="flex items-start gap-3 rounded-xl border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4">
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
         <p className="text-xs text-[var(--text-secondary)]">
-          Bu yerda saqlangan SEO maydonlari hozircha public sayt (web-user)
-          tomonidan avtomatik o&apos;qilmaydi — bu alohida, keyingi bosqich.
-          Ma&apos;lumot xavfsiz saqlanadi, lekin hozircha faqat admin
-          ko&apos;rinishi uchun.
+          {resource === "pages" ? (
+            <>
+              Bu maydonlar public saytda haqiqatda ishlatiladi:
+              web-user&apos;ning{" "}
+              <code className="font-mono">/[til]/pages/:slug</code>{" "}
+              generateMetadata() shu yerdagi metaTitle/metaDescription/
+              canonical/robots/OG qiymatlarini o&apos;qiydi (2026-09-14
+              ulangan). Saqlashdan oldin xavfsizlik tekshiruvidan o&apos;tadi.
+            </>
+          ) : (
+            <>
+              Ma&apos;lumot xavfsiz saqlanadi, lekin &quot;{RESOURCE_LABELS[resource]}
+              &quot; turi uchun public saytda hali alohida sahifa yo&apos;q —
+              shuning uchun bu SEO maydonlari hozircha public{" "}
+              <code className="font-mono">&lt;head&gt;</code>&apos;ga
+              ta&apos;sir qilmaydi. Faqat &quot;Sahifalar&quot; turi hozircha
+              ulangan.
+            </>
+          )}
         </p>
       </div>
 

@@ -136,6 +136,22 @@ export interface PromoView {
   validUntil: string;
 }
 
+/**
+ * Admin `cms/seo` panelida `metadata.seo.*` sifatida saqlanadigan maydonlar
+ * bilan bir xil nom/shakl (apps/web-admin/types/admin.ts::CmsEntrySeo) —
+ * shu yerda ham xuddi shu nomlar qayta ishlatiladi, mos kelmaydigan yangi
+ * schema o'ylab topilmagan.
+ */
+export interface CmsEntrySeoView {
+  metaTitle?: string;
+  metaDescription?: string;
+  canonical?: string;
+  robots?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+}
+
 export interface CmsPageView {
   id: string;
   slug: string;
@@ -146,4 +162,6 @@ export interface CmsPageView {
   updatedAt: string;
   seoTitle: string;
   seoDescription: string;
+  /** Admin SEO panelida saqlangan xavfsizlashtirilgan (sanitized) maydonlar. */
+  seo: CmsEntrySeoView;
 }

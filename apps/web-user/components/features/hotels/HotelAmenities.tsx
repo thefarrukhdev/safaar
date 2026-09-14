@@ -57,9 +57,12 @@ export function HotelAmenities({
         </div>
       )}
 
-      <Modal open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex flex-col gap-6 p-6 max-h-[80vh] overflow-y-auto bg-white rounded-2xl">
-          <h2 className="text-2xl font-bold text-slate-900">What this place offers</h2>
+      <Modal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title={dict.amenities || 'What this place offers'}
+      >
+        <div className="flex flex-col gap-6">
           <ul className="flex flex-col gap-6">
             {amenities.map((id) => {
               const Icon = AMENITY_ICONS[id];

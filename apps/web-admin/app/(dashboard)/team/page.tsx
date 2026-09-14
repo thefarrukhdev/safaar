@@ -17,7 +17,7 @@ const teamUserSchema = z.object({
   fullName: z.string().min(2, "F.I.SH kamida 2 harfdan iborat bo'lishi kerak"),
   email: z.string().email("Yaroqli elektron pochta kiriting"),
   phone: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "MODERATOR", "FINANCE_ADMIN", "CONTENT_ADMIN"]),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "MODERATOR", "FINANCE", "SUPPORT", "CONTENT"]),
   password: z.string().optional(),
 });
 
@@ -25,16 +25,20 @@ type TeamUserFormValues = z.infer<typeof teamUserSchema>;
 
 const ROLE_LABELS: Record<AdminRole, string> = {
   SUPER_ADMIN: "Super Admin",
+  ADMIN: "Admin",
   MODERATOR: "Moderator",
-  FINANCE_ADMIN: "Moliya Admini",
-  CONTENT_ADMIN: "Kontent Admini",
+  FINANCE: "Moliya Admini",
+  SUPPORT: "Yordam Admini",
+  CONTENT: "Kontent Admini",
 };
 
 const ROLE_COLORS: Record<AdminRole, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-700 border-purple-200",
+  ADMIN: "bg-indigo-100 text-indigo-700 border-indigo-200",
   MODERATOR: "bg-blue-100 text-blue-700 border-blue-200",
-  FINANCE_ADMIN: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  CONTENT_ADMIN: "bg-amber-100 text-amber-700 border-amber-200",
+  FINANCE: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  SUPPORT: "bg-pink-100 text-pink-700 border-pink-200",
+  CONTENT: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
 export default function TeamPage() {

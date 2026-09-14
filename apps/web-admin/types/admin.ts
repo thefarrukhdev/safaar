@@ -6,13 +6,16 @@ import type { BookingStatus } from '@safaar/types';
 
 export type AdminRole =
   | 'SUPER_ADMIN'
+  | 'ADMIN'
   | 'MODERATOR'
-  | 'FINANCE_ADMIN'
-  | 'CONTENT_ADMIN';
+  | 'FINANCE'
+  | 'SUPPORT'
+  | 'CONTENT';
 
 export interface AdminUser {
   id: string;
   fullName: string;
+  name?: string;
   email: string;
   role: AdminRole;
   phone: string;
@@ -32,6 +35,7 @@ export interface AdminListing {
   latitude?: number;
   longitude?: number;
   stars: number;
+  featured?: boolean;
   photos?: string[];
   description?: string;
   amenities?: string[];
@@ -457,6 +461,16 @@ export interface CmsArticle {
   slug: string;
   status: 'published' | 'draft';
   publishedAt: string;
+  metadata?: any;
+}
+
+export interface CmsDestination {
+  id: string;
+  city: string;
+  imageUrl: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 /* ────────────────────────────────────────────
@@ -509,6 +523,44 @@ export interface PromoCode {
    ──────────────────────────────────────────── */
 
 export type TicketStatus = 'open' | 'in_progress' | 'closed';
+
+export interface AdminReview {
+  id: string;
+  hotelId: string;
+  hotelName: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  status: 'published' | 'hidden' | 'spam';
+  createdAt: string;
+}
+
+export interface AdminTranslation {
+  id: string;
+  key: string;
+  uz: string;
+  ru: string;
+  en: string;
+  createdAt: string;
+}
+
+export interface AdminSeo {
+  id: string;
+  path: string; // e.g. "/", "/hotels", "/about"
+  title: string;
+  description: string;
+  keywords: string;
+  updatedAt: string;
+}
+
+export interface AdminBanner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt: string;
+}
 
 export interface TicketMessage {
   id: string;

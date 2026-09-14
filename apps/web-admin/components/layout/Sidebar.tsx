@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { SIDEBAR_ITEMS, type NavItem } from "@/lib/constants";
 import { AdminApi, type AdminNotificationSummary } from "@/lib/api/admin-api";
+import { useAuthStore } from "@/lib/store/auth";
 import SidebarItem from "./SidebarItem";
 import {
   LayoutDashboard, Users, Building2, CalendarCheck, Wallet, PanelsTopLeft,
@@ -106,10 +107,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     };
   }, [pathname]);
 
-  const sidebarItems = useMemo(
-    () => SIDEBAR_ITEMS.map((item) => applyLiveBadges(item, summary)),
-    [summary],
-  );
+  const { user } = useAuthStore();
+
+  const sidebarItems = useMemo(() => {
+    let items = SIDEBAR_ITEMS;
+    if (user?.role === "FINANCE") {
+      items = items.filter(item => ["Moliya", "Audit jurnali", "Bosh panel"].includes(item.label));
+    } else if (user?.role === "SUPPORT") {
+      items = items.filter(item => ["Bosh panel", "Foydalanuvchilar", "Hamkorlar", "Bronlar", "Yordam"].includes(item.label));
+    } else if (user?.role === "CONTENT") {
+      items = items.filter(item => ["Bosh panel", "Kontent (CMS)", "Promo-kodlar", "Katalog"].includes(item.label));
+      
+      // Also update the nested items for CONTENT role if necessary
+      // though the filter above only filters top-level items.
+    }
+    return items.map((item) => applyLiveBadges(item, summary));
+  }, [summary, user?.role]);
 
   return (
     <aside

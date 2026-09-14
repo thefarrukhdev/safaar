@@ -1,191 +1,182 @@
-# 📋 Safaar Web-User Portali Uchun Databaza Va Media (Rasm) Talablari Hujjati
+# Backend API Talablari: Yangi Admin Modullari
 
-> **Mo'ljallangan:** Backend Dasturchilari va Ma'lumotlar Bazasi Arxitektorlariga  
-> **Loyiha:** Safaar Monorepo (`web-user` foydalanuvchi ilovasi)  
-> **Hujjat Maqsadi:** `web-user` portalini to'liq, jonli va real ma'lumotlar hamda yuqori sifatli rasmlar bilan ta'minlash uchun Prisma schemada yetishmayotgan jadvallar, ustunlar va seed/media talablarini belgilab berish.
+Admin panel (`web-admin`) uchun 5 ta yangi modul ishlab chiqildi. Biroq, ularning to'liq ishlashi uchun backend (API) da quyidagi endpointlar yaratilishi zarur. Barcha modullar hozirgi kunda Mock (ulangan) rejimida ishlamoqda.
 
 ---
 
-## 🖼️ 1. Qo'shilishi Kerak Bo'lgan Rasmlar Va Vizual Namunalar (Media Requirements)
+## 1. Mashhur takliflar (Featured Hotels)
+Admin panelidan mehmonxonalarning `featured` holatini o'zgartirish.
 
-Ma'lumotlar bazasida (`media_files` jadvalida hamda `hotels`, `cities`, `vehicles`, `attractions` jadvallarida) quyidagi rasmlar biriktirilishi shart:
-
-### 🌆 1.1. Shaharlar va Turistik Yo'nalishlar (Destinations)
-
-#### Samarqand — Registon Maydoni
-![Samarqand Registon Maydoni](apps/web-user/public/Samarkand-Registan-cinematic.jpeg)
-
-#### Buxoro — Eski Shahar va Kalan Minorasi
-![Buxoro Eski Shahar](apps/web-user/public/Bukhara-old-city-golden-hour.jpeg)
-
-#### Xiva — Ichan-Qal'a Panoramasi
-![Xiva Ichan-Qal'a](apps/web-user/public/Khiva-Ichan-Kala-aerial.jpeg)
-
-#### Toshkent — Zamonaviy Skyline
-![Tashkent Skyline](apps/web-user/public/Tashkent-city-skyline.jpeg)
-
-#### Chorvoq Suv Ombori Va Dam Olish Hududi
-![Chorvoq Dam Olish Hududi](apps/web-user/public/Charvak-Lake-drone.jpeg)
-
-#### Zomin Milliy Bog'i va Tog' Manzaralari
-![Zomin Tog' Manzaralari](apps/web-user/public/Zaamin.jpeg)
+- **Method:** `PATCH`
+- **URL:** `/v1/admin/hotels/:id/featured`
+- **Payload:** `{ "featured": true }`
 
 ---
 
-### 🏨 1.2. Joylashtirish Ob'yektlari (Mehmonxona, Dacha, Sanatoriy, Restoran)
+## 2. Fikr-mulohazalar moderatsiyasi (Reviews)
+Foydalanuvchilar tomonidan qoldirilgan izohlarni ko'rish, spam deb belgilash, o'chirish.
 
-#### Tashkent Premium Hotel (Hotel Uzbekistan)
-![Hotel Uzbekistan](apps/web-user/public/hotel-uzbekistan.jpeg)
+- **Method:** `GET`
+- **URL:** `/v1/admin/reviews`
+- **Response:**
+  ```json
+  [
+    { "id": "1", "hotelId": "1", "hotelName": "X", "userId": "1", "userName": "Y", "rating": 5, "comment": "...", "status": "published|hidden|spam", "createdAt": "..." }
+  ]
+  ```
 
-#### Shinam Hostel Va Xonalar (Hilton Hostel)
-![Shinam Hostel](apps/web-user/public/hilton-hostel.jpeg)
+- **Method:** `PATCH`
+- **URL:** `/v1/admin/reviews/:id/status`
+- **Payload:** `{ "status": "published" | "spam" | "hidden" }`
 
-#### Restoranlar va Dam Olish Maskonlari (Platan Garden)
-![Platan Garden Restorani](apps/web-user/public/platan-garden.jpg)
-
-#### Gastronomik Turizm (Beshqozon Osh Markazi)
-![Beshqozon Osh Markazi](apps/web-user/public/besh-qozon.jpg)
-
----
-
-### 🚗 1.3. Transport Vositalari (Taksi, Transfer va Avtobus)
-
-#### Chevrolet Cobalt — Standard Viloyatlararo Taksi
-![Chevrolet Cobalt](apps/web-user/public/cobalt-car.jpg)
-
-#### Kia K5 — VIP va Business Klass Transfer
-![Kia K5](apps/web-user/public/kiak5-car.jpg)
+- **Method:** `DELETE`
+- **URL:** `/v1/admin/reviews/:id`
 
 ---
 
-## 🗄️ 2. Databazada (Prisma Schema) Yetishmayotgan Jadvallar Va Ustunlar
+## 3. Hamkorlar e'lonini tahrirlash (Edit Listing)
+Admin tomonidan hamkorlarning e'lonlari (mehmonxonalar) ma'lumotlarini bevosita to'g'rilash (God Mode).
 
-### 🏛️ 2.1. `Attractions` (Diqqatga Sazovor Joylar) Jadvali
-Hozirda `web-user` portalida `/attractions` yo'nalishi mavjud, ammo `schema.prisma` da **attractions** (diqqatga sazovor joylar) uchun jadval umuman yo'q.
-
-**Tavsiya etilayotgan Prisma Modeli:**
-```prisma
-enum AttractionCategory {
-  historical
-  nature
-  museum
-  architectural
-  religious
-  culinary
-}
-
-model Attraction {
-  id                      String             @id @default(uuid()) @db.Uuid
-  cityId                  String             @map("city_id") @db.Uuid
-  slug                    String             @unique @db.VarChar(255)
-  title                   Json               // {"uz": "Registon", "ru": "Регистан", "en": "Registan"}
-  description             Json               // {"uz": "...", "ru": "...", "en": "..."}
-  category                AttractionCategory @default(historical)
-  coverImageUrl           String?            @map("cover_image_url")
-  galleryImages           Json               @default("[]") @map("gallery_images")
-  latitude                Decimal?           @db.Decimal(10, 7)
-  longitude               Decimal?           @db.Decimal(10, 7)
-  ticketPrice             Decimal?           @map("ticket_price") @db.Decimal(18, 2)
-  openingHours            String?            @map("opening_hours") @db.VarChar(100)
-  recommendedVisitDuration Int?              @map("recommended_visit_duration_minutes")
-  ratingAverage           Decimal            @default(0) @map("rating_average") @db.Decimal(3, 2)
-  reviewsCount            Int                @default(0) @map("reviews_count")
-  createdAt               DateTime           @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt               DateTime           @updatedAt @map("updated_at") @db.Timestamptz
-
-  city City @relation(fields: [cityId], references: [id])
-
-  @@index([cityId])
-  @@index([category])
-  @@map("attractions")
-}
-```
+- **Method:** `PATCH` (yoki `PUT`)
+- **URL:** `/v1/admin/hotels/:id`
+- **Payload:**
+  ```json
+  {
+    "hotelName": "Yangi nom",
+    "city": "Toshkent",
+    "address": "Yangi manzil",
+    "stars": 4
+  }
+  ```
+> **Izoh:** Ushbu endpoint orqali e'lonning istalgan maydonini o'zgartirish imkoni bo'lishi kerak.
 
 ---
 
-### 🏷️ 2.2. `Promotions` / `Banners` (Aksiyalar va Bannerlar) Jadvali
-Bosh sahifadagi top takliflar, mavsumiy chegirmalar va aksiyalarni dinamik boshqarish uchun backendda jadval kerak.
+## 4. Statik Tarjimalar CMS (Dictionary)
+Frontendda (`web-user`) qattiq yozilgan tarjimalarni (`locales/*.json`) ma'lumotlar bazasiga o'tkazish. 
 
-**Tavsiya etilayotgan Prisma Modeli:**
-```prisma
-model PromotionBanner {
-  id                 String   @id @default(uuid()) @db.Uuid
-  title              Json     // {"uz": "Yozgi Chorvoq Chegirmalari", ...}
-  subtitle           Json?
-  badgeText          String?  @map("badge_text") @db.VarChar(50) // "Aksiya -20%"
-  imageUrl           String   @map("image_url")
-  targetUrl          String?  @map("target_url")
-  discountPercentage Int?     @map("discount_percentage")
-  startDate          DateTime @map("start_date") @db.Timestamptz
-  endDate            DateTime @map("end_date") @db.Timestamptz
-  isActive           Boolean  @default(true) @map("is_active")
-  sortOrder          Int      @default(0) @map("sort_order")
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+- **Method:** `GET`
+- **URL:** `/v1/admin/translations`
 
-  @@index([isActive, sortOrder])
-  @@map("promotion_banners")
-}
-```
+- **Method:** `POST`
+- **URL:** `/v1/admin/translations`
+- **Payload:** `{ "key": "auth.login", "uz": "Kirish", "ru": "Вход", "en": "Login" }`
+
+- **Method:** `PUT`
+- **URL:** `/v1/admin/translations/:id`
+- **Payload:** `{ "uz": "Tizimga kirish" }`
+
+- **Method:** `DELETE`
+- **URL:** `/v1/admin/translations/:id`
 
 ---
 
-### 🏡 2.3. Dacha Va Sanatoriylar Uchun Maxsus Ustunlar
-Hozirda `PartnerOrganizationType` enum-ida `dacha` bor, lekin `sanatorium` (sanatoriy) va `resort` (dam olish maskani) mavjud emas.
+## 5. SEO va Meta Teglar CMS
+Ilova sahifalari uchun SEO ma'lumotlarini bazadan dinamik yuklash tizimi.
 
-1. **`PartnerOrganizationType` Enum ga qo'shish zarur:**
-   * `sanatorium` (Sanatoriy)
-   * `resort` (Dam olish maskani)
+- **Method:** `GET`
+- **URL:** `/v1/admin/seo`
+- **Response:**
+  ```json
+  [
+    { "id": "1", "path": "/", "title": "...", "description": "...", "keywords": "...", "updatedAt": "..." }
+  ]
+  ```
 
-2. **Dacha uchun `hotels` va `hotel_rooms` jadvallariga zaruriy fieldlar:**
-   * `landAreaSotix` (Hovli maydoni — sotixda, masalan: 6 sotix)
-   * `hasOutdoorPool` (Ochiq basseyn)
-   * `hasIndoorPool` (Yopiq isitiladigan basseyn)
-   * `hasSauna` (Fin saunasi / Turk hammomi)
-   * `hasPlaystation` / `hasBilliards` (Ko'ngilochar jihozlar)
-   * `capacityPeople` (Necha kishiga mo'ljallangan)
-
-3. **Sanatoriy uchun zaruriy fieldlar:**
-   * `medicalProfiles` (Davolash yo'nalishlari: Yurak-qon tomir, Asab tizimi, Oshqozon-ichak)
-   * `includedTreatments` (Kiritilgan muolajalar ro'yxati)
-   * `mealPlanType` (3 mahal parhez ovqat, Shved stoli)
+- **Method:** `PUT`
+- **URL:** `/v1/admin/seo/:id`
+- **Payload:** `{ "title": "Yangi Sarlavha", "description": "Yangi tavsif", "keywords": "yangi, kalit, so'zlar" }`
 
 ---
 
-### 🚗 2.4. Yengil Mashinalar Va Shaxsiy Transferlar (Carpooling / Taxi)
-Hozirgi `bus_companies`, `vehicles`, `trips` modellari faqat katta **Avtobus (Bus)** va qat'iy jadvallarga moslashtirilgan. Viloyatlararo taksi (Cobalt, Gentra, Kia K5, Malibu) va shaxsiy transferlar uchun backendda quyidagi fieldlar yetishmayapti:
+## 6. Bannerlar va Asosiy Rasmlar CMS (Banners)
+Asosiy sahifadagi fon rasmlari va slayderlarni boshqarish uchun backend endpointlari.
 
-1. **`vehicles` jadvaliga qo'shimcha mezonlar:**
-   * `fuelType` (Methane, Petrol, Electric)
-   * `hasAc` (Konditsioner borligi)
-   * `luggageCapacityBags` (Chemodanlar sig'imi)
-   * `photos` (Avtomobil rasmlari galereyasi)
+- **Method:** `GET`
+- **URL:** `/v1/admin/banners`
+- **Response:**
+  ```json
+  [
+    { "id": "1", "title": "...", "imageUrl": "https://...", "isActive": true, "createdAt": "..." }
+  ]
+  ```
 
-2. **`trips` jadvaliga yo'nalish oraliq bekatlari (Intermediate Stops):**
-   * Masalan: *Toshkent -> Jizzax (to'xtash) -> Samarqand*.
+- **Method:** `POST`
+- **URL:** `/v1/admin/banners`
+- **Payload:** `{ "title": "Yangi Banner", "imageUrl": "https://...", "isActive": true }`
 
----
+- **Method:** `PUT`
+- **URL:** `/v1/admin/banners/:id`
+- **Payload:** `{ "title": "...", "imageUrl": "...", "isActive": false }`
 
-## 📊 3. Seed (Boshlang'ich Ma'lumotlar) Bo'yicha Talablar
-
-Hozirgi seed faylda (`admin-demo-seed.sql`) ma'lumotlar soni va rasmlar juda kam:
-
-1. **Ko'proq Ob'yektlar (Hotels & Dachas):**
-   * Kamida 15-20 ta haqiqiy va sifatli mehmonxona/dacha va sanatoriy ma'lumotlari kiritilishi kerak.
-   * Har bir mehmonxona va xona uchun kamida **4-6 ta sifatli rasm** (`media_files` jadvalida link qilinishi zarur).
-
-2. **Sharhlar va Reytinglar (Reviews):**
-   * Foydalanuvchilar tomonidan qoldirilgan kamida 30-40 ta haqiqiy sharhlar (mehmonxona va transport yo'nalishlariga).
-   * Sharh qoldirgan foydalanuvchilarning avatarlari va sharh suratlari.
-
-3. **Ko'proq Transport Reyslari:**
-   * Toshkent-Samarqand, Toshkent-Buxoro, Toshkent-Xiva, Toshkent-Zomin yo'nalishlarida turli vaqtlardagi kunlik reyslar va o'rindiqlar (seats) joylashuv xaritasi.
+- **Method:** `DELETE`
+- **URL:** `/v1/admin/banners/:id`
 
 ---
 
-## 📝 Xulosa Va Backendchiga Topshiriq
+## 7. Hamkorning Individual Komissiyasi (Dynamic Commission)
+Hamkor uchun alohida komissiya foizini belgilash imkoniyati.
 
-1. 🟢 `Attraction` va `PromotionBanner` modellarini `schema.prisma` ga qo'shish va migration yaratish.
-2. 🟢 `PartnerOrganizationType` enumiga `sanatorium` va `resort` qiymatlarini kiritish.
-3. 🟢 Dachalar uchun maxsus xususiyatlar (basseyn, sauna, sotix) fieldlarini modelga biriktirish.
-4. 🟢 `admin-demo-seed.sql` ichiga har bir shahar va ob'yekt uchun ushbu rasmlardan foydalanib demo data to'ldirish.
+- **Method:** `PATCH`
+- **URL:** `/v1/admin/partners/:id/commission`
+- **Payload:** `{ "commissionPercent": 10 }`
+
+---
+
+## 8. Sanalarni majburiy bloklash (Block Dates / Availability)
+God Mode doirasida admin tomonidan mehmonxona/xona sanalarini sotuvdan majburiy bloklash (overbooking holatlarini zudlik bilan oldini olish uchun).
+
+- **Method:** `POST`
+- **URL:** `/v1/admin/hotels/:id/blocked-dates`
+- **Payload:** 
+  ```json
+  { 
+    "startDate": "2026-09-15", 
+    "endDate": "2026-09-20", 
+    "reason": "Overbooking qilingan" 
+  }
+  ```
+
+---
+
+## 9. Mashhur yo'nalishlar (Destinations)
+Bosh sahifadagi "Mashhur yo'nalishlar" blokidagi shaharlar va ularning rasmlarini boshqarish.
+
+- **Method:** `GET`
+- **URL:** `/v1/admin/cms/destinations`
+- **Response:**
+  ```json
+  [
+    { "id": "1", "city": "Toshkent", "imageUrl": "/images/destinations/tashkent.jpg", "sortOrder": 1, "isActive": true }
+  ]
+  ```
+
+- **Method:** `POST`
+- **URL:** `/v1/admin/cms/destinations`
+- **Payload:** `{ "city": "Samarqand", "imageUrl": "/images/destinations/samarkand.jpg", "sortOrder": 2, "isActive": true }`
+
+- **Method:** `PATCH`
+- **URL:** `/v1/admin/cms/destinations/:id`
+- **Payload:** `{ "isActive": false }`
+
+- **Method:** `DELETE`
+- **URL:** `/v1/admin/cms/destinations/:id`
+
+## 10. Fayl va Rasmlarni Yuklash (File Upload)
+Admin panel (CMS) va boshqa qismlardan rasmlarni to'g'ridan-to'g'ri serverga yuklash uchun umumiy endpoint.
+
+- **Method:** `POST`
+- **URL:** `/v1/admin/upload`
+- **Headers:** `Content-Type: multipart/form-data`
+- **Payload:** `file` form-data (masalan rasm)
+- **Response:**
+  ```json
+  {
+    "url": "/images/uploads/random-name.jpg",
+    "success": true
+  }
+  ```
+
+---
+
+Ushbu endpointlar backend jamoasi tomonidan taqdim etilgandan so'ng, `apps/web-admin/lib/api/admin-api.ts` faylidagi **Mock** funksiyalar API so'rovlariga o'zgartirilishi kerak.

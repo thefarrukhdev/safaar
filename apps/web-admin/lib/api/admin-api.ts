@@ -29,6 +29,11 @@ import {
   PartnerLedgerEntry,
   DeveloperApiKey,
   DeveloperWebhook,
+  AdminReview,
+  AdminTranslation,
+  AdminSeo,
+  AdminBanner,
+  CmsDestination,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
 import apiClient from './client';
@@ -495,6 +500,7 @@ function toListing(row: ApiRecord): AdminListing {
     latitude: asOptionalNumber(row.latitude),
     longitude: asOptionalNumber(row.longitude),
     stars: asNumber(row.stars),
+    featured: asBoolean(row.featured, false),
     photos,
     description: localizedText(
       row.description ?? row.full_description ?? row.short_description,
@@ -632,6 +638,7 @@ function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
       row.publishedAt ?? row.published_at ?? row.created_at,
       new Date().toISOString(),
     ),
+    metadata: isRecord(row.metadata) ? row.metadata : undefined,
   };
 }
 
@@ -1560,6 +1567,72 @@ export const AdminApi = {
       toCmsArticle(asRecord(row), 'offer'),
     );
   },
+  createCmsOffer: async (
+    offer: Omit<CmsArticle, 'id'>,
+  ): Promise<CmsArticle> => {
+    const payload = {
+      slug: offer.slug,
+      status: offer.status,
+      title: { uz: offer.title, ru: offer.title, en: offer.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: offer.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/offers', payload);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+  updateCmsOffer: async (
+    id: string,
+    offer: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (offer.slug !== undefined) payload.slug = offer.slug;
+    if (offer.status !== undefined) payload.status = offer.status;
+    if (offer.title !== undefined) payload.title = { uz: offer.title, ru: offer.title, en: offer.title };
+    if (offer.metadata !== undefined) payload.metadata = offer.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/offers/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+  deleteCmsOffer: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/offers/${id}`);
+  },
+  setCmsOfferStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/offers/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'offer');
+  },
+
+  // Destinations (Mashhur yo'nalishlar) Mocks
+  getCmsDestinations: async (): Promise<CmsDestination[]> => {
+    return [
+      { id: "1", city: "Toshkent", imageUrl: "/images/destinations/tashkent.jpg", sortOrder: 1, isActive: true, createdAt: new Date().toISOString() },
+      { id: "2", city: "Samarqand", imageUrl: "/images/destinations/samarkand.jpg", sortOrder: 2, isActive: true, createdAt: new Date().toISOString() },
+      { id: "3", city: "Buxoro", imageUrl: "/images/destinations/bukhara.jpg", sortOrder: 3, isActive: true, createdAt: new Date().toISOString() },
+    ] as any;
+  },
+
+  createCmsDestination: async (payload: Partial<CmsDestination>): Promise<CmsDestination> => {
+    console.log("Mock createCmsDestination", payload);
+    return { ...payload, id: Date.now().toString(), createdAt: new Date().toISOString() } as CmsDestination;
+  },
+
+  updateCmsDestination: async (id: string, payload: Partial<CmsDestination>): Promise<CmsDestination> => {
+    console.log("Mock updateCmsDestination", id, payload);
+    return { ...payload, id, createdAt: new Date().toISOString() } as CmsDestination;
+  },
+
+  deleteCmsDestination: async (id: string): Promise<void> => {
+    console.log("Mock deleteCmsDestination", id);
+    return Promise.resolve();
+  },
+
+  setCmsDestinationStatus: async (id: string, isActive: boolean): Promise<CmsDestination> => {
+    console.log("Mock setCmsDestinationStatus", id, isActive);
+    return { id, isActive, city: "Mock City", imageUrl: "", sortOrder: 1, createdAt: new Date().toISOString() } as CmsDestination;
+  },
   createCmsBanner: async (
     banner: Omit<CmsBanner, 'id'>,
   ): Promise<CmsBanner> => {
@@ -1740,5 +1813,147 @@ export const AdminApi = {
       reason: reason ?? '',
     });
     return data;
+  },
+
+  updateListing: async (id: string, payload: Partial<AdminListing>): Promise<AdminListing> => {
+    // Mock
+    console.log(`Mock: Updated listing ${id}`, payload);
+    return Promise.resolve({ id, ...payload } as AdminListing);
+  },
+
+  toggleListingFeatured: async (id: string, featured: boolean) => {
+    console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
+    return Promise.resolve({ success: true, featured });
+  },
+
+  blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
+    // Mock for blocking dates
+    console.log(`Mock: Blocked dates for listing ${id}`, payload);
+    return Promise.resolve({ success: true });
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // REVIEWS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // ────────────────────────────────────────────────────────────────────────
+
+  getReviews: async (): Promise<AdminReview[]> => {
+    // Vaqtincha mock (qotirilgan) ma'lumotlar qaytaramiz
+    return [
+      {
+        id: 'rev-1',
+        hotelId: 'h-1',
+        hotelName: 'Hilton Tashkent',
+        userId: 'u-1',
+        userName: 'Alisher Navoiy',
+        rating: 5,
+        comment: "Ajoyib xizmat! Nonushta juda mazzali edi.",
+        status: 'published',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'rev-2',
+        hotelId: 'h-2',
+        hotelName: 'Hyatt Regency',
+        userId: 'u-2',
+        userName: 'Spam User',
+        rating: 1,
+        comment: "Buy here cheap rolex watches http://spam.com",
+        status: 'spam',
+        createdAt: new Date().toISOString()
+      }
+    ];
+  },
+
+  updateReviewStatus: async (id: string, status: AdminReview['status']): Promise<void> => {
+    // Mock
+    console.log(`Mock: Updated review ${id} to ${status}`);
+    return Promise.resolve();
+  },
+
+  deleteReview: async (id: string): Promise<void> => {
+    // Mock
+    console.log(`Mock: Deleted review ${id}`);
+    return Promise.resolve();
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // TRANSLATIONS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // ────────────────────────────────────────────────────────────────────────
+
+  getTranslations: async (): Promise<AdminTranslation[]> => {
+    // Mock data
+    return [
+      { id: 'tr-1', key: 'home.hero.title', uz: 'Safaar bilan sayohat qiling', ru: 'Путешествуйте с Safaar', en: 'Travel with Safaar', createdAt: new Date().toISOString() },
+      { id: 'tr-2', key: 'auth.login.btn', uz: 'Tizimga kirish', ru: 'Войти в систему', en: 'Log into system', createdAt: new Date().toISOString() },
+    ];
+  },
+
+  createTranslation: async (payload: Omit<AdminTranslation, 'id' | 'createdAt'>): Promise<AdminTranslation> => {
+    // Mock
+    return Promise.resolve({ id: `tr-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
+  },
+
+  updateTranslation: async (id: string, payload: Partial<AdminTranslation>): Promise<AdminTranslation> => {
+    // Mock
+    return Promise.resolve({ id, key: 'mock', uz: 'mock', ru: 'mock', en: 'mock', createdAt: new Date().toISOString(), ...payload });
+  },
+
+  deleteTranslation: async (id: string): Promise<void> => {
+    // Mock
+    return Promise.resolve();
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // SEO & META TAGS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // ────────────────────────────────────────────────────────────────────────
+
+  getSeoSettings: async (): Promise<AdminSeo[]> => {
+    return [
+      { id: 'seo-1', path: '/', title: 'Safaar - O\'zbekiston bo\'ylab mehmonxonalar', description: 'Eng yaxshi narxlarda mehmonxonalarni band qiling', keywords: 'mehmonxona, bron, safaar, sayohat, uzbekistan', updatedAt: new Date().toISOString() },
+      { id: 'seo-2', path: '/hotels/tashkent', title: 'Toshkentdagi mehmonxonalar', description: 'Toshkent shahrida arzon va qulay mehmonxonalar', keywords: 'toshkent, mehmonxona, arzon, markaz', updatedAt: new Date().toISOString() },
+    ];
+  },
+
+  updateSeoSetting: async (id: string, payload: Partial<AdminSeo>): Promise<AdminSeo> => {
+    // Mock
+    return Promise.resolve({ id, path: '/', title: 'mock', description: 'mock', keywords: 'mock', updatedAt: new Date().toISOString(), ...payload });
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // BANNERS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // ────────────────────────────────────────────────────────────────────────
+
+  getBanners: async (): Promise<AdminBanner[]> => {
+    return [
+      {
+        id: 'banner-1',
+        title: 'Asosiy sahifa - Registon maydoni',
+        imageUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=2952&auto=format&fit=crop',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'banner-2',
+        title: 'Qishki takliflar - Amirsoy',
+        imageUrl: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=2940&auto=format&fit=crop',
+        isActive: false,
+        createdAt: new Date().toISOString()
+      }
+    ];
+  },
+
+  createBanner: async (payload: Omit<AdminBanner, 'id' | 'createdAt'>): Promise<AdminBanner> => {
+    // Mock
+    return Promise.resolve({ id: `banner-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
+  },
+
+  updateBanner: async (id: string, payload: Partial<AdminBanner>): Promise<AdminBanner> => {
+    // Mock
+    return Promise.resolve({ id, title: 'mock', imageUrl: 'mock', isActive: true, createdAt: new Date().toISOString(), ...payload });
+  },
+
+  deleteBanner: async (id: string): Promise<void> => {
+    // Mock
+    return Promise.resolve();
   },
 };

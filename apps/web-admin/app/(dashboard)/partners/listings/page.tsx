@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { AdminListing } from "@/types/admin";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -73,6 +74,33 @@ export default function PartnerListingsPage() {
         <span className="text-[var(--text-muted)]">
           {new Date(row.submittedAt).toISOString().split("T")[0]}
         </span>
+      ),
+    },
+    {
+      key: "featured",
+      label: "Mashhur",
+      render: (row) => (
+        <button
+          onClick={async () => {
+            try {
+              await AdminApi.toggleListingFeatured(row.id, !row.featured);
+              const updatedListings = listings.map(l => 
+                l.id === row.id ? { ...l, featured: !l.featured } : l
+              );
+              setListings(updatedListings);
+              toast.success(!row.featured ? "Mashhur takliflarga qo'shildi" : "Mashhur takliflardan olib tashlandi");
+            } catch (error) {
+              toast.error("Xatolik yuz berdi");
+            }
+          }}
+          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+            row.featured
+              ? "bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)]/20"
+              : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:bg-[var(--border)]"
+          }`}
+        >
+          {row.featured ? "Mashhur" : "Odatiy"}
+        </button>
       ),
     },
     {

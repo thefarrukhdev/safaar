@@ -1,16 +1,7 @@
 "use client";
 
-import { AdminApi } from "@/lib/api/admin-api";
-import { CmsArticleManager } from "../_components/cms-article-manager";
+import { CmsOfferManager } from "../_components/cms-offer-manager";
 
 export default function CmsOffersPage() {
-  return (
-    <CmsArticleManager
-      type="offer"
-      title="Maxsus takliflar"
-      addLabel="Taklif qo'shish"
-      emptyMessage="Takliflar topilmadi"
-      loadItems={AdminApi.getCmsOffers}
-    />
-  );
+  return <CmsOfferManager />;
 }

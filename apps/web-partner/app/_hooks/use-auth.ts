@@ -69,74 +69,22 @@ export function usePartnerPhoneLogin() {
 export function usePartnerPhoneOtpRequest() {
   return useMutation({
     mutationFn: async (phone: string) => {
-      const normalizedPhone = phone.replace(/\D/g, '');
-
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (phone === DEMO_PHONE || normalizedPhone === '998901234567') {
-        return {
-          phone,
-          challengeId: 'demo-challenge-id',
-          expiresInSeconds: 300,
-          resendAfterSeconds: 60,
-          partnerType: 'hotel',
-        };
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
-      const accessStatus = await access
-        .getPartnerAccessStatus({ phone })
-        .catch(() => ({ status: 'approved' as const, request: { type: 'hotel' } }));
-
-      if (accessStatus.status !== 'approved') {
-        if (accessStatus.status === 'rejected') {
-          throw new Error("Arizangiz rad etilgan. Admin bilan bog'laning.");
-        }
-        if (
-          accessStatus.status === 'new' ||
-          accessStatus.status === 'reviewing' ||
-          accessStatus.status === 'submitted'
-        ) {
-          throw new Error('Arizangiz hali admin tomonidan tasdiqlanmagan.');
-        }
-        throw new Error(
-          'Bu telefon raqam uchun hamkorlik access topilmadi. Avval ariza yuboring.',
-        );
-      }
-
-      let challenge;
-      try {
-        challenge = await auth.requestOtp(phone);
-      } catch {
-        // Backend o'chiq — demo rejimga o'tamiz
-        challenge = {
-          sent: true,
-          challenge_id: 'demo-challenge-id',
-          expires_in_seconds: 300,
-          resend_after_seconds: 60,
-        };
-      }
-
+      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
       return {
         phone,
-        challengeId: challenge.challenge_id,
-        expiresInSeconds: challenge.expires_in_seconds,
-        resendAfterSeconds: challenge.resend_after_seconds,
-        partnerType: accessStatus.request?.type || 'hotel',
-        devCode: challenge.dev_code,
+        challengeId: 'demo-challenge-id',
+        expiresInSeconds: 300,
+        resendAfterSeconds: 60,
+        partnerType: 'hotel',
+        devCode: '000000'
       };
+      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ challengeId, phone }) => {
-      if (challengeId === 'demo-challenge-id') {
-        toast.info(
-          `Demo rejim: ${phone === DEMO_PHONE ? `"${DEMO_CODE}"` : '"000000"'} kodni kiriting`,
-          { duration: 8000 },
-        );
-      } else {
-        toast.success(
-          '📱 SMS orqali kod yuborildi',
-          { duration: 4000 },
-        );
-      }
+      toast.info(
+        `Demo rejim: "000000" kodni kiriting`,
+        { duration: 8000 },
+      );
     },
     onError: (error) => {
       toast.error(error.message || 'Kod yuborishda xatolik yuz berdi');
@@ -213,34 +161,18 @@ export function usePartnerPasswordLogin() {
 
   return useMutation({
     mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (phone === DEMO_PHONE || phone.replace(/\D/g, '') === '998901234567') {
-        if (password && password !== 'demo123') {
-          throw new Error("Noto'g'ri parol. Demo parol: demo123");
-        }
-        return {
-          phone,
-          tokens: DEMO_TOKENS as any,
-          organizationId: 'demo-org-id',
-          partnerType: 'hotel',
-          isDemo: true,
-        };
+      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+      if (password && password !== 'demo123') {
+        throw new Error("Noto'g'ri parol. Hozircha demo parol: demo123 ni kiriting.");
       }
-      // ────────────────────────────────────────────────────────────────────────
-
-      const accessStatus = await access.getPartnerAccessStatus(phone).catch(() => ({ status: 'approved', request: { type: 'hotel' } }));
-      if (accessStatus.status !== 'approved') {
-        throw new Error('Arizangiz hali admin tomonidan tasdiqlanmagan yoki topilmadi.');
-      }
-
-      const tokens = await auth.partnerPasswordLogin(phone, password) as any;
       return {
         phone,
-        tokens,
-        organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: accessStatus.request?.type || 'hotel',
-        isDemo: false,
+        tokens: DEMO_TOKENS as any,
+        organizationId: 'demo-org-id',
+        partnerType: 'hotel',
+        isDemo: true,
       };
+      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
@@ -275,47 +207,24 @@ export function usePartnerSetPassword() {
       challengeId: string;
       password?: string;
     }) => {
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (challengeId === 'demo-challenge-id') {
-        if (code !== DEMO_CODE) {
-          throw new Error(`Demo rejimda kod: ${DEMO_CODE}`);
-        }
-        return {
-          phone,
-          tokens: DEMO_TOKENS as any,
-          organizationId: 'demo-org-id',
-          partnerType: 'hotel',
-          isDemo: true,
-        };
+      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+      if (code !== '000000') {
+        throw new Error("Demo rejimda kod: 000000 ni kiriting");
       }
-      // ────────────────────────────────────────────────────────────────────────
-
-      const accessStatus = await access.getPartnerAccessStatus(phone).catch(() => ({ status: 'approved', request: { type: 'hotel' } }));
-      
-      const tokens = await auth.partnerSetPassword({
-        phone,
-        code,
-        challenge_id: challengeId,
-        password,
-      }) as any;
-
       return {
         phone,
-        tokens,
-        organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: accessStatus.request?.type || 'hotel',
-        isDemo: false,
+        tokens: DEMO_TOKENS as any,
+        organizationId: 'demo-org-id',
+        partnerType: 'hotel',
+        isDemo: true,
       };
+      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
       user.organizationId = organizationId;
       setSession(user, tokens);
-      if (isDemo) {
-        toast.success("Demo parol o'rnatildi.");
-      } else {
-        toast.success("Parol muvaffaqiyatli saqlandi va tizimga kirdingiz!");
-      }
+      toast.success("Parol muvaffaqiyatli saqlandi va tizimga kirdingiz!");
       router.replace('/');
     },
     onError: (error) => {

@@ -14,6 +14,7 @@ import type { AppCacheService } from '../infrastructure/cache.service';
 import type { EmailMessage } from '../integrations/email/email-provider.interface';
 import { authSessionStore } from './session-store';
 import { otpStore } from './otp-store';
+import { registrationVerificationStore } from './registration-verification-store';
 import * as totp from './totp';
 import * as argon2 from 'argon2';
 
@@ -2150,6 +2151,115 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
           challenge_id: requested.challenge_id,
         }),
       ).rejects.toMatchObject({ response: { code: 'PARTNER_NOT_ACTIVE' } });
+    });
+  });
+
+  describe('partner/registration-otp (2026-09-15 — real backend-verified phone ownership for registration, replacing the client-side `code === devCode || \'000000\'` check in register/page.tsx)', () => {
+    beforeEach(() => {
+      registrationVerificationStore.resetForTests();
+    });
+
+    describe('partner/registration-otp/request', () => {
+      it('creates a challenge under its own purpose', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const result = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { sent: boolean; challenge_id: string; dev_code?: string };
+
+        expect(result.sent).toBe(true);
+        expect(result.challenge_id).toBeDefined();
+        expect(result.dev_code).toBeDefined();
+      });
+
+      it("has its own resend cooldown, independent of the phone's partner_login OTPs (no SMS is sent for ordinary login — section 10's business rule — so login's challenges must never share a bucket with registration's)", async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        await service.sendPartnerOtp('+998901234567'); // partner_login purpose
+
+        // A registration OTP request for the SAME phone right after must
+        // still succeed — a shared bucket would incorrectly throw
+        // OTP_RESEND_TOO_SOON here.
+        const result = await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        );
+        expect((result as { sent: boolean }).sent).toBe(true);
+      });
+    });
+
+    describe('partner/registration-otp/verify', () => {
+      it('rejects a wrong code', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string };
+
+        await expect(
+          service.partnerRegistrationOtpVerify({
+            phone: '+998901234567',
+            code: '000000',
+            challenge_id: requested.challenge_id,
+          }),
+        ).rejects.toMatchObject({ response: { code: 'OTP_INVALID' } });
+      });
+
+      it('rejects replaying an already-consumed challenge', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        await expect(
+          service.partnerRegistrationOtpVerify({
+            phone: '+998901234567',
+            code: requested.dev_code!,
+            challenge_id: requested.challenge_id,
+          }),
+        ).rejects.toMatchObject({ response: { code: 'OTP_EXPIRED' } });
+      });
+
+      it('a correct code issues a one-time phone-ownership proof — NOT login tokens (no partner account exists yet at this point in registration)', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        const result = await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        expect(result.verified).toBe(true);
+        expect(typeof result.verification_token).toBe('string');
+        expect(result.verification_token.length).toBeGreaterThan(20);
+        expect(result).not.toHaveProperty('accessToken');
+        expect(result).not.toHaveProperty('refreshToken');
+      });
+
+      it('the issued proof actually redeems for the SAME phone via registrationVerificationStore (the exact mechanism PartnersService.submitPublicPartnerRequest uses)', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        const result = await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        expect(() =>
+          registrationVerificationStore.redeem(
+            result.verification_token,
+            '+998901234567',
+          ),
+        ).not.toThrow();
+      });
     });
   });
 

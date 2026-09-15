@@ -26,6 +26,7 @@ import {
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
+import { registrationVerificationStore } from '../auth/registration-verification-store';
 import { assertPublicHttpUrl } from '../common/ssrf-guard';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
@@ -449,6 +450,25 @@ export class PartnersService {
         code: 'PARTNER_REQUEST_INVALID',
         message: "Hamkor arizasi ma'lumotlarini tekshiring",
         fields: fieldErrors,
+      });
+    }
+
+    // Client "men bu telefonni tasdiqladim" deb claim qilsa ham, backend
+    // buni SOURCE OF TRUTH sifatida qabul qilmaydi — faqat
+    // `partnerRegistrationOtpVerify` (auth.service.ts) chiqargan, haqiqiy
+    // server-side proof qabul qilinadi. Proof bir martalik: bu chaqiruv
+    // uni muvaffaqiyatli/muvaffaqiyatsiz bo'lishidan qat'iy nazar "yeydi"
+    // (RegistrationVerificationStore.redeem izohiga qarang).
+    const phoneVerificationToken = String(
+      body.phoneVerificationToken ?? body.phone_verification_token ?? '',
+    ).trim();
+    try {
+      registrationVerificationStore.redeem(phoneVerificationToken, phone);
+    } catch {
+      throw new UnauthorizedException({
+        code: 'PARTNER_PHONE_NOT_VERIFIED',
+        message:
+          "Telefon raqami tasdiqlanmagan. Avval SMS orqali tasdiqlang.",
       });
     }
 

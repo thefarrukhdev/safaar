@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
@@ -198,7 +199,21 @@ export function CheckoutForm({
           </p>
         )}
 
-        <div id="checkout-original-cta" className="w-full">
+        <div className="mt-2 w-full">
+          <label className="flex items-start gap-2 text-xs">
+            <input
+              type="checkbox"
+              name="agreeTerms"
+              required
+              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="text-slate-600 dark:text-slate-400 leading-tight">
+              Men <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-primary-600 hover:underline">Ommaviy Oferta</Link> shartlariga roziman.
+            </span>
+          </label>
+        </div>
+
+        <div id="checkout-original-cta" className="w-full mt-2">
           <Button
             type="submit"
             variant="accent"

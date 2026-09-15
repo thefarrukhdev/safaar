@@ -187,6 +187,12 @@ export class AdminController {
     return this.adminService.partnerDelete(actor, id);
   }
 
+  @Get('partners/:id/commission')
+  @Permissions(Permission.FinanceRead)
+  partnerCommissionDetail(@Param('id') id: string) {
+    return this.adminService.partnerCommissionDetail(id);
+  }
+
   @Patch('partners/:id/commission')
   @Permissions(Permission.FinanceWrite)
   partnerCommission(
@@ -201,6 +207,59 @@ export class AdminController {
   @Permissions(Permission.FinanceRead)
   partnerLedger(@Param('id') id: string) {
     return this.adminService.partnerLedger(id);
+  }
+
+  @Get('rooms/:id/availability')
+  @Permissions(Permission.AvailabilityRead)
+  roomAvailabilityCalendar(
+    @Param('id') id: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.roomAvailabilityCalendar(id, query);
+  }
+
+  @Post('rooms/:id/block')
+  @Permissions(Permission.AvailabilityBlock)
+  roomAvailabilityBlock(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.roomAvailabilityBlock(actor, id, body);
+  }
+
+  @Delete('rooms/:id/block')
+  @Permissions(Permission.AvailabilityBlock)
+  roomAvailabilityUnblock(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.roomAvailabilityUnblock(actor, id, body);
+  }
+
+  @Get('reviews')
+  @Permissions(Permission.ReviewsRead)
+  reviewsList(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.reviewsList(query);
+  }
+
+  @Post('reviews/:id/publish')
+  @Permissions(Permission.ReviewsModerate)
+  reviewPublish(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.reviewModerate(actor, id, 'publish');
+  }
+
+  @Post('reviews/:id/hide')
+  @Permissions(Permission.ReviewsModerate)
+  reviewHide(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.reviewModerate(actor, id, 'hide');
   }
 
   @Post('partners/:id/adjustment')
@@ -713,32 +772,38 @@ export class AdminController {
   }
 
   @Get('admin-users')
+  @Permissions(Permission.AdminsRead)
   adminUsers(@Query() query: Record<string, string | undefined>) {
     return this.adminService.adminUsers(query);
   }
 
   @Post('admin-users')
   @Permissions(Permission.AdminUsersWrite)
-  adminUserCreate(@Body() body: Record<string, unknown>) {
-    return this.adminService.adminUserCreate(body);
+  adminUserCreate(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.adminUserCreate(actor, body);
   }
 
   @Patch('admin-users/:id')
   @Permissions(Permission.AdminUsersWrite)
   adminUserUpdate(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.adminService.adminUserUpdate(id, body);
+    return this.adminService.adminUserUpdate(actor, id, body);
   }
 
   @Patch('admin-users/:id/status')
   @Permissions(Permission.AdminUsersWrite)
   adminUserStatus(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.adminService.adminUserStatus(id, body);
+    return this.adminService.adminUserStatus(actor, id, body);
   }
 
   @Post('admin-users/:id/reset-2fa')
@@ -748,12 +813,13 @@ export class AdminController {
   }
 
   @Get('roles')
+  @Permissions(Permission.RolesManage)
   roles() {
     return this.adminService.roles();
   }
 
   @Patch('roles/:id/permissions')
-  @Permissions(Permission.AdminUsersWrite)
+  @Permissions(Permission.RolesManage)
   rolePermissions() {
     return this.adminService.rolePermissions();
   }

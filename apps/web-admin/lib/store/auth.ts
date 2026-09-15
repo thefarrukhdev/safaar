@@ -5,7 +5,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "MODERATOR";
+  role: "SUPER_ADMIN" | "ADMIN" | "MODERATOR" | "FINANCE" | "SUPPORT" | "CONTENT";
   has2FA?: boolean;
 }
 

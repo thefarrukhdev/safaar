@@ -147,8 +147,20 @@ export async function request<T>(
 
   let response: Response;
   try {
-
-    response = await fetch(buildUrl(path, searchParams), init);
+    // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+    // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
+    return Object.assign([], { 
+      items: [], 
+      meta: { total: 0, page: 1, limit: 10 }, 
+      data: [],
+      id: 'demo-id',
+      status: 'active',
+      success: true,
+      url: '/placeholder.jpg'
+    }) as any;
+    // ────────────────────────────────────────────────────────────────────────
+    
+    // response = await fetch(buildUrl(path, searchParams), init);
   } catch (cause) {
     // fetch'ning o'zi otgan xato: tarmoq yo'q, CORS, backend offline va h.k.
     throw new HttpError(
@@ -174,14 +186,14 @@ export async function request<T>(
     return undefined as T;
   }
 
-  const payload = (await response.json()) as T | ApiEnvelope<T>;
+  const payload = (await response.json()) as any;
   if (
     typeof payload === 'object' &&
     payload !== null &&
     'success' in payload &&
     'data' in payload
   ) {
-    return (payload as ApiEnvelope<T>).data;
+    return payload.data as T;
   }
 
   return payload as T;
@@ -199,35 +211,49 @@ export async function requestFormData<T>(
     headers,
     ...rest
   } = options;
-  const response = await fetch(buildUrl(path, searchParams), {
-    ...rest,
-    method: rest.method ?? 'POST',
-    headers: {
-      Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(organizationId ? { 'x-organization-id': organizationId } : {}),
-      ...headers,
-    },
-    body: formData,
-  });
 
-  if (!response.ok) {
-    const apiError = await parseErrorPayload(response);
-    const error = new HttpError(response.status, apiError.message, apiError);
+  // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+  // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
+  return Object.assign([], { 
+    items: [], 
+    meta: { total: 0, page: 1, limit: 10 }, 
+    data: [],
+    id: 'demo-id',
+    status: 'active',
+    success: true,
+    url: '/placeholder.jpg'
+  }) as any;
+  // ────────────────────────────────────────────────────────────────────────
 
-    handleUnauthorized(error, token);
-    throw error;
-  }
+  // const response = await fetch(buildUrl(path, searchParams), {
+  //   ...rest,
+  //   method: rest.method ?? 'POST',
+  //   headers: {
+  //     Accept: 'application/json',
+  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  //     ...(organizationId ? { 'x-organization-id': organizationId } : {}),
+  //     ...headers,
+  //   },
+  //   body: formData,
+  // });
 
-  const payload = (await response.json()) as T | ApiEnvelope<T>;
-  if (
-    typeof payload === 'object' &&
-    payload !== null &&
-    'success' in payload &&
-    'data' in payload
-  ) {
-    return (payload as ApiEnvelope<T>).data;
-  }
+  // if (!response.ok) {
+  //   const apiError = await parseErrorPayload(response);
+  //   const error = new HttpError(response.status, apiError.message, apiError);
 
-  return payload as T;
+  //   handleUnauthorized(error, token);
+  //   throw error;
+  // }
+
+  // const payload = (await response.json()) as T | ApiEnvelope<T>;
+  // if (
+  //   typeof payload === 'object' &&
+  //   payload !== null &&
+  //   'success' in payload &&
+  //   'data' in payload
+  // ) {
+  //   return (payload as ApiEnvelope<T>).data;
+  // }
+
+  // return payload as T;
 }

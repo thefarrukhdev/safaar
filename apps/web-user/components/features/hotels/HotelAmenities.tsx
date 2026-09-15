@@ -57,7 +57,7 @@ export function HotelAmenities({
         </div>
       )}
 
-      <Modal open={isOpen} onOpenChange={setIsOpen}>
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
         <div className="flex flex-col gap-6 p-6 max-h-[80vh] overflow-y-auto bg-white rounded-2xl">
           <h2 className="text-2xl font-bold text-slate-900">What this place offers</h2>
           <ul className="flex flex-col gap-6">

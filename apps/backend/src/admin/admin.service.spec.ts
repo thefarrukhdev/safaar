@@ -566,19 +566,21 @@ describe('AdminService frontend action endpoints', () => {
   });
 
   it('creates an admin user without a DB NOT NULL violation (regression: H-1)', async () => {
-    pgMock.query.mockResolvedValueOnce([
-      {
-        id: '00000000-0000-0000-0000-0000000000aa',
-        email: 'new-admin@safaar.uz',
-        full_name: 'New Admin',
-        role: 'moderator',
-        status: 'active',
-        created_at: '2026-08-10T00:00:00.000Z',
-        updated_at: '2026-08-10T00:00:00.000Z',
-      },
-    ]);
+    pgMock.query
+      .mockResolvedValueOnce([
+        {
+          id: '00000000-0000-0000-0000-0000000000aa',
+          email: 'new-admin@safaar.uz',
+          full_name: 'New Admin',
+          role: 'moderator',
+          status: 'active',
+          created_at: '2026-08-10T00:00:00.000Z',
+          updated_at: '2026-08-10T00:00:00.000Z',
+        },
+      ])
+      .mockResolvedValueOnce([]); // audit_logs insert
 
-    const result = await service.adminUserCreate({
+    const result = await service.adminUserCreate(actor, {
       email: 'new-admin@safaar.uz',
       full_name: 'New Admin',
       role: 'moderator',
@@ -602,9 +604,534 @@ describe('AdminService frontend action endpoints', () => {
 
   it('rejects admin user creation without an email', async () => {
     await expect(
-      service.adminUserCreate({ full_name: 'No Email' }),
+      service.adminUserCreate(actor, { full_name: 'No Email' }),
     ).rejects.toMatchObject({ status: 400 });
     expect(pgMock.query).not.toHaveBeenCalled();
+  });
+
+  describe('admin role assignment — privilege-escalation guards (2026-09-14 SAFAAR ADMIN audit)', () => {
+    const financeAdmin: RequestActor = {
+      id: '00000000-0000-0000-0000-0000000000f1',
+      actorType: 'admin',
+      role: Role.FINANCE_ADMIN,
+      roles: [Role.FINANCE_ADMIN],
+    };
+
+    it("noto'g'ri/noma'lum rol qiymati (yaratishda) aniq rad etiladi, DB'ga hech narsa yozilmaydi", async () => {
+      await expect(
+        service.adminUserCreate(actor, {
+          email: 'x@safaar.uz',
+          role: 'totally-not-a-role',
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('SUPER_ADMIN bo‘lmagan actor yangi foydalanuvchiga SUPER_ADMIN bera olmaydi (privilege escalation → 403)', async () => {
+      await expect(
+        service.adminUserCreate(financeAdmin, {
+          email: 'wannabe-super@safaar.uz',
+          role: 'super_admin',
+        }),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('SUPER_ADMIN yangi foydalanuvchiga SUPER_ADMIN bera oladi (ruxsat etilgan yo‘l)', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: '00000000-0000-0000-0000-0000000000bb',
+            email: 'new-super@safaar.uz',
+            full_name: 'New Super',
+            role: 'super_admin',
+            status: 'active',
+            created_at: '2026-09-14T00:00:00.000Z',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ])
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.adminUserCreate(actor, {
+        email: 'new-super@safaar.uz',
+        role: 'super_admin',
+      });
+      expect(result).toMatchObject({ role: 'super_admin' });
+    });
+
+    it("admin o'zining O'Z rolini o'zgartira olmaydi — self-escalation VA tasodifiy self-demotion ikkalasi ham bloklanadi (403)", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          id: actor.id,
+          email: 'self@safaar.uz',
+          full_name: 'Self',
+          role: 'super_admin',
+          status: 'active',
+          created_at: '2026-09-14T00:00:00.000Z',
+          updated_at: '2026-09-14T00:00:00.000Z',
+        },
+      ]); // SELECT existing
+
+      await expect(
+        service.adminUserUpdate(actor, actor.id, { role: 'admin' }),
+      ).rejects.toMatchObject({ status: 403 });
+    });
+
+    it('oddiy admin boshqa foydalanuvchini SUPER_ADMIN qilib qo‘ya olmaydi (privilege escalation → 403)', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          id: '00000000-0000-0000-0000-0000000000f2',
+          email: 'target@safaar.uz',
+          full_name: 'Target',
+          role: 'moderator',
+          status: 'active',
+          created_at: '2026-09-14T00:00:00.000Z',
+          updated_at: '2026-09-14T00:00:00.000Z',
+        },
+      ]); // SELECT existing
+
+      await expect(
+        service.adminUserUpdate(
+          financeAdmin,
+          '00000000-0000-0000-0000-0000000000f2',
+          {
+            role: 'super_admin',
+          },
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+    });
+
+    it("noto'g'ri rol qiymati (yangilashda) rad etiladi", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          id: '00000000-0000-0000-0000-0000000000f3',
+          email: 'target2@safaar.uz',
+          full_name: 'Target2',
+          role: 'moderator',
+          status: 'active',
+          created_at: '2026-09-14T00:00:00.000Z',
+          updated_at: '2026-09-14T00:00:00.000Z',
+        },
+      ]);
+
+      await expect(
+        service.adminUserUpdate(actor, '00000000-0000-0000-0000-0000000000f3', {
+          role: 'not-a-real-role',
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('rol muvaffaqiyatli o‘zgartirilganda audit_logs eski VA yangi qiymat bilan yoziladi (old_value/new_value)', async () => {
+      const targetId = '00000000-0000-0000-0000-0000000000f4';
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: targetId,
+            email: 'target3@safaar.uz',
+            full_name: 'Target3',
+            role: 'moderator',
+            status: 'active',
+            created_at: '2026-09-14T00:00:00.000Z',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ]) // SELECT existing
+        .mockResolvedValueOnce([
+          {
+            id: targetId,
+            email: 'target3@safaar.uz',
+            full_name: 'Target3',
+            role: 'support_admin',
+            status: 'active',
+            created_at: '2026-09-14T00:00:00.000Z',
+            updated_at: '2026-09-14T00:01:00.000Z',
+          },
+        ]) // UPDATE
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      await service.adminUserUpdate(actor, targetId, { role: 'support_admin' });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      const [, params] = auditCall!;
+      const paramsArr = params as unknown[];
+      expect(paramsArr[3]).toBe('admin_user.update'); // action
+      expect(paramsArr[4]).toBe('admin_user'); // entity_type
+      expect(
+        (JSON.parse(paramsArr[6] as string) as { role: string }).role,
+      ).toBe('moderator'); // old_value
+      expect(
+        (JSON.parse(paramsArr[7] as string) as { role: string }).role,
+      ).toBe('support_admin'); // new_value
+    });
+  });
+
+  describe('partnerCommission — validation + old/new audit (2026-09-14 SAFAAR ADMIN Part 1)', () => {
+    const partnerId = '00000000-0000-0000-0000-0000000000c1';
+
+    it('rate kiritilmasa 400 (COMMISSION_RATE_REQUIRED)', async () => {
+      await expect(
+        service.partnerCommission(actor, partnerId, {}),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('manfiy foiz rad etiladi (400 COMMISSION_RATE_NEGATIVE)', async () => {
+      await expect(
+        service.partnerCommission(actor, partnerId, { rate: -5 }),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('100% dan katta foiz rad etiladi (400 COMMISSION_RATE_TOO_HIGH)', async () => {
+      await expect(
+        service.partnerCommission(actor, partnerId, { rate: 150 }),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('NaN/raqam bo‘lmagan qiymat rad etiladi (400 COMMISSION_RATE_INVALID)', async () => {
+      await expect(
+        service.partnerCommission(actor, partnerId, { rate: 'abc' }),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it("yaroqli 0-100 oralig'idagi qiymat qabul qilinadi va audit_logs OLD+NEW qiymat bilan yoziladi", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: partnerId, default_commission_rate: 12 }]) // SELECT existing
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'hotel',
+            legal_name: 'LLC Test',
+            brand_name: 'Test Hotel',
+            default_commission_rate: 18.5,
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ]) // UPDATE
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.partnerCommission(actor, partnerId, {
+        rate: 18.5,
+      });
+      expect(result).toMatchObject({ default_commission_rate: 18.5 });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      const [, params] = auditCall!;
+      const paramsArr = params as unknown[];
+      expect(paramsArr[3]).toBe('partner.commission');
+      expect(
+        (
+          JSON.parse(paramsArr[6] as string) as {
+            default_commission_rate: number;
+          }
+        ).default_commission_rate,
+      ).toBe(12);
+      expect(
+        (
+          JSON.parse(paramsArr[7] as string) as {
+            default_commission_rate: number;
+          }
+        ).default_commission_rate,
+      ).toBe(18.5);
+    });
+
+    it('0% (fully-discounted/no-commission partner) yaroqli qiymat sifatida qabul qilinadi', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: partnerId, default_commission_rate: 12 }])
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'hotel',
+            default_commission_rate: 0,
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.partnerCommission(actor, partnerId, {
+        rate: 0,
+      });
+      expect(result).toMatchObject({ default_commission_rate: 0 });
+    });
+
+    it('mavjud bo‘lmagan partner uchun 404', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // SELECT existing — bo'sh
+
+      await expect(
+        service.partnerCommission(actor, partnerId, { rate: 10 }),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+  });
+
+  describe('partnerCommissionDetail — Excel vs partner_default manba (2026-09-14 SAFAAR ADMIN Part 1)', () => {
+    it("hotel/hostel/guesthouse turidagi mehmonxonalar UCHUN Excel manba ko'rsatiladi, boshqa turlar uchun partner_default", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: 'partner-1',
+            type: 'hotel',
+            default_commission_rate: 20,
+          },
+        ]) // partner
+        .mockResolvedValueOnce([
+          {
+            id: 'hotel-1',
+            name: 'Samarqand Hotel',
+            stars: 5,
+            city_slug: 'samarqand',
+            partner_type: 'hotel',
+          },
+          {
+            id: 'hotel-2',
+            name: 'Restoran X',
+            stars: null,
+            city_slug: 'samarqand',
+            partner_type: 'restaurant',
+          },
+        ]); // hotels
+
+      const result = await service.partnerCommissionDetail('partner-1');
+      expect(result.hotels).toEqual([
+        expect.objectContaining({
+          hotel_id: 'hotel-1',
+          effective_rate_percent: 12, // Samarqand 4-5 yulduz Excel
+          source: 'excel',
+        }),
+        expect.objectContaining({
+          hotel_id: 'hotel-2',
+          effective_rate_percent: 20, // restaurant — Excel qamrab olmaydi, partner default
+          source: 'partner_default',
+        }),
+      ]);
+    });
+  });
+
+  describe('roomAvailabilityBlock / Unblock / Calendar (2026-09-14 SAFAAR ADMIN Part 2)', () => {
+    const roomId = '00000000-0000-0000-0000-0000000000d1';
+
+    it("start_date >= end_date bo'lsa rad etiladi", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+      ]); // assertRoomExists
+
+      await expect(
+        service.roomAvailabilityBlock(actor, roomId, {
+          start_date: '2026-12-05',
+          end_date: '2026-12-01',
+          reason: 'Overbooking tuzatish',
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('sabab (reason) kiritilmasa rad etiladi', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+      ]);
+
+      await expect(
+        service.roomAvailabilityBlock(actor, roomId, {
+          start_date: '2026-12-01',
+          end_date: '2026-12-05',
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it("o'tgan sanani bloklab bo'lmaydi", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+      ]);
+
+      await expect(
+        service.roomAvailabilityBlock(actor, roomId, {
+          start_date: '2020-01-01',
+          end_date: '2020-01-05',
+          reason: 'test',
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it("mavjud bo'lmagan xona uchun 404", async () => {
+      pgMock.query.mockResolvedValueOnce([]); // assertRoomExists — topilmadi
+
+      await expect(
+        service.roomAvailabilityBlock(actor, roomId, {
+          start_date: '2026-12-01',
+          end_date: '2026-12-03',
+          reason: 'test',
+        }),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+
+    it("yaroqli so'rov room_inventory'ga closed=true yozadi va audit_logs'da reason saqlanadi (unauthorized emas — asosiy muvaffaqiyatli yo'l)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+        ]) // assertRoomExists
+        .mockResolvedValueOnce([{ date: '2026-12-01' }, { date: '2026-12-02' }]) // INSERT ... ON CONFLICT ... RETURNING
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.roomAvailabilityBlock(actor, roomId, {
+        start_date: '2026-12-01',
+        end_date: '2026-12-03',
+        reason: 'Overbooking tuzatish',
+      });
+
+      expect(result.dates_blocked).toEqual(['2026-12-01', '2026-12-02']);
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      const [, params] = auditCall!;
+      const paramsArr = params as unknown[];
+      expect(paramsArr[3]).toBe('availability.block');
+      expect(paramsArr[4]).toBe('room_inventory');
+      expect(
+        (JSON.parse(paramsArr[8] as string) as { reason: string }).reason,
+      ).toBe('Overbooking tuzatish');
+    });
+
+    it('unblock — allaqachon ochiq sanalarga tegmaydi, faqat closed=true bo‘lganlarni ochadi (idempotent, xato bermaydi)', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+        ]) // assertRoomExists
+        .mockResolvedValueOnce([]) // UPDATE ... RETURNING — hech narsa yopiq emas edi
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.roomAvailabilityUnblock(actor, roomId, {
+        start_date: '2026-12-01',
+        end_date: '2026-12-03',
+      });
+      expect(result.dates_unblocked).toEqual([]);
+    });
+
+    it("calendar — bloklangan kun 'blocked' holatida va sellable_count=0 qaytaradi", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          { id: roomId, hotel_id: 'hotel-1', total_inventory: 5 },
+        ]) // assertRoomExists
+        .mockResolvedValueOnce([
+          {
+            date: '2026-12-01',
+            total_count: 5,
+            blocked: true,
+            booked_count: 0,
+          },
+          {
+            date: '2026-12-02',
+            total_count: 5,
+            blocked: false,
+            booked_count: 2,
+          },
+        ]);
+
+      const result = await service.roomAvailabilityCalendar(roomId, {
+        from: '2026-12-01',
+        to: '2026-12-03',
+      });
+
+      expect(result.days).toEqual([
+        expect.objectContaining({
+          date: '2026-12-01',
+          blocked: true,
+          status: 'blocked',
+          sellable_count: 0,
+        }),
+        expect.objectContaining({
+          date: '2026-12-02',
+          blocked: false,
+          status: 'partially_occupied',
+          sellable_count: 3,
+        }),
+      ]);
+    });
+  });
+
+  describe('reviewsList / reviewModerate (2026-09-14 SAFAAR ADMIN Part 6 — admin review moderation)', () => {
+    const reviewId = '00000000-0000-0000-0000-0000000000e1';
+
+    it('reviewsList applies status/target_type/min_rating filters to the SQL', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({
+        status: 'pending_review',
+        target_type: 'hotel',
+        min_rating: '4',
+      });
+      const [sql, params] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('r.status::text = $1');
+      expect(String(sql)).toContain('r.target_type = $2');
+      expect(String(sql)).toContain('r.rating >= $3');
+      expect(params).toEqual(['pending_review', 'hotel', 4]);
+    });
+
+    it('reviewsList with no filters queries all reviews (no WHERE clause)', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({});
+      const [sql, params] = pgMock.query.mock.calls[0];
+      expect(String(sql)).not.toContain('where');
+      expect(params).toEqual([]);
+    });
+
+    it("reviewModerate('publish') sets status=published and writes old/new audit", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: reviewId, status: 'pending_review' }]) // SELECT existing
+        .mockResolvedValueOnce([
+          {
+            id: reviewId,
+            status: 'published',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ]) // UPDATE
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.reviewModerate(actor, reviewId, 'publish');
+      expect(result).toMatchObject({ status: 'published' });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      const [, params] = auditCall!;
+      const paramsArr = params as unknown[];
+      expect(paramsArr[3]).toBe('review.publish');
+      expect(paramsArr[4]).toBe('review');
+      expect(
+        (JSON.parse(paramsArr[6] as string) as { status: string }).status,
+      ).toBe('pending_review');
+      expect(
+        (JSON.parse(paramsArr[7] as string) as { status: string }).status,
+      ).toBe('published');
+    });
+
+    it("reviewModerate('hide') sets status=hidden", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: reviewId, status: 'published' }])
+        .mockResolvedValueOnce([
+          {
+            id: reviewId,
+            status: 'hidden',
+            updated_at: '2026-09-14T00:00:00.000Z',
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.reviewModerate(actor, reviewId, 'hide');
+      expect(result).toMatchObject({ status: 'hidden' });
+    });
+
+    it('reviewModerate on a non-existent review throws 404', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // SELECT existing — bo'sh
+
+      await expect(
+        service.reviewModerate(actor, reviewId, 'publish'),
+      ).rejects.toMatchObject({ status: 404 });
+    });
   });
 
   it('creates an admin export job without a DB NOT NULL violation (regression: H-1)', async () => {
@@ -723,7 +1250,7 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ]) // SELECT booking FOR UPDATE
-        .mockResolvedValueOnce([]) // UPDATE payments -> refunded
+        .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded (RETURNING id, 1 qator)
         .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
         .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (negative)
 
@@ -794,7 +1321,7 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ])
-        .mockResolvedValueOnce([]) // UPDATE payments -> refunded
+        .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded (RETURNING id, 1 qator)
         .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (still reversed)
 
       await service.refundApprove(actor, refundId, {});
@@ -803,6 +1330,174 @@ describe('AdminService frontend action endpoints', () => {
         String(sql).includes('UPDATE bookings SET status'),
       );
       expect(bookingUpdate).toBeUndefined();
+    });
+
+    it("IKKINCHI (mustaqil) refund qatori — to'lov ALLAQACHON boshqa qator orqali 'refunded' bo'lgan (payment.status endi 'paid' emas) — refund 'approved' deb belgilanadi, LEKIN booking bekor qilinmaydi va ledgerga IKKINCHI marta yozilmaydi (double-debit regression)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '80000',
+            currency: 'UZS',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 80000 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'cancelled', // boshqa refund qatori orqali ALLAQACHON bekor qilingan
+            partner_organization_id: partnerId,
+            partner_payable: 70400,
+            currency: 'UZS',
+          },
+        ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([]); // UPDATE payments -> refunded: 0 QATOR (allaqachon 'paid' emas)
+
+      const result = await service.refundApprove(actor, refundId, {});
+
+      expect(result).toMatchObject({ status: 'approved' });
+
+      const bookingUpdate = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('UPDATE bookings SET status'),
+      );
+      expect(bookingUpdate).toBeUndefined();
+
+      const ledgerInsert = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO partner_ledger_entries'),
+      );
+      expect(ledgerInsert).toBeUndefined();
+    });
+  });
+
+  describe('refundApprove — qisman refund proporsional ledger reversi (SAFAAR komissiya + Uzum fee auditi, item 8)', () => {
+    const refundId = '00000000-0000-0000-0000-000000000020';
+    const bookingId = '00000000-0000-0000-0000-000000000021';
+    const partnerId = '00000000-0000-0000-0000-000000000022';
+
+    it("QISMAN refund (approved_amount < total_amount) — partner ledger FAQAT proporsional ulush bo'yicha revers qilinadi, butun partner_payable emas", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '50000',
+            currency: 'UZS',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 50000 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000, // 100000 - 12% komissiya
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded
+        .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
+        .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (proportional)
+
+      const result = await service.refundApprove(actor, refundId, {
+        approved_amount: 50000,
+      });
+
+      expect(result).toMatchObject({ status: 'approved' });
+
+      const ledgerInsert = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO partner_ledger_entries'),
+      );
+      expect(ledgerInsert).toBeDefined();
+      // 50000/100000 = 0.5 ulush => 88000 * 0.5 = 44000 (butun 88000 EMAS)
+      expect(ledgerInsert?.[1]).toEqual([
+        expect.any(String),
+        partnerId,
+        bookingId,
+        -44000,
+        'UZS',
+        expect.any(String),
+      ]);
+    });
+
+    it("TO'LIQ refund (approved_amount === total_amount) — butun partner_payable revers qilinadi (regression saqlanadi)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '100000',
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 100000 },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([{ id: 'payment-1' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.refundApprove(actor, refundId, {});
+
+      const ledgerInsert = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO partner_ledger_entries'),
+      );
+      expect(ledgerInsert?.[1]).toEqual([
+        expect.any(String),
+        partnerId,
+        bookingId,
+        -88000,
+        'UZS',
+        expect.any(String),
+      ]);
+    });
+
+    it("approved_amount booking.total_amount'dan OSHSA rad etiladi (pul xavfsizligi — ilgari yuqori chegara tekshiruvi yo'q edi)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '50000',
+            currency: 'UZS',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 999999 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ]); // SELECT booking FOR UPDATE
+
+      await expect(
+        service.refundApprove(actor, refundId, { approved_amount: 999999 }),
+      ).rejects.toMatchObject({ status: 400 });
     });
   });
 

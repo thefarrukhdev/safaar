@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from 'express';
 import { UZUM_ERROR, UZUM_STATUS } from './providers/uzum.provider';
+import { UZUM_CHECKOUT_ERROR } from './providers/uzum-checkout.provider';
 
 /**
  * Uzum webhook route'ini aniqlash — global prefiks (`/v1`) va legacy `/api`
@@ -7,6 +8,14 @@ import { UZUM_ERROR, UZUM_STATUS } from './providers/uzum.provider';
  * Masalan: `/v1/uzum/webhook/check`, `/api/uzum/webhook/create`.
  */
 const UZUM_WEBHOOK_PATH = /\/uzum\/webhook(?:\/|$)/;
+
+/**
+ * Uzum **Checkout** callback route'i — Merchant webhook'dan ALOHIDA (yuqoridagi
+ * izohga qarang). O'zining javob shakli bor: `UzumCheckoutController.reject()`
+ * bilan bir xil `{ status: 'FAILED', code }` — Merchant contract'ining
+ * `{ serviceId, status, errorCode }`sidan farqli.
+ */
+const UZUM_CHECKOUT_CALLBACK_PATH = /\/uzum\/checkout\/callback(?:\/|$)/;
 
 /**
  * Express body-parser (`express.json()`) noto'g'ri JSON tanasida
@@ -38,7 +47,8 @@ function isJsonParseError(err: unknown): boolean {
  *
  * Bu middleware FAQAT ikkala shart bajarilganda ishlaydi:
  *   1) xato — JSON parse xatosi, VA
- *   2) so'rov — Uzum webhook route'iga qaratilgan.
+ *   2) so'rov — Uzum webhook YOKI Uzum Checkout callback route'iga
+ *      qaratilgan (ikkalasi ham o'z formatida javob qaytaradi).
  * Boshqa har qanday holatda xatoni O'ZGARTIRMASDAN uzatadi (`next(err)`),
  * shuning uchun global `HttpErrorFilter`, boshqa endpoint'lar va Click/Payme
  * xatti-harakati mutlaqo o'zgarmaydi.
@@ -51,24 +61,36 @@ export const uzumJsonErrorMiddleware: ErrorRequestHandler = (
   res,
   next,
 ) => {
+  if (!isJsonParseError(err) || res.headersSent) {
+    next(err);
+    return;
+  }
+
   const target = String(
     (req as { originalUrl?: string; url?: string }).originalUrl ??
       (req as { url?: string }).url ??
       '',
   );
 
-  if (
-    !isJsonParseError(err) ||
-    !UZUM_WEBHOOK_PATH.test(target) ||
-    res.headersSent
-  ) {
-    next(err);
+  if (UZUM_WEBHOOK_PATH.test(target)) {
+    res.status(400).json({
+      serviceId: null,
+      status: UZUM_STATUS.FAILED,
+      errorCode: UZUM_ERROR.BAD_JSON,
+    });
     return;
   }
 
-  res.status(400).json({
-    serviceId: null,
-    status: UZUM_STATUS.FAILED,
-    errorCode: UZUM_ERROR.BAD_JSON,
-  });
+  if (UZUM_CHECKOUT_CALLBACK_PATH.test(target)) {
+    // `UzumCheckoutController.reject()` bilan bir xil shakl — body-parser
+    // xatosi controller'ga umuman yetib bormaydi, shuning uchun shu yerda
+    // takrorlanadi.
+    res.status(400).json({
+      status: 'FAILED',
+      code: UZUM_CHECKOUT_ERROR.MALFORMED_BODY,
+    });
+    return;
+  }
+
+  next(err);
 };

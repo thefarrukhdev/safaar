@@ -39,6 +39,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     icon: "Users",
     children: [
       { label: "Mijozlar", href: "/users", icon: "Users" },
+      { label: "Fikr-mulohazalar", href: "/reviews", icon: "MessageCircle" },
       { label: "Admin Jamoasi", href: "/team", icon: "ShieldCheck" },
     ],
   },
@@ -80,9 +81,12 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     icon: "PanelsTopLeft",
     children: [
       { label: "Bannerlar", href: "/cms/banners", icon: "Image" },
-      { label: "Takliflar", href: "/cms/offers", icon: "Tag" },
+      { label: "Yo'nalishlar", href: "/cms/destinations", icon: "MapPin" },
+      { label: "Chegirmali takliflar", href: "/cms/offers", icon: "Tag" },
       { label: "Yangiliklar", href: "/cms/news", icon: "Newspaper" },
       { label: "Sahifalar", href: "/cms/pages", icon: "FileText" },
+      { label: "Tarjimalar", href: "/cms/translations", icon: "ScrollText" },
+      { label: "SEO / Meta", href: "/cms/seo", icon: "Code2" },
       { label: "Shablonlar", href: "/cms/templates", icon: "Mail" },
       { label: "Xabarnomalar", href: "/cms/broadcasts", icon: "Send" },
     ],

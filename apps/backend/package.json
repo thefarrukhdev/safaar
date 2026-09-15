@@ -26,6 +26,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "security:hash-password": "ts-node scripts/hash-password.ts",
+    "admin:create": "ts-node scripts/create-admin.ts",
     "postman:generate": "node postman/generate-collection.mjs",
     "test": "jest",
     "test:backend": "npm run test",
@@ -72,7 +73,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "undici": "^7.28.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

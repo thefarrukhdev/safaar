@@ -38,6 +38,19 @@ describe('validateEnv (regression: H-3 HOST var was silently dropped)', () => {
     const result = validateEnv(minimalProdConfig);
     expect(result.ENABLE_DEMO_AUTH).toBe('false');
   });
+
+  it('passes through an explicitly-set DEMO_AUTH_ALLOWED_PHONES value (same silent-drop risk as HOST/ENABLE_DEMO_AUTH -- must be forwarded or the scoped allowlist would silently never work)', () => {
+    const result = validateEnv({
+      ...minimalProdConfig,
+      DEMO_AUTH_ALLOWED_PHONES: '+998900000001,+998900000002',
+    });
+    expect(result.DEMO_AUTH_ALLOWED_PHONES).toBe('+998900000001,+998900000002');
+  });
+
+  it('defaults DEMO_AUTH_ALLOWED_PHONES to undefined when unset (fail-closed: no allowlist configured)', () => {
+    const result = validateEnv(minimalProdConfig);
+    expect(result.DEMO_AUTH_ALLOWED_PHONES).toBeUndefined();
+  });
 });
 
 describe('validateEnv — production secret strength (regression: CRITICAL finding, JWT fallback bypassed its own "change_me" check)', () => {
@@ -163,5 +176,37 @@ describe('validateEnv — production secret strength (regression: CRITICAL findi
     expect(result.TEXTUP_USER_ID).toBe('user-1');
     expect(result.TEXTUP_TEMPLATE_ID).toBe('template-1');
     expect(result.TEXTUP_NICKNAME_ID).toBe('nickname-1');
+  });
+
+  it('rejects UZUM_CHECKOUT_TEST_MODE=true in production (hard throw, not a warning — payment confirmation, not OTP)', () => {
+    expect(() =>
+      validateEnv({ ...minimalProdConfig, UZUM_CHECKOUT_TEST_MODE: 'true' }),
+    ).toThrow(/UZUM_CHECKOUT_TEST_MODE/);
+  });
+
+  it('allows UZUM_CHECKOUT_TEST_MODE=false (or unset) in production', () => {
+    expect(() =>
+      validateEnv({ ...minimalProdConfig, UZUM_CHECKOUT_TEST_MODE: 'false' }),
+    ).not.toThrow();
+    expect(() => validateEnv(minimalProdConfig)).not.toThrow();
+  });
+
+  it('allows UZUM_CHECKOUT_TEST_MODE=true outside production', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'development',
+        UZUM_CHECKOUT_TEST_MODE: 'true',
+      }),
+    ).not.toThrow();
+  });
+
+  it('forwards UZUM_CHECKOUT_TEST_MODE through to the returned config, defaults to "false" when unset (same silent-drop risk as HOST/ENABLE_DEMO_AUTH)', () => {
+    expect(
+      validateEnv({ NODE_ENV: 'development', UZUM_CHECKOUT_TEST_MODE: 'true' })
+        .UZUM_CHECKOUT_TEST_MODE,
+    ).toBe('true');
+    expect(validateEnv(minimalProdConfig).UZUM_CHECKOUT_TEST_MODE).toBe(
+      'false',
+    );
   });
 });

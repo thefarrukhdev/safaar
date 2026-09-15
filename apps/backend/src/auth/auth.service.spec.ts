@@ -1556,6 +1556,170 @@ describe('AuthService demo-mode OTP (ENABLE_DEMO_AUTH — SMS/email provider unc
   });
 });
 
+describe('AuthService scoped demo OTP allowlist (DEMO_AUTH_ALLOWED_PHONES -- narrow production alternative to global ENABLE_DEMO_AUTH)', () => {
+  const originalEnv = { ...process.env };
+  const pg = { query: jest.fn(), transaction: jest.fn() };
+  const jobs = { add: jest.fn() };
+  const email = { send: jest.fn() };
+  const sms = { send: jest.fn() };
+  const cache = { get: jest.fn(), set: jest.fn(), take: jest.fn() };
+  let service: AuthService;
+
+  beforeEach(() => {
+    otpStore.resetForTests();
+    jest.clearAllMocks();
+    delete process.env.NODE_ENV;
+    delete process.env.ENABLE_DEMO_AUTH;
+    delete process.env.DEMO_AUTH_ALLOWED_PHONES;
+    jobs.add.mockResolvedValue(undefined);
+    sms.send.mockRejectedValue(
+      new ServiceUnavailableException({
+        code: 'SMS_PROVIDER_NOT_CONFIGURED',
+        message: 'SMS provayder ulanmagan',
+      }),
+    );
+    service = new AuthService(
+      pg as unknown as PostgresService,
+      jobs as unknown as JobQueueService,
+      email as unknown as EmailService,
+      sms as unknown as SmsService,
+      cache as unknown as AppCacheService,
+    );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('an allowlisted phone gets dev_code even in production with global ENABLE_DEMO_AUTH=false', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '+998901234567';
+
+    const result = (await service.sendUserOtp('+998901234567')) as {
+      dev_code?: string;
+    };
+
+    expect(result.dev_code).toMatch(/^\d{6}$/);
+    expect(sms.send).not.toHaveBeenCalled();
+  });
+
+  it('a non-allowlisted phone still uses the real SMS path in production, even with an allowlist configured for other numbers', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '+998901234567,+998907654321';
+    sms.send.mockResolvedValueOnce({
+      accepted: true,
+      providerMessageId: 'sms-1',
+    });
+
+    const result = (await service.sendUserOtp('+998909999999')) as {
+      sent: boolean;
+      dev_code?: string;
+    };
+
+    expect(sms.send).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+998909999999' }),
+    );
+    expect(result).not.toHaveProperty('dev_code');
+  });
+
+  it('an unset allowlist grants no one production demo access (fail-closed default)', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    // DEMO_AUTH_ALLOWED_PHONES intentionally left unset.
+
+    await expect(service.sendUserOtp('+998901234567')).rejects.toMatchObject({
+      response: { code: 'SMS_PROVIDER_NOT_CONFIGURED' },
+    });
+  });
+
+  it('an empty-string allowlist grants no one production demo access', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '';
+
+    await expect(service.sendUserOtp('+998901234567')).rejects.toMatchObject({
+      response: { code: 'SMS_PROVIDER_NOT_CONFIGURED' },
+    });
+  });
+
+  it('malformed allowlist entries (blank, too short, garbage) are safely ignored rather than matching everything', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES =
+      ' , notaphone, +99890, +998901234567,,  ';
+    sms.send.mockResolvedValueOnce({
+      accepted: true,
+      providerMessageId: 'sms-1',
+    });
+
+    // The one well-formed entry still works.
+    const allowed = (await service.sendUserOtp('+998901234567')) as {
+      dev_code?: string;
+    };
+    expect(allowed.dev_code).toMatch(/^\d{6}$/);
+
+    // A phone number NOT in the list is unaffected by the malformed noise
+    // around it -- it must not accidentally match anything.
+    otpStore.resetForTests();
+    const notAllowed = (await service.sendUserOtp('+998909999999')) as {
+      sent: boolean;
+      dev_code?: string;
+    };
+    expect(notAllowed).not.toHaveProperty('dev_code');
+    expect(sms.send).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+998909999999' }),
+    );
+  });
+
+  it('allowlist entries are normalized the same way as incoming phone numbers, so alternate formats still match', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    // Local (no country code, with spaces/dashes) formatting of the same
+    // number that sendUserOtp will normalize to +998901234567.
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '90 123-45-67';
+
+    const result = (await service.sendUserOtp('901234567')) as {
+      dev_code?: string;
+    };
+
+    expect(result.dev_code).toMatch(/^\d{6}$/);
+    expect(sms.send).not.toHaveBeenCalled();
+  });
+
+  it('sendPartnerOtp respects the same scoped allowlist', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '+998901234567';
+
+    const result = (await service.sendPartnerOtp('+998901234567')) as {
+      dev_code?: string;
+    };
+    expect(result.dev_code).toMatch(/^\d{6}$/);
+  });
+
+  it('the allowlist does NOT globally enable demo auth -- a second, non-allowlisted phone in the same request cycle still requires real SMS', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEMO_AUTH = 'false';
+    process.env.DEMO_AUTH_ALLOWED_PHONES = '+998901234567';
+    sms.send.mockResolvedValue({ accepted: true, providerMessageId: 'sms-1' });
+
+    await service.sendUserOtp('+998901234567');
+    otpStore.resetForTests();
+    const result = (await service.sendUserOtp('+998900000000')) as {
+      dev_code?: string;
+    };
+
+    expect(result).not.toHaveProperty('dev_code');
+    expect(sms.send).toHaveBeenCalledTimes(1);
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+});
+
 describe('AuthService password reset via SMS (regression: user/reset-password wrote to a non-existent users.password_hash-by-email query; partner reset was a fake no-op stub)', () => {
   const pg = { query: jest.fn(), transaction: jest.fn() };
   const jobs = { add: jest.fn() };

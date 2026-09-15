@@ -12,7 +12,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
-import { calculateCommission } from '../common/finance';
+import {
+  calculateCommission,
+  resolveAccommodationCommissionRate,
+} from '../common/finance';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import {
@@ -348,13 +351,16 @@ export class BookingsService {
         commission_rate: number;
         check_in_time: string | null;
         check_out_time: string | null;
+        stars: number | null;
+        city_slug: string | null;
       }
     >(
       `SELECT h.id, h.partner_organization_id, po.type AS partner_type,
               po.default_commission_rate::float8 AS commission_rate,
-              h.check_in_time, h.check_out_time
+              h.check_in_time, h.check_out_time, h.stars, c.slug AS city_slug
        FROM hotels h
        JOIN partner_organizations po ON po.id = h.partner_organization_id
+       JOIN cities c ON c.id = h.city_id
        WHERE h.id = $1 AND h.deleted_at IS NULL AND h.status = 'published'
          AND po.status = 'approved'`,
       [hotelId],
@@ -366,6 +372,23 @@ export class BookingsService {
         message: 'Tanlangan sanalar uchun xona mavjud emas',
       });
     }
+
+    // SAFAAR komissiya stavkasi — 2026-09-13 biznes Excel jadvali BUSINESS
+    // SOURCE OF TRUTH: `hotel`/`hostel`/`guesthouse` turlari uchun jadval
+    // (hudud + tur + yulduz) HAR DOIM ustun, hatto shu tashkilotda
+    // `default_commission_rate` boshqacha sozlangan bo'lsa ham (biznes
+    // tomonidan tasdiqlangan qaror). Jadval qamrab olmagan turlar
+    // (`motel`/`dacha`/`sanatorium`/`resort`/`restaurant`/`mixed`/boshqa)
+    // uchun ESKI, mavjud `default_commission_rate` fallback'i o'zgarishsiz
+    // qoladi — Excel'da yo'q narsa TAXMIN QILINMAYDI.
+    const accommodationRate = resolveAccommodationCommissionRate({
+      citySlug: hotel.city_slug,
+      partnerOrganizationType: hotel.partner_type,
+      stars: hotel.stars,
+    });
+    const resolvedCommissionRatePercent = accommodationRate.matched
+      ? (accommodationRate.ratePercent as number)
+      : hotel.commission_rate;
 
     const bookingType: 'hotel' | 'restaurant' =
       hotel?.partner_type === 'restaurant' || dto.type === 'restaurant'
@@ -498,6 +521,38 @@ export class BookingsService {
         });
       }
 
+      // MUHIM (2026-09-14 audit topilmasi): `room_inventory.closed` —
+      // hamkorning `blackoutDates()` orqali (va endi admin
+      // `roomAvailabilityBlock()` orqali ham) belgilaydigan "sotuvdan
+      // vaqtincha bloklangan sana" bayrog'i — ILGARI bu yerda UMUMAN
+      // tekshirilmas edi. Ya'ni hamkor/admin bir sanani "yopiq" deb
+      // belgilasa ham, real booking baribir yaratilaverardi — bloklash
+      // faqat "frontend status" bo'lib qolgan, booking engine uni hisobga
+      // OLMAGAN edi. Endi shu yerda, xuddi shu FOR UPDATE qulflangan
+      // tranzaksiya ichida, aniq tekshiriladi.
+      const [{ blocked_count: blockedCountRaw }] = isRestaurant
+        ? await tx.query<{ blocked_count: string | number }>(
+            `SELECT COUNT(*) AS blocked_count
+             FROM room_inventory
+             WHERE room_id = $1::uuid AND date = $2::date AND closed = true`,
+            [room.id, checkIn],
+          )
+        : await tx.query<{ blocked_count: string | number }>(
+            `SELECT COUNT(*) AS blocked_count
+             FROM room_inventory
+             WHERE room_id = $1::uuid
+               AND date >= $2::date AND date < $3::date
+               AND closed = true`,
+            [room.id, checkIn, checkOut],
+          );
+      if (Number(blockedCountRaw) > 0) {
+        throw new ConflictException({
+          code: 'ROOM_DATES_BLOCKED',
+          message:
+            'Tanlangan sanalarning bir qismi vaqtincha sotuvdan bloklangan',
+        });
+      }
+
       const subtotal = Number(room.base_price) * nights * rooms;
       const discountAmount = promo
         ? calculatePromoDiscount(
@@ -528,7 +583,7 @@ export class BookingsService {
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
         subtotal,
         discount_amount: discountAmount,
-        commission_rate_percent: hotel.commission_rate,
+        commission_rate_percent: resolvedCommissionRatePercent,
         hotel_id: hotel.id,
         trip_id: null,
         room_id: room.id,

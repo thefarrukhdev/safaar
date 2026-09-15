@@ -45,8 +45,6 @@ export default function CatalogPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(false);
     Promise.all([AdminApi.getRegions(), AdminApi.getAmenities()])
       .then(([reg, amen]) => {
         if (!cancelled) {

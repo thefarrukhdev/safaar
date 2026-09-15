@@ -1,5 +1,26 @@
 name: Backend Deploy
 
+# Backend uchun to'liq "tekshir → deploy" pipeline:
+#   1) checks       — build:types, prisma validate, typecheck, format:check,
+#                      lint, npm audit (CRITICAL gate), test, build
+#   2) secret-scan  — kodga tushib qolgan parol/token/kalitlarni topadi
+#   3) docker-build — Dockerfile'ni quradi (push qilmaydi) + Trivy bilan
+#                      image ichidagi zaifliklarni skanerlaydi (CRITICAL bloklaydi)
+#   4) deploy       — YUQORIDAGI BARCHASI o'tsagina, eng oxirida ishga tushadi.
+#                      FAQAT `develop`ga push'da (PHASE 14T) — `temp/save-
+#                      all-work` push'lari checks/secret-scan/docker-build'dan
+#                      o'tadi, lekin production'ga HECH QACHON deploy
+#                      qilinmaydi. Deploy job GitHub "production" Environment
+#                      orqali qo'lda tasdiqlashni talab qiladi (repo
+#                      sozlamalarida alohida sozlanishi kerak — PHASE 14T
+#                      final reportiga qarang).
+#
+# `deploy` job aynan `${{ github.sha }}` commitini (branch nomi emas, doim
+# aniq 40-belgili SHA) `scripts/deploy-production.sh` orqali REAL Docker
+# production runtime'ga (`safaar-backend` konteyner, `safaar-backend-new`
+# hostida) joylaydi — PM2 emas. To'liq mexanizm, guardrail'lar va avtomatik
+# rollback tafsilotlari `scripts/deploy-production.sh`da hujjatlashtirilgan.
+
 on:
   push:
     branches:
@@ -79,9 +100,16 @@ jobs:
 
   deploy:
     needs: [checks, secret-scan, docker-build]
-    # Deploy faqat MAIN yoki DEVELOP dan bo'lganda ishlaydi
-    if: github.ref_name == 'main' || github.ref_name == 'develop'
+    # PHASE 14T: production deploy FAQAT `develop`dan. `temp/save-all-work`
+    # push'lari yuqoridagi 3 ta job'dan (checks/secret-scan/docker-build)
+    # o'tadi, lekin bu yerga umuman yetib kelmaydi.
+    if: github.ref_name == 'develop'
     runs-on: [self-hosted, safaar-backend]
+    # PHASE 14T: GitHub repo Settings → Environments → "production" —
+    # required reviewers shu yerda QO'LDA sozlanishi kerak (bu workflow
+    # buni o'zi sozlay olmaydi). Reviewer sozlanmaguncha bu gate hech
+    # narsani to'xtatmaydi — final reportdagi "Manual GitHub Configuration
+    # Still Required" bo'limiga qarang.
     environment: production
     steps:
       - name: Aynan shu commitni checkout qilish
@@ -95,18 +123,36 @@ jobs:
       - name: Server host key'ini tanish
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy skriptini uzatish va ishga tushirish
+      - name: Aynan shu commit manbasini production hostga uzatish (git archive, fetch/pull YO'Q)
         run: |
           set -euo pipefail
           SHA="${{ github.sha }}"
           SRC_DIR="/home/scarygun/safaar-src-${SHA}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
-          
           ssh "$TARGET" "rm -rf '${SRC_DIR}' && mkdir -p '${SRC_DIR}'"
           git archive "$SHA" | ssh "$TARGET" "tar -x -C '${SRC_DIR}'"
           ssh "$TARGET" "printf '%s' '${SHA}' > '${SRC_DIR}/.deploy-source-sha'"
-          
+
+      - name: Deploy skriptini uzatish (aynan shu test qilingan versiya, eski nusxaga tayanmaydi)
+        run: |
+          set -euo pipefail
+          SHA="${{ github.sha }}"
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           scp scripts/deploy-production.sh "${TARGET}:/tmp/deploy-production-${SHA}.sh"
           ssh "$TARGET" "chmod +x '/tmp/deploy-production-${SHA}.sh'"
+
+      - name: "Production'ga controlled deploy: build → guardrail → verify → swap → healthcheck → smoke-test (xatoda avtomatik rollback)"
+        run: |
+          set -euo pipefail
+          SHA="${{ github.sha }}"
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$TARGET" "/tmp/deploy-production-${SHA}.sh '${SHA}'"
+
+      - name: Vaqtinchalik fayllarni tozalash (faqat muvaffaqiyatli deploydan keyin — muvaffaqiyatsiz bo'lsa tekshiruv uchun qoldiriladi)
+        if: success()
+        run: |
+          set -euo pipefail
+          SHA="${{ github.sha }}"
+          SRC_DIR="/home/scarygun/safaar-src-${SHA}"
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$TARGET" "rm -f '/tmp/deploy-production-${SHA}.sh' && rm -rf '${SRC_DIR}'"

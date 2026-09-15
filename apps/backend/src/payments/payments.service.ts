@@ -294,10 +294,11 @@ export class PaymentsService {
    *   Uzum javob `orderId`         -> payments.provider_reference
    *   payments.idempotency_key      = `uzum_checkout:<orderId>`
    *
-   * Rasmiy Uzum Checkout wire-format olinmaguncha `checkout.register()`
-   * FAIL-CLOSED (`NOT_CONFIGURED` / `SPEC_REQUIRED`) — bu yerda u aniq 503'ga
-   * aylantiriladi (uzcard/humo bilan bir xil UX) va HECH QANDAY qator
-   * yozilmaydi.
+   * `checkout.register()` — 2026-09-11dan buyon RASMIY tasdiqlangan
+   * wire-format bilan HAQIQIY so'rov yuboradi (`docs/payments-uzum-checkout.md`),
+   * LEKIN to'liq env (auth + fiskal — `UZUM_CHECKOUT_*`) sozlanmasa hamon
+   * FAIL-CLOSED (`NOT_CONFIGURED`) — bu yerda u aniq 503'ga aylantiriladi
+   * (uzcard/humo bilan bir xil UX) va HECH QANDAY qator yozilmaydi.
    */
   private async createUzumCheckoutPayment(booking: BookingVisibilityRow) {
     const [existing] = await this.pg.query<PaymentRow>(
@@ -340,6 +341,16 @@ export class PaymentsService {
     }
 
     const now = new Date().toISOString();
+    // TODO(uzum-checkout-commission): `register()` 2026-09-11dan buyon
+    // to'liq sozlangan terminalda (auth + fiskal env) HAQIQIY so'rov
+    // yuboradi — bu qator ENDI bajariladi. Hali qo'shilmagan:
+    // `provider_fee_rate/provider_fee_amount/net_settlement_amount` —
+    // `calculateUzumCheckoutCommission(booking.total_amount)` orqali
+    // (qarang `uzum-checkout-commission.ts` + `docs/payments-uzum-checkout.md`
+    // "Uzum Checkout komissiyasi"). Migratsiya
+    // (`20260911000000_uzum_checkout_commission_fields`) DIZAYN QILINGAN,
+    // lekin ATAYLAB productionga qo'llanilmagan — shu ustunlarni to'ldirish
+    // ALOHIDA, ongli qaror bilan qo'shiladi (bu commit doirasidan tashqarida).
     await this.pg.query(
       `INSERT INTO payments
          (id, booking_id, provider, status, amount, currency, payment_url,
@@ -884,6 +895,23 @@ export class PaymentsService {
         message: 'Webhook valyutasi payment bilan mos emas',
       });
     }
+  }
+
+  /**
+   * Uzum Checkout audit-only `payment_events.payload` yozuvlari uchun
+   * umumiy shakl: TO'LIQ xom callback + (mavjud bo'lsa) debug-safe
+   * sarlavhalar. Faqat `uzumCheckoutCallback()`ning audit yo'llarida
+   * (unknown_order va non-PAID) ishlatiladi — PAID/confirm yo'li o'z
+   * ichiga (booking_id/transaction_id kabi) qo'shimcha maydonlarni ham
+   * olgani uchun bu helper'ni ishlatmaydi.
+   */
+  private buildCheckoutAuditPayload(
+    input: NormalizedCheckoutCallback,
+    debugHeaders?: Record<string, string>,
+  ): Record<string, unknown> {
+    return debugHeaders && Object.keys(debugHeaders).length > 0
+      ? { raw: input.raw, debug_headers: debugHeaders }
+      : { raw: input.raw };
   }
 
   private stableStringify(value: unknown): string {
@@ -1461,7 +1489,10 @@ export class PaymentsService {
    *   - aks holda — qabul qilindi: `duplicate` (takroriy callback),
    *     `applied` (haqiqatan holat o'zgardimi).
    */
-  async uzumCheckoutCallback(input: NormalizedCheckoutCallback): Promise<{
+  async uzumCheckoutCallback(
+    input: NormalizedCheckoutCallback,
+    debugHeaders?: Record<string, string>,
+  ): Promise<{
     received: true;
     duplicate: boolean;
     applied: boolean;
@@ -1481,9 +1512,15 @@ export class PaymentsService {
        LIMIT 1`,
       [
         idemKey,
-        input.orderId || ' ',
+        // Bo'sh bo'lsa hech qachon mos kelmaydigan placeholder ishlatamiz.
+        // Ilgari bu yerda xom NUL bayt (`'\x00'`) bo'lgan, lekin Postgres
+        // matn ustunlari o'rnatilgan NUL baytni rad etadi (driver darajasida
+        // xato) — bo'sh `orderId`/`orderNumber` bilan kelgan callback butun
+        // so'rovni ag'darib yuborardi. Haqiqiy `provider_reference`/
+        // `booking_number` qiymatlari hech qachon shu formatga mos kelmaydi.
+        input.orderId || '__uzum_checkout_no_order_id__',
         input.merchantOperationId || '00000000-0000-0000-0000-000000000000',
-        input.orderNumber || ' ',
+        input.orderNumber || '__uzum_checkout_no_order_number__',
       ],
     );
 
@@ -1496,6 +1533,34 @@ export class PaymentsService {
         ).startsWith('uzum_checkout:'));
 
     if (!payment || !isCheckoutPayment) {
+      // "Callback qabul qilindi" bilan "to'lov tasdiqlandi"ni ANIQ ajratamiz:
+      // order topilmasa ham xom payload yo'qolib ketmasligi kerak (QA/
+      // tekshiruv uchun) — lekin hech qanday payment/booking holati
+      // O'ZGARTIRILMAYDI. Bir xil noma'lum callback qayta-qayta kelsa ham
+      // (Uzum retry) `event_key` UNIQUE + ON CONFLICT DO NOTHING orqali
+      // faqat bitta audit qatori saqlanadi.
+      const unknownKey =
+        input.orderId ||
+        input.orderNumber ||
+        createHash('sha256')
+          .update(this.stableStringify(input.raw))
+          .digest('hex');
+      await this.pg.query(
+        `INSERT INTO payment_events
+           (id, provider, event_type, event_key, payload, payload_hash, processed_at)
+         VALUES ($1, 'uzum_checkout', $2, $3, $4::jsonb, $5, $6)
+         ON CONFLICT (event_key) DO NOTHING`,
+        [
+          randomUUID(),
+          'callback:unknown_order',
+          `uzum_checkout:unknown:${unknownKey}`,
+          JSON.stringify(this.buildCheckoutAuditPayload(input, debugHeaders)),
+          createHash('sha256')
+            .update(this.stableStringify(input.raw))
+            .digest('hex'),
+          new Date().toISOString(),
+        ],
+      );
       return {
         received: true,
         duplicate: false,
@@ -1516,7 +1581,7 @@ export class PaymentsService {
           randomUUID(),
           `callback:${input.state.toLowerCase()}`,
           `uzum_checkout:${input.orderId}:${input.state}`,
-          JSON.stringify(input.raw),
+          JSON.stringify(this.buildCheckoutAuditPayload(input, debugHeaders)),
           createHash('sha256')
             .update(this.stableStringify(input.raw))
             .digest('hex'),
@@ -1530,6 +1595,68 @@ export class PaymentsService {
     //    idempotentlik (`event_key` UNIQUE), amount/currency tekshiruvi,
     //    terminal-holat qo'riqchi, booking -> confirmed + `expires_at=NULL`
     //    + `booking_status_history` + partner ledger krediti.
+    //
+    //    MUHIM (2026-09-11 YANGILANDI): rasmiy `AcquiringCallbackData`
+    //    schema'da amount/currency MAYDONI UMUMAN YO'Q (tasdiqlangan —
+    //    `uzum-checkout.provider.ts` fayl boshidagi izohga qarang). Demak
+    //    HAQIQIY Uzum callback'ida `input.amountSom` DEYARLI HAR DOIM `NaN`
+    //    bo'ladi — va agar shuni to'g'ridan-to'g'ri `processPaymentEvent()`ga
+    //    uzatsak, `assertPaymentMatchesPayload()` `amount === undefined`
+    //    bo'lganda tekshiruvni JIM O'TKAZIB YUBORADI (ya'ni amount-mismatch
+    //    himoyasi callback orqali AMALIYOTDA hech qachon ishlamas edi — bu
+    //    haqiqiy, avval yashirin bo'lgan bo'shliq). Shu sabab callback
+    //    body'siga ISHONISH O'RNIGA har doim BIZNING o'z (X-Terminal-Id/
+    //    X-Api-Key bilan autentifikatsiyalangan) `getOrderStatus(orderId)`
+    //    chaqiruvimiz orqali summa QAYTA TASDIQLANADI, va FAQAT shu
+    //    tasdiqlangan summa quyida ishlatiladi.
+    let verifiedAmountSom: number | undefined;
+    try {
+      const verified = await this.checkout.getOrderStatus(input.orderId);
+      if (verified.state === 'PAID' && verified.amountSom !== null) {
+        verifiedAmountSom = verified.amountSom;
+      }
+    } catch (err) {
+      // `getOrderStatus`ning o'zi muvaffaqiyatsiz (tarmoq/konfiguratsiya) —
+      // `UzumCheckoutError` ATAYLAB oddiy `Error`ga aylantiriladi: aks holda
+      // controller uni signature-rad etish (401) deb noto'g'ri talqin
+      // qilardi (`instanceof UzumCheckoutError`). Oddiy `Error` esa
+      // controller'ning umumiy catch bloki orqali 500'ga tushadi — Uzum
+      // buni qayta urinish signali sifatida qabul qiladi (rasmiy: max 5
+      // marta), bu yerda esa hech qanday DB holati O'ZGARMAYDI.
+      this.logger.warn(
+        `uzum-checkout callback: getOrderStatus orqali qayta tasdiqlash ` +
+          `muvaffaqiyatsiz order=${input.orderId}: ${
+            err instanceof Error ? err.message : "noma'lum"
+          }`,
+      );
+      throw new Error('uzum_checkout_status_reverify_failed');
+    }
+
+    if (verifiedAmountSom === undefined) {
+      // Callback PAID deb da'vo qildi, lekin BIZNING o'z autentifikatsiyalangan
+      // tekshiruvimiz (`getOrderStatus`) buni tasdiqlay olmadi (masalan hali
+      // COMPLETED emas, yoki soxta/eskirgan callback) — HECH QANDAY
+      // payment/booking holati o'zgarmaydi, faqat audit yoziladi. Uzum
+      // rasmiy qoidaga ko'ra keyinroq qayta callback yuboradi va
+      // `reconcileUzumCheckoutPayments()` cron ham mustaqil tasdiqlaydi.
+      await this.pg.query(
+        `INSERT INTO payment_events
+           (id, provider, event_type, event_key, payload, payload_hash, processed_at)
+         VALUES ($1, 'uzum_checkout', 'callback:unverified', $2, $3::jsonb, $4, $5)
+         ON CONFLICT (event_key) DO NOTHING`,
+        [
+          randomUUID(),
+          `uzum_checkout:unverified:${input.orderId}`,
+          JSON.stringify(this.buildCheckoutAuditPayload(input, debugHeaders)),
+          createHash('sha256')
+            .update(this.stableStringify(input.raw))
+            .digest('hex'),
+          new Date().toISOString(),
+        ],
+      );
+      return { received: true, duplicate: false, applied: false };
+    }
+
     try {
       const result = (await this.processPaymentEvent(
         'uzum_checkout',
@@ -1538,10 +1665,18 @@ export class PaymentsService {
         {
           booking_id: payment.booking_id,
           transaction_id: input.orderId,
-          amount: Number.isFinite(input.amountSom)
-            ? input.amountSom
-            : undefined,
+          // Callback body'sidan EMAS — yuqorida `getOrderStatus()` orqali
+          // mustaqil tasdiqlangan summa.
+          amount: verifiedAmountSom,
           currency: input.currency,
+          // To'liq xom Uzum payload + debug-safe sarlavhalar — faqat audit
+          // uchun qo'shiladi, `processPaymentEvent()`ning o'z mantig'i
+          // (booking_id/transaction_id/amount/currency) bu qo'shimcha
+          // kalitlarni o'qimaydi/e'tiborga olmaydi.
+          uzum_raw: input.raw,
+          ...(debugHeaders && Object.keys(debugHeaders).length > 0
+            ? { uzum_debug_headers: debugHeaders }
+            : {}),
         },
       )) as { duplicate?: boolean };
       return {
@@ -1621,16 +1756,63 @@ export class PaymentsService {
    *   - normallashtirilgan `FAILED` -> payment `failed`.
    * Boshqa holatlar (`PENDING` / `UNKNOWN`) TEGILMAYDI.
    *
-   * FAIL-CLOSED, hozircha ataylab `@Cron`SIZ:
-   *   - `checkout.isConfigured()` FALSE -> darhol no-op;
-   *   - `STATE_MAP` bo'sh (Uzum status enum spec'i YO'Q) -> har qanday holat
-   *     `UNKNOWN` va hech narsa o'zgarmaydi;
-   *   - `getOrderStatus()` spec kelmaguncha `SPEC_REQUIRED` bilan rad etadi.
-   * Uzum status enum'i tasdiqlangach shu metodga `@Cron(EVERY_5_MINUTES)`
-   * qo'shiladi.
+   * FAIL-CLOSED:
+   *   - `checkout.isConfigured()` FALSE -> darhol no-op (fiskal env shart
+   *     EMAS — `getOrderStatus()`ga kerak emas, faqat auth);
+   *   - `ORDER_STATUS_MAP` FAQAT rasmiy/sandboxda tasdiqlangan `status`
+   *     qiymatlarini (`REGISTERED`->PENDING, `COMPLETED`->PAID,
+   *     `DECLINED`->FAILED) taniydi — boshqa har qanday qiymat xavfsiz
+   *     `UNKNOWN`ga tushadi, hech narsa o'zgartirmaydi;
+   *   - `getOrderStatus()` tarmoq/HTTP xatosida yoki `errorCode!=0` bo'lsa
+   *     `STATUS_FAILED` throw qiladi — quyidagi catch jim o'tkazib yuboradi.
+   *
+   * ─────────────────────────────────────────────────────────────────────
+   * 2026-09-11 YANGILANDI — ENDI `@Cron` BILAN, PRODUCTIONDA YAGONA
+   * ISHONCHLI TASDIQLASH YO'LI SIFATIDA:
+   * ─────────────────────────────────────────────────────────────────────
+   * Uzum Checkout'ning rasmiy OpenAPI spec'i (2026-09-11 to'g'ridan-to'g'ri
+   * tasdiqlangan, `uzum-checkout.provider.ts` fayl boshiga qarang) inbound
+   * callback uchun HECH QANDAY signature/autentifikatsiya mexanizmi
+   * TAQDIM ETMAYDI. `UzumCheckoutController.callback()` shu sababdan
+   * production'da (`UZUM_CHECKOUT_SIGNATURE_SCHEME` sozlanmagan holatda)
+   * HAR DOIM rad etadi (401) — bu ATAYLAB O'ZGARTIRILMAYDI ("placeholder"
+   * imzo sxemasini productionga qabul qilish YO'Q). Amaliy natija: haqiqiy
+   * Uzum callback'i production'da HECH QACHON to'g'ridan-to'g'ri PAID
+   * holatiga OLIB KELMAYDI.
+   *
+   * Shuning uchun bu metod — o'zining OUTBOUND, `X-Terminal-Id`/`X-Api-Key`
+   * bilan autentifikatsiyalangan `getOrderStatus()` chaqiruviga tayangani
+   * uchun — production uchun YAGONA ishonchli PAID-tasdiqlash yo'li bo'lib
+   * qoladi (bu callback signature'ning "o'rnini bosuvchi zaif nusxasi"
+   * EMAS — aksincha KUCHLIROQ: hech qanday tasdiqlanmagan tashqi POST
+   * body'siga ISHONILMAYDI, faqat bizning o'z autentifikatsiyalangan
+   * so'rovimizga). `olderThanMinutes` standart qiymati shu sababdan
+   * (ilgari `15`) `2`ga TUSHIRILDI — aks holda to'lov ~15 daqiqagacha
+   * "pending" ko'rinib turardi. `2` daqiqa — checkout sahifasi
+   * ochilishi/3DS/redirect uchun kichik xavfsizlik bo'shlig'i, lekin
+   * javob tezligi uchun YETARLICHA qisqa. `@Cron(EVERY_MINUTE)` — mavjud
+   * `failStaleUzumTransactions()` konvensiyasi bilan bir xil chastota.
    */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async reconcileUzumCheckoutPaymentsCron(): Promise<void> {
+    try {
+      const result = await this.reconcileUzumCheckoutPayments();
+      if (result.updated > 0) {
+        this.logger.log(
+          `uzum-checkout reconcile: ${result.scanned} ko'rildi, ${result.updated} yangilandi`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `reconcileUzumCheckoutPaymentsCron xatosi: ${
+          error instanceof Error ? error.message : 'nomaʼlum'
+        }`,
+      );
+    }
+  }
+
   async reconcileUzumCheckoutPayments(
-    olderThanMinutes = 15,
+    olderThanMinutes = 2,
   ): Promise<{ scanned: number; updated: number }> {
     if (!this.checkout.isConfigured()) {
       return { scanned: 0, updated: 0 };
@@ -1674,8 +1856,9 @@ export class PaymentsService {
           updated += 1;
         }
       } catch (err) {
-        // `getOrderStatus` fail-closed (`SPEC_REQUIRED`) bo'lsa — jim o'tamiz,
-        // secret log qilinmaydi (faqat orderId + xabar).
+        // `getOrderStatus` muvaffaqiyatsiz (tarmoq/HTTP/errorCode) bo'lsa —
+        // jim o'tamiz, secret log qilinmaydi (faqat orderId + xabar); keyingi
+        // cron aylanishida qayta sinaladi.
         this.logger.warn(
           `uzum-checkout reconcile order=${orderId} o'tkazib yuborildi: ${
             err instanceof Error ? err.message : 'nomaʼlum'

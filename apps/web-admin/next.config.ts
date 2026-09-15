@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/backend/:path*",
-        destination: "http://localhost:4000/v1/:path*",
+        destination: "https://api.safaar.uz/v1/:path*",
       },
     ];
   },

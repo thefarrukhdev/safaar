@@ -8,6 +8,12 @@ interface EnvironmentConfig {
   PORT: number;
   HOST: string;
   ENABLE_DEMO_AUTH: string;
+  // Global ENABLE_DEMO_AUTH'dan MUSTAQIL, tor doiradagi mexanizm: faqat shu
+  // yerda ANIQ ro'yxatlangan (vergul bilan ajratilgan) telefon raqamlari
+  // uchun OTP `dev_code` sifatida qaytariladi — boshqa HAMMA raqam odatdagi
+  // haqiqiy SMS orqali boradi. Bo'sh/unset = hech kim ruxsat etilmagan
+  // (fail-closed standart). Qiymatlar Git'ga HECH QACHON commit qilinmaydi.
+  DEMO_AUTH_ALLOWED_PHONES?: string;
   SMS_PROVIDER?: string;
   ESKIZ_EMAIL?: string;
   ESKIZ_PASSWORD?: string;
@@ -51,6 +57,41 @@ interface EnvironmentConfig {
   UZUM_CHECKOUT_CALLBACK_SIGN_KEY?: string;
   UZUM_CHECKOUT_SIGNATURE_HEADER?: string;
   UZUM_CHECKOUT_SIGNATURE_SCHEME?: string;
+  // `register()` chiquvchi fiskal `receiptParams` uchun — 2026-09-11 sandbox
+  // orqali tasdiqlangan wire-format (`docs/payments-uzum-checkout.md`).
+  // BIZNES/BUXGALTERIYA tomonidan beriladi, KODDA hardcode qilinmaydi.
+  // `UZUM_CHECKOUT_SPIC`/`_PACKAGE_CODE` — tasnif.soliq.uz'dan IKPU/o'lchov
+  // birligi kodi. `_VAT_PERCENT` — soliq stavkasi (%%); MUHIM: hozircha
+  // FAQAT sandbox probe sifatida tasdiqlangan (`12`), bu HAQIQIY production
+  // soliq siyosati DEGANI EMAS — real qiymat tasdiqlanmaguncha bu yerga
+  // real terminalning haqiqiy stavkasi qo'yilishi kerak. `_RECEIPT_TIN` /
+  // `_RECEIPT_PINFL` — kamida BITTASI SHART (ikkalasi birga bo'lmaydi);
+  // hech biri yo'q bo'lsa `register()` `NOT_CONFIGURED` bilan fail-closed.
+  UZUM_CHECKOUT_SPIC?: string;
+  UZUM_CHECKOUT_PACKAGE_CODE?: string;
+  UZUM_CHECKOUT_VAT_PERCENT?: string;
+  UZUM_CHECKOUT_RECEIPT_TIN?: string;
+  UZUM_CHECKOUT_RECEIPT_PINFL?: string;
+  // Ixtiyoriy — chiquvchi so'rov `Content-Language` sarlavhasi. Uzum FAQAT
+  // `ru-RU`/`uz-UZ`/`en-EN` qabul qiladi (tasdiqlangan); default `uz-UZ`.
+  UZUM_CHECKOUT_CONTENT_LANGUAGE?: string;
+  // Uzum Checkout CHIQUVCHI (outbound) so'rovlari uchun IXTIYORIY forward-proxy
+  // URL (`http://user:pass@host:port`). FAQAT `UzumCheckoutProvider`ning
+  // chiquvchi metodlari (`register` / `getOrderStatus` / `getOperationState`
+  // / `refund`) shu proxy orqali chiqadi — statik chiquvchi IP kafolati uchun
+  // (Uzum merchant allowlist). Bo'sh bo'lsa — Uzum Checkout so'rovlari ham
+  // odatdagi to'g'ridan-to'g'ri marshrut bilan boradi. Boshqa HECH BIR
+  // `fetch()` (SMS, email, CBU kurs, webhook yetkazish, OAuth, ...) bunga
+  // ta'sir qilmaydi — `setGlobalDispatcher` ISHLATILMAYDI.
+  UZUM_CHECKOUT_HTTPS_PROXY?: string;
+  // QA/test-only: haqiqiy imzo sxemasi sozlanmagan bo'lsa (hozirgi holat —
+  // rasmiy spec yo'q) callback signature tekshiruvini o'tkazib yuborishga
+  // ruxsat beradi — FAQAT production BO'LMAGANDA (`NODE_ENV==='production'`
+  // bo'lsa har doim e'tiborga olinmaydi, qiymatidan qat'i nazar). Boshqa
+  // hech qanday himoya (order lookup/amount/currency/idempotency/terminal-
+  // holat) bu bilan o'chirilmaydi. `ENABLE_DEMO_AUTH`dan MUSTAQIL — bu OTP
+  // emas, to'lov callback'i uchun.
+  UZUM_CHECKOUT_TEST_MODE: string;
   DB_CONNECTION_TIMEOUT_MS: number;
   DB_QUERY_TIMEOUT_MS: number;
   DB_QUERY_ATTEMPTS: number;
@@ -149,6 +190,23 @@ export function validateEnv(
       );
     }
 
+    if (
+      String(config.UZUM_CHECKOUT_TEST_MODE ?? 'false').toLowerCase() === 'true'
+    ) {
+      // QATTIQ rad etamiz (ogohlantirish EMAS) — bu ENABLE_DEMO_AUTH'dan
+      // farqli, chunki bu yerda gap OTP kodini ochiq qoldirishda emas,
+      // to'lov tasdiqlash (payment confirmation)ni signature'siz o'tkazib
+      // yuborishda — production'da bunga hech qanday holatda yo'l qo'yib
+      // bo'lmaydi. `UzumCheckoutProvider.isTestModeEnabled()` o'zi ham
+      // mustaqil ravishda `NODE_ENV==='production'`ni tekshiradi (ikkinchi
+      // himoya qatlami), lekin bu yerda ilova UMUMAN ISHGA TUSHMASLIGI
+      // kerak — noto'g'ri sozlangan production deploy jim ravishda xavfli
+      // rejimda ishga tushib qolmasligi uchun.
+      throw new Error(
+        'UZUM_CHECKOUT_TEST_MODE=true production muhitida bo‘lishi mumkin emas',
+      );
+    }
+
     if (String(config.ENABLE_DEMO_AUTH ?? 'false').toLowerCase() === 'true') {
       // ATAYLAB throw emas — SMS provayder hali ulanmagan davrda vaqtincha
       // ruxsat berilgan (foydalanuvchining ongli qarori). Lekin bu OTP
@@ -169,6 +227,30 @@ export function validateEnv(
     }
   }
 
+  // Uzum Checkout chiquvchi proxy URL'i (ixtiyoriy) — sozlangan bo'lsa
+  // sintaktik jihatdan to'g'ri http/https URL bo'lishi SHART, aks holda
+  // ilova ishga tushmaydi (noto'g'ri sozlangan proxy jim ravishda e'tiborsiz
+  // qoldirilib, to'lov so'rovlari kutilmagan IP'dan chiqib ketmasligi uchun).
+  const uzumCheckoutHttpsProxy = config.UZUM_CHECKOUT_HTTPS_PROXY
+    ? String(config.UZUM_CHECKOUT_HTTPS_PROXY).trim()
+    : undefined;
+  if (uzumCheckoutHttpsProxy) {
+    let parsedProxy: URL;
+    try {
+      parsedProxy = new URL(uzumCheckoutHttpsProxy);
+    } catch {
+      throw new Error(
+        'UZUM_CHECKOUT_HTTPS_PROXY yaroqli URL bo‘lishi kerak ' +
+          '(masalan http://user:parol@host:3128)',
+      );
+    }
+    if (parsedProxy.protocol !== 'http:' && parsedProxy.protocol !== 'https:') {
+      throw new Error(
+        'UZUM_CHECKOUT_HTTPS_PROXY faqat http:// yoki https:// sxemasida bo‘lishi mumkin',
+      );
+    }
+  }
+
   return {
     NODE_ENV: nodeEnv,
     APP_NAME: String(config.APP_NAME ?? 'safaar-api'),
@@ -179,6 +261,9 @@ export function validateEnv(
     PORT: toNumber(config.PORT, 4000),
     HOST: String(config.HOST ?? '0.0.0.0'),
     ENABLE_DEMO_AUTH: String(config.ENABLE_DEMO_AUTH ?? 'false'),
+    DEMO_AUTH_ALLOWED_PHONES: config.DEMO_AUTH_ALLOWED_PHONES
+      ? String(config.DEMO_AUTH_ALLOWED_PHONES)
+      : undefined,
     SMS_PROVIDER: config.SMS_PROVIDER ? String(config.SMS_PROVIDER) : undefined,
     ESKIZ_EMAIL: config.ESKIZ_EMAIL ? String(config.ESKIZ_EMAIL) : undefined,
     ESKIZ_PASSWORD: config.ESKIZ_PASSWORD
@@ -275,6 +360,26 @@ export function validateEnv(
     UZUM_CHECKOUT_SIGNATURE_SCHEME: config.UZUM_CHECKOUT_SIGNATURE_SCHEME
       ? String(config.UZUM_CHECKOUT_SIGNATURE_SCHEME)
       : undefined,
+    UZUM_CHECKOUT_SPIC: config.UZUM_CHECKOUT_SPIC
+      ? String(config.UZUM_CHECKOUT_SPIC)
+      : undefined,
+    UZUM_CHECKOUT_PACKAGE_CODE: config.UZUM_CHECKOUT_PACKAGE_CODE
+      ? String(config.UZUM_CHECKOUT_PACKAGE_CODE)
+      : undefined,
+    UZUM_CHECKOUT_VAT_PERCENT: config.UZUM_CHECKOUT_VAT_PERCENT
+      ? String(config.UZUM_CHECKOUT_VAT_PERCENT)
+      : undefined,
+    UZUM_CHECKOUT_RECEIPT_TIN: config.UZUM_CHECKOUT_RECEIPT_TIN
+      ? String(config.UZUM_CHECKOUT_RECEIPT_TIN)
+      : undefined,
+    UZUM_CHECKOUT_RECEIPT_PINFL: config.UZUM_CHECKOUT_RECEIPT_PINFL
+      ? String(config.UZUM_CHECKOUT_RECEIPT_PINFL)
+      : undefined,
+    UZUM_CHECKOUT_CONTENT_LANGUAGE: config.UZUM_CHECKOUT_CONTENT_LANGUAGE
+      ? String(config.UZUM_CHECKOUT_CONTENT_LANGUAGE)
+      : undefined,
+    UZUM_CHECKOUT_HTTPS_PROXY: uzumCheckoutHttpsProxy,
+    UZUM_CHECKOUT_TEST_MODE: String(config.UZUM_CHECKOUT_TEST_MODE ?? 'false'),
     DB_CONNECTION_TIMEOUT_MS: toNumber(
       config.DB_CONNECTION_TIMEOUT_MS,
       production ? 8000 : 5000,

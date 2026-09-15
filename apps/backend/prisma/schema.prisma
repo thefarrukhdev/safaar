@@ -931,17 +931,40 @@ model BookingMessage {
 }
 
 model Payment {
-  id                String        @id @default(uuid()) @db.Uuid
-  bookingId         String        @map("booking_id") @db.Uuid
-  provider          PaymentMethod
-  status            PaymentStatus @default(pending)
-  amount            Decimal       @db.Decimal(18, 2)
-  currency          String        @default("UZS") @db.Char(3)
-  paymentUrl        String?       @map("payment_url")
-  providerReference String?       @map("provider_reference") @db.VarChar(255)
-  idempotencyKey    String?       @unique @map("idempotency_key") @db.VarChar(128)
-  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                  String        @id @default(uuid()) @db.Uuid
+  bookingId           String        @map("booking_id") @db.Uuid
+  provider            PaymentMethod
+  status              PaymentStatus @default(pending)
+  amount              Decimal       @db.Decimal(18, 2)
+  currency            String        @default("UZS") @db.Char(3)
+  paymentUrl          String?       @map("payment_url")
+  providerReference   String?       @map("provider_reference") @db.VarChar(255)
+  idempotencyKey      String?       @unique @map("idempotency_key") @db.VarChar(128)
+  // Provider (to'lov shlyuzi) komissiyasi — SAFAAR ICHKI accounting uchun,
+  // HECH QANDAY provider API'siga yuborilmaydi/ulardan olinmaydi. Barcha
+  // uchtasi bir vaqtda to'ldiriladi yoki hech biri (NULL) — qarang
+  // `uzum-checkout-commission.ts`. Hozircha HAMMA qator uchun NULL: Uzum
+  // Checkout chiquvchi API hali fail-closed stub (real to'lov yo'q), va
+  // Uzum'ning haqiqiy settlement mexanizmi (net-deduct vs gross+invoice)
+  // TASDIQLANMAGAN — shu sabab bu migratsiya productionga QO'LLANILMAGAN
+  // (docs/payments-uzum-checkout.md'ga qarang, avvalgi
+  // `uzum_checkout_payment_method` migratsiyasi bilan bir xil siyosat).
+  // ⚠️ NOMLANISH XAVFI (2026-09-13): biznes Uzum Checkout 1.5% komissiyasini
+  // MIJOZ/USER to'lashini tasdiqladi (`UZUM_CHECKOUT_FEE_BEARER='USER'`,
+  // `uzum-checkout-commission.ts`) — ya'ni bu "provider fee" merchant
+  // (SAFAAR)dan olinadigan xarajat EMAS. Shu sabab `provider_fee_*` nomi
+  // chalkash: bu ustunlar (agar/qachon to'ldirilsa) faqat SAFAAR-Uzum bank
+  // SETTLEMENT texnik detalini ifodalashi mumkin, HECH QACHON
+  // `partner_payable`/`commission_amount`ga ta'sir qilmasligi kerak. Hali
+  // hech qayerda yozilmagani va productionga qo'llanilmagani uchun bu
+  // migratsiya/nom HOZIRCHA o'zgartirilmadi — kelgusida to'ldirilsa, aniqroq
+  // nom (masalan `uzum_bank_settlement_deduction`) bilan qayta ko'rib
+  // chiqilishi tavsiya etiladi.
+  providerFeeRate     Decimal?      @map("provider_fee_rate") @db.Decimal(6, 4)
+  providerFeeAmount   Decimal?      @map("provider_fee_amount") @db.Decimal(18, 2)
+  netSettlementAmount Decimal?      @map("net_settlement_amount") @db.Decimal(18, 2)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   events  PaymentEvent[]

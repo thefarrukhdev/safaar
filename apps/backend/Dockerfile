@@ -58,5 +58,5 @@ RUN groupadd --system --gid 1001 safaar \
 USER safaar
 
 EXPOSE 4000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e "const port=process.env.PORT||4000; const prefix=process.env.API_PREFIX||'v1'; fetch(`http://127.0.0.1:${port}/${prefix}/health`).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1));"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e 'const port=process.env.PORT||4000; const prefix=process.env.API_PREFIX||"v1"; fetch(`http://127.0.0.1:${port}/${prefix}/health`).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1));'
 CMD ["npm", "run", "start:prod", "-w", "@safaar/backend"]

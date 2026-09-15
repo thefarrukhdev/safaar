@@ -9,7 +9,10 @@ import {
 } from '@nestjs/common';
 import { BookingStatus } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
-import { calculateCommission } from '../common/finance';
+import {
+  calculateCommission,
+  resolveAccommodationCommissionRate,
+} from '../common/finance';
 import {
   limitOffsetSql,
   paginateArray,
@@ -3191,11 +3194,15 @@ export class PartnersService {
       check_out_time: string | null;
       partner_type: string;
       commission_rate: number;
+      stars: number | null;
+      city_slug: string | null;
     }>(
       `SELECT h.id::text, h.check_in_time, h.check_out_time, po.type::text AS partner_type,
-              po.default_commission_rate::float8 AS commission_rate
+              po.default_commission_rate::float8 AS commission_rate,
+              h.stars, c.slug AS city_slug
        FROM hotels h
        JOIN partner_organizations po ON po.id = h.partner_organization_id
+       JOIN cities c ON c.id = h.city_id
        WHERE h.id = $1 AND h.partner_organization_id = $2`,
       [hotelId, organizationId],
     );
@@ -3206,6 +3213,19 @@ export class PartnersService {
       });
     }
     const isRestaurant = hotel.partner_type === 'restaurant';
+    // SAFAAR komissiya stavkasi — `bookings.service.ts createHotelInternal()`
+    // bilan BIR XIL Excel-asosli qoida (2026-09-13 audit, batafsili o'sha
+    // faylning izohiga qarang): hamkor walk-in bron ham xuddi shu haqiqiy
+    // komissiya stavkasidan foydalanishi SHART, aks holda bitta hotel uchun
+    // ikkita HAR XIL komissiya mantig'i ishlab qolardi.
+    const accommodationRate = resolveAccommodationCommissionRate({
+      citySlug: hotel.city_slug,
+      partnerOrganizationType: hotel.partner_type,
+      stars: hotel.stars,
+    });
+    const resolvedCommissionRatePercent = accommodationRate.matched
+      ? (accommodationRate.ratePercent as number)
+      : hotel.commission_rate;
 
     const [roomType] = await this.pg.query<{
       id: string;
@@ -3361,7 +3381,7 @@ export class PartnersService {
     );
     const commissionAmount = calculateCommission(
       totalAmount,
-      hotel.commission_rate,
+      resolvedCommissionRatePercent,
     );
     const guestName = String(body.fullName ?? body.full_name ?? '').trim();
     const guestPhone = String(body.phone ?? '').trim();
@@ -3449,6 +3469,35 @@ export class PartnersService {
             message: isRestaurant
               ? 'Bu stol tanlangan vaqtda band'
               : 'Bu xona tanlangan sanalarda band',
+          });
+        }
+
+        // `room_inventory.closed` — xuddi shu tekshiruv mijoz oqimida
+        // (`bookings.service.ts::createHotelInternal`) ham qo'shilgan;
+        // hamkor walk-in/naqd bron oqimi ham bloklangan sanalarga bron
+        // yaratmasligi kerak (masalan admin overbooking tufayli bloklagan
+        // bo'lsa, hamkorning o'zi ham o'sha sanaga yangi bron qo'sha
+        // olmasligi shart).
+        const [{ blocked_count: blockedCountRaw }] = isRestaurant
+          ? await tx.query<{ blocked_count: string | number }>(
+              `SELECT COUNT(*) AS blocked_count
+               FROM room_inventory
+               WHERE room_id = $1::uuid AND date = $2::date AND closed = true`,
+              [room.id, checkIn],
+            )
+          : await tx.query<{ blocked_count: string | number }>(
+              `SELECT COUNT(*) AS blocked_count
+               FROM room_inventory
+               WHERE room_id = $1::uuid
+                 AND date >= $2::date AND date < $3::date
+                 AND closed = true`,
+              [room.id, checkIn, checkOut],
+            );
+        if (Number(blockedCountRaw) > 0) {
+          throw new ConflictException({
+            code: 'ROOM_DATES_BLOCKED',
+            message:
+              'Tanlangan sanalarning bir qismi vaqtincha sotuvdan bloklangan',
           });
         }
       }

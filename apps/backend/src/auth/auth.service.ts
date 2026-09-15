@@ -2027,11 +2027,36 @@ export class AuthService {
     return String(process.env.ENABLE_DEMO_AUTH ?? '').toLowerCase() === 'true';
   }
 
+  /**
+   * `ENABLE_DEMO_AUTH`dan MUSTAQIL, tor doiradagi mexanizm: production'da
+   * `ENABLE_DEMO_AUTH=false` qolgan holda ham, faqat `DEMO_AUTH_ALLOWED_PHONES`
+   * (vergul bilan ajratilgan) ro'yxatida ANIQ ko'rsatilgan raqamlar uchun
+   * OTP `dev_code` sifatida qaytariladi — universal bypass EMAS. Ro'yxatdagi
+   * har bir yozuv xuddi kiruvchi raqam kabi `normalizePhone()` orqali
+   * normallashtiriladi (turlicha formatda yozilishiga chidamli bo'lish
+   * uchun), so'ng haqiqiy O'zbekiston mobil raqam shakliga (`isValidUzPhone`
+   * bilan bir xil qoida — `partners.service.ts`dagi mavjud konventsiya)
+   * mos kelmagan yozuvlar xavfsiz tashlab yuboriladi (hech qachon "hamma
+   * bilan mos keladigan" holga tushmaydi). Ro'yxat bo'sh/unset bo'lsa —
+   * hech kim ruxsat etilmagan (fail-closed).
+   */
+  private isPhoneAllowedForDemoAuth(phone: string): boolean {
+    const raw = process.env.DEMO_AUTH_ALLOWED_PHONES;
+    if (!raw) return false;
+
+    const allowed = raw
+      .split(',')
+      .map((entry) => this.normalizePhone(entry.trim()))
+      .filter((entry) => /^\+998\d{9}$/.test(entry));
+
+    return allowed.includes(phone);
+  }
+
   private async sendOtpDemoOrFail(phone: string, purpose: OtpPurpose) {
     const response = this.createOtpChallenge(phone, purpose);
     const code = otpStore.getDeliveryCode(response.challenge_id);
 
-    if (this.isDemoAuthEnabled()) {
+    if (this.isDemoAuthEnabled() || this.isPhoneAllowedForDemoAuth(phone)) {
       return { ...response, dev_code: code };
     }
 

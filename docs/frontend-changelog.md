@@ -4,7 +4,322 @@ Ushbu fayl faqat `apps/web-user` frontendidagi o'zgarishlarni hujjatlashtiradi.
 Har bir frontend task tugagach yangi entry tepaga qo'shiladi — eski entrylar
 o'chirilmaydi yoki o'zgartirilmaydi.
 
+> Eslatma: 2026-09-04 dan boshlab bu faylga `web-admin` QA-fix entrylari ham
+> `(web-admin)` belgisi bilan qo'shiladi (alohida duplicate doc yaratilmadi).
+
 ---
+
+# 2026-09-06 — (web-admin) P3: Escape reject tasdiqlash oynasini emas, butun ariza drawerini yopardi
+
+## Manba
+QA regressiya testi (Playwright + Chromium, izolyatsiya qilingan QA muhiti)
+paytida topilgan: `/partners/requests` sahifasida "Rad etish" tugmasi
+bosilib tasdiqlash oynasi ochilgach, `Escape` tugmasi bosilsa — kutilganidek
+faqat o'sha tasdiqlash oynasi emas, balki uning ORQASIDAGI ariza detali
+drawer'i HAM birga yopilib ketardi. Mutatsiya sodir bo'lmasdi (xavfsizlik
+nuqtai nazaridan zararsiz), lekin admin arizani ko'rib turgan joyini
+yo'qotib qo'yardi.
+
+## Root cause (isbotlangan)
+`components/ui/Modal.tsx` har bir instansiyasi o'zining `Escape` tugmasini
+kuzatuvchi listenerini to'g'ridan-to'g'ri `document`ga ulardi:
+
+```ts
+useEffect(() => {
+  function handleEscape(e) { if (e.key === "Escape") onClose(); }
+  if (open) document.addEventListener("keydown", handleEscape);
+  return () => document.removeEventListener("keydown", handleEscape);
+}, [open, onClose]);
+```
+
+`/partners/requests` sahifasida IKKITA `<Modal>` bir vaqtning o'zida DOM'da
+ochiq turadi — ariza detali drawer'i (`open={!!selectedRequest}`) va uning
+USTIDA "Rad etish"/"Tasdiqlash" tasdiqlash oynasi (`open={confirmKind !==
+null}`). Ikkalasi ham `document`ga mustaqil ravishda o'zining listenerini
+ulagani uchun, bitta `Escape` bosilganda IKKALASI HAM o'z `onClose()`ini
+chaqirardi — natijada drawer ham, tasdiqlash oynasi ham birga yopilib
+ketardi.
+
+## Fix
+`Modal.tsx`ga modul darajasidagi umumiy `openModalStack` (hozir ochiq
+turgan Modal instansiyalari, ochilish tartibida) qo'shildi. Har bir
+instansiya `useId()` orqali o'z barqaror identifikatorini oladi va ochilganda
+shu stackka qo'shiladi (yopilganda/unmount bo'lganda olib tashlanadi — bu
+alohida `useEffect`da, `onClose` identifikatori har render'da o'zgarishi
+sababli stackning tasodifan qayta tuzilib ketmasligi uchun). `Escape`
+handler endi `onClose()`ni FAQAT shu instansiya stackning ENG TEPASIDA
+(eng oxirgi ochilgan, ya'ni eng ustki) bo'lsagina chaqiradi — aks holda
+hech narsa qilmaydi. Bitta Modal ochiq bo'lgan oddiy holatda xatti-harakat
+o'zgarmaydi (stackda faqat bitta element — u doim "eng tepada").
+
+## Fayllar
+| Fayl | O'zgarish |
+|---|---|
+| `apps/web-admin/components/ui/Modal.tsx` | umumiy `openModalStack` + `useId()` — `Escape` faqat eng ustki (oxirgi ochilgan) Modal instansiyasida ishlaydi. |
+
+## Test
+- `tsc --noEmit` (`apps/web-admin`): PASS.
+- `eslint` (`Modal.tsx`): 0 error.
+- REAL BROWSER regression (Chromium + Playwright, izolyatsiya qilingan QA
+  muhiti, fresh locatorlar bilan): "Rad etish" → tasdiqlash oynasi ochiladi
+  → `Escape` → FAQAT tasdiqlash oynasi yopiladi, ariza detali drawer'i OCHIQ
+  qoladi, 0 ta mutatsiya; qayta ochib "Bekor qilish" → 0 ta mutatsiya, drawer
+  ochiq qoladi; qayta ochib sabab kiritib "Rad etish" (tasdiqlash) → aynan 1
+  ta `POST /reject`, ariza holati `rejected`ga o'tadi, `rejection_reason`
+  yozib qo'yiladi.
+- Boshqa Modal ishlatuvchi sahifalar (`users`, `bookings/[id]`, `catalog`,
+  `promos`, `partners/[id]`, `users/[id]`, `cms/banners`,
+  `cms/_components/cms-article-manager`) — bitta-Modal holatida xatti-harakat
+  o'zgarmaydi (umumiy komponentga tuzatish, boshqa fayllarga tegilmadi).
+
+## Deploy
+- **LOKAL** — o'zgarishlar `temp/save-all-work` branchida commit qilinishi
+  kutilmoqda (hali commit qilinmagan, faqat QA'da tekshirilgan).
+- Production deploy'i kutilmoqda — alohida tasdiqlash talab qilinadi.
+
+## Git
+- Branch: `temp/save-all-work`
+- Frontend `develop`ga CHIQARILMAYDI (loyiha qoidasi: frontend fayllar
+  `develop`ga push qilinmaydi).
+
+---
+
+# 2026-09-04 — (web-admin) Production login tuzatildi: Server Action → backend `fetch failed`
+
+## Manba
+Real Browser Production QA (Playwright + Chromium, `web-admin-phi-beige.vercel.app`)
+paytida topilgan CRITICAL muammo: `/login` sahifasidagi "Boshqaruv Paneliga
+Kirish" tugmasi bosilганда "fetch failed" chiqardi va panelga kirib bo'lmasdi.
+
+## Muammo (kuzatilgan)
+- Brauzer login formasi → `adminLoginAction()` (Next.js Server Action) →
+  `fetch("https://api.safaar.uz/v1/auth/admin/login")` → **`fetch failed`**
+  (~10–12 s socket timeout dan keyin).
+- **Intermittent**: bir "warm" oynada 9/9 urinish fail; keyin (funksiya "cold"
+  bo'lgach) yana ishlaydi. `44adad94` (oldingi frontend fix) BILAN BOG'LIQ EMAS —
+  `lib/auth/actions.ts` o'sha commitда o'zgармаган.
+- Bir vaqtning o'zida:
+  - `/api/proxy/auth/admin/login` (Route Handler, SHU backend endpoint) → 8/8 PASS
+  - `curl https://api.safaar.uz/v1/auth/admin/login` (to'g'ridан) → 6/6 PASS
+  - backend `/v1/health` → 200, sog'lom.
+
+## Root cause (isbotlangan)
+Node'ning global `fetch`i (undici) HTTP keep-alive ulanишларини **pool** qiladi.
+`/login` Server Action past-trafikli serverless funksiyada ishlaydi: funksiya
+"warm" tursa ham, backendga boradigan **tunnel orqali o'tган yo'l** (Vercel →
+YC Caddy → Tailscale tunnel → uy NAT → konteйner) uzoq turган idle TCP
+ulanишни jimgina yopadi. Keyingi login o'sha **o'lик socket**ни pool'dan olib
+so'rov yozadi, javob kelmaydi va `fetch` ~socket-timeout dan keyin bare
+`TypeError: fetch failed` bilan rad etадi.
+
+Yuqori-trafikli `/api/proxy` Route Handler funksiyasi bu holatga tushmaydi —
+uning pool'i uzлуксиз ishlатилиб turadi (har 30 s notification polling +
+har bir admin API chaqiruvи), o'лик socketlar tez almashtiriladi.
+
+Belgилар: (a) intermittent, idle vaqtga bog'liq; (b) cold/fresh invocation'da
+ishlaydi; (c) warm holатда ketма-ket fail; (d) bir xil chaqiruvни qilган Route
+Handler hech qачон fail bo'lмайди; (e) ~12 s = socket-timeout imzosi (DNS bo'lса
+darhol, conn-refused bo'lса darhol RST).
+
+## Eski behavior
+`backendPost()` bir marta `fetch` qiladi, timeout yo'q, retry yo'q. O'лик
+pooled socket = doimiy "fetch failed", foydalanuvchi panelga kira olmaydi.
+
+## Yangi behavior
+`apps/web-admin/lib/auth/actions.ts` → `backendPost()`:
+- **Faqat transport xatосида** (HTTP javob umuman kelмаса) 3 martagacha retry.
+  undici birinchi urinишда o'лик socketни pool'dан chiqаради → 2-urinиш yangi
+  ulanишга tushади. Backoff 300/600 ms.
+- Har urinишга `AbortSignal.timeout(8000)` — o'лик socket 8 s'да tashlanади
+  (undici default'ига umид qilmaймиз).
+- **HTTP javob kelса (401 va boshqалар) — retry YO'Q**: noto'g'ri parol
+  `AUTH_INVALID_CREDENTIALS` bo'либ o'згаришсиз o'тади, lockout counter'га
+  ta'sir qilмайди.
+- Yakuniy transport xato bo'лса, o'ша xato o'згаришсиз throw qилинади (UI
+  avvалгидек generic xabar ko'рсатади).
+- Har transport-fail Vercel runtime log'ига `console.error` bo'либ yozилади
+  (`cause` kodи bilan) — kelajакда diagnostика uchun. Sirlar yo'q, host public.
+- `adminVerify2FAAction` ham shu `backendPost`ni ishlатади → avtоmatик foyda.
+
+Arxитектура o'zгармаган: login hali ham Server Action, httpOnly `admin_token`
+cookie hali ham serverда yozилади, JWT brauzерга chiqмайди, `/api/proxy` oqими
+teginилмаган.
+
+## Fayllar
+| Fayl | O'zgarиш |
+|---|---|
+| `apps/web-admin/lib/auth/actions.ts` | `backendPost()` — transport-only retry (3×) + `AbortSignal.timeout(8s)` + diagnostic `console.error`. `adminLoginAction`/`adminVerify2FAAction`/cookie/response-mapping — o'zgармаган. |
+
+## Security
+- Parol hech qаерда log qилинмади (retry faqat `path` + xato nomини logлайди).
+- JWT/refresh token brauzерга chiqмайди — avvалгидек httpOnly cookie.
+- Cookie flag'лари o'zгармаган (`httpOnly`, `sameSite=lax`, `secure` prod'да).
+- Generic invalid-credential xatти-harакати saqlanди (retry qилинмайди).
+- CORS/session semantикаси o'zгармаган.
+
+## Test
+- `tsc --noEmit` = PASS, `eslint` = PASS, `next build` = PASS.
+- Production deploy + real Chromium `web-admin-phi-beige.vercel.app`:
+  UI login ×N ketма-кет PASS, dashboard yuklanди, negative login = generic,
+  logout/session = PASS, BUG-B01 / BUG-B02 regressiya = PASS.
+- Vercel runtime log'да `[adminAuth] ... transport failure ... (cause ...)` —
+  root-cause tasдиqи.
+
+---
+
+# 2026-09-04 — (web-admin) Real Browser QA fix: Approve/Reject confirmation + mobil layout + P3
+
+## Manba
+So'nggi REAL BROWSER Production QA reporti (Playwright + Chromium,
+`web-admin-phi-beige.vercel.app`).
+
+## BUG-B01 (P2) — Hamkor arizasini Approve/Reject tasdiqsiz bajarilardi
+
+### Asl bug
+`Hamkorlar → Arizalar` → ariza detali modalidagi **"Tasdiqlash"** va
+**"Rad etish"** tugmalari bosilishi bilanoq API chaqiruvini bajarardi —
+hech qanday tasdiqlash oynasi yo'q, "Rad etish" uchun sabab kiritish
+imkoniyati yo'q. Tasodifiy bir marta bosish real hamkor arizasini
+qaytarib bo'lmaydigan holatga o'tkazardi (QA vaqtida 2 ta QA arizasi
+shu tarzda tasodifan mutatsiyaga uchradi va tiklandi).
+
+### Root cause
+`apps/web-admin/app/(dashboard)/partners/requests/page.tsx` —
+"Tasdiqlash"/"Rad etish" tugmalari to'g'ridan-to'g'ri
+`handleDecision(id, 'approve'|'reject')` → `AdminApi.approvePartner` /
+`AdminApi.rejectPartner` ni chaqirardi. `rejectPartner(id, reason?)` allaqachon
+sababni qabul qiladi, lekin sahifa uni hech qachon yig'ib bermas edi.
+
+### Eski behavior
+Bir marta bosish = darhol mutatsiya. Tasdiqlash yo'q. Sabab yo'q.
+
+### Yangi behavior
+- "Tasdiqlash"/"Rad etish" tugmalari faqat `confirmKind` state'ini o'rnatadi
+  (mutatsiya YO'Q).
+- Alohida tasdiqlash `Modal`i ochiladi:
+  - Approve: aniq matn + "Bekor qilish" / "Tasdiqlash".
+  - Reject: **majburiy sabab `textarea`si** + "Bekor qilish" / "Rad etish".
+    Tasdiq tugmasi sabab bo'sh bo'lsa `disabled`.
+- "Bekor qilish", overlay bosish, Escape — API chaqirilmaydi, holat
+  o'zgarmaydi.
+- Yuborilayotganda tasdiq tugmasi `loading` + `disabled` (double-click
+  himoyasi), submit paytida modal yopilmaydi.
+- Muvaffaqiyat/xato `toast` bilan ko'rsatiladi (avvalgidek).
+
+### Fayllar
+| Fayl | O'zgarish |
+|---|---|
+| `apps/web-admin/app/(dashboard)/partners/requests/page.tsx` | `confirmKind` + `rejectReason` state; tugmalar endi tasdiqlash modalini ochadi; yangi tasdiqlash `Modal`i; `handleDecision(id, decision, reason?)` → `rejectPartner`ga sabab uzatiladi. |
+
+## BUG-B02 (P2) — Mobil (390px) layout gorizontal overflow
+
+### Asl bug
+390×844 da har bir sahifada gorizontal skroll (`scrollWidth` ~547–593 vs
+390). Sidebar telefon kengligiga moslashmagan, hamburger tugmasi yo'q.
+
+### Root cause
+- `apps/web-admin/app/(dashboard)/layout.tsx` — asosiy kontent `div`i
+  BARCHA ekranlarda qattiq `ml-[var(--sidebar-width)]` (280px) ishlatardi.
+- `Sidebar.tsx` — `fixed w-280px`, doim ko'rinadi, mobil holat yo'q.
+- `TopBar.tsx` — hamburger/mobil menyu tugmasi yo'q.
+
+### Yangi behavior
+- Asosiy kontent: `ml-0`, faqat `lg:` da `lg:ml-[var(--sidebar-width)]` /
+  `lg:ml-[var(--sidebar-collapsed)]`. `min-w-0 overflow-x-hidden`.
+- `Sidebar`: `< lg` da off-canvas drawer (`-translate-x-full` →
+  `translate-x-0` ochilganda), backdrop bilan; `lg:translate-x-0` doim
+  ko'rinadi. `mobileOpen` / `onMobileClose` propslari. Drawer ichida biror
+  linkni bosganda mobil holatida yopiladi.
+- `TopBar`: `< lg` da hamburger tugmasi (`aria-label="Menyuni ochish"`) →
+  drawer ochiladi. Sarlavha `truncate`, tavsif `sm:` da ko'rinadi.
+
+### Fayllar
+| Fayl | O'zgarish |
+|---|---|
+| `apps/web-admin/app/(dashboard)/layout.tsx` | `mobileOpen` state; responsive `ml`; `min-w-0 overflow-x-hidden`; propslar uzatildi. |
+| `apps/web-admin/components/layout/Sidebar.tsx` | off-canvas drawer + backdrop + `mobileOpen`/`onMobileClose` propslari. |
+| `apps/web-admin/components/layout/TopBar.tsx` | hamburger tugmasi (`< lg`), `onMenuClick` prop, responsive padding/typografiya. |
+
+## P3 — Login form accessibility
+
+### Asl bug
+Login inputlarida `id`/`<label for>` bog'lanishi yo'q; `autocomplete` yo'q
+(screen-reader label ↔ input bog'lay olmaydi).
+
+### Yangi behavior
+`#admin-username` + `#admin-password` idlari, `<label htmlFor>`,
+`aria-label`, `autoComplete="username"` / `"current-password"` qo'shildi.
+(Bo'sh maydon validatsiyasi — "Login va parolni kiriting" — allaqachon
+bor edi; QA reportidagi B03 shu jihatdan false-positive edi.)
+
+### Fayllar
+| Fayl | O'zgarish |
+|---|---|
+| `apps/web-admin/app/(auth)/login/page.tsx` | inputlarga `id`/`name`/`autoComplete`/`aria-label`, labellarga `htmlFor`. |
+
+## Build unblock (P2, bu bug emas — deploy blokerini olib tashlash)
+
+`apps/web-admin/app/(dashboard)/promos/page.tsx` da `discountType` uchun
+lokal Zod sxemasi `"percentage"` ishlatardi, ammo ilovaning kanonik turi
+(`types/admin.ts`, `admin-api.ts` `PromoCode`) `"percent"`. Bu drift
+`next build` type-check bosqichini **buzardi** (mening o'zgarishlarimdan
+oldin, `origin/develop` da ham bor edi). `promos/page.tsx` dagi 7 ta
+`"percentage"` → `"percent"` ga tekislandi (API client allaqachon
+`'percent'` → wire `'percentage'` konvertatsiyasini qiladi). Boshqa
+promos mantig'i o'zgarmadi.
+
+## API / Backend
+- Backend o'zgardimi: **NO**
+- Yangi API kerak bo'ldimi: **NO**
+- Mavjud API: `POST /admin/partners/:id/approve`, `POST /admin/partners/:id/reject`
+  (`{ reason }` — backend allaqachon qo'llab-quvvatlaydi).
+
+## Test
+- `tsc --noEmit` (`apps/web-admin`): **PASS** — 0 xato (promos fix bilan;
+  fix'dan oldin 4 ta pre-existing xato bor edi).
+- `eslint` (o'zgartirilgan 6 fayl): **0 error** (3 warning — hammasi
+  pre-existing: `catch (error: any)`, `form.watch()` incompatible-library).
+- `next build` (`apps/web-admin`): **PASS** — exit 0, barcha 30 route.
+- REAL BROWSER regression (Chromium + Playwright, lokal `next dev` build →
+  **haqiqiy production API** `https://api.safaar.uz/v1`):
+  - **BUG-B01**: "Rad etish" → tasdiq oynasi chiqadi, confirm'gacha 0 ta
+    API mutatsiyasi; sabab bo'sh bo'lsa confirm `disabled`; "Bekor qilish"
+    → 0 mutatsiya, holat o'zgarmaydi; sabab bilan confirm → aynan 1 ta
+    `POST /reject`, ariza `rejected`. "Tasdiqlash" → tasdiq oynasi;
+    "Bekor qilish" → 0 mutatsiya; confirm → aynan 1 ta `POST /approve`,
+    ariza `approved`. QA arizasi har safar `submitted` ga tiklandi.
+  - **BUG-B02**: 1440/1280/1024/768/390 — barcha viewportda
+    `scrollWidth <= innerWidth` (390 da endi aynan 390, avval 547–593);
+    `< lg` da hamburger ko'rinadi; bosilganda drawer ochiladi
+    (`transform: none` = `translate-x-0`).
+  - **A11y**: `#admin-username` / `#admin-password` + `label[for]` mos;
+    login ishlaydi.
+- Muhim regressionlar: topilmadi. Boshqa sahifalar (dashboard, catalog,
+  promos, finance, cms, users, audit, settings, developer) 0
+  console/pageerror bilan yuklandi.
+
+## Deploy
+- **LOKAL** — o'zgarishlar `temp/save-all-work` branchida commit qilindi.
+- Vercel `web-admin` production deploy'i **BLOKLANGAN**: bu ish muhitida
+  `web-admin` Vercel project link/credential mavjud emas (`.vercel` root
+  `web-partner` ga bog'langan). Deploy `web-admin` Vercel loyihasiga
+  kirish huquqi bo'lgan kishi tomonidan qilinishi kerak
+  (`npx vercel --prod` yoki git-connected branch). Fixlar haqiqiy
+  production API'ga qarab real brauzerda tasdiqlangan; faqat
+  Vercel-hosted URL verifikatsiyasi deploy'dan keyin qoladi.
+
+## Git
+- Branch: `temp/save-all-work`
+- Frontend `develop` ga CHIQARILMADI (loyiha qoidasi: frontend fayllar
+  `develop` ga push qilinmaydi).
+
+## Muhim eslatmalar
+- QA-fix vaqtida QA arizalari `39e682d2` (QA TEST PARTNER 2026-09-04) va
+  `6923851e` (QA TEST PARTNER 2026-09-03) test mutatsiyalariga uchradi —
+  ikkalasi ham `submitted` holatiga tiklandi. Real hamkor/hotel/user/pul
+  ma'lumotlari o'zgartirilmadi.
+- Qolgan BLOCKED test hududlari (Hotels/Rooms CRUD, deep form validation,
+  money-action modal UX, `/cms/*` chuqur test) — ular alohida QA taskda.
 
 # 2026-08-29 — `/uz/dachas`, `/uz/resorts`, `/uz/sanatoriums` kategoriya filtri (P2 bug)
 

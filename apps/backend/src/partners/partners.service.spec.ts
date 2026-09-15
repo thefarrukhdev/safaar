@@ -515,6 +515,7 @@ describe('PartnersService frontend action endpoints', () => {
         ]) // hotel_rooms (roomNumber bo'yicha)
         .mockResolvedValueOnce([{ id: roomId }]) // FOR UPDATE qulf
         .mockResolvedValueOnce([]) // ziddiyat tekshiruvi — bo'sh, ziddiyat yo'q
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
         .mockResolvedValueOnce([]) // INSERT bookings
         .mockResolvedValueOnce([]) // INSERT payments
         .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
@@ -573,6 +574,7 @@ describe('PartnersService frontend action endpoints', () => {
         ])
         .mockResolvedValueOnce([{ id: roomId }])
         .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
         .mockResolvedValueOnce([]) // INSERT bookings
         .mockResolvedValueOnce([]) // INSERT payments
         .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
@@ -605,6 +607,46 @@ describe('PartnersService frontend action endpoints', () => {
         'UZS',
         expect.any(String),
       ]);
+    });
+
+    it("hamkor walk-in bron 'hotel' turi uchun ham SAFAAR Excel komissiya jadvalidan (org'ning default_commission_rate'idan EMAS) foydalanadi (2026-09-13, bookings.service.ts createHotelInternal bilan bir xil qoida)", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            ...restaurantHotelRow,
+            partner_type: 'hotel',
+            commission_rate: 25, // org'da qo'lda sozlangan — Excel ustun bo'lgani uchun e'tiborga olinmaydi
+            stars: 3,
+            city_slug: 'samarqand',
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: roomTypeId, name: { uz: 'Stol' }, base_price: 0, capacity: 4 },
+        ])
+        .mockResolvedValueOnce([
+          { id: roomId, room_type_id: roomTypeId, code: 'T1', base_price: 0 },
+        ])
+        .mockResolvedValueOnce([{ id: roomId }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
+        .mockResolvedValueOnce([]) // INSERT bookings
+        .mockResolvedValueOnce([]) // INSERT payments
+        .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
+        .mockResolvedValueOnce([
+          { id: 'booking-1', partner_organization_id: actor.organizationId },
+        ]);
+
+      await service.createBooking(actor, walkInBody);
+
+      const insertCall = pgMock.query.mock.calls.find(
+        ([sql]) =>
+          typeof sql === 'string' && sql.includes('INSERT INTO bookings'),
+      );
+      const params = insertCall?.[1] as unknown[];
+      // totalPrice 200000, Samarqand + 3 yulduz (hotel, star_4_5 EMAS) = 10%
+      // Excel bo'yicha (org'ning 25%i EMAS) = 20000
+      expect(params[14]).toBe(20000); // commission_amount
+      expect(params[15]).toBe(180000); // partner_payable
     });
 
     it('ish vaqtidan tashqari slot uchun SLOT_OUTSIDE_HOURS xatosini qaytaradi', async () => {

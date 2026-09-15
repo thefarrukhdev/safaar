@@ -103,6 +103,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       ])
       // sana-ziddiyat tekshiruvi (bo'sh = ziddiyat yo'q)
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment (none)
@@ -151,6 +152,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -185,6 +187,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }]) // conflict check
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history (created)
       .mockResolvedValueOnce([]) // existing pending payment check
@@ -205,9 +208,16 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.payment.status).toBe('awaiting_cash');
   });
 
-  it('uses the organization default_commission_rate instead of a hardcoded 12% (regression: admin commission setting was ignored)', async () => {
+  it("SAFAAR Excel komissiya jadvali (hudud+tur+yulduz) partner_organizations.default_commission_rate'dan USTUN — 2026-09-13 biznes tomonidan tasdiqlangan qaror (regression: bu hotel/hostel/guesthouse turlari uchun org'ning qo'lda sozlangan stavkasini e'tiborsiz qoldirishi SHART)", async () => {
     pg.query
-      .mockResolvedValueOnce([{ ...hotelRow, commission_rate: 20 }])
+      .mockResolvedValueOnce([
+        {
+          ...hotelRow,
+          commission_rate: 20, // org'da qo'lda sozlangan — Excel bo'lgani uchun E'TIBORGA OLINMASLIGI kerak
+          stars: 5,
+          city_slug: 'tashkent',
+        },
+      ])
       .mockResolvedValueOnce([
         {
           id: 'room-1',
@@ -217,6 +227,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -230,7 +241,47 @@ describe('BookingsService.createHotel guest checkout', () => {
       rooms: 1,
     });
 
-    // subtotal = 100000 * 2 nights * 1 room = 200000; 20% komissiya = 40000
+    // subtotal = 100000 * 2 nights * 1 room = 200000; Toshkent + 5 yulduz
+    // (hotel + stars>=4) = 14% Excel bo'yicha (org'ning 20%i EMAS) = 28000
+    expect(result.booking.commission_amount).toBe(28000);
+    expect(result.booking.partner_payable).toBe(172000);
+  });
+
+  it("Excel jadvali qamrab OLMAYDIGAN turlar (masalan `dacha`) uchun default_commission_rate hamon ishlatiladi (fallback o'zgarishsiz qoladi)", async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          ...hotelRow,
+          partner_type: 'dacha',
+          commission_rate: 20,
+          stars: null,
+          city_slug: 'tashkent',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      rooms: 1,
+    });
+
+    // subtotal = 200000; `dacha` Excel'da yo'q -> org'ning 20% stavkasi = 40000
     expect(result.booking.commission_amount).toBe(40000);
     expect(result.booking.partner_payable).toBe(160000);
   });
@@ -253,6 +304,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
@@ -268,10 +320,12 @@ describe('BookingsService.createHotel guest checkout', () => {
     });
 
     expect(promos.redeem).toHaveBeenCalledWith('SUMMER10', expect.anything());
-    // subtotal 200000, 10% chegirma = 20000 -> total 180000, 12% komissiya = 21600
+    // subtotal 200000, 10% chegirma = 20000 -> total 180000.
+    // hotelRow: partner_type='hotel', city_slug/stars yo'q -> "Boshqa"
+    // hudud + oddiy "hotel" qatori (Excel) = 10% komissiya = 18000.
     expect(result.booking.discount_amount).toBe(20000);
     expect(result.booking.total_amount).toBe(180000);
-    expect(result.booking.commission_amount).toBe(21600);
+    expect(result.booking.commission_amount).toBe(18000);
   });
 
   it('rejects an invalid/expired promo code with 400 before touching inventory', async () => {
@@ -326,6 +380,71 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(pg.query).toHaveBeenCalledTimes(3);
   });
 
+  it("admin/hamkor 'room_inventory.closed=true' bilan bloklagan sanaga YANGI bron yaratib bo'lmaydi (2026-09-14 SAFAAR ADMIN Part 2 — booking engine real blockni hisobga olishi shart, avval bu tekshiruv UMUMAN yo'q edi)", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 10,
+        },
+      ])
+      // haqiqiy bron ziddiyati yo'q...
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      // ...lekin shu oraliqdagi bitta sana admin/hamkor tomonidan bloklangan
+      .mockResolvedValueOnce([{ blocked_count: 1 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        rooms: 1,
+        guest_email: 'guest@example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'ROOM_DATES_BLOCKED' },
+    });
+
+    // Bloklangan sana topilgach INSERT chaqirilmasligi kerak (faqat 4 ta
+    // so'rov: hotel, room-lock, conflict-check, block-check).
+    expect(pg.query).toHaveBeenCalledTimes(4);
+  });
+
+  it("bloklanmagan (yopiq bo'lmagan) sanalar hamon oddiy tarzda bron qilinaveradi (regression guard — block-check false-positive bermasligi kerak)", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 10,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // hech qanday sana bloklanmagan
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT booking_status_history
+      .mockResolvedValueOnce([]) // SELECT existing pending payment
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      rooms: 1,
+      guest_email: 'guest@example.com',
+    });
+
+    expect(result.booking.room_id).toBe('room-1');
+  });
+
   it('total_inventory=10 bo\'lgan xona turida 1 ta bron qilingandan keyin ham qolgan 9 tasini sotib bo\'ladi (regression: "soxta sold-out" — ilgari LIMIT 1 tufayli BITTA bron ham qolgan barcha inventarni "band" qilib qo\'yardi)', async () => {
     pg.query
       .mockResolvedValueOnce([hotelRow])
@@ -340,6 +459,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       // Shu sanalarga allaqachon 1 ta xona band qilingan (10 tadan) — bu
       // ENDI ziddiyat HISOBLANMASLIGI kerak, chunki 1 + 1 <= 10.
       .mockResolvedValueOnce([{ booked_count: 1 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
@@ -473,6 +593,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
         },
       ])
       .mockResolvedValueOnce([{ booked_count: 0 }]) // slot conflict check — bo'sh
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // existing pending payment check
@@ -1244,6 +1365,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
         },
       ]) // room lookup (FOR UPDATE)
       .mockResolvedValueOnce([{ booked_count: 0 }]) // sana-ziddiyat tekshiruvi
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment

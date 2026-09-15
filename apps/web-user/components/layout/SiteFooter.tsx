@@ -46,26 +46,6 @@ export function SiteFooter({
             <p className="text-sm leading-relaxed text-slate-300 pr-4">
               {dict.footer.tagline}
             </p>
-            <div className="mt-1 flex items-center gap-3">
-              <a
-                href="https://www.instagram.com/safaar.uz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-primary-500 transition-colors hover:bg-primary-500 hover:text-white"
-                aria-label="Instagram"
-              >
-                <Camera className="h-5 w-5" />
-              </a>
-              <a
-                href="https://t.me/safaar_uz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-primary-500 transition-colors hover:bg-primary-500 hover:text-white"
-                aria-label="Telegram"
-              >
-                <Send className="h-5 w-5 -ml-0.5 mt-0.5" />
-              </a>
-            </div>
           </div>
 
           {/* Col 2: Platform */}
@@ -139,7 +119,7 @@ export function SiteFooter({
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
                 <span className="leading-relaxed">
-                  O'zbekiston, Toshkent shahri,<br />Yunusobod tumani
+                  {(dict.footer as any).address || "Samarqand shahri"}
                 </span>
               </li>
               <li className="flex items-center gap-3">
@@ -152,45 +132,6 @@ export function SiteFooter({
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
-
-        {/* Xavfsiz to'lov usullari */}
-        <div className="mt-12 py-6 border-t border-slate-200 text-center">
-          <h4 className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-4">
-            {(dict.footer as any).securePayments}
-          </h4>
-          <div className="flex items-center justify-center flex-wrap gap-6 sm:gap-8">
-            {paymentMethods.some((m) => m.logo) ? (
-              paymentMethods.map((method) => (
-                <Image
-                  key={method.name}
-                  src={method.logo!}
-                  alt={method.name}
-                  width={80}
-                  height={24}
-                  className="h-6 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-                />
-              ))
-            ) : (
-              <>
-                <span className="text-sm font-bold text-slate-300 hover:text-slate-600 transition-colors">
-                  Click
-                </span>
-                <span className="text-sm font-bold text-slate-300 hover:text-slate-600 transition-colors">
-                  Payme
-                </span>
-                <span className="text-sm font-bold text-slate-300 hover:text-slate-600 transition-colors">
-                  Uzum
-                </span>
-                <span className="text-sm font-bold text-slate-300 hover:text-slate-600 transition-colors">
-                  Humo
-                </span>
-                <span className="text-sm font-bold text-slate-300 hover:text-slate-600 transition-colors">
-                  UzCard
-                </span>
-              </>
-            )}
           </div>
         </div>
 

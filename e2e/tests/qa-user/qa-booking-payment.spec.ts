@@ -109,6 +109,10 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     await page.locator('input[name="lastName"]').fill('Booking-2026-09');
     await page.locator('input[name="email"]').fill(`qa.booking.${Date.now()}@example.com`);
     await page.locator('input[name="password"]').fill(password);
+    // 2026-09-15: backend now REQUIRES agree_terms=true (TERMS_NOT_ACCEPTED
+    // otherwise) — see the dedicated qa-terms-acceptance.spec.ts for the
+    // negative/direct-API coverage of this requirement itself.
+    await page.locator('input[name="agreeTerms"]').check();
     await clickAndWaitForNavAway(page, page.getByRole('button', { name: "Tasdiqlash va ro'yxatdan o'tish" }), '/register');
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === 'safaar_session')).toBeTruthy();
@@ -179,6 +183,7 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     await pickDate(page, 0, checkIn);
     await pickDate(page, 1, checkOut);
     await page.locator('input[name="guests"]').fill('2');
+    await page.locator('input[name="agreeTerms"]').check();
 
     const confirmBtn = page.getByRole('button', { name: 'Bronni tasdiqlash' });
     await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
@@ -201,6 +206,22 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     expect(bookingId).toBeTruthy();
     expect(bookingPostCount, 'exactly one POST /bookings/hotel despite double-click').toBe(1);
     await page.screenshot({ path: 'test-results/qa-user-booking-pending.png', fullPage: true });
+
+    // Real DB verification of terms acceptance — atomic with the booking
+    // itself (same INSERT statement in BookingsService.createBooking()).
+    const acceptance = await queryQaDb(
+      `select terms_accepted_at is not null, terms_version from bookings where id='${bookingId}';`,
+    );
+    console.log('TERMS_ACCEPTANCE_DB_ROW (authenticated checkout):', acceptance);
+    const [hasTimestamp, termsVersion] = acceptance.split('|');
+    expect(hasTimestamp).toBe('t');
+    expect(termsVersion).toBe('2026-09-15');
+
+    const auditRow = await queryQaDb(
+      `select action, entity_id::text from audit_logs where entity_type='booking' and entity_id='${bookingId}' and action='booking.terms_accepted';`,
+    );
+    console.log('TERMS_ACCEPTANCE_AUDIT_ROW:', auditRow);
+    expect(auditRow).toContain('booking.terms_accepted');
   });
 
   test('booking detail page shows pending-payment state before any webhook', async () => {
@@ -277,6 +298,7 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     const checkOut = new Date(Date.now() + 86_400_000 * 6);
     await pickDate(page, 0, checkIn);
     await pickDate(page, 1, checkOut);
+    await page.locator('input[name="agreeTerms"]').check();
     const confirmBtn = page.getByRole('button', { name: 'Bronni tasdiqlash' });
     await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
     await confirmBtn.click();

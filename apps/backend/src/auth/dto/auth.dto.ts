@@ -153,6 +153,20 @@ export class CompleteOAuthRegistrationDto {
   @IsOptional()
   @IsString()
   last_name?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'Ommaviy Oferta (Terms of Service)ga rozilik — majburiy `true` bo‘lishi kerak.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  agree_terms?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  agreeTerms?: boolean;
 }
 
 export class LoginDto {

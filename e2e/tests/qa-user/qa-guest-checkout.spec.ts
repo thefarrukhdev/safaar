@@ -1,10 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Regression check for a past bug (d30fe1f2): "guest booking confirmation
  * page crashed after checkout". Tests the UNAUTHENTICATED (guest) checkout
  * path end-to-end, which the earlier logged-in E2E pass never covered.
  */
+
+/** Same pattern as qa-booking-payment.spec.ts's queryQaDb(). */
+async function queryQaDb(sql: string): Promise<string> {
+  const out = execFileSync(
+    'ssh',
+    ['safaar-backend-new', `docker exec safaar-qa-db psql -U safaar_qa -d safaar_qa -tAc "${sql.replace(/"/g, '\\"')}"`],
+    { encoding: 'utf8', timeout: 15000 },
+  );
+  return out.trim();
+}
 test('guest (unauthenticated) checkout: fills required guest fields, submits, confirmation page does not crash', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
@@ -39,6 +50,10 @@ test('guest (unauthenticated) checkout: fills required guest fields, submits, co
   await pickDate(0, checkIn);
   await pickDate(1, checkOut);
 
+  // 2026-09-15: backend now REQUIRES agree_terms=true (TERMS_NOT_ACCEPTED
+  // otherwise) for every hotel booking, guest checkout included.
+  await page.locator('input[name="agreeTerms"]').check();
+
   const confirmBtn = page.getByRole('button', { name: 'Bronni tasdiqlash' });
   await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
   await page.screenshot({ path: 'test-results/qa-guest-checkout-filled.png', fullPage: true });
@@ -54,6 +69,17 @@ test('guest (unauthenticated) checkout: fills required guest fields, submits, co
   // The confirmation page must render real content, not crash/blank.
   expect(bodyText.length).toBeGreaterThan(50);
   expect(consoleErrors).toEqual([]);
+
+  // Real DB verification — atomic with the booking itself (same INSERT).
+  const bookingId = page.url().match(/\/booking\/([0-9a-f-]+)\?/)?.[1] ?? '';
+  expect(bookingId).toBeTruthy();
+  const acceptance = await queryQaDb(
+    `select terms_accepted_at is not null, terms_version from bookings where id='${bookingId}';`,
+  );
+  console.log('TERMS_ACCEPTANCE_DB_ROW (guest checkout):', acceptance);
+  const [hasTimestamp, termsVersion] = acceptance.split('|');
+  expect(hasTimestamp).toBe('t');
+  expect(termsVersion).toBe('2026-09-15');
 });
 
 test('guest confirmation page — proper wait, real content check', async ({ page }) => {
@@ -80,6 +106,7 @@ test('guest confirmation page — proper wait, real content check', async ({ pag
   const checkOut = new Date(Date.now() + 86_400_000 * 11);
   await pickDate(0, checkIn);
   await pickDate(1, checkOut);
+  await page.locator('input[name="agreeTerms"]').check();
   await page.getByRole('button', { name: 'Bronni tasdiqlash' }).click();
   await page.waitForURL(/\/booking\/[0-9a-f-]+\?/, { timeout: 15000 });
   await page.waitForLoadState('networkidle');

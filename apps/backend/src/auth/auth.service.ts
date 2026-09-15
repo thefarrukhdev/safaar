@@ -159,6 +159,8 @@ interface CompleteOAuthRegistrationInput {
   challenge_id?: string;
   first_name?: string;
   last_name?: string;
+  agree_terms?: boolean;
+  agreeTerms?: boolean;
 }
 
 @Injectable()
@@ -595,6 +597,22 @@ export class AuthService {
   async completeOAuthRegistration(
     dto: CompleteOAuthRegistrationInput,
   ): Promise<AuthTokens & { user: unknown }> {
+    // Bu yo'nalish hozircha web-user'da hech qanday UI'dan chaqirilmaydi
+    // (RegisterForm.tsx `registrationToken`/`provider` query parametrlarini
+    // umuman o'qimaydi — 2026-09-15 audit orqali tasdiqlangan), lekin
+    // to'g'ridan-to'g'ri API chaqiruvi (yoki kelajakda qo'shiladigan UI)
+    // orqali YANGI hisob yaratishi mumkin bo'lgan real yo'nalish — shuning
+    // uchun boshqa ikki yo'nalish (completeProfile, createHotelInternal)
+    // bilan bir xil siyosat qo'llanadi: OTP/cache/tranzaksiyaga tegishdan
+    // OLDIN sof input tekshiruvi.
+    const agreeTerms = dto.agree_terms ?? dto.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const provider = dto.provider as OAuthProvider;
     const registrationKey = this.oauthRegistrationKey(dto.registration_token);
 
@@ -683,9 +701,11 @@ export class AuthService {
                email_verified_at = CASE WHEN $2 IS NOT NULL THEN coalesce(email_verified_at, $3) ELSE email_verified_at END,
                first_name = coalesce(first_name, $4),
                last_name = coalesce(last_name, $5),
+               terms_accepted_at = coalesce(terms_accepted_at, $3),
+               terms_version = coalesce(terms_version, $6),
                updated_at = $3
            WHERE id = $1::uuid`,
-          [userId, email, now, firstName, lastName],
+          [userId, email, now, firstName, lastName, CURRENT_TERMS_VERSION],
         );
       });
     } catch (error) {

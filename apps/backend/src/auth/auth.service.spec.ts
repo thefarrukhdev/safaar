@@ -526,6 +526,7 @@ describe('AuthService email and OAuth', () => {
     const code = otpStore.getDeliveryCode(challenge.id)!;
 
     const result = await service.completeOAuthRegistration({
+      agree_terms: true,
       provider: 'google',
       registration_token: 'reg-token',
       phone: '+998901234567',
@@ -557,6 +558,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'google',
         registration_token: 'bad-token',
         phone: '+998901234567',
@@ -580,6 +582,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'google',
         registration_token: 'reg-token',
         phone: '+998901234567',
@@ -618,6 +621,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'google',
         registration_token: 'reg-token',
         phone: '+998901234568',
@@ -893,6 +897,7 @@ describe('AuthService email and OAuth', () => {
     const code = otpStore.getDeliveryCode(challenge.id)!;
 
     const result = await service.completeOAuthRegistration({
+      agree_terms: true,
       provider: 'facebook',
       registration_token: 'reg-token',
       phone: '+998907654321',
@@ -1021,6 +1026,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'facebook',
         registration_token: 'reg-token',
         phone: '+998907654322',
@@ -1037,6 +1043,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'facebook',
         registration_token: 'expired-or-bogus-token',
         phone: '+998907654323',
@@ -1060,6 +1067,7 @@ describe('AuthService email and OAuth', () => {
 
     await expect(
       service.completeOAuthRegistration({
+        agree_terms: true,
         provider: 'facebook',
         registration_token: 'reg-token',
         phone: '+998907654324',

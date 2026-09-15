@@ -81,6 +81,63 @@ export function usePartnerPhoneOtpRequest() {
   });
 }
 
+/** Registration'ning phone-ownership qadami (1/2) — `usePartnerPhoneOtpRequest`
+ * bilan ATAYLAB bog'lanmagan: u LOGIN uchun `'partner_login'` OTP purpose'ini
+ * ishlatadi, bu esa `'partner_registration'`ni — hali mavjud bo'lmagan
+ * hisob uchun. register/page.tsx shuni ishlatishi kerak, `usePartnerPhoneOtpRequest`
+ * emas (oldingi versiyada noto'g'ri ishlatilgan edi). */
+export function usePartnerRegistrationOtpRequest() {
+  return useMutation({
+    mutationFn: async (phone: string) => {
+      const result = await auth.requestPartnerRegistrationOtp(phone);
+      return {
+        phone,
+        challengeId: result.challenge_id,
+        expiresInSeconds: result.expires_in_seconds,
+        resendAfterSeconds: result.resend_after_seconds,
+        devCode: result.dev_code,
+      };
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Kod yuborishda xatolik yuz berdi';
+      toast.error(message);
+    },
+  });
+}
+
+/** Registration'ning phone-ownership qadami (2/2): hech qanday token/session
+ * chiqarmaydi (hali hisob yo'q) — faqat bir martalik `verificationToken`,
+ * shuni keyingi `submitPartnerApplication()` chaqiruviga uzatish kerak. */
+export function usePartnerRegistrationOtpVerify() {
+  return useMutation({
+    mutationFn: async ({
+      phone,
+      code,
+      challengeId,
+    }: {
+      phone: string;
+      code: string;
+      challengeId: string;
+    }) => {
+      const result = await auth.verifyPartnerRegistrationOtp({
+        phone,
+        code,
+        challenge_id: challengeId,
+      });
+      return {
+        verificationToken: result.verification_token,
+        expiresInSeconds: result.expires_in_seconds,
+      };
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : "Kod noto'g'ri yoki muddati tugagan";
+      toast.error(message);
+    },
+  });
+}
+
 export function usePartnerPhoneOtpVerify() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);

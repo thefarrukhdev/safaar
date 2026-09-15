@@ -11,7 +11,10 @@ import { Button } from '../../_components/ui/button';
 import { Input } from '../../_components/ui/input';
 import { Label } from '../../_components/ui/label';
 import { access } from '../../_lib/api';
-import { usePartnerPhoneOtpRequest } from '../../_hooks/use-auth';
+import {
+  usePartnerRegistrationOtpRequest,
+  usePartnerRegistrationOtpVerify,
+} from '../../_hooks/use-auth';
 import {
   isValidPhone,
   maskPhone,
@@ -54,10 +57,19 @@ export default function RegisterPage() {
   
   // Registration flow steps
   const [step, setStep] = useState<'phone' | 'code' | 'form'>('phone');
-  const [challenge, setChallenge] = useState<{ phone: string; devCode?: string } | null>(null);
+  const [challenge, setChallenge] = useState<{
+    phone: string;
+    challengeId: string;
+    devCode?: string;
+  } | null>(null);
   const [codeValue, setCodeValue] = useState('');
-  
-  const otpRequest = usePartnerPhoneOtpRequest();
+  // Backend proof (registrationVerificationStore) — `submitPartnerApplication`
+  // requires this; the client's "code was correct" belief is never enough
+  // on its own (see handleVerifyCode).
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+
+  const otpRequest = usePartnerRegistrationOtpRequest();
+  const otpVerify = usePartnerRegistrationOtpVerify();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -87,44 +99,66 @@ export default function RegisterPage() {
       const result = await otpRequest.mutateAsync(phone);
       setChallenge({
         phone: result.phone,
+        challengeId: result.challengeId,
         devCode: result.devCode,
       });
+      setCodeValue('');
+      setVerificationToken(null);
       setStep('code');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kod yuborishda xatolik');
     }
   };
 
-  const handleVerifyCode = () => {
+  /**
+   * 2026-09-15: was `codeValue === challenge?.devCode || codeValue === '000000'`
+   * — a client-side-only check with a hardcoded '000000' bypass. Now calls
+   * the real backend (`POST /auth/partner/registration-otp/verify`), which
+   * consumes the OTP under its own 'partner_registration' purpose and, on
+   * success, returns a one-time server-side proof (`verificationToken`).
+   * That proof — not this function's local belief that the code was
+   * correct — is what `submitPartnerApplication` sends and the backend
+   * re-checks; see PartnersService.submitPublicPartnerRequest.
+   */
+  const handleVerifyCode = async () => {
     setError('');
     if (codeValue.length < 4) {
       setError("Kodni to'g'ri kiriting");
       return;
     }
-    // HONEST LIMITATION (found during 2026-09 demo-auth removal, left as
-    // a known gap rather than invented/fixed here): this step is still a
-    // client-side-only check, not a real backend OTP verification. Fixing
-    // it correctly needs a backend capability that doesn't exist yet —
-    // verifying a code without an account to log into (no
-    // partner_organizations row exists at this point in registration;
-    // the real `/auth/otp/verify` requires one and issues login tokens,
-    // which isn't right here). That endpoint wasn't part of this
-    // session's scope. codeValue === '000000' is the SAME fallback the
-    // backend's own ENABLE_DEMO_AUTH/DEMO_AUTH_ALLOWED_PHONES convention
-    // uses (see auth.service.ts), not an extra bypass introduced here.
-    if (codeValue === challenge?.devCode || codeValue === '000000') {
+    if (!challenge) {
+      setError('Avval telefon raqamini tasdiqlang');
+      setStep('phone');
+      return;
+    }
+    try {
+      const result = await otpVerify.mutateAsync({
+        phone: challenge.phone,
+        code: codeValue,
+        challengeId: challenge.challengeId,
+      });
+      setVerificationToken(result.verificationToken);
       setStep('form');
-    } else {
-      setError("Kod noto'g'ri kiritildi");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kod noto'g'ri kiritildi");
     }
   };
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError('');
+    if (!verificationToken) {
+      // Shouldn't be reachable (the 'form' step only renders after a
+      // successful verify), but the proof is one-time-use and short-lived
+      // (10 daqiqa) — a stale tab could still get here with it gone.
+      setError("Telefon raqami tasdiqlanmagan. Iltimos qaytadan urinib ko'ring.");
+      setStep('phone');
+      return;
+    }
     try {
       const result = await access.submitPartnerApplication({
         ...values,
         phone: normalizePhone(values.phone),
+        phoneVerificationToken: verificationToken,
       } as any); // casting to any to allow password
       setSubmitted({ id: result?.item?.id || 'demo-id' });
     } catch (cause: any) {
@@ -260,7 +294,13 @@ export default function RegisterPage() {
             <Button type="button" variant="outline" size="lg" onClick={() => setStep('phone')} className="w-1/3">
               Orqaga
             </Button>
-            <Button type="button" size="lg" onClick={handleVerifyCode} className="w-2/3">
+            <Button
+              type="button"
+              size="lg"
+              onClick={handleVerifyCode}
+              loading={otpVerify.isPending}
+              className="w-2/3"
+            >
               Tasdiqlash
             </Button>
           </div>

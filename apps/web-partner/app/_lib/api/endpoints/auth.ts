@@ -51,6 +51,56 @@ export function verifyOtp(dto: VerifyOtpDto): Promise<PartnerLoginResponse> {
 export type PartnerPhoneLoginResponse = PartnerLoginResponse;
 export type PartnerEmailLoginResponse = PartnerLoginResponse;
 
+export interface PartnerRegistrationOtpRequestResponse {
+  sent: boolean;
+  challenge_id: string;
+  expires_in_seconds: number;
+  resend_after_seconds: number;
+  dev_code?: string;
+}
+
+/** Registration'ning phone-ownership qadami (1/2) — LOGIN uchun ishlatiladigan
+ * `requestOtp()`/`/auth/otp/request`dan ATAYLAB alohida: backend buni
+ * o'zining `'partner_registration'` OTP purpose'i bilan chiqaradi (login
+ * challenge'lari bilan bo'lishilmaydi). Backend: `POST
+ * /auth/partner/registration-otp/request`. */
+export function requestPartnerRegistrationOtp(
+  phone: string,
+): Promise<PartnerRegistrationOtpRequestResponse> {
+  return request<PartnerRegistrationOtpRequestResponse>(
+    '/auth/partner/registration-otp/request',
+    { method: 'POST', body: { phone } },
+  );
+}
+
+export interface PartnerRegistrationOtpVerifyDto {
+  phone: string;
+  code: string;
+  challenge_id: string;
+}
+
+export interface PartnerRegistrationOtpVerifyResponse {
+  verified: true;
+  /** Bir martalik, qisqa umrli proof — hali hech qanday
+   * `partner_organizations` yozuvi yo'q, shuning uchun token/session emas.
+   * `submitPartnerApplication()`ga `phoneVerificationToken` sifatida
+   * yuboriladi; backend uni serverda qayta tasdiqlaydi (client'ning
+   * "verified" degan claimiga ishonmaydi). */
+  verification_token: string;
+  expires_in_seconds: number;
+}
+
+/** Registration'ning phone-ownership qadami (2/2). Backend: `POST
+ * /auth/partner/registration-otp/verify`. */
+export function verifyPartnerRegistrationOtp(
+  dto: PartnerRegistrationOtpVerifyDto,
+): Promise<PartnerRegistrationOtpVerifyResponse> {
+  return request<PartnerRegistrationOtpVerifyResponse>(
+    '/auth/partner/registration-otp/verify',
+    { method: 'POST', body: dto },
+  );
+}
+
 export function partnerPhoneLogin(
   phone: string,
 ): Promise<PartnerPhoneLoginResponse> {

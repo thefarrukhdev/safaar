@@ -52,10 +52,14 @@ export function LoginForm() {
         form.setError('password', { message: 'Parolni kiriting' });
         return;
       }
+      // usePartnerPasswordLogin's onError already toasts — catch here only
+      // to stop the rejection from propagating out of this handler (React
+      // would otherwise surface it as an unhandled rejection/dev overlay,
+      // found via real QA browser testing on a wrong-password attempt).
       await passwordLogin.mutateAsync({
         phone: values.phone,
         password: values.password,
-      });
+      }).catch(() => {});
       return;
     }
 
@@ -65,7 +69,6 @@ export function LoginForm() {
         setChallenge({
           phone: result.phone,
           challengeId: result.challengeId,
-          partnerType: result.partnerType,
           devCode: result.devCode,
         });
         setMode('reset_verify');

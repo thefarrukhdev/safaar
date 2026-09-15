@@ -101,7 +101,17 @@ export default function RegisterPage() {
       setError("Kodni to'g'ri kiriting");
       return;
     }
-    // Demo verify
+    // HONEST LIMITATION (found during 2026-09 demo-auth removal, left as
+    // a known gap rather than invented/fixed here): this step is still a
+    // client-side-only check, not a real backend OTP verification. Fixing
+    // it correctly needs a backend capability that doesn't exist yet —
+    // verifying a code without an account to log into (no
+    // partner_organizations row exists at this point in registration;
+    // the real `/auth/otp/verify` requires one and issues login tokens,
+    // which isn't right here). That endpoint wasn't part of this
+    // session's scope. codeValue === '000000' is the SAME fallback the
+    // backend's own ENABLE_DEMO_AUTH/DEMO_AUTH_ALLOWED_PHONES convention
+    // uses (see auth.service.ts), not an extra bypass introduced here.
     if (codeValue === challenge?.devCode || codeValue === '000000') {
       setStep('form');
     } else {

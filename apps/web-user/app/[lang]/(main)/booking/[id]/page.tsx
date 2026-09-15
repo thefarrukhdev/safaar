@@ -23,11 +23,29 @@ function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function getBookingOrNull(id: string, token?: string) {
+async function getBookingOrNull(
+  id: string,
+  token?: string,
+  guestToken?: string,
+) {
   try {
-    return await api.bookings.getBooking(id, token ? { token } : undefined);
+    return await api.bookings.getBooking(
+      id,
+      token || guestToken ? { token, guestToken } : undefined,
+    );
   } catch (error) {
-    if (error instanceof ApiRequestError && error.statusCode === 404) {
+    // 404 (bron topilmadi) va 401/403 (token yo'q/yaroqsiz/muddati
+    // tugagan yoki boshqa bronga tegishli) — ikkalasida ham xom bron
+    // ID'ini "mavjud/mavjud emas"ligini tashqi kuzatuvchiga bildirmasdan,
+    // BIR XIL xavfsiz "topilmadi" holatiga tushiriladi (enumeration'ga
+    // qarshi, va guest-token muddati tugagan holatda ham sahifa CRASH
+    // bo'lish o'rniga xuddi shu, allaqachon mavjud xato holatini ko'rsatadi).
+    if (
+      error instanceof ApiRequestError &&
+      (error.statusCode === 404 ||
+        error.statusCode === 401 ||
+        error.statusCode === 403)
+    ) {
       return null;
     }
     throw error;
@@ -49,6 +67,7 @@ export default async function BookingDetailPage({
   const paymentQuery = one(sp.payment);
   const statusQuery = one(sp.status);
   const providerQuery = one(sp.provider);
+  const guestTokenQuery = one(sp.guestToken);
 
   const [dict, session] = await Promise.all([
     getDictionary(locale, "booking"),
@@ -58,6 +77,7 @@ export default async function BookingDetailPage({
   const booking: BookingView | null = await getBookingOrNull(
     id,
     session?.accessToken,
+    guestTokenQuery,
   );
 
   if (!booking) {

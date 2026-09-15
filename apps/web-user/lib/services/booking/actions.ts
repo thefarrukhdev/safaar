@@ -64,13 +64,21 @@ export async function createBookingAction(
   };
   let bookingId = "";
   let checkoutUrl = "";
+  let guestAccessTokenParam = "";
 
   try {
     const booking = await api.bookings.createHotelBooking(input, { token: session?.accessToken });
     bookingId = booking.id;
+    // Guest (login qilmagan) checkout uchun backend opaque guest-access
+    // token qaytaradi — u bo'lmasa, keyingi `/booking/:id` yuklanishida
+    // GET so'rovi rad etiladi (guest'ning o'z sessiyasi yo'q). Login
+    // qilingan foydalanuvchi uchun bu maydon yo'q (kerak ham emas).
+    guestAccessTokenParam = booking.guestAccessToken
+      ? `&guestToken=${encodeURIComponent(booking.guestAccessToken)}`
+      : "";
 
     if (paymentMethod === "cash") {
-      redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash`);
+      redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestAccessTokenParam}`);
     }
 
     try {
@@ -94,7 +102,7 @@ export async function createBookingAction(
     redirect(checkoutUrl);
   }
 
-  redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
+  redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}${guestAccessTokenParam}`);
 }
 
 

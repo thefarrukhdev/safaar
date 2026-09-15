@@ -53,7 +53,7 @@ export const bookingsService = {
   async createHotelBooking(
     input: CreateHotelBookingInput,
     options?: { token?: string },
-  ): Promise<BookingView> {
+  ): Promise<BookingView & { guestAccessToken?: string }> {
     const fullName =
       input.fullName ??
       [input.firstName, input.lastName]
@@ -89,27 +89,35 @@ export const bookingsService = {
       },
       options,
     );
-    return toBookingView(camelizeKeys(raw));
+    const camelized = camelizeKeys<Parameters<typeof toBookingView>[0]>(raw);
+    const guestAccessToken = (camelized as { guestAccessToken?: string })
+      .guestAccessToken;
+    return { ...toBookingView(camelized), guestAccessToken };
   },
 
-  /** `GET /bookings/:id` — bron tafsiloti. */
+  /**
+   * `GET /bookings/:id` — bron tafsiloti. Login qilingan user/partner/admin
+   * uchun `token` orqali; guest (login qilmagan) checkout uchun — booking
+   * yaratishda qaytarilgan opaque `guestAccessToken` orqali (faqat AYNAN
+   * shu bronga bog'langan, boshqa bronni ochish uchun ishlamaydi).
+   */
   async getBooking(
     id: string,
-    options?: { token?: string },
+    options?: { token?: string; guestToken?: string },
   ): Promise<BookingView> {
-    const raw = await rawApi.get<unknown>(
-      `/bookings/${encodeURIComponent(id)}`,
-      options,
-    );
+    const raw = await rawApi.get<unknown>(`/bookings/${encodeURIComponent(id)}`, {
+      token: options?.token,
+      query: options?.guestToken ? { guestToken: options.guestToken } : undefined,
+    });
     return toBookingView(camelizeKeys(raw));
   },
 
   /**
    * `POST /bookings/lookup` — login qilmagan (guest) mijoz o'z bronini
-   * xom ID orqali emas, balki bron raqami + email juftligi orqali qidiradi.
-   * `GET /bookings/:id` guestlar uchun ataylab yopiq (IDOR himoyasi) —
-   * checkout tugagach guest'ni tasdiqlash sahifasiga yo'naltirishda shu
-   * funksiya ishlatiladi.
+   * (masalan keyinroq, boshqa qurilmadan) bron raqami + email juftligi
+   * orqali qidiradi — o'zi yaratgan darhol tasdiqlash sahifasi UCHUN emas
+   * (buning uchun `guestAccessToken` ishlatiladi), balki "broningizni
+   * toping" ko'rinishidagi keyingi, sovuq (cold) qidiruv uchun.
    */
   async lookupBooking(
     bookingNumber: string,

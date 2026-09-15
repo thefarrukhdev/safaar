@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -90,13 +91,19 @@ export class BookingsController {
     return this.bookingsService.lookupBooking(dto.booking_number, dto.email);
   }
 
+  // Auth ixtiyoriy: login qilingan user/partner/admin RolesGuard'ning
+  // "auth ixtiyoriy" tarmog'i orqali baribir to'g'ri tekshiriladi (token
+  // bo'lsa — session/blocked holati baribir tasdiqlanadi), shu bilan birga
+  // guest (login qilmagan) checkout o'zi yaratgan bronni `guestToken`
+  // orqali ko'ra oladi — ruxsat qarori to'liq `BookingsService.assertBooking`
+  // ichida (actor YOKI shu bronga bog'langan guest-token) hal qilinadi.
   @Get(':id')
-  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   findOne(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
+    @Query('guestToken') guestToken?: string,
   ) {
-    return this.bookingsService.findOne(actor, id);
+    return this.bookingsService.findOne(actor, id, guestToken);
   }
 
   @Post(':id/retry-payment')

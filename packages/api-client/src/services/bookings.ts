@@ -21,6 +21,9 @@ export interface CreateHotelBookingInput {
   slotTime?: string;
   totalPrice?: number;
   source?: string;
+  /** Backend tomonidan MAJBURIY tekshiriladi (`true` bo'lmasa
+   * `TERMS_NOT_ACCEPTED` bilan rad etiladi) — checkout uchun. */
+  agreeTerms: boolean;
 }
 
 export interface CreateBusBookingInput {
@@ -82,6 +85,7 @@ export const bookingsService = {
         slot_time: input.slotTime,
         total_price: input.totalPrice,
         source: input.source,
+        agree_terms: input.agreeTerms,
       },
       options,
     );

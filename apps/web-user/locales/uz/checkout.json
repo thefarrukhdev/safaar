@@ -31,6 +31,7 @@
     "BOOKING_DATES_INVALID": "Bron qilish sanalari noto'g'ri tanlangan.",
     "GUEST_DETAILS_REQUIRED": "Mehmon ma'lumotlari kiritilishi shart.",
     "PROMO_INVALID": "Promokod noto'g'ri yoki muddati o'tgan.",
-    "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan."
+    "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
+    "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering."
   }
 }

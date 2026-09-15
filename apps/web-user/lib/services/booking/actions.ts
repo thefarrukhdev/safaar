@@ -38,6 +38,15 @@ export async function createBookingAction(
   const session = await getSession();
   
   const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as "click" | "payme" | "uzcard" | "humo" | "cash";
+  // HTML checkboxlar FAQAT belgilangan holatda FormData'ga tushadi —
+  // mavjudligi checked holatini bildiradi. Client checkboxning o'zi
+  // source of truth emas: backend `agree_terms`ni qat'iy qayta tekshiradi
+  // (`TERMS_NOT_ACCEPTED` bilan rad etadi) — shu yerdagi tekshiruv faqat
+  // tezroq, aniqroq xabar berish uchun.
+  const agreeTerms = formData.get("agreeTerms") != null;
+  if (!agreeTerms) {
+    return { error: "TERMS_NOT_ACCEPTED" };
+  }
   const input = {
     hotelId: String(formData.get("hotelId") ?? ""),
     roomId: String(formData.get("roomId") ?? ""),
@@ -51,6 +60,7 @@ export async function createBookingAction(
     phone: formData.get("phone") ? String(formData.get("phone")) : undefined,
     specialRequests: formData.get("specialRequests") ? String(formData.get("specialRequests")) : undefined,
     promoCode: formData.get("promoCode") ? String(formData.get("promoCode")) : undefined,
+    agreeTerms,
   };
   let bookingId = "";
   let checkoutUrl = "";

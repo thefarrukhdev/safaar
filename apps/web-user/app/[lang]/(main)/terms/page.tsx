@@ -28,7 +28,7 @@ export default async function TermsPage({
           className="
             text-slate-700 dark:text-slate-300
             [&>p]:mb-4 [&>p]:leading-relaxed
-            [&>p:nth-child(-n+7)]:text-center [&>p:nth-child(1)_img]:mx-auto [&>p:nth-child(1)_img]:mb-6
+            [&>p:nth-child(-n+7)]:text-center [&>p:nth-child(1)_img]:mx-auto [&>p:nth-child(1)_img]:mb-6 [&>p:nth-child(1)_img]:w-40
             [&>p:nth-child(2)]:text-2xl [&>p:nth-child(5)]:text-2xl [&>p:nth-child(5)]:mt-12
             [&>p:nth-child(7)]:border-b [&>p:nth-child(7)]:border-slate-200 [&>p:nth-child(7)]:pb-8 [&>p:nth-child(7)]:mb-8
             [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white

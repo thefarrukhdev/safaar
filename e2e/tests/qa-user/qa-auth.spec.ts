@@ -8,9 +8,13 @@ import { trackPageIssues } from '../helpers/console-tracker';
  * demo-auth response) against safaar-qa-backend. Never touches production.
  */
 
+// QA now runs ENABLE_DEMO_AUTH=false with a narrow DEMO_AUTH_ALLOWED_PHONES
+// allowlist (introduced by the develop merge) — dev_code OTP only works for
+// these exact numbers, so a fully random phone no longer gets a dev_code
+// (falls through to a real, unconfigured SMS provider and fails).
+const QA_AUTH_PHONE = '+998900000100';
 function randomQaPhone(): string {
-  const suffix = Math.floor(100000 + Math.random() * 800000);
-  return `+99890${suffix}`;
+  return QA_AUTH_PHONE;
 }
 
 async function readDevCode(page: import('@playwright/test').Page): Promise<string> {
@@ -36,6 +40,16 @@ test('QA user: real phone+OTP registration establishes authenticated session', a
   const phone = randomQaPhone();
   const email = `qa-e2e-2026-09.${Date.now()}@safaar.test`;
   const password = 'QaE2e-2026-09!';
+
+  // Reset this dedicated fixture user back to "phone-verified only" before
+  // exercising the REAL registration flow — the frontend's verifyOtpAction
+  // only calls complete-profile when result.user.firstName is still unset
+  // (an existing complete profile is treated as a login, not a fresh
+  // registration), so a completed profile from a prior run would silently
+  // skip the exact code path (and terms enforcement) this test verifies.
+  await queryQaDb(
+    `update users set first_name=null, last_name=null, email=null, password_hash=null, terms_accepted_at=null, terms_version=null where phone='${phone}';`,
+  );
 
   await page.goto('/uz/register', { waitUntil: 'networkidle' });
   await page.screenshot({ path: 'test-results/qa-user-register-page.png' });

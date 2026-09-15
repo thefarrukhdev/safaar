@@ -12,9 +12,13 @@ import { execFileSync } from 'node:child_process';
  * computed server-side by a tiny remote helper and passed back as a header.
  */
 
+// QA now runs ENABLE_DEMO_AUTH=false with a narrow DEMO_AUTH_ALLOWED_PHONES
+// allowlist (introduced by the develop merge) — dev_code OTP only works for
+// these exact numbers, so a fully random phone no longer gets a dev_code.
+// Reused across runs; verify-otp finds-or-creates by phone, safe for this
+// spec's single serial registration.
 function randomPhone(): string {
-  const suffix = Math.floor(100000 + Math.random() * 800000);
-  return `+99891${suffix}`;
+  return '+998900000101';
 }
 
 async function readDevCode(page: Page): Promise<string> {
@@ -89,6 +93,14 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
   let sharedPage: Page;
 
   test.beforeAll(async ({ browser }) => {
+    // Reset this dedicated fixture phone back to "phone-verified only" —
+    // the frontend's verifyOtpAction only calls complete-profile (and thus
+    // terms enforcement) when result.user.firstName is still unset, so a
+    // profile completed by a prior run would silently skip registration
+    // and be treated as a returning-user login instead.
+    await queryQaDb(
+      `update users set first_name=null, last_name=null, email=null, password_hash=null, terms_accepted_at=null, terms_version=null where phone='${phone}';`,
+    );
     const context = await browser.newContext();
     sharedPage = await context.newPage();
   });

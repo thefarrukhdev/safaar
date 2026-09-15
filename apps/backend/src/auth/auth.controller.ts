@@ -258,6 +258,19 @@ export class AuthController {
     );
   }
 
+  @Post('partner/registration-otp/request')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(PhoneOtpThrottleGuard)
+  requestPartnerRegistrationOtp(@Body() body: SendOtpDto) {
+    return this.authService.partnerRegistrationOtpRequest(body.phone);
+  }
+
+  @Post('partner/registration-otp/verify')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  verifyPartnerRegistrationOtp(@Body() body: VerifyOtpRequestDto) {
+    return this.authService.partnerRegistrationOtpVerify(body);
+  }
+
   @Post('partner/email-otp/request')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(EmailOtpThrottleGuard)

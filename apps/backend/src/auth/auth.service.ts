@@ -26,6 +26,7 @@ import { EmailService } from '../infrastructure/email.service';
 import { SmsService } from '../infrastructure/sms.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { otpStore, type OtpPurpose } from './otp-store';
+import { registrationVerificationStore } from './registration-verification-store';
 import { authSessionStore } from './session-store';
 import { signJwt, verifyJwt } from './security';
 import { createTotpSetup, verifyTotpCode, type TotpSetup } from './totp';
@@ -1741,6 +1742,54 @@ export class AuthService {
     );
 
     return this.issuePartnerTokensForOrganization(String(organizationId));
+  }
+
+  /**
+   * Registration'ning phone-ownership qadami (1-bosqich): oddiy
+   * `sendPartnerOtp`ga o'xshaydi, lekin ALOHIDA `'partner_registration'`
+   * purpose bilan — shu sabab bir xil telefon uchun "parolni unutdim"
+   * OTP'lari bilan cheklov/challenge bo'lishmaydi, va bu OTP'ni faqat
+   * `partnerRegistrationOtpVerify` qabul qiladi (login/parol-tiklash
+   * challenge'lari bilan almashtirib bo'lmaydi).
+   */
+  partnerRegistrationOtpRequest(phone: string) {
+    return this.sendOtpDemoOrFail(this.normalizePhone(phone), 'partner_registration');
+  }
+
+  /**
+   * Registration'ning phone-ownership qadami (2-bosqich): OTP'ni
+   * tekshiradi, LEKIN hech qanday token/session chiqarmaydi — bu bosqichda
+   * hali `partner_organizations` yozuvi umuman yo'q (shuning uchun oddiy
+   * `otp/verify` -> `issuePartnerTokensByPhone` ishlamaydi, u MAVJUD
+   * tashkilotni talab qiladi). Buning o'rniga: bir martalik, qisqa umrli
+   * "verification proof" chiqaradi (`registrationVerificationStore`) —
+   * shu proof keyinroq `POST /partners/requests`ga
+   * `phoneVerificationToken` sifatida yuboriladi va backend uni serverda
+   * qayta tasdiqlaydi (client'ning oddiy `verified:true` claimiga
+   * ishonmaydi — 6-bo'lim talabi).
+   */
+  async partnerRegistrationOtpVerify(dto: VerifyOtpDto) {
+    const phone = this.normalizePhone(dto.phone);
+    this.consumeOtp({
+      challengeId: dto.challenge_id,
+      phone,
+      purpose: 'partner_registration',
+      code: dto.code,
+    });
+
+    const proof = registrationVerificationStore.issue(phone);
+    await this.auditAuthEvent(
+      'partner',
+      undefined,
+      'partner.registration_phone_verified',
+      { phone },
+    );
+
+    return {
+      verified: true as const,
+      verification_token: proof.token,
+      expires_in_seconds: Math.round((proof.expiresAt - Date.now()) / 1000),
+    };
   }
 
   private async findPartnerUserByPhone(phone: string): Promise<

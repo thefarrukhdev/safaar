@@ -1,5 +1,6 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
+import { registrationVerificationStore } from '../auth/registration-verification-store';
 import type { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -1727,6 +1728,7 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
         },
       ]); // INSERT ... RETURNING
 
+    const { token } = registrationVerificationStore.issue('+998901234567');
     const result = await service.submitPublicPartnerRequest({
       type: 'hotel',
       companyName: 'QA Hotel',
@@ -1736,6 +1738,7 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
       city: 'Samarqand',
       address: 'Registon 10',
       taxId: '123456789',
+      phoneVerificationToken: token,
     });
 
     expect(result.item.contactPerson).toBe('Test QA Ismoilov');
@@ -1746,6 +1749,101 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
     const insertCall = queryCallsOf(pg)[2];
     expect(insertCall[0]).toMatch(/contact_person/);
     expect(insertCall[1]).toContain('Test QA Ismoilov');
+  });
+
+  it('rejects the application when no valid phone-verification proof is presented (2026-09 registration security hardening)', async () => {
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'QA Hotel Unverified',
+        contactPerson: 'Test QA',
+        phone: '+998901234599',
+        email: 'qa-unverified@example.com',
+        city: 'Samarqand',
+        address: 'Registon 10',
+        taxId: '999999999',
+        // phoneVerificationToken omitted entirely
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'PARTNER_PHONE_NOT_VERIFIED' },
+    });
+
+    // Must fail BEFORE ever touching the DB (no duplicate-check, no insert).
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects a verification proof issued for a DIFFERENT phone number (replay across phones)', async () => {
+    const { token } = registrationVerificationStore.issue('+998907650001');
+
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'QA Hotel Cross Phone',
+        contactPerson: 'Test QA',
+        phone: '+998907650002', // different phone than the proof was issued for
+        email: 'qa-cross-phone@example.com',
+        city: 'Samarqand',
+        address: 'Registon 10',
+        taxId: '888888888',
+        phoneVerificationToken: token,
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'PARTNER_PHONE_NOT_VERIFIED' },
+    });
+  });
+
+  it('rejects a replayed (already-used) verification proof — one-time use', async () => {
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check -> none
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockResolvedValueOnce([
+        {
+          id: 'org-2',
+          type: 'hotel',
+          legal_name: 'QA Hotel Replay',
+          brand_name: 'QA Hotel Replay',
+          contact_person: 'Test QA',
+          tax_id: '777777777',
+          phone: '+998907650003',
+          email: 'qa-replay@example.com',
+          city_id: 'city-1',
+          address: 'Registon 10',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-08-25T00:00:00.000Z',
+          updated_at: '2026-08-25T00:00:00.000Z',
+        },
+      ]);
+
+    const { token } = registrationVerificationStore.issue('+998907650003');
+    await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'QA Hotel Replay',
+      contactPerson: 'Test QA',
+      phone: '+998907650003',
+      email: 'qa-replay@example.com',
+      city: 'Samarqand',
+      address: 'Registon 10',
+      taxId: '777777777',
+      phoneVerificationToken: token,
+    });
+
+    // Second submission attempt reusing the SAME (already-consumed) token.
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'QA Hotel Replay 2',
+        contactPerson: 'Test QA',
+        phone: '+998907650003',
+        email: 'qa-replay-2@example.com',
+        city: 'Samarqand',
+        address: 'Registon 10',
+        taxId: '666666666',
+        phoneVerificationToken: token,
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'PARTNER_PHONE_NOT_VERIFIED' },
+    });
   });
 
   it('falls back to the legal/brand name only for legacy rows that have no contact_person on file', async () => {

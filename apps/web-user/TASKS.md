@@ -73,9 +73,6 @@ Frontend tayyor — API qo'shilishi bilan darhol ulanadi.
 - **API**: `GET /hotels` da `ne_lat`, `ne_lng`, `sw_lat`, `sw_lng` parametrlari orqali ishlaydi.
 - **Prioritet:** 🟡 O'rta
 
-### 9. Restaurant — Hardcoded fetch xatosini tuzatish
-- `RestaurantBookingSection.tsx` dagi qattiq yozilgan (hardcoded) `http://localhost:4000` manzilini o'chirib, `@safaar/api-client` orqali to'g'rilab yuborish kerak.
-- **Prioritet:** 🔴 Yuqori
 
 ---
 
@@ -89,6 +86,7 @@ Frontend tayyor — API qo'shilishi bilan darhol ulanadi.
 - [x] Global UI — `Carousel.tsx` komponenti yaratildi
 - [x] Global UI — `Modal.tsx` komponenti yaratildi
 - [x] Checkout — Guest va DatePicker integratsiyasi
+- [x] Restaurant — Hardcoded fetch xatosi tuzatildi (api-client ga o'tkazildi)
 
 ---
 

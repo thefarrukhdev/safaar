@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
-import Image from "next/image";
-
 export async function generateMetadata({
   params,
 }: {
@@ -25,27 +23,14 @@ export default async function TermsPage({
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:py-12">
       <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16 dark:bg-slate-900 dark:border-slate-800">
         
-        {/* Header with Logo */}
-        <div className="flex flex-col items-center mb-10 pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="relative h-24 w-64 mb-6">
-            <Image 
-              src="/images/oferta-logo.jpg" 
-              alt="Safaar Logo" 
-              fill 
-              className="object-contain"
-            />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-center text-slate-900 dark:text-white uppercase tracking-tight">
-            OMMAVIY OFERTA
-          </h1>
-          <p className="mt-2 text-slate-500 font-medium text-sm">(FOYDALANUVCHI KELISHUVI)</p>
-        </div>
-
         {/* Content generated from DOCX with manual resets */}
         <div 
           className="
             text-slate-700 dark:text-slate-300
             [&>p]:mb-4 [&>p]:leading-relaxed
+            [&>p:nth-child(-n+7)]:text-center [&>p:nth-child(1)_img]:mx-auto [&>p:nth-child(1)_img]:mb-6 [&>p:nth-child(1)_img]:w-40
+            [&>p:nth-child(2)]:text-2xl [&>p:nth-child(5)]:text-2xl [&>p:nth-child(5)]:mt-12
+            [&>p:nth-child(7)]:border-b [&>p:nth-child(7)]:border-slate-200 [&>p:nth-child(7)]:pb-8 [&>p:nth-child(7)]:mb-8
             [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white
             [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-900 [&>h2]:dark:text-white
             [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-900 [&>h3]:dark:text-white

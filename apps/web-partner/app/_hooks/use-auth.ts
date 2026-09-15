@@ -162,14 +162,17 @@ export function usePartnerPasswordLogin() {
   return useMutation({
     mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
       // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      if (password && password !== 'demo123') {
-        throw new Error("Noto'g'ri parol. Hozircha demo parol: demo123 ni kiriting.");
+      let pType = 'hotel';
+      if (password && password.startsWith('demo:')) {
+        pType = password.split(':')[1];
+      } else if (password !== 'demo123') {
+        throw new Error("Noto'g'ri parol. Demo parol: demo123 (Mehmonxona) yoki demo:bus (Transport), demo:restaurant kabi kiriting.");
       }
       return {
         phone,
         tokens: DEMO_TOKENS as any,
         organizationId: 'demo-org-id',
-        partnerType: 'hotel',
+        partnerType: pType,
         isDemo: true,
       };
       // ────────────────────────────────────────────────────────────────────────

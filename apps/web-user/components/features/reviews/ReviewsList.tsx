@@ -152,7 +152,7 @@ export function ReviewsList({
         </div>
 
         {authed && hotelId && !isFormOpen && (
-          <Button onClick={() => setIsFormOpen(true)} variant="outline" className="border-slate-200 text-slate-900">
+          <Button onClick={() => setIsFormOpen(true)} variant="secondary" className="border-slate-200 text-slate-900">
             Write a review
           </Button>
         )}

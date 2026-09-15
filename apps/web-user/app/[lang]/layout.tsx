@@ -98,7 +98,7 @@ export default async function LangLayout({
       className={`${inter.variable} ${manrope.variable} h-full overflow-x-hidden subpixel-antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden bg-slate-100/60 text-slate-900 subpixel-antialiased dark:bg-slate-950 dark:text-slate-100">
-        <NextTopLoader color="linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899)" showSpinner={false} shadow="0 0 10px #8b5cf6,0 0 5px #ec4899" />
+        <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
         <AnalyticsProvider>
           <NuqsAdapter>
             <ClickSpark global />

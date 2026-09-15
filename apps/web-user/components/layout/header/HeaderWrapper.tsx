@@ -35,39 +35,43 @@ export function HeaderWrapper(props: HeaderProps) {
   }, []);
 
   return (
-    <header
-      data-transparent={isTransparent}
-      className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300 group/header",
-        isTransparent
-          ? "bg-transparent border-transparent"
-          : "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800",
-        hidden ? "-translate-y-full" : "translate-y-0"
-      )}
-    >
-      <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 md:h-16 items-center justify-between">
-          
-          {/* Mobile View */}
-          <div className="flex w-full md:hidden flex-col justify-center">
-             <MobileNav {...props} />
-          </div>
-
-          {/* Desktop View */}
-          <div className="hidden md:flex w-full items-center justify-between">
-            <HeaderBrand href={props.brandHref} brand={props.brand} />
+    <>
+      <header
+        data-transparent={isTransparent}
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 group/header",
+          isTransparent
+            ? "bg-transparent border-transparent"
+            : "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800",
+          hidden ? "-translate-y-full" : "translate-y-0"
+        )}
+      >
+        <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 md:h-16 items-center justify-between">
             
-            <div className="flex-1 flex justify-center">
-              <DesktopNavLinks items={props.items} />
+            {/* Mobile View */}
+            <div className="flex w-full md:hidden flex-col justify-center">
+               <MobileNav {...props} />
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
-              {props.actions}
+            {/* Desktop View */}
+            <div className="hidden md:flex w-full items-center justify-between">
+              <HeaderBrand href={props.brandHref} brand={props.brand} />
+              
+              <div className="flex-1 flex justify-center">
+                <DesktopNavLinks items={props.items} />
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3">
+                {props.actions}
+              </div>
             </div>
+
           </div>
-
         </div>
-      </div>
-    </header>
+      </header>
+      {/* Spacer div to prevent content from hiding under the fixed header */}
+      <div className="h-14 md:h-16 w-full shrink-0 pointer-events-none" />
+    </>
   );
 }

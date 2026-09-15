@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { HeaderProps } from "./types";
 import { HeaderBrand } from "./HeaderBrand";
@@ -8,11 +9,26 @@ import { DesktopNavLinks } from "./DesktopNavLinks";
 import { MobileNav } from "./MobileNav";
 
 export function HeaderWrapper(props: HeaderProps) {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScroll = useRef(0);
+
+  // Check if we are on the homepage (e.g., /uz, /ru, /en, or /)
+  const isHome = pathname === "/" || /^\/[a-z]{2}$/.test(pathname);
+  const isTransparent = isHome && !scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const currentScroll = window.scrollY;
+      setScrolled(currentScroll > 20);
+      
+      if (currentScroll > 200 && currentScroll > lastScroll.current) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+      lastScroll.current = currentScroll;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -20,11 +36,13 @@ export function HeaderWrapper(props: HeaderProps) {
 
   return (
     <header
+      data-transparent={isTransparent}
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
-        scrolled
-          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
-          : "bg-transparent border-transparent"
+        "sticky top-0 z-50 w-full transition-all duration-300 group/header",
+        isTransparent
+          ? "bg-transparent border-transparent"
+          : "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800",
+        hidden ? "-translate-y-full" : "translate-y-0"
       )}
     >
       <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-6 lg:px-8">

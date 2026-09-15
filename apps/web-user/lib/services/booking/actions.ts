@@ -49,6 +49,8 @@ export async function createBookingAction(
     lastName: formData.get("lastName") ? String(formData.get("lastName")) : undefined,
     email: formData.get("email") ? String(formData.get("email")) : undefined,
     phone: formData.get("phone") ? String(formData.get("phone")) : undefined,
+    specialRequests: formData.get("specialRequests") ? String(formData.get("specialRequests")) : undefined,
+    promoCode: formData.get("promoCode") ? String(formData.get("promoCode")) : undefined,
   };
   let bookingId = "";
   let checkoutUrl = "";

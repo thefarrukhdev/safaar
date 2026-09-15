@@ -25,6 +25,7 @@ import { JobQueueService } from '../infrastructure/job-queue.service';
 import { EmailService } from '../infrastructure/email.service';
 import { SmsService } from '../infrastructure/sms.service';
 import { AppCacheService } from '../infrastructure/cache.service';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { otpStore, type OtpPurpose } from './otp-store';
 import { registrationVerificationStore } from './registration-verification-store';
 import { authSessionStore } from './session-store';
@@ -260,9 +261,26 @@ export class AuthService {
   ) {
     const currentActor = this.requireActor(actor, 'user');
 
+    // Ommaviy Oferta (Terms of Service)ga rozilik — bu endpoint
+    // ro'yxatdan o'tishni yakunlaydigan YAGONA chaqiruvchi
+    // (RegisterForm.tsx, boshqa hech qanday "profilni tahrirlash" ekrani
+    // buni chaqirmaydi — tekshirilgan), shuning uchun har doim qat'iy
+    // talab qilinadi. Client "agreeTerms: true" yuborgani SOURCE OF TRUTH
+    // emas — checkbox mavjudligi bilan kifoyalanib, buni tekshirmasdan
+    // o'tkazib yuborish aynan shu vazifaning oldini olishi kerak bo'lgan
+    // holat edi. Boshqa DB o'qishdan OLDIN — sof input tekshiruvi.
+    const agreeTerms = body.agree_terms ?? body.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const rows = await this.pg.query<DbRow>(
       `SELECT id::text, phone, status, preferred_language, bonus_balance,
-              first_name, last_name, email, password_hash, created_at, updated_at
+              first_name, last_name, email, password_hash, created_at, updated_at,
+              terms_accepted_at, terms_version
        FROM users
        WHERE id = $1
        LIMIT 1`,
@@ -300,6 +318,19 @@ export class AuthService {
       : rows[0]['password_hash'];
     const now = new Date().toISOString();
 
+    // Birinchi qabul qilingan vaqt/versiya SAQLANIB QOLADI (idempotent —
+    // takroriy chaqiruv, masalan tarmoq xatosi tufayli qayta yuborish,
+    // "qachon birinchi rozi bo'lgan"ni qayta yozib yubormaydi va ortiqcha
+    // audit yozuvi yaratmaydi).
+    const existingTermsAcceptedAt = rows[0]['terms_accepted_at'] as
+      | string
+      | null;
+    const termsAcceptedAt = existingTermsAcceptedAt ?? now;
+    const termsVersion = existingTermsAcceptedAt
+      ? (rows[0]['terms_version'] as string | null)
+      : CURRENT_TERMS_VERSION;
+    const isFirstAcceptance = !existingTermsAcceptedAt;
+
     if (
       phoneDigits &&
       !(
@@ -332,8 +363,9 @@ export class AuthService {
     await this.pg.query(
       `UPDATE users
        SET first_name = $1, last_name = $2, phone = $3, email = $4,
-           preferred_language = $5, password_hash = $6, updated_at = $7
-       WHERE id = $8`,
+           preferred_language = $5, password_hash = $6, updated_at = $7,
+           terms_accepted_at = $8, terms_version = $9
+       WHERE id = $10`,
       [
         firstName,
         lastName,
@@ -342,9 +374,20 @@ export class AuthService {
         preferredLanguage,
         passwordHash,
         now,
+        termsAcceptedAt,
+        termsVersion,
         currentActor.id,
       ],
     );
+
+    if (isFirstAcceptance) {
+      await this.auditAuthEvent(
+        'user',
+        currentActor.id,
+        'user.terms_accepted',
+        { terms_version: termsVersion },
+      );
+    }
 
     return {
       ...rows[0],

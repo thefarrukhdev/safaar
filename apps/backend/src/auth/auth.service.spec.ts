@@ -2,7 +2,9 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Role } from '@safaar/types';
 import { AuthService } from './auth.service';
+import type { RequestActor } from '../common/actor';
 import type {
   PostgresService,
   PostgresTransaction,
@@ -15,6 +17,7 @@ import type { EmailMessage } from '../integrations/email/email-provider.interfac
 import { authSessionStore } from './session-store';
 import { otpStore } from './otp-store';
 import { registrationVerificationStore } from './registration-verification-store';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import * as totp from './totp';
 import * as argon2 from 'argon2';
 
@@ -2507,5 +2510,151 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
         }),
       ).rejects.toMatchObject({ response: { code: 'PARTNER_NOT_ACTIVE' } });
     });
+  });
+});
+
+describe('AuthService.completeProfile — Terms of Service acceptance (2026-09-15, server-side enforced, not just a frontend checkbox)', () => {
+  const pg = { query: jest.fn(), transaction: jest.fn() };
+  const jobs = { add: jest.fn() };
+  const email = { send: jest.fn() };
+  const sms = { send: jest.fn() };
+  const cache = {
+    get: jest.fn(),
+    set: jest.fn(),
+    take: jest.fn(),
+    del: jest.fn(),
+  };
+  let service: AuthService;
+
+  const USER_ID = '00000000-0000-4000-8000-0000000000cc';
+  const actor: RequestActor = {
+    id: USER_ID,
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  const baseUserRow = {
+    id: USER_ID,
+    phone: '+998901234567',
+    status: 'unverified',
+    preferred_language: 'uz',
+    bonus_balance: 0,
+    first_name: null,
+    last_name: null,
+    email: null,
+    password_hash: null,
+    created_at: '2026-09-01T00:00:00.000Z',
+    updated_at: '2026-09-01T00:00:00.000Z',
+    terms_accepted_at: null,
+    terms_version: null,
+  };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    service = new AuthService(
+      pg as unknown as PostgresService,
+      jobs as unknown as JobQueueService,
+      email as unknown as EmailService,
+      sms as unknown as SmsService,
+      cache as unknown as AppCacheService,
+    );
+  });
+
+  it('rejects when agree_terms is missing entirely — client silence is never treated as consent', async () => {
+    await expect(
+      service.completeProfile(actor, {
+        first_name: 'Laziz',
+        email: 'laziz@example.com',
+      }),
+    ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    expect(pg.query).not.toHaveBeenCalled(); // fail-fast, before any DB read
+  });
+
+  it('rejects when agree_terms is explicitly false', async () => {
+    await expect(
+      service.completeProfile(actor, {
+        first_name: 'Laziz',
+        email: 'laziz@example.com',
+        agree_terms: false,
+      }),
+    ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed (non-boolean, e.g. the string "true") value — strict === true check, not truthy coercion', async () => {
+    await expect(
+      service.completeProfile(actor, {
+        first_name: 'Laziz',
+        email: 'laziz@example.com',
+        agree_terms: 'true',
+      }),
+    ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+  });
+
+  it('accepts agree_terms=true and persists terms_accepted_at + terms_version on first acceptance, plus a one-time audit_logs entry', async () => {
+    pg.query
+      .mockResolvedValueOnce([baseUserRow]) // SELECT users
+      .mockResolvedValueOnce([]) // phone-already-exists check (rows[0].phone is set, so this always runs)
+      .mockResolvedValueOnce([]) // UPDATE users
+      .mockResolvedValueOnce([]); // INSERT audit_logs
+
+    await service.completeProfile(actor, {
+      first_name: 'Laziz',
+      email: 'laziz@example.com',
+      agree_terms: true,
+    });
+
+    expect(pg.query).toHaveBeenCalledTimes(4);
+    const [updateSql, updateParams] = queryCallsOf(pg)[2];
+    expect(updateSql).toMatch(/terms_accepted_at/);
+    expect(updateSql).toMatch(/terms_version/);
+    expect(updateParams![7]).toEqual(expect.any(String)); // terms_accepted_at (freshly set)
+    expect(updateParams![8]).toBe(CURRENT_TERMS_VERSION);
+
+    const [auditSql, auditParams] = queryCallsOf(pg)[3];
+    expect(auditSql).toMatch(/audit_logs/);
+    expect(auditParams![1]).toBe('user');
+    expect(auditParams![2]).toBe(USER_ID);
+    expect(auditParams![3]).toBe('user.terms_accepted');
+  });
+
+  it('camelCase agreeTerms is also accepted (same as agree_terms)', async () => {
+    pg.query
+      .mockResolvedValueOnce([baseUserRow])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      service.completeProfile(actor, {
+        first_name: 'Laziz',
+        email: 'laziz@example.com',
+        agreeTerms: true,
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  it('is idempotent on repeat calls: does not overwrite the original acceptance timestamp/version, and does not write a duplicate audit row', async () => {
+    const alreadyAcceptedRow = {
+      ...baseUserRow,
+      first_name: 'Laziz',
+      terms_accepted_at: '2026-01-01T00:00:00.000Z',
+      terms_version: '2026-01-01',
+    };
+    pg.query
+      .mockResolvedValueOnce([alreadyAcceptedRow]) // SELECT users
+      .mockResolvedValueOnce([]) // phone-already-exists check
+      .mockResolvedValueOnce([]); // UPDATE users — NO 4th (audit) call expected
+
+    await service.completeProfile(actor, {
+      email: 'laziz@example.com',
+      agree_terms: true,
+    });
+
+    expect(pg.query).toHaveBeenCalledTimes(3); // SELECT + phone-check + UPDATE only
+    const [, updateParams] = queryCallsOf(pg)[2];
+    expect(updateParams![7]).toBe('2026-01-01T00:00:00.000Z'); // preserved
+    expect(updateParams![8]).toBe('2026-01-01'); // preserved
   });
 });

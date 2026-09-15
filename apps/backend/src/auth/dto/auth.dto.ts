@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -76,6 +77,21 @@ export class CompleteProfileDto {
   @IsString()
   @IsStrongPassword()
   password?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      "Ommaviy Oferta (Terms of Service)ga rozilik — ro'yxatdan o'tishni " +
+      'yakunlash uchun majburiy `true` bo‘lishi kerak.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  agree_terms?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  agreeTerms?: boolean;
 
   @ApiPropertyOptional({ enum: ['uz', 'ru', 'en'] })
   @IsOptional()

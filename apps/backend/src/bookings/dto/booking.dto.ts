@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsInt,
@@ -175,6 +176,21 @@ export class CreateHotelBookingDto {
   @IsOptional()
   @IsString()
   promoCode?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'Ommaviy Oferta (Terms of Service)ga rozilik — checkout uchun ' +
+      'majburiy `true` bo‘lishi kerak.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  agree_terms?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  agreeTerms?: boolean;
 }
 
 export class CreateBusBookingDto {

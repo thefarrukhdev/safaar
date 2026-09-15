@@ -16,6 +16,7 @@ import {
   calculateCommission,
   resolveAccommodationCommissionRate,
 } from '../common/finance';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import {
@@ -341,6 +342,20 @@ export class BookingsService {
     actor: RequestActor | undefined,
     dto: Record<string, unknown>,
   ) {
+    // Ommaviy Oferta (Terms of Service)ga rozilik — checkout (guest yoki
+    // login qilingan) source of truth SERVERDA. Client "agreeTerms: true"
+    // yuborgani o'ziga o'zi ishonchli emas; checkbox required bo'lishi
+    // frontendda bo'lsa ham, backend buni HAR DOIM qayta tekshiradi. Har
+    // qanday DB so'rovidan OLDIN — sof input tekshiruvi (real xonani
+    // qulflab, keyin rad etib, behuda tranzaksiya boshlamaslik uchun).
+    const agreeTerms = dto.agree_terms ?? dto.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const userId = actor?.id ?? null;
     const hotelId = String(dto.hotel_id ?? dto.hotelId ?? '');
     const roomId = String(dto.room_id ?? dto.roomId ?? dto.roomTypeId ?? '');
@@ -593,6 +608,8 @@ export class BookingsService {
         guest_name: guestName,
         guest_email: guestEmail,
         guest_phone: guestPhone,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: CURRENT_TERMS_VERSION,
         price_snapshot: {
           room_id: room.id,
           check_in: checkIn,
@@ -1309,6 +1326,12 @@ export class BookingsService {
       guest_name?: string;
       guest_email?: string;
       guest_phone?: string;
+      /** Faqat checkout haqiqatan Terms tekshiruvini majburlaydigan
+       * chaqiruvchidan (`createHotelInternal`) keladi — boshqa bron
+       * turlari (bus/vehicle) buni hozircha yubormaydi, ustunlar NULL
+       * qoladi (bu vazifaning e'lon qilingan scope'i emas). */
+      terms_accepted_at?: string;
+      terms_version?: string;
     },
   ) {
     const id = randomUUID();
@@ -1368,6 +1391,8 @@ export class BookingsService {
       guest_name: guestName,
       guest_email: guestEmail,
       guest_phone: guestPhone,
+      terms_accepted_at: input.terms_accepted_at ?? null,
+      terms_version: input.terms_version ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -1383,6 +1408,7 @@ export class BookingsService {
         confirmed_at, cancelled_at, cancel_reason_text,
         policy_snapshot, price_snapshot,
         guest_name, guest_email, guest_phone,
+        terms_accepted_at, terms_version,
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4,
@@ -1394,7 +1420,8 @@ export class BookingsService {
         $26, $27, $28,
         $29, $30,
         $31, $32, $33,
-        $34, $35
+        $34, $35,
+        $36, $37
       )`,
       [
         bookingRow.id,
@@ -1430,10 +1457,40 @@ export class BookingsService {
         bookingRow.guest_name,
         bookingRow.guest_email,
         bookingRow.guest_phone,
+        bookingRow.terms_accepted_at,
+        bookingRow.terms_version,
         bookingRow.created_at,
         bookingRow.updated_at,
       ],
     );
+
+    if (bookingRow.terms_accepted_at) {
+      // Best-effort — auth.service.ts'dagi auditAuthEvent bilan bir xil
+      // naqsh: audit yozuvi muvaffaqiyatsiz bo'lsa ham booking oqimi
+      // to'xtamaydi. SHU transaction ichida (`db.query`, `this.pg.query`
+      // emas) — agar tranzaksiya biror sababdan rollback bo'lsa, audit
+      // yozuvi ham birga qaytariladi (orphan audit qatori qolmaydi).
+      try {
+        await db.query(
+          `insert into audit_logs (id, actor_type, actor_id, action, entity_type, entity_id, metadata)
+           values ($1::uuid, $2, $3::uuid, $4, $5, $6::uuid, ($7)::jsonb)`,
+          [
+            randomUUID(),
+            // 'guest' emas — bu ustunda mavjud konventsiya
+            // ('user'|'partner'|'admin'|'system', qarang admin.service.ts
+            // audit()) bilan mos: haqiqiy actor yo'q bo'lganda 'system'.
+            userId ? 'user' : 'system',
+            userId,
+            'booking.terms_accepted',
+            'booking',
+            bookingRow.id,
+            JSON.stringify({ terms_version: bookingRow.terms_version }),
+          ],
+        );
+      } catch {
+        // Audit log yozuvi muvaffaqiyatsiz bo'lsa ham booking oqimi davom etadi.
+      }
+    }
 
     await this.addStatusHistory(db, bookingRow, 'created');
 

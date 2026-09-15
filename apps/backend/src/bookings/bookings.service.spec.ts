@@ -1,5 +1,6 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import type { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -111,6 +112,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -167,6 +169,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(authedActor, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -197,6 +200,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -235,6 +239,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -275,6 +280,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -312,6 +318,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -340,6 +347,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -367,6 +375,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -399,6 +408,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -435,6 +445,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -467,6 +478,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -493,6 +505,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -508,6 +521,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: 'not-a-date',
         check_out: '2026-08-12',
@@ -524,6 +538,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -532,6 +547,99 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const [sql] = pg.query.mock.calls[0];
     expect(String(sql)).toContain("po.status = 'approved'");
+  });
+
+  describe('Terms of Service acceptance (2026-09-15, server-side enforced checkout)', () => {
+    it('rejects when agree_terms is missing entirely, before touching the DB at all', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      expect(pg.query).not.toHaveBeenCalled();
+      expect(pg.transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects when agree_terms is explicitly false', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: false,
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      expect(pg.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed (non-boolean) value the same as missing', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: 'true',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    });
+
+    it('applies equally to guest checkout (no actor) — a guest booking still requires acceptance', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    });
+
+    it('persists terms_accepted_at + terms_version on the booking row itself (same INSERT, atomic with booking creation) and writes an audit_logs entry', async () => {
+      pg.query
+        .mockResolvedValueOnce([hotelRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            hotel_id: 'hotel-1',
+            base_price: '100000',
+            total_inventory: 1,
+          },
+        ])
+        .mockResolvedValueOnce([{ booked_count: 0 }])
+        .mockResolvedValueOnce([{ blocked_count: 0 }])
+        .mockResolvedValueOnce([]) // INSERT bookings
+        .mockResolvedValueOnce([]) // INSERT audit_logs (terms_accepted)
+        .mockResolvedValueOnce([]) // INSERT booking_status_history
+        .mockResolvedValueOnce([]) // SELECT existing pending payment
+        .mockResolvedValueOnce([]); // INSERT payments
+
+      await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+      });
+
+      const insertBookingCall = pg.query.mock.calls[4];
+      expect(String(insertBookingCall[0])).toMatch(/terms_accepted_at/);
+      expect(String(insertBookingCall[0])).toMatch(/terms_version/);
+      // Params order: ... guest_name, guest_email, guest_phone, terms_accepted_at, terms_version, created_at, updated_at
+      const params = insertBookingCall[1] as unknown[];
+      expect(params[params.length - 4]).toEqual(expect.any(String)); // terms_accepted_at
+      expect(params[params.length - 3]).toBe(CURRENT_TERMS_VERSION); // terms_version
+
+      const auditCall = pg.query.mock.calls[5];
+      expect(String(auditCall[0])).toMatch(/audit_logs/);
+      expect(auditCall[1]).toEqual(
+        expect.arrayContaining(['booking.terms_accepted']),
+      );
+    });
   });
 });
 
@@ -601,6 +709,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-r1',
+      agree_terms: true,
       room_id: 'table-1',
       check_in: '2026-08-10',
       slot_time: '19:00',
@@ -629,6 +738,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
       }),
@@ -641,6 +751,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '06:00',
@@ -664,6 +775,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '19:00',
@@ -1325,6 +1437,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
     check_out: '2026-08-12',
     rooms: 1,
     guests: 2,
+    agree_terms: true,
   };
 
   /**
@@ -1367,6 +1480,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
       .mockResolvedValueOnce([{ booked_count: 0 }]) // sana-ziddiyat tekshiruvi
       .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT audit_logs (terms_accepted)
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
       .mockResolvedValueOnce([]); // INSERT payments

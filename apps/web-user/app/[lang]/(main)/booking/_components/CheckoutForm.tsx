@@ -165,6 +165,16 @@ export function CheckoutForm({
               />
             </label>
           </div>
+
+          <label className="flex flex-col gap-1 mt-2">
+            <span className="text-sm font-medium">Maxsus so'rovlar (ixtiyoriy)</span>
+            <textarea
+              name="specialRequests"
+              rows={3}
+              placeholder="Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing..."
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          </label>
         </section>
 
         <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -185,7 +195,22 @@ export function CheckoutForm({
           </span>
           <span>{formatSum(total)}</span>
         </div>
-        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">
+
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-500">Promokod (agar bo'lsa)</span>
+            <div className="flex gap-2">
+              <Input
+                name="promoCode"
+                placeholder="PROMO2025"
+                className="text-sm"
+              />
+              <Button type="button" variant="secondary" className="px-3">Qo'llash</Button>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold dark:border-slate-800">
           <span>{dict.total}</span>
           <span>{formatSum(total)}</span>
         </div>

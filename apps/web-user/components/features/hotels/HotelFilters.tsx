@@ -194,6 +194,82 @@ export function HotelFilters({
             ))}
           </div>
         </FilterGroup>
+
+        {/* QULAYLIKLAR (AMENITIES) */}
+        <FilterGroup title="QULAYLIKLAR">
+          <div className="flex flex-col gap-2 pt-1">
+            {[
+              { id: "wifi", name: "Wi-Fi" },
+              { id: "pool", name: "Basseyn" },
+              { id: "sauna", name: "Sauna" },
+              { id: "breakfast", name: "Nonushta" },
+              { id: "parking", name: "Avtoturargoh" },
+              { id: "gym", name: "Fitnes zal" },
+            ].map((amenity) => (
+              <label
+                key={amenity.id}
+                className="flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600"
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="amenities"
+                    value={amenity.id}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    onChange={(e) => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      const current = params.getAll("amenities");
+                      if (e.target.checked) {
+                        params.append("amenities", amenity.id);
+                      } else {
+                        params.delete("amenities");
+                        current.filter((a) => a !== amenity.id).forEach((a) => params.append("amenities", a));
+                      }
+                      push(params);
+                    }}
+                    checked={searchParams.getAll("amenities").includes(amenity.id)}
+                  />
+                  <span>{amenity.name}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </FilterGroup>
+
+        {/* TO'LOV TURI (PAYMENT TYPE) */}
+        <FilterGroup title="TO'LOV TURI">
+          <div className="flex flex-col gap-2 pt-1">
+            {[
+              { id: "online_payment", name: "Onlayn to'lov (Karta)" },
+              { id: "pay_at_property", name: "Joyida to'lash (Naqd)" },
+            ].map((ptype) => (
+              <label
+                key={ptype.id}
+                className="flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600"
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="payment_type"
+                    value={ptype.id}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    onChange={(e) => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      if (e.target.checked) {
+                        params.set("payment_type", ptype.id);
+                      } else {
+                        params.delete("payment_type");
+                      }
+                      push(params);
+                    }}
+                    checked={searchParams.get("payment_type") === ptype.id}
+                  />
+                  <span>{ptype.name}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </FilterGroup>
       </FilterSidebar>
     </div>
   );

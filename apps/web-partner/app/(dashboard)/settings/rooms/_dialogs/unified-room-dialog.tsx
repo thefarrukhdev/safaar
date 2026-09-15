@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "../../../../_components/ui/button";
 import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
+import { MoneyInput } from "../../../../_components/ui/money-input";
 import { Label } from "../../../../_components/ui/label";
 import { useAuthStore } from "../../../../_stores/auth-store";
 import { useCreateRoomType, useUpdateRoomType } from "../../../../_hooks/use-room-types";
@@ -359,11 +360,8 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
                   <Label htmlFor="ur-price">
                     {isBus ? "1 kunlik ijara narxi (so'm)" : "Bir kechalik narx (so'm)"}
                   </Label>
-                  <Input
+                  <MoneyInput
                     id="ur-price"
-                    type="number"
-                    min={0}
-                    step={10000}
                     placeholder="400000"
                     aria-invalid={Boolean(err.basePrice)}
                     {...form.register("basePrice", { valueAsNumber: true })}

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "../../../../_components/ui/button";
 import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
+import { MoneyInput } from "../../../../_components/ui/money-input";
 import { Label } from "../../../../_components/ui/label";
 import { useAuthStore } from "../../../../_stores/auth-store";
 import { useCreateRoomType, useUpdateRoomType } from "../../../../_hooks/use-room-types";
@@ -268,11 +269,8 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
               <Label htmlFor="rt-price">
                 {isBus ? "1 kunlik ijara narxi (so'm)" : "Bir kechalik narx (so'm)"}
               </Label>
-              <Input
+              <MoneyInput
                 id="rt-price"
-                type="number"
-                min={0}
-                step={10000}
                 placeholder="400000"
                 {...form.register("basePrice", { valueAsNumber: true })}
               />

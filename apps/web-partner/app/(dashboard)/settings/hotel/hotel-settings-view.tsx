@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '../../../_components/ui/card';
 import { Input } from '../../../_components/ui/input';
+import { PhoneInput } from '../../../_components/ui/phone-input';
 import { Button } from '../../../_components/ui/button';
 import { Label } from '../../../_components/ui/label';
 import { partners } from '../../../_lib/api';
@@ -171,9 +172,8 @@ export function HotelSettingsView() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="phone">Aloqa telefoni</Label>
-              <Input
+              <PhoneInput
                 id="phone"
-                type="tel"
                 aria-invalid={Boolean(err.phone)}
                 {...form.register('phone')}
               />

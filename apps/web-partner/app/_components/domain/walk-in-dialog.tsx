@@ -9,6 +9,7 @@ import { BookingStatus } from "@safaar/types";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { PhoneInput } from "../ui/phone-input";
 import { Label } from "../ui/label";
 import { TODAY_ISO } from "../../_lib/utils/date";
 import { useAuthStore } from "../../_stores/auth-store";
@@ -256,16 +257,11 @@ export function WalkInDialog({
 
         <div className="flex flex-col gap-1.5 md:col-span-2">
           <Label htmlFor="phone">Telefon</Label>
-          <Input
+          <PhoneInput
             id="phone"
-            type="tel"
             placeholder="+998 90 123 45 67"
             aria-invalid={Boolean(err.phone)}
-            {...form.register("phone", {
-              onChange: (e) => {
-                e.target.value = maskPhone(e.target.value);
-              },
-            })}
+            {...form.register("phone")}
           />
           {err.phone && (
             <p className="text-xs text-red-600">{err.phone.message}</p>

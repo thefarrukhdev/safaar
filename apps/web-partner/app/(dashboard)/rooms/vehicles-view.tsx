@@ -11,6 +11,8 @@ import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 import { Dialog } from "../../_components/ui/dialog";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
+import { PlateInput } from "../../_components/ui/plate-input";
+import { MoneyInput } from "../../_components/ui/money-input";
 import { Label } from "../../_components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -45,10 +47,12 @@ export function VehiclesView() {
           description={labels.unitsPageDescription}
         />
         <div className="mt-4 sm:mt-0">
-          <Button onClick={() => setAddingVehicle(true)}>
-            <CarFront className="mr-2 h-4 w-4" />
-            {labels.addUnitLabel}
-          </Button>
+          {vehicles && vehicles.length > 0 && (
+            <Button onClick={() => setAddingVehicle(true)}>
+              <CarFront className="mr-2 h-4 w-4" />
+              {labels.addUnitLabel}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -212,7 +216,7 @@ export function VehicleDialog({ open, onClose, editing }: { open: boolean, onClo
           
           <div className="flex flex-col gap-1.5">
             <Label>Davlat raqami</Label>
-            <Input placeholder="01 A 777 AA" {...form.register("plateNumber")} />
+            <PlateInput placeholder="01 A 777 AA" {...form.register("plateNumber")} />
             {form.formState.errors.plateNumber && <span className="text-xs text-red-500">{form.formState.errors.plateNumber.message}</span>}
           </div>
 
@@ -224,7 +228,7 @@ export function VehicleDialog({ open, onClose, editing }: { open: boolean, onClo
 
           <div className="flex flex-col gap-1.5 col-span-2">
             <Label>Kunlik narxi (so'm)</Label>
-            <Input type="number" {...form.register("pricePerDay", { valueAsNumber: true })} />
+            <MoneyInput {...form.register("pricePerDay", { valueAsNumber: true })} />
             {form.formState.errors.pricePerDay && <span className="text-xs text-red-500">{form.formState.errors.pricePerDay.message}</span>}
           </div>
         </div>

@@ -9,6 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Building2, CheckCircle2, Phone, KeyRound, Lock } from 'lucide-react';
 import { Button } from '../../_components/ui/button';
 import { Input } from '../../_components/ui/input';
+import { PhoneInput } from '../../_components/ui/phone-input';
+import { PasswordInput } from '../../_components/ui/password-input';
 import { Label } from '../../_components/ui/label';
 import { access } from '../../_lib/api';
 import { usePartnerPhoneOtpRequest } from '../../_hooks/use-auth';
@@ -230,27 +232,21 @@ export default function RegisterPage() {
         <form className="flex flex-col gap-4 animate-fade-in mt-2" onSubmit={onSubmitForm} noValidate>
           <Field label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
             <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="tel"
+              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <PhoneInput
                 className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
-                {...form.register('phone', {
-                  onChange: (e) => {
-                    e.target.value = maskPhone(e.target.value);
-                  },
-                })}
+                {...form.register('phone')}
               />
             </div>
           </Field>
 
           <Field label="Tizimga kirish uchun parol" error={form.formState.errors.password?.message}>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="password"
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <PasswordInput
                 placeholder="Parolni kiriting"
+                className="w-full pl-10 pr-10 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
                 {...form.register('password')}
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
               />
             </div>
           </Field>

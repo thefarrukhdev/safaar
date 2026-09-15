@@ -77,16 +77,18 @@ export function RoomsView() {
           description={labels.unitsPageDescription}
         />
         <div className="mt-4 sm:mt-0">
-          <Button onClick={() => setAddingRoom(true)}>
-            {isBus ? (
-              <CarFront className="mr-2 h-4 w-4" />
-            ) : restaurant ? (
-              <UtensilsCrossed className="mr-2 h-4 w-4" />
-            ) : (
-              <BedDouble className="mr-2 h-4 w-4" />
-            )}
-            {labels.addUnitLabel}
-          </Button>
+          {floors && floors.length > 0 && (
+            <Button onClick={() => setAddingRoom(true)}>
+              {isBus ? (
+                <CarFront className="mr-2 h-4 w-4" />
+              ) : restaurant ? (
+                <UtensilsCrossed className="mr-2 h-4 w-4" />
+              ) : (
+                <BedDouble className="mr-2 h-4 w-4" />
+              )}
+              {labels.addUnitLabel}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -107,8 +109,11 @@ export function RoomsView() {
               Hali hech qanday {labels.unitSingular} qo'shilmagan
             </h3>
             <p className="mt-2 mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
-              Yuqori o'ng burchakdagi "{labels.addUnitLabel}" tugmasi orqali yangi {labels.unitSingular.toLowerCase()} qo'shishingiz mumkin.
+              Yangi {labels.unitSingular.toLowerCase()} qo'shish tugmasini bosib birinchisini yarating.
             </p>
+            <Button onClick={() => setAddingRoom(true)}>
+              {labels.addUnitLabel}
+            </Button>
           </div>
         ) : (
           floors.map(({ floor, rooms }) => (

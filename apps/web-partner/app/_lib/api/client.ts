@@ -157,7 +157,29 @@ export async function request<T>(
     let entityType = 'general';
     if (basePath.includes('vehicle') || basePath.includes('bus')) entityType = 'vehicles';
     if (basePath.includes('hotel') || basePath.includes('listing')) entityType = 'hotels';
-    
+    if (basePath.includes('booking')) entityType = 'bookings';
+
+    // Block dates (Blackout) mock
+    if (method === 'POST' && basePath.endsWith('/blackout')) {
+      const bBody = body as any;
+      const reservations = mockDb.get('bookings') || [];
+      const newBooking = {
+        id: `blk-${Date.now()}`,
+        status: 'completed', // completed looks grayed out on calendar
+        check_in: bBody.startDate,
+        check_out: bBody.endDate,
+        guest_name: `🔒 Bloklangan: ${bBody.reason || "Inventar yopilgan"}`,
+        room_number: bBody.roomNumber,
+        created_at: new Date().toISOString(),
+        policy_snapshot: { source: 'WALK_IN' },
+        item: { 
+          nights: Math.max(1, Math.round((new Date(bBody.endDate).getTime() - new Date(bBody.startDate).getTime()) / (1000 * 3600 * 24)))
+        }
+      };
+      mockDb.set('bookings', [...reservations, newBooking]);
+      return { ok: true, success: true } as any;
+    }
+
     // Yaratish yoki Yangilash (POST / PUT / PATCH)
     if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
       const items = mockDb.get(entityType) || [];

@@ -2154,7 +2154,7 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
     });
   });
 
-  describe('partner/registration-otp (2026-09-15 — real backend-verified phone ownership for registration, replacing the client-side `code === devCode || \'000000\'` check in register/page.tsx)', () => {
+  describe("partner/registration-otp (2026-09-15 — real backend-verified phone ownership for registration, replacing the client-side `code === devCode || '000000'` check in register/page.tsx)", () => {
     beforeEach(() => {
       registrationVerificationStore.resetForTests();
     });
@@ -2178,9 +2178,8 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
         // A registration OTP request for the SAME phone right after must
         // still succeed — a shared bucket would incorrectly throw
         // OTP_RESEND_TOO_SOON here.
-        const result = await service.partnerRegistrationOtpRequest(
-          '+998901234567',
-        );
+        const result =
+          await service.partnerRegistrationOtpRequest('+998901234567');
         expect((result as { sent: boolean }).sent).toBe(true);
       });
     });

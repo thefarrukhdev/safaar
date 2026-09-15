@@ -48,10 +48,7 @@ describe('registrationVerificationStore', () => {
 
   it('rejects an unknown/never-issued token', () => {
     expect(() =>
-      registrationVerificationStore.redeem(
-        'not-a-real-token',
-        '+998901234567',
-      ),
+      registrationVerificationStore.redeem('not-a-real-token', '+998901234567'),
     ).toThrow('PHONE_VERIFICATION_INVALID');
   });
 

@@ -467,8 +467,7 @@ export class PartnersService {
     } catch {
       throw new UnauthorizedException({
         code: 'PARTNER_PHONE_NOT_VERIFIED',
-        message:
-          "Telefon raqami tasdiqlanmagan. Avval SMS orqali tasdiqlang.",
+        message: 'Telefon raqami tasdiqlanmagan. Avval SMS orqali tasdiqlang.',
       });
     }
 

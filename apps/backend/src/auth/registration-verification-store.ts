@@ -70,4 +70,5 @@ function registrationProofPepper(): string {
   return `${process.env.OTP_PEPPER ?? 'safaar-dev-otp-pepper'}:partner-registration-proof`;
 }
 
-export const registrationVerificationStore = new RegistrationVerificationStore();
+export const registrationVerificationStore =
+  new RegistrationVerificationStore();

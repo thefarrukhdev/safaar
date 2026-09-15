@@ -23,8 +23,8 @@ export function HeaderWrapper(props: HeaderProps) {
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300",
         scrolled
-          ? "bg-white shadow-sm border-b border-slate-200 dark:bg-slate-950 dark:border-slate-800"
-          : "bg-white border-b border-slate-100 dark:bg-slate-950 dark:border-slate-900"
+          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
+          : "bg-transparent border-transparent"
       )}
     >
       <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-6 lg:px-8">

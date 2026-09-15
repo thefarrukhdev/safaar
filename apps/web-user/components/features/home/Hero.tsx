@@ -17,8 +17,6 @@ export function Hero({ dict, children }: { dict: HomeDict["hero"], children?: Re
         />
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/30" />
-        {/* Top white gradient blending with header */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white to-transparent" />
         {/* Bottom white gradient blending with content */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white via-white/80 to-transparent" />
       </div>

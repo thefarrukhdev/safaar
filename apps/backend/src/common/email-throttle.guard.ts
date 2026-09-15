@@ -39,14 +39,16 @@ export class EmailOtpThrottleGuard implements CanActivate {
     );
 
     if (existing.length >= this.limit) {
+      // Tekis {code, message} shakl — HttpErrorFilter O'ZI
+      // {success,error:{...}} qatlamini qo'shadi; bu yerda qo'shimcha
+      // ichki qatlam qo'yish PhoneOtpThrottleGuard'da topilgan xatoni
+      // takrorlagan bo'lardi (generic "Http Exception" xabari — o'sha
+      // fayldagi izohga qarang).
       throw new HttpException(
         {
-          success: false,
-          error: {
-            code: 'EMAIL_RATE_LIMIT_EXCEEDED',
-            message:
-              "Bu email manzili uchun so'rovlar soni chegaradan oshdi. Birozdan so'ng qayta urinib ko'ring.",
-          },
+          code: 'EMAIL_RATE_LIMIT_EXCEEDED',
+          message:
+            "Bu email manzili uchun so'rovlar soni chegaradan oshdi. Birozdan so'ng qayta urinib ko'ring.",
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

@@ -49,8 +49,12 @@ describe('PhoneOtpThrottleGuard', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(HttpException);
       expect((error as HttpException).getStatus()).toBe(429);
+      // 2026-09-15: tekis {code, message} shakl (HttpErrorFilter'ning o'zi
+      // {success,error:{...}} qatlamini keyinroq qo'shadi — bu yerda ham
+      // shunday qilish "Http Exception" degan ma'nosiz xabarga olib
+      // kelayotgan real xato edi, web-partner E2E orqali topildi).
       expect((error as HttpException).getResponse()).toMatchObject({
-        error: { code: 'PHONE_RATE_LIMIT_EXCEEDED' },
+        code: 'PHONE_RATE_LIMIT_EXCEEDED',
       });
     }
   });

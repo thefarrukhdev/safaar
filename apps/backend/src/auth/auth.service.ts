@@ -1753,7 +1753,10 @@ export class AuthService {
    * challenge'lari bilan almashtirib bo'lmaydi).
    */
   partnerRegistrationOtpRequest(phone: string) {
-    return this.sendOtpDemoOrFail(this.normalizePhone(phone), 'partner_registration');
+    return this.sendOtpDemoOrFail(
+      this.normalizePhone(phone),
+      'partner_registration',
+    );
   }
 
   /**

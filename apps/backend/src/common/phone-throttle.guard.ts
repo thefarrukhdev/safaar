@@ -44,14 +44,22 @@ export class PhoneOtpThrottleGuard implements CanActivate {
     );
 
     if (existing.length >= this.limit) {
+      // 2026-09-15 topilgan real xato (web-partner E2E orqali): bu yerda
+      // avval {success:false, error:{code,message}} bilan tashlangan —
+      // ya'ni HttpErrorFilter (common/http-error.filter.ts) KUTGANIDAN BIR
+      // QAVAT CHUQURROQ shakl. Filter tepadagi `success`/`error` ochilib
+      // ketgan holatga mo'ljallanmagan (u o'zi shu qatlamni qo'shadi),
+      // shuning uchun butun ichki obyekt "code" maydoniga tushib, tashqi
+      // `message` esa umuman aniqlanmay generic "Http Exception"ga aylanib
+      // ketardi — foydalanuvchi lokalizatsiya qilingan xabar o'rniga shu
+      // ma'nosiz matnni ko'rardi. To'g'ri, tekis shakl — xuddi
+      // auth.service.ts'dagi barcha `UnauthorizedException({code, message})`
+      // chaqiruvlari kabi.
       throw new HttpException(
         {
-          success: false,
-          error: {
-            code: 'PHONE_RATE_LIMIT_EXCEEDED',
-            message:
-              "Bu telefon raqami uchun so'rovlar soni chegaradan oshdi. Birozdan so'ng qayta urinib ko'ring.",
-          },
+          code: 'PHONE_RATE_LIMIT_EXCEEDED',
+          message:
+            "Bu telefon raqami uchun so'rovlar soni chegaradan oshdi. Birozdan so'ng qayta urinib ko'ring.",
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

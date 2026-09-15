@@ -26,6 +26,7 @@ import { EmailService } from '../infrastructure/email.service';
 import { SmsService } from '../infrastructure/sms.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { otpStore, type OtpPurpose } from './otp-store';
+import { registrationVerificationStore } from './registration-verification-store';
 import { authSessionStore } from './session-store';
 import { signJwt, verifyJwt } from './security';
 import { createTotpSetup, verifyTotpCode, type TotpSetup } from './totp';
@@ -39,6 +40,13 @@ function isUniqueViolation(error: unknown, constraintName: string): boolean {
     (error as { code?: string }).code === '23505' &&
     (error as { constraint?: string }).constraint === constraintName
   );
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUuidLike(value: string): boolean {
+  return UUID_PATTERN.test(value);
 }
 
 interface AdminUserRecord {
@@ -1535,6 +1543,405 @@ export class AuthService {
     return ['approved', 'blocked', 'suspended'].includes(
       String(status ?? '').toLowerCase(),
     );
+  }
+
+  /**
+   * 2026-09-14 — apps/web-partner's endpoints/auth.ts already declared
+   * partner/password-login, partner/set-password, partner/email-otp/
+   * request and partner/email-otp/verify with no backend route behind
+   * them. web-partner's login-form.tsx (currently short-circuited to a
+   * client-side "demo mode", commit 31dc4ca3 — never shipped to
+   * production) is the actual source of truth for the intended contract:
+   * usePartnerSetPassword's reset_verify step reuses the SAME OTP
+   * challenge usePartnerPhoneOtpRequest already gets from the existing,
+   * working POST /auth/otp/request (purpose 'partner_login') — there is
+   * no separate "request OTP for password" call, so set-password
+   * consumes that same purpose. Deliberately does NOT touch
+   * issuePartnerTokensByPhone/findPartnerUser (the existing, tested
+   * phone-login and email-login paths) — password-login and set-password
+   * get their own small, parallel queries below instead of a refactor,
+   * so there is no way this work can regress the flows explicitly
+   * required not to break.
+   */
+  async partnerPasswordLogin(body: Record<string, unknown>) {
+    const phone = this.normalizePhone(String(body.phone ?? ''));
+    const password = String(body.password ?? '');
+    const lockoutKey = await this.assertNotLockedOut('partner_phone', phone);
+    const partnerUser = await this.findPartnerUserByPhone(phone);
+
+    if (
+      !partnerUser ||
+      !this.isPartnerLoginStatusAllowed(partnerUser.organization_status) ||
+      (partnerUser.user_status && partnerUser.user_status !== 'active') ||
+      !partnerUser.password_hash ||
+      !(await this.verifyPassword(partnerUser.password_hash, password))
+    ) {
+      await this.recordFailedLogin(lockoutKey);
+      throw this.invalidCredentials();
+    }
+    await this.resetLoginAttempts(lockoutKey);
+
+    await this.auditAuthEvent(
+      'partner',
+      partnerUser.user_id,
+      'partner.password_login',
+      { organization_id: partnerUser.organization_id },
+    );
+
+    return this.issuePartnerTokensByPhone(phone);
+  }
+
+  /**
+   * Sets (first time) or replaces the password on the org's primary
+   * partner_user, gated by the same phone-OTP challenge partner/login
+   * already uses — then logs the partner in immediately (login-form.tsx's
+   * usePartnerSetPassword expects tokens back, the same way
+   * verifyPartnerOtp logs a partner in right after OTP verification).
+   * Mirrors passwordResetConfirm('partner', ...)'s DB shape (find-or-
+   * create the primary partner_users row for the org, hash with argon2,
+   * revoke existing sessions) rather than duplicating it outright, since
+   * that method is keyed off an existing user_id it expects to already
+   * exist — this one also has to handle "no partner_user yet".
+   */
+  async partnerSetPassword(body: Record<string, unknown>) {
+    const phone = this.normalizePhone(String(body.phone ?? ''));
+    const code = String(body.code ?? '').trim();
+    const challengeId = String(
+      body.challenge_id ?? body.chalenge_id ?? '',
+    ).trim();
+
+    this.consumeOtp({ challengeId, phone, purpose: 'partner_login', code });
+
+    const orgRows = await this.pg.query<DbRow>(
+      `select id::text, status::text as status, email
+       from partner_organizations
+       where regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
+       order by created_at desc
+       limit 1`,
+      [phone],
+    );
+    const org = orgRows[0];
+    if (!org || !this.isPartnerLoginStatusAllowed(org['status'])) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+    const organizationId = String(org['id']);
+    const hash = await argon2.hash(String(body.password ?? ''));
+    const now = new Date().toISOString();
+
+    const existing = await this.findPartnerUserByPhone(phone);
+    let userId: string;
+    if (existing?.user_id) {
+      userId = existing.user_id;
+      await this.pg.query(
+        `update partner_users set password_hash = $2, updated_at = $3 where id = $1`,
+        [userId, hash, now],
+      );
+    } else {
+      userId = randomUUID();
+      await this.pg.query(
+        `insert into partner_users
+           (id, organization_id, email, password_hash, full_name, role, status, created_at, updated_at)
+         values ($1, $2, $3, $4, $5, 'owner', 'active', $6, $6)`,
+        [
+          userId,
+          organizationId,
+          String(org['email'] ?? ''),
+          hash,
+          this.optionalText(org['email']) ?? null,
+          now,
+        ],
+      );
+    }
+
+    // `passwordResetConfirm`dagi bilan bir xil sabab (PHASE 14G): parol
+    // o'rnatilgandan/almashtirilgandan keyin bu foydalanuvchining eski
+    // sessiyalari bekor qilinadi.
+    await authSessionStore.revokeActor(userId);
+    await this.auditAuthEvent('partner', userId, 'partner.password_set', {
+      organization_id: organizationId,
+    });
+
+    return this.issuePartnerTokensByPhone(phone);
+  }
+
+  /**
+   * Enumeration-safe by construction, not by a special case: an unknown
+   * email never gets a real OTP challenge created (mirrors
+   * passwordResetRequest's `{sent:true}`-with-no-challenge pattern), so
+   * partnerEmailOtpVerify can only ever succeed for an email that really
+   * does belong to a partner_organizations row — consumeOtp() already
+   * fails closed on any challenge that doesn't exist.
+   */
+  async partnerEmailOtpRequest(email: string) {
+    const normalized = this.normalizeEmail(email);
+
+    const rows = await this.pg.query<DbRow>(
+      `select id::text from partner_organizations where lower(email) = $1 limit 1`,
+      [normalized],
+    );
+    if (!rows[0]) {
+      return { sent: true };
+    }
+
+    const response = this.createOtpChallenge(
+      normalized,
+      'partner_email_verify',
+    );
+    const code = otpStore.getDeliveryCode(response.challenge_id);
+
+    if (this.isDemoAuthEnabled()) {
+      return { ...response, dev_code: code };
+    }
+
+    await this.sendEmailOtpOrFail(normalized, code ?? '');
+    return response;
+  }
+
+  /**
+   * Verifies email ownership and, since apps/web-partner's
+   * PartnerEmailLoginResponse type declares this returns full auth
+   * tokens (mirroring verifyPartnerOtp's phone equivalent — proving OTP
+   * ownership logs the partner in), issues them for the matching org.
+   * Does NOT write an "email verified" flag anywhere — no such column
+   * exists on partner_organizations and nothing in this codebase reads
+   * one; adding one here would be a speculative migration for a value
+   * nothing consumes.
+   */
+  async partnerEmailOtpVerify(body: Record<string, unknown>) {
+    const email = this.normalizeEmail(body.email);
+    const code = String(body.code ?? '').trim();
+    const challengeId = String(body.challenge_id ?? '').trim();
+
+    this.consumeOtp({
+      challengeId,
+      phone: email,
+      purpose: 'partner_email_verify',
+      code,
+    });
+
+    const rows = await this.pg.query<DbRow>(
+      `select id::text from partner_organizations where lower(email) = $1 limit 1`,
+      [email],
+    );
+    const organizationId = rows[0]?.['id'];
+    if (!organizationId) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+
+    await this.auditAuthEvent(
+      'partner',
+      String(organizationId),
+      'partner.email_verified',
+      { email },
+    );
+
+    return this.issuePartnerTokensForOrganization(String(organizationId));
+  }
+
+  /**
+   * Registration'ning phone-ownership qadami (1-bosqich): oddiy
+   * `sendPartnerOtp`ga o'xshaydi, lekin ALOHIDA `'partner_registration'`
+   * purpose bilan — shu sabab bir xil telefon uchun "parolni unutdim"
+   * OTP'lari bilan cheklov/challenge bo'lishmaydi, va bu OTP'ni faqat
+   * `partnerRegistrationOtpVerify` qabul qiladi (login/parol-tiklash
+   * challenge'lari bilan almashtirib bo'lmaydi).
+   */
+  partnerRegistrationOtpRequest(phone: string) {
+    return this.sendOtpDemoOrFail(
+      this.normalizePhone(phone),
+      'partner_registration',
+    );
+  }
+
+  /**
+   * Registration'ning phone-ownership qadami (2-bosqich): OTP'ni
+   * tekshiradi, LEKIN hech qanday token/session chiqarmaydi — bu bosqichda
+   * hali `partner_organizations` yozuvi umuman yo'q (shuning uchun oddiy
+   * `otp/verify` -> `issuePartnerTokensByPhone` ishlamaydi, u MAVJUD
+   * tashkilotni talab qiladi). Buning o'rniga: bir martalik, qisqa umrli
+   * "verification proof" chiqaradi (`registrationVerificationStore`) —
+   * shu proof keyinroq `POST /partners/requests`ga
+   * `phoneVerificationToken` sifatida yuboriladi va backend uni serverda
+   * qayta tasdiqlaydi (client'ning oddiy `verified:true` claimiga
+   * ishonmaydi — 6-bo'lim talabi).
+   */
+  async partnerRegistrationOtpVerify(dto: VerifyOtpDto) {
+    const phone = this.normalizePhone(dto.phone);
+    this.consumeOtp({
+      challengeId: dto.challenge_id,
+      phone,
+      purpose: 'partner_registration',
+      code: dto.code,
+    });
+
+    const proof = registrationVerificationStore.issue(phone);
+    await this.auditAuthEvent(
+      'partner',
+      undefined,
+      'partner.registration_phone_verified',
+      { phone },
+    );
+
+    return {
+      verified: true as const,
+      verification_token: proof.token,
+      expires_in_seconds: Math.round((proof.expiresAt - Date.now()) / 1000),
+    };
+  }
+
+  private async findPartnerUserByPhone(phone: string): Promise<
+    | {
+        organization_id: string;
+        organization_status: string;
+        user_id?: string;
+        user_status?: string;
+        password_hash?: string;
+      }
+    | undefined
+  > {
+    const rows = await this.pg.query<DbRow>(
+      `select po.id::text as organization_id, po.status::text as organization_status,
+              pu.id::text as user_id, pu.status::text as user_status, pu.password_hash
+       from partner_organizations po
+       left join partner_users pu
+         on pu.organization_id = po.id
+        and pu.deleted_at is null
+       where regexp_replace(po.phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
+       order by pu.created_at asc nulls last, po.created_at desc
+       limit 1`,
+      [phone],
+    );
+    const row = rows[0];
+    if (!row) return undefined;
+    return {
+      organization_id: String(row['organization_id']),
+      organization_status: String(row['organization_status'] ?? ''),
+      user_id: row['user_id'] ? String(row['user_id']) : undefined,
+      user_status: row['user_status'] ? String(row['user_status']) : undefined,
+      password_hash: row['password_hash']
+        ? String(row['password_hash'])
+        : undefined,
+    };
+  }
+
+  /** email-OTP-verify'ning issuePartnerTokensByPhone'ga o'xshash
+   * hamkasbi — faqat kirish kaliti telefon emas, allaqachon tasdiqlangan
+   * organization_id. Ataylab issuePartnerTokensByPhone'ni o'zgartirmadi
+   * (yuqoridagi izohga qarang). */
+  private async issuePartnerTokensForOrganization(
+    organizationId: string,
+  ): Promise<
+    AuthTokens & {
+      organization_id: string;
+      organizationId: string;
+      organization_status: string;
+      organizationStatus: string;
+      partner_role: string;
+    }
+  > {
+    const rows = await this.pg.query<DbRow>(
+      `
+        select
+          po.status::text as organization_status,
+          pu.id::text as user_id,
+          pu.status::text as user_status,
+          COALESCE(pu.role, 'owner')::text as partner_role
+        from partner_organizations po
+        left join partner_users pu
+          on pu.organization_id = po.id
+         and pu.deleted_at is null
+        where po.id = $1
+        order by pu.created_at asc nulls last
+        limit 1
+      `,
+      [organizationId],
+    );
+    const row = rows[0];
+
+    if (!row || !this.isPartnerLoginStatusAllowed(row['organization_status'])) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+    const organizationStatus = String(row['organization_status'] ?? '');
+
+    if (row['user_status'] && row['user_status'] !== 'active') {
+      throw this.invalidCredentials();
+    }
+
+    const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
+
+    return {
+      ...(await this.issueTokens({
+        actorId,
+        actorType: 'partner',
+        role: Role.PARTNER,
+        organizationId,
+      })),
+      organization_id: organizationId,
+      organizationId,
+      organization_status: organizationStatus,
+      organizationStatus,
+      partner_role: String(row['partner_role'] ?? 'owner'),
+    };
+  }
+
+  /**
+   * `sendSmsOrFail`ning email hamkasbi — `emailService.send()` xato
+   * tashlasa (masalan SMTP/Resend sozlanmagan), buni ushlab, controller
+   * darajasida kutilgan `EMAIL_DELIVERY_FAILED` (503) xatosiga aylantiradi.
+   */
+  private async sendEmailOtpOrFail(email: string, code: string): Promise<void> {
+    try {
+      await this.emailService.send({
+        to: email,
+        subject: 'Safaar — tasdiqlash kodi',
+        text: `Safaar hamkor kabinetiga kirish uchun tasdiqlash kodi: ${code}`,
+        html: `<p>Safaar hamkor kabinetiga kirish uchun tasdiqlash kodi: <strong>${code}</strong></p>`,
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new ServiceUnavailableException({
+        code: 'EMAIL_DELIVERY_FAILED',
+        message: 'Tasdiqlash kodini email orqali yuborib bo‘lmadi',
+      });
+    }
+  }
+
+  /** `admin.service.ts`dagi `audit()` bilan bir xil, allaqachon mavjud
+   * `audit_logs` jadvalini ishlatadi — auth oqimlari uchun yangi jadval
+   * yaratilmadi. Audit yozib bo'lmasa (masalan vaqtinchalik DB muammosi)
+   * asosiy auth oqimi (login/parol o'rnatish) to'xtab qolmasligi kerak. */
+  private async auditAuthEvent(
+    actorType: string,
+    actorId: string | undefined,
+    action: string,
+    metadata: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.pg.query(
+        `insert into audit_logs (id, actor_type, actor_id, action, metadata)
+         values ($1::uuid, $2, $3::uuid, $4, ($5)::jsonb)`,
+        [
+          randomUUID(),
+          actorType,
+          actorId && isUuidLike(actorId) ? actorId : null,
+          action,
+          JSON.stringify(metadata ?? {}),
+        ],
+      );
+    } catch {
+      // Audit log yozuvi muvaffaqiyatsiz bo'lsa ham auth oqimi davom etadi.
+    }
   }
 
   private async findAdminUser(

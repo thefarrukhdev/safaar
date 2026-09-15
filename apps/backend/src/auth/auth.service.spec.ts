@@ -14,6 +14,7 @@ import type { AppCacheService } from '../infrastructure/cache.service';
 import type { EmailMessage } from '../integrations/email/email-provider.interface';
 import { authSessionStore } from './session-store';
 import { otpStore } from './otp-store';
+import { registrationVerificationStore } from './registration-verification-store';
 import * as totp from './totp';
 import * as argon2 from 'argon2';
 
@@ -1937,5 +1938,574 @@ describe('AuthService password reset via SMS (regression: user/reset-password wr
         password: 'N3wP@ssw0rd!',
       }),
     ).rejects.toMatchObject({ response: { code: 'PARTNER_NOT_ACTIVE' } });
+  });
+});
+
+describe('AuthService partner password-login / set-password / email-OTP (2026-09-14 — implements the 4 routes apps/web-partner/endpoints/auth.ts already declared with no backend behind them)', () => {
+  const pg = { query: jest.fn(), transaction: jest.fn() };
+  const jobs = { add: jest.fn() };
+  const email = { send: jest.fn() };
+  const sms = { send: jest.fn() };
+  const cache = {
+    get: jest.fn(),
+    set: jest.fn(),
+    take: jest.fn(),
+    del: jest.fn(),
+  };
+  let service: AuthService;
+  let cacheStore: Map<string, unknown>;
+
+  const ORG_ID = '00000000-0000-4000-8000-0000000000aa';
+  const USER_ID = '00000000-0000-4000-8000-0000000000bb';
+
+  beforeEach(() => {
+    otpStore.resetForTests();
+    jest.resetAllMocks();
+    delete process.env.ENABLE_DEMO_AUTH;
+    jobs.add.mockResolvedValue(undefined);
+    email.send.mockResolvedValue({
+      accepted: true,
+      providerMessageId: 'email-1',
+    });
+    // Stateful — assertNotLockedOut/recordFailedLogin/resetLoginAttempts
+    // (reused as-is from the existing lockout mechanism) round-trip
+    // through this across calls within a test; a mock that always
+    // resolves undefined would never actually accumulate attempts.
+    cacheStore = new Map();
+    cache.get.mockImplementation((key: string) =>
+      Promise.resolve(cacheStore.get(key)),
+    );
+    cache.set.mockImplementation((key: string, value: unknown) => {
+      cacheStore.set(key, value);
+      return Promise.resolve(undefined);
+    });
+    cache.del.mockImplementation((key: string) => {
+      cacheStore.delete(key);
+      return Promise.resolve(undefined);
+    });
+    jest.spyOn(authSessionStore, 'create').mockResolvedValue({} as never);
+    jest.spyOn(authSessionStore, 'revokeActor').mockResolvedValue(0);
+    service = new AuthService(
+      pg as unknown as PostgresService,
+      jobs as unknown as JobQueueService,
+      email as unknown as EmailService,
+      sms as unknown as SmsService,
+      cache as unknown as AppCacheService,
+    );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('partner/email-otp/request', () => {
+    it('sends a real email when the address belongs to a partner organization', async () => {
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+
+      const result = (await service.partnerEmailOtpRequest(
+        'partner@safaar.uz',
+      )) as { sent: boolean; challenge_id?: string };
+
+      expect(email.send).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'partner@safaar.uz' }),
+      );
+      expect(result.sent).toBe(true);
+      expect(result.challenge_id).toBeDefined();
+    });
+
+    it('does not reveal whether the email is registered (enumeration-safe)', async () => {
+      pg.query.mockResolvedValueOnce([]);
+
+      const result = (await service.partnerEmailOtpRequest(
+        'unknown@safaar.uz',
+      )) as { sent: boolean; challenge_id?: string };
+
+      expect(email.send).not.toHaveBeenCalled();
+      expect(result.sent).toBe(true);
+      expect(result.challenge_id).toBeUndefined();
+    });
+
+    it('lets a typed EmailService failure (e.g. not configured) propagate as-is, matching sendSmsOrFail', async () => {
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+      email.send.mockRejectedValueOnce(
+        new ServiceUnavailableException({ code: 'EMAIL_NOT_CONFIGURED' }),
+      );
+
+      await expect(
+        service.partnerEmailOtpRequest('partner@safaar.uz'),
+      ).rejects.toMatchObject({
+        response: { code: 'EMAIL_NOT_CONFIGURED' },
+      });
+    });
+
+    it('wraps an unexpected (non-HTTP) delivery error into a clean EMAIL_DELIVERY_FAILED (503) instead of a raw 500', async () => {
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+      email.send.mockRejectedValueOnce(new Error('ECONNRESET'));
+
+      await expect(
+        service.partnerEmailOtpRequest('partner@safaar.uz'),
+      ).rejects.toMatchObject({
+        response: { code: 'EMAIL_DELIVERY_FAILED' },
+      });
+    });
+
+    it('enforces the resend cooldown for the same email (reuses the existing OTP store, not a parallel one)', async () => {
+      pg.query.mockResolvedValue([{ id: ORG_ID }]);
+
+      await service.partnerEmailOtpRequest('partner@safaar.uz');
+
+      await expect(
+        service.partnerEmailOtpRequest('partner@safaar.uz'),
+      ).rejects.toMatchObject({ response: { code: 'OTP_RESEND_TOO_SOON' } });
+    });
+  });
+
+  describe('partner/email-otp/verify', () => {
+    it('rejects a wrong code without touching the database', async () => {
+      await expect(
+        service.partnerEmailOtpVerify({
+          email: 'partner@safaar.uz',
+          code: '000000',
+          challenge_id: 'nonexistent',
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(pg.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects an expired/already-consumed challenge (replay protection)', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+      const requested = (await service.partnerEmailOtpRequest(
+        'partner@safaar.uz',
+      )) as { challenge_id: string; dev_code?: string };
+
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]); // org lookup
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensForOrganization
+      await service.partnerEmailOtpVerify({
+        email: 'partner@safaar.uz',
+        code: requested.dev_code,
+        challenge_id: requested.challenge_id,
+      });
+
+      await expect(
+        service.partnerEmailOtpVerify({
+          email: 'partner@safaar.uz',
+          code: requested.dev_code,
+          challenge_id: requested.challenge_id,
+        }),
+      ).rejects.toMatchObject({ response: { code: 'OTP_EXPIRED' } });
+    });
+
+    it('verifying a correct code logs the partner in (issues real tokens, matching PartnerEmailLoginResponse extends AuthTokens)', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+      const requested = (await service.partnerEmailOtpRequest(
+        'partner@safaar.uz',
+      )) as { challenge_id: string; dev_code?: string };
+
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]); // org lookup in verify
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensForOrganization
+
+      const result = await service.partnerEmailOtpVerify({
+        email: 'partner@safaar.uz',
+        code: requested.dev_code,
+        challenge_id: requested.challenge_id,
+      });
+
+      expect(result).toMatchObject({
+        accessToken: expect.any(String) as string,
+        refreshToken: expect.any(String) as string,
+        organization_id: ORG_ID,
+        partner_role: 'owner',
+      });
+    });
+
+    it('throws PARTNER_NOT_ACTIVE if the organization no longer exists at verify time', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID }]);
+      const requested = (await service.partnerEmailOtpRequest(
+        'partner@safaar.uz',
+      )) as { challenge_id: string; dev_code?: string };
+
+      pg.query.mockResolvedValueOnce([]);
+      await expect(
+        service.partnerEmailOtpVerify({
+          email: 'partner@safaar.uz',
+          code: requested.dev_code,
+          challenge_id: requested.challenge_id,
+        }),
+      ).rejects.toMatchObject({ response: { code: 'PARTNER_NOT_ACTIVE' } });
+    });
+  });
+
+  describe("partner/registration-otp (2026-09-15 — real backend-verified phone ownership for registration, replacing the client-side `code === devCode || '000000'` check in register/page.tsx)", () => {
+    beforeEach(() => {
+      registrationVerificationStore.resetForTests();
+    });
+
+    describe('partner/registration-otp/request', () => {
+      it('creates a challenge under its own purpose', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const result = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { sent: boolean; challenge_id: string; dev_code?: string };
+
+        expect(result.sent).toBe(true);
+        expect(result.challenge_id).toBeDefined();
+        expect(result.dev_code).toBeDefined();
+      });
+
+      it("has its own resend cooldown, independent of the phone's partner_login OTPs (no SMS is sent for ordinary login — section 10's business rule — so login's challenges must never share a bucket with registration's)", async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        await service.sendPartnerOtp('+998901234567'); // partner_login purpose
+
+        // A registration OTP request for the SAME phone right after must
+        // still succeed — a shared bucket would incorrectly throw
+        // OTP_RESEND_TOO_SOON here.
+        const result =
+          await service.partnerRegistrationOtpRequest('+998901234567');
+        expect((result as { sent: boolean }).sent).toBe(true);
+      });
+    });
+
+    describe('partner/registration-otp/verify', () => {
+      it('rejects a wrong code', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string };
+
+        await expect(
+          service.partnerRegistrationOtpVerify({
+            phone: '+998901234567',
+            code: '000000',
+            challenge_id: requested.challenge_id,
+          }),
+        ).rejects.toMatchObject({ response: { code: 'OTP_INVALID' } });
+      });
+
+      it('rejects replaying an already-consumed challenge', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        await expect(
+          service.partnerRegistrationOtpVerify({
+            phone: '+998901234567',
+            code: requested.dev_code!,
+            challenge_id: requested.challenge_id,
+          }),
+        ).rejects.toMatchObject({ response: { code: 'OTP_EXPIRED' } });
+      });
+
+      it('a correct code issues a one-time phone-ownership proof — NOT login tokens (no partner account exists yet at this point in registration)', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        const result = await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        expect(result.verified).toBe(true);
+        expect(typeof result.verification_token).toBe('string');
+        expect(result.verification_token.length).toBeGreaterThan(20);
+        expect(result).not.toHaveProperty('accessToken');
+        expect(result).not.toHaveProperty('refreshToken');
+      });
+
+      it('the issued proof actually redeems for the SAME phone via registrationVerificationStore (the exact mechanism PartnersService.submitPublicPartnerRequest uses)', async () => {
+        process.env.ENABLE_DEMO_AUTH = 'true';
+        const requested = (await service.partnerRegistrationOtpRequest(
+          '+998901234567',
+        )) as { challenge_id: string; dev_code?: string };
+
+        const result = await service.partnerRegistrationOtpVerify({
+          phone: '+998901234567',
+          code: requested.dev_code!,
+          challenge_id: requested.challenge_id,
+        });
+
+        expect(() =>
+          registrationVerificationStore.redeem(
+            result.verification_token,
+            '+998901234567',
+          ),
+        ).not.toThrow();
+      });
+    });
+  });
+
+  describe('partner/password-login', () => {
+    it('valid phone + password logs the partner in', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]); // findPartnerUserByPhone
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensByPhone
+
+      const result = await service.partnerPasswordLogin({
+        phone: '+998901112201',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({
+        accessToken: expect.any(String) as string,
+        organization_id: ORG_ID,
+      });
+    });
+
+    it('wrong password is rejected without revealing which part was wrong', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(false);
+
+      await expect(
+        service.partnerPasswordLogin({
+          phone: '+998901112201',
+          password: 'wrong',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'AUTH_INVALID_CREDENTIALS' },
+      });
+    });
+
+    it('nonexistent phone is rejected with the same generic error (no account enumeration)', async () => {
+      pg.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.partnerPasswordLogin({
+          phone: '+998900000000',
+          password: 'whatever',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'AUTH_INVALID_CREDENTIALS' },
+      });
+    });
+
+    it('an inactive partner_user is rejected even with the correct password', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'suspended',
+          password_hash: 'hashed',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+
+      await expect(
+        service.partnerPasswordLogin({
+          phone: '+998901112201',
+          password: 'correct-password',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'AUTH_INVALID_CREDENTIALS' },
+      });
+    });
+
+    it('locks the phone out after 5 failed password attempts', async () => {
+      pg.query.mockResolvedValue([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      for (let i = 0; i < 5; i += 1) {
+        await expect(
+          service.partnerPasswordLogin({
+            phone: '+998901112299',
+            password: 'wrong',
+          }),
+        ).rejects.toMatchObject({
+          response: { code: 'AUTH_INVALID_CREDENTIALS' },
+        });
+      }
+
+      await expect(
+        service.partnerPasswordLogin({
+          phone: '+998901112299',
+          password: 'wrong',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'AUTH_ACCOUNT_LOCKED' } });
+    });
+  });
+
+  describe('partner/set-password', () => {
+    it('rejects an invalid/expired OTP without touching the database', async () => {
+      await expect(
+        service.partnerSetPassword({
+          phone: '+998901112201',
+          code: '000000',
+          challenge_id: 'nonexistent',
+          password: 'N3wP@ssw0rd!',
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(pg.query).not.toHaveBeenCalled();
+    });
+
+    it('reuses the OTP challenge from the existing POST /auth/otp/request (purpose partner_login), not a separate request', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      // sendPartnerOtp() -> the existing, working phone-OTP endpoint.
+      const requested = (await service.sendPartnerOtp('+998901112201')) as {
+        challenge_id: string;
+        dev_code?: string;
+      };
+
+      pg.query.mockResolvedValueOnce([
+        { id: ORG_ID, status: 'approved', email: 'org@safaar.uz' },
+      ]); // org lookup
+      pg.query.mockResolvedValueOnce([
+        { organization_id: ORG_ID, organization_status: 'approved' },
+      ]); // findPartnerUserByPhone -> no existing user
+      pg.query.mockResolvedValueOnce([]); // insert partner_users
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensByPhone
+
+      const result = await service.partnerSetPassword({
+        phone: '+998901112201',
+        code: requested.dev_code,
+        challenge_id: requested.challenge_id,
+        password: 'N3wP@ssw0rd!',
+      });
+
+      expect(pg.query).toHaveBeenCalledWith(
+        expect.stringContaining('insert into partner_users'),
+        expect.arrayContaining([ORG_ID]),
+      );
+      expect(result).toMatchObject({
+        accessToken: expect.any(String) as string,
+        organization_id: ORG_ID,
+      });
+    });
+
+    it('updates the password_hash (not a fresh insert) when a partner_user already exists, and revokes existing sessions', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const requested = (await service.sendPartnerOtp('+998901112201')) as {
+        challenge_id: string;
+        dev_code?: string;
+      };
+      const revokeActorSpy = jest.spyOn(authSessionStore, 'revokeActor');
+
+      pg.query.mockResolvedValueOnce([
+        { id: ORG_ID, status: 'approved', email: 'org@safaar.uz' },
+      ]);
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'old-hash',
+        },
+      ]);
+      pg.query.mockResolvedValueOnce([]); // update partner_users
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensByPhone
+
+      await service.partnerSetPassword({
+        phone: '+998901112201',
+        code: requested.dev_code,
+        challenge_id: requested.challenge_id,
+        password: 'AnotherN3wP@ss!',
+      });
+
+      expect(pg.query).toHaveBeenCalledWith(
+        expect.stringContaining('update partner_users'),
+        expect.arrayContaining([USER_ID]),
+      );
+      expect(revokeActorSpy).toHaveBeenCalledWith(USER_ID);
+    });
+
+    it('throws PARTNER_NOT_ACTIVE for an org that is not yet approved (draft/submitted/rejected)', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const requested = (await service.sendPartnerOtp('+998901112201')) as {
+        challenge_id: string;
+        dev_code?: string;
+      };
+
+      pg.query.mockResolvedValueOnce([
+        { id: ORG_ID, status: 'submitted', email: 'org@safaar.uz' },
+      ]);
+
+      await expect(
+        service.partnerSetPassword({
+          phone: '+998901112201',
+          code: requested.dev_code,
+          challenge_id: requested.challenge_id,
+          password: 'N3wP@ssw0rd!',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'PARTNER_NOT_ACTIVE' } });
+    });
   });
 });

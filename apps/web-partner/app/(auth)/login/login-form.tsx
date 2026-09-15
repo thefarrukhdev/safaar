@@ -10,6 +10,8 @@ import {
   usePartnerPasswordLogin,
   usePartnerSetPassword,
 } from '../../_hooks/use-auth';
+import { PhoneInput } from '../../_components/ui/phone-input';
+import { PasswordInput } from '../../_components/ui/password-input';
 
 const loginSchema = z.object({
   phone: z
@@ -122,10 +124,9 @@ export function LoginForm() {
           Telefon raqam
         </label>
         <div className="relative">
-          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
+          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+          <PhoneInput
             id="phone"
-            type="tel"
             placeholder="+998 90 123 45 67"
             className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50"
             disabled={mode === 'reset_verify'}
@@ -143,12 +144,11 @@ export function LoginForm() {
             Parol
           </label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="••••••••"
-              className="w-full pl-10 pr-4 py-3 text-sm tracking-widest rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+              className="w-full pl-10 pr-10 py-3 text-sm tracking-widest rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
               {...form.register('password')}
             />
           </div>
@@ -191,12 +191,11 @@ export function LoginForm() {
               Yangi parol
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <PasswordInput
                 id="new_password"
-                type="password"
                 placeholder="Yangi parolni kiriting"
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+                className="w-full pl-10 pr-10 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
                 {...form.register('password')}
               />
             </div>

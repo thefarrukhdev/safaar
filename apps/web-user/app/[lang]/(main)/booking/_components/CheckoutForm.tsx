@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
@@ -164,6 +165,16 @@ export function CheckoutForm({
               />
             </label>
           </div>
+
+          <label className="flex flex-col gap-1 mt-2">
+            <span className="text-sm font-medium">Maxsus so'rovlar (ixtiyoriy)</span>
+            <textarea
+              name="specialRequests"
+              rows={3}
+              placeholder="Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing..."
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          </label>
         </section>
 
         <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -184,7 +195,22 @@ export function CheckoutForm({
           </span>
           <span>{formatSum(total)}</span>
         </div>
-        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">
+
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-500">Promokod (agar bo'lsa)</span>
+            <div className="flex gap-2">
+              <Input
+                name="promoCode"
+                placeholder="PROMO2025"
+                className="text-sm"
+              />
+              <Button type="button" variant="secondary" className="px-3">Qo'llash</Button>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold dark:border-slate-800">
           <span>{dict.total}</span>
           <span>{formatSum(total)}</span>
         </div>
@@ -198,7 +224,21 @@ export function CheckoutForm({
           </p>
         )}
 
-        <div id="checkout-original-cta" className="w-full">
+        <div className="mt-2 w-full">
+          <label className="flex items-start gap-2 text-xs">
+            <input
+              type="checkbox"
+              name="agreeTerms"
+              required
+              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="text-slate-600 dark:text-slate-400 leading-tight">
+              Men <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-primary-600 hover:underline">Ommaviy Oferta</Link> shartlariga roziman.
+            </span>
+          </label>
+        </div>
+
+        <div id="checkout-original-cta" className="w-full mt-2">
           <Button
             type="submit"
             variant="accent"

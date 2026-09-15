@@ -1154,10 +1154,12 @@ function VehicleListingsPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={onAdd}>
-              <CarFront className="mr-2 h-4 w-4" aria-hidden />
-              Avtomobil qo'shish
-            </Button>
+            {vehicles.length > 0 && (
+              <Button size="sm" onClick={onAdd}>
+                <CarFront className="mr-2 h-4 w-4" aria-hidden />
+                Avtomobil qo'shish
+              </Button>
+            )}
           </div>
         </div>
 

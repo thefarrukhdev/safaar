@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
-import { getDictionary } from "@/i18n/dictionaries";
+import fs from "fs";
+import path from "path";
+
+import { Download, AlertCircle } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -10,8 +13,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const dict = await getDictionary(lang as Locale, "static");
-  return { title: dict.terms.title };
+  
+  const titles: Record<Locale, string> = {
+    uz: "Ommaviy Oferta",
+    ru: "Публичная Оферта",
+    en: "Public Offer"
+  };
+  
+  return { title: titles[lang as Locale] || "Ommaviy Oferta" };
 }
 
 export default async function TermsPage({
@@ -21,31 +30,70 @@ export default async function TermsPage({
 }) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
-  const locale = lang as Locale;
 
-  const dict = await getDictionary(locale, "static");
-  const { terms } = dict;
+  let htmlContent = "";
+  try {
+    const filePath = path.join(process.cwd(), `data/terms/${lang}.html`);
+    htmlContent = fs.readFileSync(filePath, "utf8");
+  } catch (e) {
+    const fallbackPath = path.join(process.cwd(), `data/terms/uz.html`);
+    htmlContent = fs.readFileSync(fallbackPath, "utf8");
+  }
+
+  const disclaimers: Record<Locale, string> = {
+    uz: "", // No disclaimer for the original version
+    ru: "Официальным и имеющим юридическую силу вариантом данного документа является версия на узбекском языке.",
+    en: "The official and legally binding version of this document is the Uzbek version."
+  };
+  
+  const downloadTexts: Record<Locale, string> = {
+    uz: "Hujjatni yuklab olish",
+    ru: "Скачать документ",
+    en: "Download document"
+  };
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-          {terms.title}
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {terms.updated}
-        </p>
-      </header>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:py-12">
+      {/* Top action bar and disclaimer */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+        {lang !== 'uz' ? (
+          <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-900/50">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p className="font-medium">{disclaimers[lang as Locale]}</p>
+          </div>
+        ) : (
+          <div></div> // Spacer for flex-between
+        )}
+        <div className={lang === 'uz' ? 'ml-auto' : ''}>
+          <a
+            href="/docs/safaar-oferta-uz.docx"
+            download
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl shadow-sm transition-all dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800 dark:hover:text-white active:scale-95"
+          >
+            <Download className="w-4 h-4" />
+            {downloadTexts[lang as Locale]}
+          </a>
+        </div>
+      </div>
 
-      <div className="flex flex-col gap-6">
-        {terms.sections.map((section, index) => (
-          <section key={index} className="flex flex-col gap-2">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{section.heading}</h2>
-            <p className="leading-relaxed text-slate-600 dark:text-slate-400">
-              {section.body}
-            </p>
-          </section>
-        ))}
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16 dark:bg-slate-900 dark:border-slate-800">
+        {/* Content generated from DOCX with manual resets */}
+        <div 
+          className="
+            text-slate-700 dark:text-slate-300
+            [&>p]:mb-4 [&>p]:leading-relaxed
+            [&>p:nth-child(-n+7)]:text-center [&>p:nth-child(1)_img]:mx-auto [&>p:nth-child(1)_img]:mb-6 [&>p:nth-child(1)_img]:w-40
+            [&>p:nth-child(2)]:text-2xl [&>p:nth-child(5)]:text-2xl [&>p:nth-child(5)]:mt-12
+            [&>p:nth-child(7)]:border-b [&>p:nth-child(7)]:border-slate-200 [&>p:nth-child(7)]:pb-8 [&>p:nth-child(7)]:mb-8
+            [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white
+            [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-900 [&>h2]:dark:text-white
+            [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-900 [&>h3]:dark:text-white
+            [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&>ul>li]:mb-2
+            [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-4 [&>ol>li]:mb-2
+            [&_strong]:font-bold [&_strong]:text-slate-900 [&_strong]:dark:text-white
+          "
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+        />
       </div>
     </main>
   );

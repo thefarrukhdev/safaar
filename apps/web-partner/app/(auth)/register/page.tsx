@@ -9,6 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Building2, CheckCircle2, Phone, KeyRound, Lock } from 'lucide-react';
 import { Button } from '../../_components/ui/button';
 import { Input } from '../../_components/ui/input';
+import { PhoneInput } from '../../_components/ui/phone-input';
+import { PasswordInput } from '../../_components/ui/password-input';
 import { Label } from '../../_components/ui/label';
 import { access } from '../../_lib/api';
 import {
@@ -17,7 +19,6 @@ import {
 } from '../../_hooks/use-auth';
 import {
   isValidPhone,
-  maskPhone,
   normalizePhone,
 } from '../../_lib/utils/phone';
 
@@ -55,18 +56,19 @@ export default function RegisterPage() {
   const [submitted, setSubmitted] = useState<{ id: string } | null>(null);
   const [error, setError] = useState('');
   
-  // Registration flow steps
-  const [step, setStep] = useState<'phone' | 'code' | 'form'>('phone');
+  // Registration flow: fill the whole form -> request real SMS OTP for the
+  // entered phone -> verify it against the real backend -> submit the
+  // pending form values together with the one-time server-side proof that
+  // verify returns (see handleVerifyCodeAndSubmit).
+  const [step, setStep] = useState<'form' | 'code'>('form');
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
   const [challenge, setChallenge] = useState<{
     phone: string;
     challengeId: string;
     devCode?: string;
   } | null>(null);
   const [codeValue, setCodeValue] = useState('');
-  // Backend proof (registrationVerificationStore) — `submitPartnerApplication`
-  // requires this; the client's "code was correct" belief is never enough
-  // on its own (see handleVerifyCode).
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
   const otpRequest = usePartnerRegistrationOtpRequest();
   const otpVerify = usePartnerRegistrationOtpVerify();
@@ -87,28 +89,22 @@ export default function RegisterPage() {
     },
   });
 
-  const handleSendCode = async () => {
+  const onSubmitForm = form.handleSubmit(async (values) => {
     setError('');
-    form.clearErrors('phone');
-    const phone = form.getValues('phone');
-    if (!isValidPhone(phone)) {
-      form.setError('phone', { message: "Telefon raqami noto'g'ri" });
-      return;
-    }
     try {
-      const result = await otpRequest.mutateAsync(phone);
+      const result = await otpRequest.mutateAsync(values.phone);
       setChallenge({
         phone: result.phone,
         challengeId: result.challengeId,
         devCode: result.devCode,
       });
       setCodeValue('');
-      setVerificationToken(null);
+      setPendingValues(values);
       setStep('code');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kod yuborishda xatolik');
     }
-  };
+  });
 
   /**
    * 2026-09-15: was `codeValue === challenge?.devCode || codeValue === '000000'`
@@ -118,47 +114,34 @@ export default function RegisterPage() {
    * success, returns a one-time server-side proof (`verificationToken`).
    * That proof — not this function's local belief that the code was
    * correct — is what `submitPartnerApplication` sends and the backend
-   * re-checks; see PartnersService.submitPublicPartnerRequest.
+   * re-checks; see PartnersService.submitPublicPartnerRequest. Verify and
+   * submit happen together here since the whole form (pendingValues) was
+   * already collected in onSubmitForm, before the OTP step.
    */
-  const handleVerifyCode = async () => {
+  const handleVerifyCodeAndSubmit = async () => {
     setError('');
     if (codeValue.length < 4) {
       setError("Kodni to'g'ri kiriting");
       return;
     }
-    if (!challenge) {
-      setError('Avval telefon raqamini tasdiqlang');
-      setStep('phone');
+    if (!challenge || !pendingValues) {
+      setError("Avval formani to'ldiring");
+      setStep('form');
       return;
     }
+
+    setIsSubmittingForm(true);
     try {
-      const result = await otpVerify.mutateAsync({
+      const verified = await otpVerify.mutateAsync({
         phone: challenge.phone,
         code: codeValue,
         challengeId: challenge.challengeId,
       });
-      setVerificationToken(result.verificationToken);
-      setStep('form');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kod noto'g'ri kiritildi");
-    }
-  };
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    setError('');
-    if (!verificationToken) {
-      // Shouldn't be reachable (the 'form' step only renders after a
-      // successful verify), but the proof is one-time-use and short-lived
-      // (10 daqiqa) — a stale tab could still get here with it gone.
-      setError("Telefon raqami tasdiqlanmagan. Iltimos qaytadan urinib ko'ring.");
-      setStep('phone');
-      return;
-    }
-    try {
       const result = await access.submitPartnerApplication({
-        ...values,
-        phone: normalizePhone(values.phone),
-        phoneVerificationToken: verificationToken,
+        ...pendingValues,
+        phone: normalizePhone(pendingValues.phone),
+        phoneVerificationToken: verified.verificationToken,
       } as any); // casting to any to allow password
       setSubmitted({ id: result?.item?.id || 'demo-id' });
     } catch (cause: any) {
@@ -172,13 +155,16 @@ export default function RegisterPage() {
         setError(
           cause.payload.message || "Iltimos formadagi xatoliklarni to'g'irlang",
         );
+        setStep('form'); // Go back to form to fix field errors
       } else {
         setError(
-          cause instanceof Error ? cause.message : 'Ariza yuborishda xatolik',
+          cause instanceof Error ? cause.message : "Kod noto'g'ri yoki ariza yuborishda xatolik",
         );
       }
+    } finally {
+      setIsSubmittingForm(false);
     }
-  });
+  };
 
   if (submitted) {
     return (
@@ -220,53 +206,22 @@ export default function RegisterPage() {
           </h2>
         </div>
         <p className="text-sm text-[var(--muted-foreground)]">
-          {step === 'phone' && "Ma'lumotlarni yuborish uchun avval telefon raqamingizni tasdiqlang."}
-          {step === 'code' && "Raqamingizga yuborilgan tasdiqlash kodini kiriting."}
-          {step === 'form' && "Ma'lumotlarni yuboring. Admin tasdiqlagandan keyin kabinet ochiladi."}
+          {step === 'form' && "Ma'lumotlarni to'ldiring. Tasdiqlash uchun telefon raqamingizga kod yuboriladi."}
+          {step === 'code' && "Arizani tasdiqlash uchun telefoningizga yuborilgan kodni kiriting."}
         </p>
       </div>
 
       {error ? (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 font-medium">
+        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 font-medium animate-fade-in">
           {error}
         </div>
       ) : null}
 
-      {step === 'phone' && (
-        <div className="flex flex-col gap-4 animate-fade-in mt-2">
-          <Field label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="tel"
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
-                {...form.register('phone', {
-                  onChange: (e) => {
-                    e.target.value = maskPhone(e.target.value);
-                  },
-                })}
-              />
-            </div>
-          </Field>
-          <Button type="button" size="lg" onClick={handleSendCode} loading={otpRequest.isPending}>
-            Kodni yuborish
-          </Button>
-        </div>
-      )}
-
       {step === 'code' && (
-        <div className="flex flex-col gap-4 animate-fade-in mt-2">
-          <Field label="Telefon raqami">
-            <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="tel"
-                disabled
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 opacity-70"
-                value={form.getValues('phone')}
-              />
-            </div>
-          </Field>
+        <div className="flex flex-col gap-4 animate-fade-in mt-2 bg-slate-50 border border-slate-200 p-5 rounded-2xl">
+          <div className="text-sm font-medium text-slate-700 mb-1">
+            Kiritilgan raqam: <span className="font-bold text-slate-900">{challenge?.phone}</span>
+          </div>
           
           <Field label="Tasdiqlash kodi">
             <div className="relative">
@@ -277,7 +232,7 @@ export default function RegisterPage() {
                 maxLength={6}
                 value={codeValue}
                 onChange={(e) => setCodeValue(e.target.value.replace(/\D/g, ''))}
-                className="w-full pl-10 pr-4 py-3 text-sm tracking-widest font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+                className="w-full pl-10 pr-4 py-3 text-sm tracking-widest font-mono rounded-xl bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all shadow-sm"
               />
             </div>
             {challenge?.devCode && (
@@ -290,43 +245,42 @@ export default function RegisterPage() {
             )}
           </Field>
           
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="lg" onClick={() => setStep('phone')} className="w-1/3">
+          <div className="flex gap-3 mt-2">
+            <Button type="button" variant="outline" size="lg" onClick={() => setStep('form')} className="w-1/3">
               Orqaga
             </Button>
             <Button
               type="button"
               size="lg"
-              onClick={handleVerifyCode}
-              loading={otpVerify.isPending}
+              onClick={handleVerifyCodeAndSubmit}
+              loading={isSubmittingForm}
               className="w-2/3"
             >
-              Tasdiqlash
+              Tasdiqlash va Yuborish
             </Button>
           </div>
         </div>
       )}
 
-      {step === 'form' && (
-        <form className="flex flex-col gap-4 animate-fade-in mt-2" onSubmit={onSubmit} noValidate>
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              Raqam tasdiqlangan:
+      <div className={step === 'code' ? 'hidden' : 'block'}>
+        <form className="flex flex-col gap-4 animate-fade-in mt-2" onSubmit={onSubmitForm} noValidate>
+          <Field label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
+            <div className="relative">
+              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <PhoneInput
+                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
+                {...form.register('phone')}
+              />
             </div>
-            <div className="text-sm font-semibold tracking-wide text-slate-900">
-              {form.getValues('phone')}
-            </div>
-          </div>
+          </Field>
 
           <Field label="Tizimga kirish uchun parol" error={form.formState.errors.password?.message}>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="password"
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <PasswordInput
                 placeholder="Parolni kiriting"
+                className="w-full pl-10 pr-10 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
                 {...form.register('password')}
-                className="w-full pl-10 pr-4 py-3 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 focus:bg-white transition-all"
               />
             </div>
           </Field>
@@ -334,7 +288,7 @@ export default function RegisterPage() {
           <Field label="Obyekt turi" error={form.formState.errors.type?.message}>
             <select
               {...form.register('type')}
-              className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
             >
               <option value="hotel">Mehmonxona</option>
               <option value="hostel">Yotoqxona (Hostel)</option>
@@ -395,11 +349,11 @@ export default function RegisterPage() {
             <Input {...form.register('note')} placeholder="Qo'shimcha ma'lumot" />
           </Field>
 
-          <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="mt-2">
+          <Button type="submit" size="lg" loading={otpRequest.isPending} className="mt-2 text-base shadow-sm">
             Arizani yuborish
           </Button>
         </form>
-      )}
+      </div>
     </div>
   );
 }

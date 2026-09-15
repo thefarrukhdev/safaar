@@ -247,6 +247,19 @@ export function RegisterForm({
           </p>
         )}
 
+        {/* Oferta Checkbox */}
+        <label className="flex items-start gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            name="agreeTerms"
+            required
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span className="text-slate-700">
+            Men <Link href={`/${locale}/terms`} target="_blank" className="font-bold text-primary-600 hover:underline">Ommaviy Oferta (Foydalanish shartlari)</Link> bilan tanishib chiqdim va ularga roziman.
+          </span>
+        </label>
+
         <Button type="submit" size="lg" loading={loading} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
           {dict.verifyAndRegister}
         </Button>

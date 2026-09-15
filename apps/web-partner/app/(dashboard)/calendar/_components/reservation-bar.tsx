@@ -95,7 +95,7 @@ export function ReservationBar({
         <span className="min-w-0 flex-1 truncate">
           {reservation.guest.fullName}
         </span>
-        {spanCols >= 2 && (
+        {spanCols >= 2 && !(reservation.status === BookingStatus.COMPLETED && reservation.totalPrice === 0) && (
           <span
             className={cn(
               "hidden shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold leading-none sm:inline-flex",
@@ -141,22 +141,26 @@ export function ReservationBar({
             </span>
           )}
         </p>
-        <p>
-          <span className="text-[var(--muted-foreground)]">Summa: </span>
-          <span className="font-semibold">
-            {formatMoney(reservation.totalPrice)}
-          </span>
-        </p>
-        <p>
-          <span className="text-[var(--muted-foreground)]">Oldindan: </span>
-          <span className="font-semibold">
-            {formatMoney(reservation.paidAmount)}
-          </span>
-        </p>
-        {balance > 0 && (
-          <p className="text-red-600">
-            Qoldiq: {formatMoney(balance)}
-          </p>
+        {!(reservation.status === BookingStatus.COMPLETED && reservation.totalPrice === 0) && (
+          <>
+            <p>
+              <span className="text-[var(--muted-foreground)]">Summa: </span>
+              <span className="font-semibold">
+                {formatMoney(reservation.totalPrice)}
+              </span>
+            </p>
+            <p>
+              <span className="text-[var(--muted-foreground)]">Oldindan: </span>
+              <span className="font-semibold">
+                {formatMoney(reservation.paidAmount)}
+              </span>
+            </p>
+            {balance > 0 && (
+              <p className="text-red-600">
+                Qoldiq: {formatMoney(balance)}
+              </p>
+            )}
+          </>
         )}
         <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
           Tafsilot uchun bosing

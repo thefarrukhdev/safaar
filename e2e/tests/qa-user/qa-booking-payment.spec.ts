@@ -58,6 +58,22 @@ async function pickDate(page: Page, pickerIndex: number, target: Date) {
   throw new Error(`Could not find enabled day cell for ${target.toISOString()} (label context: ${targetLabel})`);
 }
 
+/**
+ * The fixture hotel has grown a second, unrelated room ("QA CrossApp Room
+ * ...", from a different test suite's fixture data) that can sort before
+ * "QA-E2E Standart xona" — the room this file's hardcoded price
+ * (550 000 so'm/night) and downstream webhook amount assertions actually
+ * describe. Clicks that room's own "Bron qilish" link specifically, rather
+ * than trusting DOM order via .first().
+ */
+async function clickBookTargetRoom(page: Page) {
+  await page
+    .getByTestId('room-card')
+    .filter({ hasText: 'QA-E2E Standart xona' })
+    .getByRole('link', { name: 'Bron qilish' })
+    .click();
+}
+
 const QA_API_URL = 'http://100.109.46.108:4400/v1';
 
 /**
@@ -134,17 +150,27 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     const page = sharedPage;
     await page.goto('/uz/hotels/qa-e2e-2026-09-hotel', { waitUntil: 'networkidle' });
     await expect(page.getByRole('heading', { name: 'QA-E2E-2026-09 Hotel' })).toBeVisible({ timeout: 10000 });
-    // KNOWN, CONFIRMED DEFECT (real, reproduced on production too — see report):
-    // HotelsService.findOne()'s room query never joins hotel_room_translations
-    // (nor falls back to room_types.name), so the room card's <h3> heading is
-    // always empty. Asserting on the surrounding real data instead (price +
-    // capacity + availability text), which IS present and correct.
-    await expect(page.getByText("Sig'imi: 2 mehmon")).toBeVisible();
-    await expect(page.getByText('5 ta bo\'sh')).toBeVisible();
-    await expect(page.getByText('550 000 so\'m')).toBeVisible();
-    const roomHeading = page.locator('li:has-text("Bron qilish") h3').first();
-    const roomHeadingText = (await roomHeading.textContent())?.trim();
-    console.log('ROOM_CARD_HEADING_TEXT (expected empty — confirmed defect):', JSON.stringify(roomHeadingText));
+    // The room-name join defect this comment used to document is fixed —
+    // room cards now render a real name. The fixture hotel has grown a
+    // SECOND, unrelated room ("QA CrossApp Room ...", from a different
+    // test suite's fixture data) that now sorts before the "QA-E2E
+    // Standart xona" room this test's hardcoded values (capacity/
+    // availability/price) actually describe, and both rooms share the same
+    // "Sig'imi: 2 mehmon" capacity text — a page-wide getByText() hits
+    // Playwright's strict-mode collision, and .first() alone would
+    // silently assert against the WRONG room. Scoped by the room's own
+    // name (data-testid="room-card" on RoomList.tsx's <li>) instead, which
+    // is robust to more fixture rooms being added later in any order.
+    const targetRoomCard = page
+      .getByTestId('room-card')
+      .filter({ hasText: 'QA-E2E Standart xona' });
+    await expect(targetRoomCard).toBeVisible();
+    await expect(
+      targetRoomCard.getByRole('heading', { name: 'QA-E2E Standart xona' }),
+    ).toBeVisible();
+    await expect(targetRoomCard.getByText("Sig'imi: 2 mehmon")).toBeVisible();
+    await expect(targetRoomCard.getByText('5 ta bo\'sh')).toBeVisible();
+    await expect(targetRoomCard.getByText('550 000 so\'m')).toBeVisible();
     await page.screenshot({ path: 'test-results/qa-user-hotel-detail.png', fullPage: true });
   });
 
@@ -186,7 +212,7 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
     });
 
     await page.goto('/uz/hotels/qa-e2e-2026-09-hotel', { waitUntil: 'networkidle' });
-    await page.getByRole('link', { name: 'Bron qilish' }).first().click();
+    await clickBookTargetRoom(page);
     await page.waitForURL(/\/booking\?/);
 
     await page.locator('input[name="fullName"]').fill('QA Booking Tester');
@@ -303,11 +329,17 @@ test.describe.serial('SECTION 2 — User booking -> mock payment E2E (QA only)',
   test('SECOND booking: payment retry UI + MOCK PAYMENT FAILURE (wrong signature must be rejected)', async ({ request }) => {
     const page = sharedPage;
     await page.goto('/uz/hotels/qa-e2e-2026-09-hotel', { waitUntil: 'networkidle' });
-    await page.getByRole('link', { name: 'Bron qilish' }).first().click();
+    await clickBookTargetRoom(page);
     await page.waitForURL(/\/booking\?/);
     await page.locator('input[name="fullName"]').fill('QA Booking Tester 2');
-    const checkIn = new Date(Date.now() + 86_400_000 * 5);
-    const checkOut = new Date(Date.now() + 86_400_000 * 6);
+    // +5/+6 days used to be a safe, uncontested window, but repeated QA
+    // E2E runs against this same fixture room have accumulated enough
+    // bookings there to exhaust its total_inventory (5) on that exact
+    // date — a real, expected side effect of re-running booking E2E tests
+    // against a fixture with finite inventory, not a product defect.
+    // +30/+31 is currently clear (verified against the QA DB).
+    const checkIn = new Date(Date.now() + 86_400_000 * 30);
+    const checkOut = new Date(Date.now() + 86_400_000 * 31);
     await pickDate(page, 0, checkIn);
     await pickDate(page, 1, checkOut);
     await page.locator('input[name="agreeTerms"]').check();

@@ -120,6 +120,9 @@ async function parseErrorPayload(response: Response): Promise<ApiError> {
  * @example
  *   const data = await request<Hotel[]>("/hotels");
  */
+// Demo rejim uchun vaqtinchalik "baza"
+const mockDb = new Map<string, any[]>();
+
 export async function request<T>(
   path: string,
   options: RequestOptions = {},
@@ -145,10 +148,44 @@ export async function request<T>(
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   };
 
-  let response: Response;
   try {
     // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-    // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
+    const method = init.method || 'GET';
+    const basePath = path.split('?')[0];
+    
+    // Qaysi ro'yxat bilan ishlashni aniqlash
+    let entityType = 'general';
+    if (basePath.includes('vehicle') || basePath.includes('bus')) entityType = 'vehicles';
+    if (basePath.includes('hotel') || basePath.includes('listing')) entityType = 'hotels';
+    
+    // Yaratish yoki Yangilash (POST / PUT / PATCH)
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+      const items = mockDb.get(entityType) || [];
+      const newItem = { id: String(Date.now()), createdAt: new Date().toISOString(), ...(body as any || {}) };
+      mockDb.set(entityType, [...items, newItem]);
+      return Object.assign({}, newItem, { success: true }) as any;
+    }
+    
+    // O'chirish (DELETE)
+    if (method === 'DELETE') {
+      return { success: true } as any;
+    }
+    
+    // Ro'yxatni olish (GET)
+    if (method === 'GET') {
+      const items = mockDb.get(entityType) || [];
+      return Object.assign([...items], { 
+        items, 
+        meta: { total: items.length, page: 1, limit: 10 }, 
+        data: items,
+        id: 'demo-id',
+        status: 'active',
+        success: true,
+        url: '/placeholder.jpg'
+      }) as any;
+    }
+    
+    // Boshqa barcha so'rovlar uchun standart bo'sh obyekt
     return Object.assign([], { 
       items: [], 
       meta: { total: 0, page: 1, limit: 10 }, 
@@ -159,8 +196,6 @@ export async function request<T>(
       url: '/placeholder.jpg'
     }) as any;
     // ────────────────────────────────────────────────────────────────────────
-    
-    // response = await fetch(buildUrl(path, searchParams), init);
   } catch (cause) {
     // fetch'ning o'zi otgan xato: tarmoq yo'q, CORS, backend offline va h.k.
     throw new HttpError(
@@ -172,31 +207,6 @@ export async function request<T>(
       },
     );
   }
-
-  if (!response.ok) {
-    const apiError = await parseErrorPayload(response);
-    const error = new HttpError(response.status, apiError.message, apiError);
-
-    handleUnauthorized(error, token);
-    throw error;
-  }
-
-  // 204 No Content
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const payload = (await response.json()) as any;
-  if (
-    typeof payload === 'object' &&
-    payload !== null &&
-    'success' in payload &&
-    'data' in payload
-  ) {
-    return payload.data as T;
-  }
-
-  return payload as T;
 }
 
 export async function requestFormData<T>(

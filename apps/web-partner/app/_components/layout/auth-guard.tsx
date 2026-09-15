@@ -9,12 +9,19 @@ import { Spinner } from '../ui/spinner';
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  // Access tokenning O'ZI emas — refreshToken tekshiriladi. Access token
+  // qisqa umr ko'radi (15 daqiqa) va bu ODDIY holat: har safar muddati
+  // tugaganida bu yerda logout qilib yuborsak, `client.ts::request()`ning
+  // yangi shaffof auto-refresh mexanizmi HECH QACHON ishga tushmas edi
+  // (sahifa ochilishidan oldinoq foydalanuvchi chiqarib yuboriladi).
+  // Sessiya faqat REFRESH token (30 kun) ham eskirgan/yo'q bo'lsagina
+  // haqiqatan yaroqsiz.
+  const refreshToken = useAuthStore((s) => s.tokens?.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const hydrated = useMounted();
   const router = useRouter();
   const pathname = usePathname();
-  const sessionInvalid = !user || isAccessTokenExpired(accessToken);
+  const sessionInvalid = !user || isAccessTokenExpired(refreshToken);
 
   useEffect(() => {
     if (hydrated && sessionInvalid) {

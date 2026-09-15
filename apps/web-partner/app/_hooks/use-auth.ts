@@ -7,20 +7,6 @@ import { access, auth } from '../_lib/api';
 import { buildPartnerSession } from '../_lib/auth/session';
 import { useAuthStore } from '../_stores/auth-store';
 
-// ─── Demo rejim ───────────────────────────────────────────────────────────────
-// Backend o'chiq bo'lganda ishlab chiqish uchun ishlatiladi.
-// HECH QACHON production'ga chiqarma.
-const DEMO_PHONE = '+998901234567';
-const DEMO_CODE = '000000';
-const DEMO_TOKENS = {
-  accessToken: 'demo.eyJzdWIiOiJkZW1vLXVzZXIiLCJvcmdhbml6YXRpb25faWQiOiJkZW1vLW9yZyJ9.demo',
-  refreshToken: 'demo-refresh-token',
-  organization_id: 'demo-org-id',
-  organizationId: 'demo-org-id',
-  partner_role: 'owner',
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function usePartnerPhoneLogin() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
@@ -69,29 +55,31 @@ export function usePartnerPhoneLogin() {
 export function usePartnerPhoneOtpRequest() {
   return useMutation({
     mutationFn: async (phone: string) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+      const result = await auth.requestOtp(phone);
       return {
         phone,
-        challengeId: 'demo-challenge-id',
-        expiresInSeconds: 300,
-        resendAfterSeconds: 60,
-        partnerType: 'hotel',
-        devCode: '000000'
+        challengeId: result.challenge_id,
+        expiresInSeconds: result.expires_in_seconds,
+        resendAfterSeconds: result.resend_after_seconds,
+        devCode: result.dev_code,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ challengeId, phone }) => {
-      toast.info(
-        `Demo rejim: "000000" kodni kiriting`,
-        { duration: 8000 },
-      );
+    onSuccess: ({ devCode }) => {
+      if (devCode) {
+        // Faqat QA/dev muhitida keladi (ENABLE_DEMO_AUTH yoki telefon
+        // allowlist) — production'da backend bu maydonni umuman
+        // qaytarmaydi, shuning uchun bu yerda hech qanday qo'shimcha
+        // shart kerak emas.
+        toast.info(`Dasturlash rejimi kodi: ${devCode}`, { duration: 8000 });
+      }
     },
-    onError: (error) => {
-      toast.error(error.message || 'Kod yuborishda xatolik yuz berdi');
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Kod yuborishda xatolik yuz berdi';
+      toast.error(message);
     },
   });
 }
-
 
 export function usePartnerPhoneOtpVerify() {
   const router = useRouter();
@@ -109,44 +97,24 @@ export function usePartnerPhoneOtpVerify() {
       challengeId: string;
       partnerType?: string;
     }) => {
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (challengeId === 'demo-challenge-id') {
-        if (code !== DEMO_CODE) {
-          throw new Error(`Demo rejimda kod: ${DEMO_CODE}`);
-        }
-        return {
-          phone,
-          tokens: DEMO_TOKENS as any,
-          organizationId: 'demo-org-id',
-          partnerType: partnerType || 'hotel',
-          isDemo: true,
-        };
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
       const tokens = await auth.verifyOtp({
         phone,
         code,
         challenge_id: challengeId,
-      }) as any;
+      });
 
       return {
         phone,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
         partnerType: partnerType || 'hotel',
-        isDemo: false,
       };
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
+    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
       user.organizationId = organizationId;
       setSession(user, tokens);
-      if (isDemo) {
-        toast.success('Demo rejimda kirildingiz. Ma\'lumotlar ko\'rsatilmaydi.');
-      } else {
-        toast.success('Xush kelibsiz!');
-      }
+      toast.success('Xush kelibsiz!');
       router.replace('/');
     },
     onError: (error) => {
@@ -160,33 +128,30 @@ export function usePartnerPasswordLogin() {
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      if (password && password !== 'demo123') {
-        throw new Error("Noto'g'ri parol. Hozircha demo parol: demo123 ni kiriting.");
-      }
+    mutationFn: async ({
+      phone,
+      password,
+    }: {
+      phone: string;
+      password?: string;
+    }) => {
+      const tokens = await auth.partnerPasswordLogin(phone, password);
       return {
         phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
         partnerType: 'hotel',
-        isDemo: true,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
+    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
       user.organizationId = organizationId;
       setSession(user, tokens);
-      if (isDemo) {
-        toast.success("Demo rejimda kirildingiz.");
-      } else {
-        toast.success("Xush kelibsiz!");
-      }
+      toast.success('Xush kelibsiz!');
       router.replace('/');
     },
     onError: (error) => {
-      toast.error(error.message || "Kirishda xatolik yuz berdi");
+      toast.error(error.message || 'Kirishda xatolik yuz berdi');
     },
   });
 }
@@ -207,24 +172,24 @@ export function usePartnerSetPassword() {
       challengeId: string;
       password?: string;
     }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      if (code !== '000000') {
-        throw new Error("Demo rejimda kod: 000000 ni kiriting");
-      }
+      const tokens = await auth.partnerSetPassword({
+        phone,
+        code,
+        challenge_id: challengeId,
+        password,
+      });
       return {
         phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
         partnerType: 'hotel',
-        isDemo: true,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
+    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
       user.organizationId = organizationId;
       setSession(user, tokens);
-      toast.success("Parol muvaffaqiyatli saqlandi va tizimga kirdingiz!");
+      toast.success('Parol muvaffaqiyatli saqlandi va tizimga kirdingiz!');
       router.replace('/');
     },
     onError: (error) => {
@@ -238,6 +203,12 @@ export function useLogout() {
   const clearSession = useAuthStore((s) => s.clearSession);
 
   return () => {
+    const token = useAuthStore.getState().tokens?.accessToken ?? null;
+    // Backendga logout so'rovi "best-effort" — token allaqachon eskirgan/
+    // tarmoq xato bo'lsa ham, mahalliy sessiyani tozalash va chiqishni
+    // TO'XTATMASLIK kerak (aks holda foydalanuvchi hech qachon chiqib
+    // ketolmasligi mumkin bo'lgan holat yuzaga kelardi).
+    void auth.partnerLogout(token).catch(() => {});
     clearSession();
     toast.success('Sessiya yakunlandi');
     router.replace('/login');

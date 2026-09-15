@@ -1,4 +1,6 @@
-import type { ApiError } from '@safaar/types';
+import type { AuthTokens, ApiError } from '@safaar/types';
+import { isAccessTokenExpired } from '../auth/session';
+import { useAuthStore } from '../../_stores/auth-store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -30,11 +32,71 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 }
 
 function handleUnauthorized(error: HttpError, token?: string | null) {
-  // Demo token bilan 401 bo'lsa logout qilmaymiz
-  // removed demo token bypass logic
   if (error.status === 401 && token) {
     unauthorizedHandler?.(error);
   }
+}
+
+/**
+ * `POST /auth/partner/refresh`ga to'g'ridan-to'g'ri (bu modulning o'z
+ * `request()`i orqali EMAS) murojaat qiladi — aks holda
+ * `endpoints/auth.ts`dan import qilish `client.ts` <-> `endpoints/auth.ts`
+ * aylanma bog'liqlik (circular import) hosil qilardi (u ham `request()`ni
+ * shu fayldan oladi). Bir vaqtda bir nechta so'rov token muddati
+ * tugaganini aniqlasa ham, faqat BITTA haqiqiy refresh so'rovi ketishi
+ * uchun `refreshPromise` orqali ulashiladi (race condition oldini olish).
+ */
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const current = useAuthStore.getState().tokens;
+    if (!current?.refreshToken) return null;
+
+    try {
+      const response = await fetch(buildUrl('/auth/partner/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken: current.refreshToken }),
+      });
+      if (!response.ok) return null;
+
+      const payload = (await response.json().catch(() => null)) as
+        | { data?: Partial<AuthTokens> }
+        | Partial<AuthTokens>
+        | null;
+      const data = (payload && 'data' in payload ? payload.data : payload) as
+        | Partial<AuthTokens>
+        | undefined;
+      if (!data?.accessToken) return null;
+
+      // Backend refresh tokenni ROTATSIYA qiladi (session-store.ts::rotate) —
+      // eskisi bir martalik, keyingi refresh uchun YANGISI saqlanishi shart,
+      // aks holda ikkinchi refresh urinishi "AUTH_REFRESH_REUSED" bilan
+      // butun sessiyani bekor qiladi.
+      useAuthStore.setState((state) =>
+        state.tokens
+          ? {
+              tokens: {
+                ...state.tokens,
+                accessToken: data.accessToken!,
+                refreshToken: data.refreshToken ?? state.tokens.refreshToken,
+              },
+            }
+          : state,
+      );
+
+      return data.accessToken;
+    } catch {
+      return null;
+    }
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
 }
 
 
@@ -120,6 +182,46 @@ async function parseErrorPayload(response: Response): Promise<ApiError> {
  * @example
  *   const data = await request<Hotel[]>("/hotels");
  */
+function buildInit(
+  body: unknown,
+  token: string | null | undefined,
+  organizationId: string | undefined,
+  headers: RequestOptions['headers'],
+  rest: Omit<RequestOptions, 'body' | 'token' | 'organizationId' | 'searchParams' | 'headers'>,
+): RequestInit {
+  return {
+    ...rest,
+    headers: {
+      Accept: 'application/json',
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(organizationId ? { 'x-organization-id': organizationId } : {}),
+      ...headers,
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  };
+}
+
+async function performFetch(
+  path: string,
+  searchParams: RequestOptions['searchParams'],
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(buildUrl(path, searchParams), init);
+  } catch (cause) {
+    // fetch'ning o'zi otgan xato: tarmoq yo'q, CORS, backend offline va h.k.
+    throw new HttpError(
+      0,
+      "Backend bilan bog'lana olmadi. Internet va server holatini tekshiring.",
+      {
+        statusCode: 0,
+        message: cause instanceof Error ? cause.message : 'Network error',
+      },
+    );
+  }
+}
+
 export async function request<T>(
   path: string,
   options: RequestOptions = {},
@@ -133,51 +235,45 @@ export async function request<T>(
     ...rest
   } = options;
 
-  const init: RequestInit = {
-    ...rest,
-    headers: {
-      Accept: 'application/json',
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(organizationId ? { 'x-organization-id': organizationId } : {}),
-      ...headers,
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  };
+  // Access token'lar qisqa umr ko'radi (JWT_ACCESS_TTL=15m) — muddati
+  // o'tgani oldindan ko'rinsa, so'rov yuborishdan OLDIN yangilaymiz
+  // (kafolatlangan 401'dan qochish uchun). `refreshAccessToken()` ichki
+  // `refreshPromise` orqali bir vaqtdagi bir nechta so'rovni bitta haqiqiy
+  // refresh chaqiruviga birlashtiradi.
+  let activeToken = token ?? undefined;
+  if (activeToken && isAccessTokenExpired(activeToken)) {
+    activeToken = (await refreshAccessToken()) ?? activeToken;
+  }
 
-  let response: Response;
-  try {
-    // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-    // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
-    return Object.assign([], { 
-      items: [], 
-      meta: { total: 0, page: 1, limit: 10 }, 
-      data: [],
-      id: 'demo-id',
-      status: 'active',
-      success: true,
-      url: '/placeholder.jpg'
-    }) as any;
-    // ────────────────────────────────────────────────────────────────────────
-    
-    // response = await fetch(buildUrl(path, searchParams), init);
-  } catch (cause) {
-    // fetch'ning o'zi otgan xato: tarmoq yo'q, CORS, backend offline va h.k.
-    throw new HttpError(
-      0,
-      "Backend bilan bog'lana olmadi. Internet va server holatini tekshiring.",
-      {
-        statusCode: 0,
-        message: cause instanceof Error ? cause.message : 'Network error',
-      },
-    );
+  let response = await performFetch(
+    path,
+    searchParams,
+    buildInit(body, activeToken, organizationId, headers, rest),
+  );
+
+  // Oldindan tekshiruv token allaqachon serverda bekor qilingan (masalan
+  // boshqa qurilmada logout qilingan) holatni ushlay olmaydi — shu sabab
+  // 401 kelsa ham BIR MARTA refresh+retry qilinadi. Muvaffaqiyatsiz bo'lsa
+  // (yoki token umuman berilmagan bo'lsa) pastdagi oddiy xato yo'liga
+  // tushadi — cheksiz tsikl xavfi yo'q, chunki bu yerda faqat BITTA qayta
+  // urinish bor.
+  if (response.status === 401 && activeToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed && refreshed !== activeToken) {
+      activeToken = refreshed;
+      response = await performFetch(
+        path,
+        searchParams,
+        buildInit(body, activeToken, organizationId, headers, rest),
+      );
+    }
   }
 
   if (!response.ok) {
     const apiError = await parseErrorPayload(response);
     const error = new HttpError(response.status, apiError.message, apiError);
 
-    handleUnauthorized(error, token);
+    handleUnauthorized(error, activeToken);
     throw error;
   }
 
@@ -199,6 +295,26 @@ export async function request<T>(
   return payload as T;
 }
 
+function buildFormDataInit(
+  formData: FormData,
+  token: string | null | undefined,
+  organizationId: string | undefined,
+  headers: RequestOptions['headers'],
+  rest: Omit<RequestOptions, 'body' | 'token' | 'organizationId' | 'searchParams' | 'headers'>,
+): RequestInit {
+  return {
+    ...rest,
+    method: rest.method ?? 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(organizationId ? { 'x-organization-id': organizationId } : {}),
+      ...headers,
+    },
+    body: formData,
+  };
+}
+
 export async function requestFormData<T>(
   path: string,
   formData: FormData,
@@ -212,48 +328,50 @@ export async function requestFormData<T>(
     ...rest
   } = options;
 
-  // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-  // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
-  return Object.assign([], { 
-    items: [], 
-    meta: { total: 0, page: 1, limit: 10 }, 
-    data: [],
-    id: 'demo-id',
-    status: 'active',
-    success: true,
-    url: '/placeholder.jpg'
-  }) as any;
-  // ────────────────────────────────────────────────────────────────────────
+  let activeToken = token ?? undefined;
+  if (activeToken && isAccessTokenExpired(activeToken)) {
+    activeToken = (await refreshAccessToken()) ?? activeToken;
+  }
 
-  // const response = await fetch(buildUrl(path, searchParams), {
-  //   ...rest,
-  //   method: rest.method ?? 'POST',
-  //   headers: {
-  //     Accept: 'application/json',
-  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  //     ...(organizationId ? { 'x-organization-id': organizationId } : {}),
-  //     ...headers,
-  //   },
-  //   body: formData,
-  // });
+  let response = await performFetch(
+    path,
+    searchParams,
+    buildFormDataInit(formData, activeToken, organizationId, headers, rest),
+  );
 
-  // if (!response.ok) {
-  //   const apiError = await parseErrorPayload(response);
-  //   const error = new HttpError(response.status, apiError.message, apiError);
+  if (response.status === 401 && activeToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed && refreshed !== activeToken) {
+      activeToken = refreshed;
+      response = await performFetch(
+        path,
+        searchParams,
+        buildFormDataInit(formData, activeToken, organizationId, headers, rest),
+      );
+    }
+  }
 
-  //   handleUnauthorized(error, token);
-  //   throw error;
-  // }
+  if (!response.ok) {
+    const apiError = await parseErrorPayload(response);
+    const error = new HttpError(response.status, apiError.message, apiError);
 
-  // const payload = (await response.json()) as T | ApiEnvelope<T>;
-  // if (
-  //   typeof payload === 'object' &&
-  //   payload !== null &&
-  //   'success' in payload &&
-  //   'data' in payload
-  // ) {
-  //   return (payload as ApiEnvelope<T>).data;
-  // }
+    handleUnauthorized(error, activeToken);
+    throw error;
+  }
 
-  // return payload as T;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const payload = (await response.json()) as T | ApiEnvelope<T>;
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'success' in payload &&
+    'data' in payload
+  ) {
+    return (payload as ApiEnvelope<T>).data;
+  }
+
+  return payload as T;
 }

@@ -1,5 +1,6 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import type { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -111,6 +112,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -138,6 +140,11 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(events.bookingStatusChanged).toHaveBeenCalledWith(result.booking);
     expect(events.partnerDashboardUpdated).toHaveBeenCalledWith('partner-1');
     expect(events.adminDashboardUpdated).toHaveBeenCalled();
+    // BUG-01 fix: guest (egasiz) bron uchun tasdiqlash sahifasi keyinroq
+    // ishlatadigan opaque guest-access token qaytarilishi SHART — aks holda
+    // `GET /bookings/:id` guest uchun doim 401 bilan rad etaveradi.
+    expect(result.guestAccessToken).toEqual(expect.any(String));
+    expect(result.guestAccessToken!.length).toBeGreaterThan(20);
   });
 
   it('populates booking.user_id when an authenticated customer books (regression: guest-checkout guard was stripping the actor for everyone)', async () => {
@@ -167,12 +174,17 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(authedActor, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
     });
 
     expect(result.booking.user_id).toBe('user-42');
+    // Authenticated booking — JWT o'zi yetarli, guest-access token KERAK
+    // EMAS (ishlab chiqarilmasligi ham kerak, keraksiz cache yozuvi
+    // qoldirmaslik uchun).
+    expect(result.guestAccessToken).toBeUndefined();
   });
 
   it('confirms a cash-payment booking immediately instead of leaving it pending forever (regression: cash bookings had no path to confirmed and would auto-expire)', async () => {
@@ -197,6 +209,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -235,6 +248,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -275,6 +289,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -312,6 +327,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -340,6 +356,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -367,6 +384,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -399,6 +417,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -435,6 +454,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -467,6 +487,7 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
+      agree_terms: true,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -493,6 +514,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -508,6 +530,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: 'not-a-date',
         check_out: '2026-08-12',
@@ -524,6 +547,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-1',
+        agree_terms: true,
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -532,6 +556,99 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     const [sql] = pg.query.mock.calls[0];
     expect(String(sql)).toContain("po.status = 'approved'");
+  });
+
+  describe('Terms of Service acceptance (2026-09-15, server-side enforced checkout)', () => {
+    it('rejects when agree_terms is missing entirely, before touching the DB at all', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      expect(pg.query).not.toHaveBeenCalled();
+      expect(pg.transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects when agree_terms is explicitly false', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: false,
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      expect(pg.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed (non-boolean) value the same as missing', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: 'true',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    });
+
+    it('applies equally to guest checkout (no actor) — a guest booking still requires acceptance', async () => {
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+        }),
+      ).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+    });
+
+    it('persists terms_accepted_at + terms_version on the booking row itself (same INSERT, atomic with booking creation) and writes an audit_logs entry', async () => {
+      pg.query
+        .mockResolvedValueOnce([hotelRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            hotel_id: 'hotel-1',
+            base_price: '100000',
+            total_inventory: 1,
+          },
+        ])
+        .mockResolvedValueOnce([{ booked_count: 0 }])
+        .mockResolvedValueOnce([{ blocked_count: 0 }])
+        .mockResolvedValueOnce([]) // INSERT bookings
+        .mockResolvedValueOnce([]) // INSERT audit_logs (terms_accepted)
+        .mockResolvedValueOnce([]) // INSERT booking_status_history
+        .mockResolvedValueOnce([]) // SELECT existing pending payment
+        .mockResolvedValueOnce([]); // INSERT payments
+
+      await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+      });
+
+      const insertBookingCall = pg.query.mock.calls[4];
+      expect(String(insertBookingCall[0])).toMatch(/terms_accepted_at/);
+      expect(String(insertBookingCall[0])).toMatch(/terms_version/);
+      // Params order: ... guest_name, guest_email, guest_phone, terms_accepted_at, terms_version, created_at, updated_at
+      const params = insertBookingCall[1] as unknown[];
+      expect(params[params.length - 4]).toEqual(expect.any(String)); // terms_accepted_at
+      expect(params[params.length - 3]).toBe(CURRENT_TERMS_VERSION); // terms_version
+
+      const auditCall = pg.query.mock.calls[5];
+      expect(String(auditCall[0])).toMatch(/audit_logs/);
+      expect(auditCall[1]).toEqual(
+        expect.arrayContaining(['booking.terms_accepted']),
+      );
+    });
   });
 });
 
@@ -601,6 +718,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
 
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-r1',
+      agree_terms: true,
       room_id: 'table-1',
       check_in: '2026-08-10',
       slot_time: '19:00',
@@ -629,6 +747,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
       }),
@@ -641,6 +760,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '06:00',
@@ -664,6 +784,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
     await expect(
       service.createHotel(undefined, {
         hotel_id: 'hotel-r1',
+        agree_terms: true,
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '19:00',
@@ -847,6 +968,9 @@ describe('BookingsService.createVehicleRental (rent-a-car: date-range booking ag
     expect(result.booking.subtotal).toBe(450000); // 150000 * 3 kun
     expect(result.booking.guest_name).toBe('Laziz Shakarov');
     expect(pg.transaction).toHaveBeenCalledTimes(1);
+    // BUG-01 fix — hotel bilan bir xil: guest (egasiz) bron uchun
+    // tasdiqlash sahifasi ishlatadigan guest-access token qaytariladi.
+    expect(result.guestAccessToken).toEqual(expect.any(String));
   });
 
   it('rejects overlapping dates for the same vehicle with VEHICLE_ALREADY_BOOKED (409)', async () => {
@@ -1093,6 +1217,146 @@ describe('BookingsService.findOne — authorization (regression: unauthenticated
   });
 });
 
+describe('BookingsService.findOne — guest booking access token (BUG-01 confirmation fix)', () => {
+  let service: BookingsService;
+  let pg: jest.Mocked<Pick<PostgresService, 'query'>>;
+  let cache: Record<string, jest.Mock>;
+
+  // Egasiz (user_id = null) — guest checkout orqali yaratilgan bron.
+  const guestBookingRow = {
+    id: 'booking-guest-1',
+    user_id: null,
+    partner_organization_id: 'partner-1',
+    total_amount: 100000,
+    currency: 'UZS',
+    payment_method: 'cash',
+  };
+
+  // Egali — login qilingan foydalanuvchi bronini, guest-token bilan
+  // "taxmin qilib" ochish mumkin emasligini isbotlash uchun.
+  const ownedBookingRow = {
+    id: 'booking-owned-1',
+    user_id: 'user-owner',
+    partner_organization_id: 'partner-1',
+    total_amount: 100000,
+    currency: 'UZS',
+    payment_method: 'cash',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    cache = noopCacheService();
+    service = new BookingsService(
+      pg as unknown as PostgresService,
+      {
+        bookingStatusChanged: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+      } as unknown as EventsService,
+      { send: jest.fn() } as unknown as EmailService,
+      noopPromosService() as unknown as PromosService,
+      {
+        buildCheckoutUrl: jest.fn().mockReturnValue(null),
+      } as unknown as PaymentsService,
+      cache as unknown as AppCacheService,
+    );
+  });
+
+  it('valid guest token for the CORRECT booking grants access (no actor)', async () => {
+    pg.query.mockResolvedValueOnce([guestBookingRow]).mockResolvedValueOnce([]);
+    cache.get.mockResolvedValueOnce({ bookingId: 'booking-guest-1' });
+
+    const result = await service.findOne(
+      undefined,
+      'booking-guest-1',
+      'real-guest-token',
+    );
+    expect(result.id).toBe('booking-guest-1');
+  });
+
+  it('a guest token issued for a DIFFERENT booking is denied (no cross-booking access / IDOR)', async () => {
+    pg.query.mockResolvedValueOnce([guestBookingRow]);
+    // Token cache'da bor, lekin BOSHQA bron ID'siga bog'langan.
+    cache.get.mockResolvedValueOnce({ bookingId: 'booking-OTHER' });
+
+    await expect(
+      service.findOne(undefined, 'booking-guest-1', 'token-for-other-booking'),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('no token at all is denied (anonymous, no guest token)', async () => {
+    pg.query.mockResolvedValueOnce([guestBookingRow]);
+
+    await expect(
+      service.findOne(undefined, 'booking-guest-1', undefined),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('an expired/never-issued guest token is denied — cache miss (get returns undefined)', async () => {
+    pg.query.mockResolvedValueOnce([guestBookingRow]);
+    cache.get.mockResolvedValueOnce(undefined);
+
+    await expect(
+      service.findOne(undefined, 'booking-guest-1', 'expired-or-bogus-token'),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('a malformed/garbage guest token string is denied the same way (no special-casing, no crash)', async () => {
+    pg.query.mockResolvedValueOnce([guestBookingRow]);
+    cache.get.mockResolvedValueOnce(undefined);
+
+    await expect(
+      service.findOne(undefined, 'booking-guest-1', 'not-even-base64url!!!'),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('a guest token cannot be used against an OWNED booking, even with a matching cache entry (defense in depth)', async () => {
+    pg.query.mockResolvedValueOnce([ownedBookingRow]);
+    // Faraz qilaylik kimdir/nimadir shu bron ID'siga mos token yaratib
+    // qo'ygan — lekin bron endi egasiz emas, shuning uchun baribir rad
+    // etilishi kerak (guest-token yo'li faqat user_id=NULL uchun ishlaydi).
+    cache.get.mockResolvedValueOnce({ bookingId: 'booking-owned-1' });
+
+    await expect(
+      service.findOne(undefined, 'booking-owned-1', 'suspicious-token'),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('authenticated actor regression: owner access still works even when a (irrelevant) guestToken is also present', async () => {
+    pg.query.mockResolvedValueOnce([ownedBookingRow]).mockResolvedValueOnce([]);
+    const owner: RequestActor = {
+      id: 'user-owner',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    const result = await service.findOne(
+      owner,
+      'booking-owned-1',
+      'some-guest-token-that-should-be-ignored',
+    );
+    expect(result.id).toBe('booking-owned-1');
+    // Actor mavjud bo'lganda guest-token yo'liga umuman kirilmaydi.
+    expect(cache.get).not.toHaveBeenCalled();
+  });
+
+  it('authenticated actor regression: a different user is still forbidden (403), guest-token branch never consulted', async () => {
+    pg.query.mockResolvedValueOnce([ownedBookingRow]);
+    const otherUser: RequestActor = {
+      id: 'user-other',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    await expect(
+      service.findOne(otherUser, 'booking-owned-1', 'irrelevant-token'),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(cache.get).not.toHaveBeenCalled();
+  });
+});
+
 describe('BookingsService.lookupBooking (guest — booking_number + email)', () => {
   let service: BookingsService;
   let pg: jest.Mocked<Pick<PostgresService, 'query'>>;
@@ -1325,6 +1589,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
     check_out: '2026-08-12',
     rooms: 1,
     guests: 2,
+    agree_terms: true,
   };
 
   /**
@@ -1367,6 +1632,7 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
       .mockResolvedValueOnce([{ booked_count: 0 }]) // sana-ziddiyat tekshiruvi
       .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
       .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT audit_logs (terms_accepted)
       .mockResolvedValueOnce([]) // INSERT booking_status_history
       .mockResolvedValueOnce([]) // SELECT existing pending payment
       .mockResolvedValueOnce([]); // INSERT payments

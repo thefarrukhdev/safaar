@@ -151,6 +151,8 @@ model User {
   blockedReason     String?       @map("blocked_reason")
   phoneVerifiedAt   DateTime?     @map("phone_verified_at") @db.Timestamptz
   emailVerifiedAt   DateTime?     @map("email_verified_at") @db.Timestamptz
+  termsAcceptedAt   DateTime?     @map("terms_accepted_at") @db.Timestamptz
+  termsVersion      String?       @map("terms_version") @db.VarChar(64)
   lastLoginAt       DateTime?     @map("last_login_at") @db.Timestamptz
   avatarMediaId     String?       @map("avatar_media_id") @db.Uuid
   bonusBalance      Decimal?      @default(0) @map("bonus_balance") @db.Decimal
@@ -872,6 +874,8 @@ model Booking {
   guestName                   String?           @map("guest_name") @db.VarChar(200)
   guestEmail                  String?           @map("guest_email") @db.VarChar(255)
   guestPhone                  String?           @map("guest_phone") @db.VarChar(20)
+  termsAcceptedAt             DateTime?         @map("terms_accepted_at") @db.Timestamptz
+  termsVersion                String?           @map("terms_version") @db.VarChar(64)
   createdAt                   DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 

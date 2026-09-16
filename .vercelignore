@@ -1,0 +1,19 @@
+# Vercel CLI deploys (`vercel --prod`) upload the whole directory tree from
+# the repo root; without this, node_modules/.next/.turbo/.git alone add up
+# to several GB of build artifacts and caches that Vercel's own Install/
+# Build Command (npm install; npm run build -w @safaar/web-partner)
+# regenerates anyway — the extra upload made the deploy fragile enough to
+# fail outright on a transient network error partway through a 3.6GB upload.
+# None of this is source code needed by the remote build.
+node_modules
+.next
+.turbo
+.git
+dist
+build
+out
+coverage
+.nyc_output
+*.log
+e2e/test-results
+e2e/node_modules

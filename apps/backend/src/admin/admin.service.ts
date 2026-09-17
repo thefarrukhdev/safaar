@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { BookingStatus, Role } from '@safaar/types';
@@ -28,6 +29,10 @@ import {
   type PostgresTransaction,
 } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
+import {
+  UzumCheckoutError,
+  UzumCheckoutProvider,
+} from '../payments/providers/uzum-checkout.provider';
 
 type DbRow = Record<string, unknown>;
 
@@ -497,6 +502,7 @@ export class AdminService {
     private readonly postgres: PostgresService,
     private readonly events: EventsService,
     private readonly sms: SmsService,
+    private readonly checkout: UzumCheckoutProvider,
   ) {}
 
   private async rows(sql: string, params: readonly unknown[] = []) {
@@ -3465,8 +3471,9 @@ export class AdminService {
         status: string;
         requested_amount: string | number;
         currency: string;
+        reason: string | null;
       }>(
-        `SELECT id::text, booking_id::text, status::text, requested_amount, currency
+        `SELECT id::text, booking_id::text, status::text, requested_amount, currency, reason
          FROM refunds WHERE id = $1::uuid FOR UPDATE`,
         [id],
       );
@@ -3534,6 +3541,62 @@ export class AdminService {
       }
 
       if (booking) {
+        // Tashqi provayderga (Uzum Checkout) HAQIQIY refund so'rovi —
+        // faqat `provider='uzum_checkout'` VA haqiqiy `provider_reference`
+        // (Uzum `orderId`) mavjud bo'lsa. Boshqa provayderlar (click/payme/
+        // cash/uzum) uchun real refund API integratsiyasi YO'Q — avvalgidek
+        // faqat ICHKI holat yoziladi (o'zgarishsiz).
+        //
+        // ATAYLAB shu (bir) DB tranzaksiyasi ICHIDA: agar tashqi so'rov
+        // muvaffaqiyatsiz bo'lsa, PUL HALI QAYTARILMAGAN — shuning uchun
+        // HECH QANDAY ichki holat (refund.status/payments.status/booking/
+        // ledger) ham o'zgarmasligi SHART (throw -> avtomatik ROLLBACK,
+        // `PostgresService.transaction()`). Cheklov: bu DB pool ulanishini
+        // Uzum so'rovi davomida (ichki `AbortSignal.timeout` bilan
+        // chegaralangan, ~15-30s) band qilib turadi — refund admin
+        // tomonidan qo'lda, kam chastotada tasdiqlanadigani uchun bu
+        // amaliy xavf past deb baholandi (ongli qaror, keyinchalik
+        // tranzaksiyadan tashqariga chiqarish mumkin).
+        const [payableRow] = await tx.query<{
+          id: string;
+          provider: string;
+          provider_reference: string | null;
+        }>(
+          `SELECT id::text, provider::text, provider_reference::text
+           FROM payments WHERE booking_id = $1::uuid AND status = 'paid'
+           FOR UPDATE`,
+          [booking.id],
+        );
+
+        let providerRefundReference: string | null = null;
+        if (
+          payableRow &&
+          payableRow.provider === 'uzum_checkout' &&
+          payableRow.provider_reference
+        ) {
+          try {
+            const providerResult = await this.checkout.refund({
+              orderId: payableRow.provider_reference,
+              amountSom: approvedAmount,
+              reason: refund.reason ?? undefined,
+              // `refunds.id` — barqaror, qayta urinishda (masalan shu
+              // chaqiruv muvaffaqiyatsiz commit bo'lsa) BIR XIL operationId,
+              // Uzum tomonida ikkinchi mustaqil operatsiya sifatida
+              // ko'rilmasligi uchun (rasmiy kontrakt: `X-Operation-Id`
+              // idempotentlik kaliti).
+              operationId: id,
+            });
+            providerRefundReference = providerResult.refundId;
+          } catch (err) {
+            const code =
+              err instanceof UzumCheckoutError ? err.code : 'network_error';
+            throw new ServiceUnavailableException({
+              code: 'REFUND_PROVIDER_ERROR',
+              message: `To'lov provayderiga refund so'rovi yuborilmadi (${code}) — hech qanday ichki holat o'zgartirilmadi, qayta urinib ko'ring`,
+            });
+          }
+        }
+
         // MUHIM (double-ledger-debit bugini tuzatish): shu bookingga bir
         // nechta MUSTAQIL `refunds` qatori mavjud bo'lishi mumkin (foydalanuvchi
         // so'rovi + hamkor rad etishi + tizim avto-refundi — barchasi turli
@@ -3551,6 +3614,13 @@ export class AdminService {
           [booking.id, now],
         );
         const paymentActuallyRefunded = paymentUpdate.length > 0;
+
+        if (paymentActuallyRefunded && providerRefundReference) {
+          await tx.query(
+            `UPDATE refunds SET provider_refund_reference = $2 WHERE id = $1::uuid`,
+            [id, providerRefundReference],
+          );
+        }
 
         if (
           paymentActuallyRefunded &&

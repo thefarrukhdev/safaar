@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
@@ -16,6 +16,7 @@ import {
   calculateCommission,
   resolveAccommodationCommissionRate,
 } from '../common/finance';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import {
@@ -341,6 +342,20 @@ export class BookingsService {
     actor: RequestActor | undefined,
     dto: Record<string, unknown>,
   ) {
+    // Ommaviy Oferta (Terms of Service)ga rozilik — checkout (guest yoki
+    // login qilingan) source of truth SERVERDA. Client "agreeTerms: true"
+    // yuborgani o'ziga o'zi ishonchli emas; checkbox required bo'lishi
+    // frontendda bo'lsa ham, backend buni HAR DOIM qayta tekshiradi. Har
+    // qanday DB so'rovidan OLDIN — sof input tekshiruvi (real xonani
+    // qulflab, keyin rad etib, behuda tranzaksiya boshlamaslik uchun).
+    const agreeTerms = dto.agree_terms ?? dto.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const userId = actor?.id ?? null;
     const hotelId = String(dto.hotel_id ?? dto.hotelId ?? '');
     const roomId = String(dto.room_id ?? dto.roomId ?? dto.roomTypeId ?? '');
@@ -593,6 +608,8 @@ export class BookingsService {
         guest_name: guestName,
         guest_email: guestEmail,
         guest_phone: guestPhone,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: CURRENT_TERMS_VERSION,
         price_snapshot: {
           room_id: room.id,
           check_in: checkIn,
@@ -624,7 +641,16 @@ export class BookingsService {
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
     void this.sendBookingConfirmationEmail(booking);
-    return { booking, payment };
+
+    // Guest (login qilmagan) checkout — tasdiqlash sahifasi keyinroq
+    // `GET /bookings/:id`ni bu token bilan chaqirishi uchun, faqat bron
+    // haqiqatan ham commit bo'lgandan KEYIN (tranzaksiya muvaffaqiyatli
+    // yakunlangach) generatsiya qilinadi.
+    const guestAccessToken = booking.user_id
+      ? undefined
+      : await this.issueGuestBookingAccessToken(booking.id);
+
+    return { booking, payment, guestAccessToken };
   }
 
   /**
@@ -803,7 +829,13 @@ export class BookingsService {
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
     void this.sendBookingConfirmationEmail(booking);
-    return { booking, payment };
+
+    // Guest (login qilmagan) checkout — hotel bilan bir xil sabab/naqsh.
+    const guestAccessToken = booking.user_id
+      ? undefined
+      : await this.issueGuestBookingAccessToken(booking.id);
+
+    return { booking, payment, guestAccessToken };
   }
 
   /**
@@ -981,8 +1013,12 @@ export class BookingsService {
     return { booking, payment };
   }
 
-  async findOne(actor: RequestActor | undefined, id: string) {
-    const booking = await this.assertBooking(id, actor);
+  async findOne(
+    actor: RequestActor | undefined,
+    id: string,
+    guestAccessToken?: string,
+  ) {
+    const booking = await this.assertBooking(id, actor, guestAccessToken);
     const [payment] = await this.pg.query(
       'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
       [id],
@@ -1309,6 +1345,12 @@ export class BookingsService {
       guest_name?: string;
       guest_email?: string;
       guest_phone?: string;
+      /** Faqat checkout haqiqatan Terms tekshiruvini majburlaydigan
+       * chaqiruvchidan (`createHotelInternal`) keladi — boshqa bron
+       * turlari (bus/vehicle) buni hozircha yubormaydi, ustunlar NULL
+       * qoladi (bu vazifaning e'lon qilingan scope'i emas). */
+      terms_accepted_at?: string;
+      terms_version?: string;
     },
   ) {
     const id = randomUUID();
@@ -1368,6 +1410,8 @@ export class BookingsService {
       guest_name: guestName,
       guest_email: guestEmail,
       guest_phone: guestPhone,
+      terms_accepted_at: input.terms_accepted_at ?? null,
+      terms_version: input.terms_version ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -1383,6 +1427,7 @@ export class BookingsService {
         confirmed_at, cancelled_at, cancel_reason_text,
         policy_snapshot, price_snapshot,
         guest_name, guest_email, guest_phone,
+        terms_accepted_at, terms_version,
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4,
@@ -1394,7 +1439,8 @@ export class BookingsService {
         $26, $27, $28,
         $29, $30,
         $31, $32, $33,
-        $34, $35
+        $34, $35,
+        $36, $37
       )`,
       [
         bookingRow.id,
@@ -1430,10 +1476,40 @@ export class BookingsService {
         bookingRow.guest_name,
         bookingRow.guest_email,
         bookingRow.guest_phone,
+        bookingRow.terms_accepted_at,
+        bookingRow.terms_version,
         bookingRow.created_at,
         bookingRow.updated_at,
       ],
     );
+
+    if (bookingRow.terms_accepted_at) {
+      // Best-effort — auth.service.ts'dagi auditAuthEvent bilan bir xil
+      // naqsh: audit yozuvi muvaffaqiyatsiz bo'lsa ham booking oqimi
+      // to'xtamaydi. SHU transaction ichida (`db.query`, `this.pg.query`
+      // emas) — agar tranzaksiya biror sababdan rollback bo'lsa, audit
+      // yozuvi ham birga qaytariladi (orphan audit qatori qolmaydi).
+      try {
+        await db.query(
+          `insert into audit_logs (id, actor_type, actor_id, action, entity_type, entity_id, metadata)
+           values ($1::uuid, $2, $3::uuid, $4, $5, $6::uuid, ($7)::jsonb)`,
+          [
+            randomUUID(),
+            // 'guest' emas — bu ustunda mavjud konventsiya
+            // ('user'|'partner'|'admin'|'system', qarang admin.service.ts
+            // audit()) bilan mos: haqiqiy actor yo'q bo'lganda 'system'.
+            userId ? 'user' : 'system',
+            userId,
+            'booking.terms_accepted',
+            'booking',
+            bookingRow.id,
+            JSON.stringify({ terms_version: bookingRow.terms_version }),
+          ],
+        );
+      } catch {
+        // Audit log yozuvi muvaffaqiyatsiz bo'lsa ham booking oqimi davom etadi.
+      }
+    }
 
     await this.addStatusHistory(db, bookingRow, 'created');
 
@@ -1632,6 +1708,7 @@ export class BookingsService {
   private async assertBooking(
     id: string,
     actor?: RequestActor,
+    guestAccessToken?: string,
   ): Promise<BookingRow> {
     const [booking] = await this.pg.query<BookingRow>(
       'SELECT * FROM bookings WHERE id = $1',
@@ -1646,9 +1723,23 @@ export class BookingsService {
     }
 
     if (!actor) {
-      // Anonim (tokensiz) chaqiruv — bron egasini aniqlab bo'lmaydi, shuning
-      // uchun rad etiladi. Guest bronni ko'rish/qidirish uchun
-      // `POST /bookings/lookup` (booking_number + email) ishlatilishi kerak.
+      // Guest (login qilmagan) mijoz — faqat AYNAN shu bronni yaratishda
+      // o'ziga berilgan opaque access-tokeni bilan, VA faqat bron haqiqatan
+      // ham egasiz (user_id NULL) bo'lsagina o'tkaziladi. Xom bron ID'ini
+      // bilishning o'zi HECH QACHON yetarli emas (IDOR'ga qarshi) — token
+      // booking-yaratishda cache'ga yozilgan va AYNAN shu ID'ga bog'langan,
+      // boshqa bronni ochish uchun ishlatib bo'lmaydi.
+      if (guestAccessToken && !booking.user_id) {
+        const grantedBookingId =
+          await this.resolveGuestBookingAccessTokenBookingId(guestAccessToken);
+        if (grantedBookingId === id) {
+          return booking;
+        }
+      }
+
+      // Anonim (tokensiz yoki yaroqsiz guest-token) chaqiruv — bron egasini
+      // aniqlab bo'lmaydi, shuning uchun rad etiladi. Guest bronni email
+      // orqali qidirish uchun `POST /bookings/lookup` ishlatilishi mumkin.
       throw new UnauthorizedException({
         code: 'AUTH_TOKEN_INVALID',
         message: 'Sessiya topilmadi yoki token yaroqsiz',
@@ -1678,6 +1769,46 @@ export class BookingsService {
 
   async assertBookingForActor(actor: RequestActor | undefined, id: string) {
     return this.assertBooking(id, actor);
+  }
+
+  // Guest booking confirmation sahifasi bir necha kun davomida qayta
+  // ochilishi (to'lov holatini tekshirish, kvitansiyani qayta ko'rish)
+  // mumkin bo'lgani uchun bir martalik emas — `JWT_REFRESH_TTL`ning
+  // standart qiymati (30 kun) bilan bir xil, ishlatilgan muddat.
+  private readonly GUEST_BOOKING_ACCESS_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+  private guestBookingAccessKey(token: string): string {
+    return `booking:guest-access:${createHash('sha256').update(token).digest('hex')}`;
+  }
+
+  /**
+   * Guest (login qilmagan) mijoz o'z bronini keyinroq (masalan tasdiqlash
+   * sahifasini qayta yuklash orqali) ko'rishi uchun opaque, cache-backed
+   * ruxsat tokeni — xuddi `AuthService`dagi parol-tiklash tokeni bilan bir
+   * xil naqsh (xom token hech qachon DB/cache'da saqlanmaydi, faqat uning
+   * SHA-256 xeshi cache kaliti sifatida ishlatiladi).
+   */
+  private async issueGuestBookingAccessToken(
+    bookingId: string,
+  ): Promise<string> {
+    const token = randomBytes(32).toString('base64url');
+    await this.cache.set(
+      this.guestBookingAccessKey(token),
+      { bookingId },
+      this.GUEST_BOOKING_ACCESS_TTL_SECONDS,
+    );
+    return token;
+  }
+
+  /** Peek — NOT consumed, chunki guest bir nechta martalik (sahifani qayta
+   * yuklash, keyinroq qaytib kelish) shu bir tokendan foydalanishi kerak. */
+  private async resolveGuestBookingAccessTokenBookingId(
+    token: string,
+  ): Promise<string | undefined> {
+    const context = await this.cache.get<{ bookingId: string }>(
+      this.guestBookingAccessKey(token),
+    );
+    return context?.bookingId;
   }
 
   private paymentMethod(value: unknown): string {

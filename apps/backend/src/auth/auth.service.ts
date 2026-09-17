@@ -25,6 +25,7 @@ import { JobQueueService } from '../infrastructure/job-queue.service';
 import { EmailService } from '../infrastructure/email.service';
 import { SmsService } from '../infrastructure/sms.service';
 import { AppCacheService } from '../infrastructure/cache.service';
+import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { otpStore, type OtpPurpose } from './otp-store';
 import { registrationVerificationStore } from './registration-verification-store';
 import { authSessionStore } from './session-store';
@@ -158,6 +159,8 @@ interface CompleteOAuthRegistrationInput {
   challenge_id?: string;
   first_name?: string;
   last_name?: string;
+  agree_terms?: boolean;
+  agreeTerms?: boolean;
 }
 
 @Injectable()
@@ -260,9 +263,26 @@ export class AuthService {
   ) {
     const currentActor = this.requireActor(actor, 'user');
 
+    // Ommaviy Oferta (Terms of Service)ga rozilik — bu endpoint
+    // ro'yxatdan o'tishni yakunlaydigan YAGONA chaqiruvchi
+    // (RegisterForm.tsx, boshqa hech qanday "profilni tahrirlash" ekrani
+    // buni chaqirmaydi — tekshirilgan), shuning uchun har doim qat'iy
+    // talab qilinadi. Client "agreeTerms: true" yuborgani SOURCE OF TRUTH
+    // emas — checkbox mavjudligi bilan kifoyalanib, buni tekshirmasdan
+    // o'tkazib yuborish aynan shu vazifaning oldini olishi kerak bo'lgan
+    // holat edi. Boshqa DB o'qishdan OLDIN — sof input tekshiruvi.
+    const agreeTerms = body.agree_terms ?? body.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const rows = await this.pg.query<DbRow>(
       `SELECT id::text, phone, status, preferred_language, bonus_balance,
-              first_name, last_name, email, password_hash, created_at, updated_at
+              first_name, last_name, email, password_hash, created_at, updated_at,
+              terms_accepted_at, terms_version
        FROM users
        WHERE id = $1
        LIMIT 1`,
@@ -300,6 +320,19 @@ export class AuthService {
       : rows[0]['password_hash'];
     const now = new Date().toISOString();
 
+    // Birinchi qabul qilingan vaqt/versiya SAQLANIB QOLADI (idempotent —
+    // takroriy chaqiruv, masalan tarmoq xatosi tufayli qayta yuborish,
+    // "qachon birinchi rozi bo'lgan"ni qayta yozib yubormaydi va ortiqcha
+    // audit yozuvi yaratmaydi).
+    const existingTermsAcceptedAt = rows[0]['terms_accepted_at'] as
+      | string
+      | null;
+    const termsAcceptedAt = existingTermsAcceptedAt ?? now;
+    const termsVersion = existingTermsAcceptedAt
+      ? (rows[0]['terms_version'] as string | null)
+      : CURRENT_TERMS_VERSION;
+    const isFirstAcceptance = !existingTermsAcceptedAt;
+
     if (
       phoneDigits &&
       !(
@@ -332,8 +365,9 @@ export class AuthService {
     await this.pg.query(
       `UPDATE users
        SET first_name = $1, last_name = $2, phone = $3, email = $4,
-           preferred_language = $5, password_hash = $6, updated_at = $7
-       WHERE id = $8`,
+           preferred_language = $5, password_hash = $6, updated_at = $7,
+           terms_accepted_at = $8, terms_version = $9
+       WHERE id = $10`,
       [
         firstName,
         lastName,
@@ -342,9 +376,20 @@ export class AuthService {
         preferredLanguage,
         passwordHash,
         now,
+        termsAcceptedAt,
+        termsVersion,
         currentActor.id,
       ],
     );
+
+    if (isFirstAcceptance) {
+      await this.auditAuthEvent(
+        'user',
+        currentActor.id,
+        'user.terms_accepted',
+        { terms_version: termsVersion },
+      );
+    }
 
     return {
       ...rows[0],
@@ -552,6 +597,22 @@ export class AuthService {
   async completeOAuthRegistration(
     dto: CompleteOAuthRegistrationInput,
   ): Promise<AuthTokens & { user: unknown }> {
+    // Bu yo'nalish hozircha web-user'da hech qanday UI'dan chaqirilmaydi
+    // (RegisterForm.tsx `registrationToken`/`provider` query parametrlarini
+    // umuman o'qimaydi — 2026-09-15 audit orqali tasdiqlangan), lekin
+    // to'g'ridan-to'g'ri API chaqiruvi (yoki kelajakda qo'shiladigan UI)
+    // orqali YANGI hisob yaratishi mumkin bo'lgan real yo'nalish — shuning
+    // uchun boshqa ikki yo'nalish (completeProfile, createHotelInternal)
+    // bilan bir xil siyosat qo'llanadi: OTP/cache/tranzaksiyaga tegishdan
+    // OLDIN sof input tekshiruvi.
+    const agreeTerms = dto.agree_terms ?? dto.agreeTerms;
+    if (agreeTerms !== true) {
+      throw new BadRequestException({
+        code: 'TERMS_NOT_ACCEPTED',
+        message: 'Ommaviy Oferta shartlariga rozilik berish shart',
+      });
+    }
+
     const provider = dto.provider as OAuthProvider;
     const registrationKey = this.oauthRegistrationKey(dto.registration_token);
 
@@ -640,9 +701,11 @@ export class AuthService {
                email_verified_at = CASE WHEN $2 IS NOT NULL THEN coalesce(email_verified_at, $3) ELSE email_verified_at END,
                first_name = coalesce(first_name, $4),
                last_name = coalesce(last_name, $5),
+               terms_accepted_at = coalesce(terms_accepted_at, $3),
+               terms_version = coalesce(terms_version, $6),
                updated_at = $3
            WHERE id = $1::uuid`,
-          [userId, email, now, firstName, lastName],
+          [userId, email, now, firstName, lastName, CURRENT_TERMS_VERSION],
         );
       });
     } catch (error) {

@@ -1,13 +1,17 @@
 import { ArgumentsHost, BadRequestException } from '@nestjs/common';
+import { ThrottlerException } from '@nestjs/throttler';
 import { HttpErrorFilter } from './http-error.filter';
 
-function hostWith(headers: Record<string, string> = {}) {
+function hostWith(
+  headers: Record<string, string> = {},
+  request: Record<string, unknown> = {},
+) {
   const json = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
   const host = {
     switchToHttp: () => ({
       getResponse: () => ({ status }),
-      getRequest: () => ({ headers }),
+      getRequest: () => ({ headers, ...request }),
     }),
   } as unknown as ArgumentsHost;
   return { host, status, json };
@@ -79,5 +83,49 @@ describe('HttpErrorFilter (regression: H-5 malformed input -> 500 instead of 400
         }) as { code: string; message: string },
       }),
     );
+  });
+});
+
+describe('HttpErrorFilter (regression: 429/ThrottlerException was never logged anywhere)', () => {
+  let filter: HttpErrorFilter;
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    filter = new HttpErrorFilter();
+    warnSpy = jest.spyOn(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (filter as any).logger,
+      'warn',
+    );
+  });
+
+  it('logs a rate_limited WARN with method/path/ip when the guard throws ThrottlerException', () => {
+    const { host, status } = hostWith(
+      {},
+      { method: 'POST', url: '/v1/auth/admin/login', ip: '203.0.113.7' },
+    );
+
+    filter.catch(new ThrottlerException(), host);
+
+    expect(status).toHaveBeenCalledWith(429);
+    expect(warnSpy).toHaveBeenCalledWith(
+      JSON.stringify({
+        event: 'rate_limited',
+        method: 'POST',
+        path: '/v1/auth/admin/login',
+        ip: '203.0.113.7',
+      }),
+    );
+  });
+
+  it('does not log a rate_limited WARN for non-429 exceptions', () => {
+    const { host } = hostWith(
+      {},
+      { method: 'POST', url: '/v1/auth/admin/login', ip: '203.0.113.7' },
+    );
+
+    filter.catch(new BadRequestException('bad input'), host);
+
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

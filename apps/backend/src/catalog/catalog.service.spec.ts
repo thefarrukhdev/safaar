@@ -149,3 +149,75 @@ describe('CatalogService.restaurants', () => {
     ]);
   });
 });
+
+describe('CatalogService.destinations', () => {
+  let service: CatalogService;
+  let cache: AppCacheService;
+  let postgres: jest.Mocked<PostgresService>;
+
+  beforeEach(() => {
+    cache = {
+      getOrSet: jest
+        .fn()
+        .mockImplementation(
+          (_key: string, _ttl: number, fn: () => Promise<unknown>) => fn(),
+        ),
+    } as unknown as AppCacheService;
+
+    postgres = {
+      query: jest.fn(),
+    } as unknown as jest.Mocked<PostgresService>;
+
+    service = new CatalogService(cache, postgres);
+  });
+
+  it('admin CMS orqali boshqariladigan yo‘nalishlarni to‘g‘ri xaritalashi kerak', async () => {
+    postgres.query.mockResolvedValueOnce([
+      {
+        id: 'dest-1',
+        slug: 'toshkent',
+        title: { uz: 'Toshkent', ru: 'Ташкент', en: 'Tashkent' },
+        metadata: {
+          image_url: '/uploads/images/tashkent.jpg',
+          link: '/uz/hotels?city_id=toshkent',
+          order: 1,
+        },
+        published_at: '2026-08-04T12:00:00Z',
+        created_at: '2026-08-01T12:00:00Z',
+      },
+    ]);
+
+    const result = await service.destinations();
+
+    expect(postgres.query.mock.calls[0]?.[0]).toContain("type = 'destination'");
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: 'dest-1',
+      slug: 'toshkent',
+      name: { uz: 'Toshkent', ru: 'Ташкент', en: 'Tashkent' },
+      link: '/uz/hotels?city_id=toshkent',
+    });
+    expect(result[0].image_url).toContain('/uploads/images/tashkent.jpg');
+  });
+
+  it('tashqi/absolyut havolalarni rad etishi kerak (open-redirect/XSS himoyasi)', async () => {
+    postgres.query.mockResolvedValueOnce([
+      {
+        id: 'dest-2',
+        slug: 'samarqand',
+        title: { uz: 'Samarqand' },
+        metadata: {
+          image_url: 'https://example.com/samarqand.jpg',
+          link: 'https://evil.example.com/phish',
+        },
+        published_at: null,
+        created_at: '2026-08-01T12:00:00Z',
+      },
+    ]);
+
+    const result = await service.destinations();
+
+    expect(result[0].link).toBeNull();
+  });
+});

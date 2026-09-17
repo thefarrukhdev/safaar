@@ -141,6 +141,46 @@ export class CatalogService {
     });
   }
 
+  /**
+   * "Mashhur yo'nalishlar" (bosh sahifa) — admin `POST/PATCH/DELETE
+   * /admin/cms/destinations` orqali boshqaradigan, mavjud generik CMS
+   * yozuvlari (`cms_entries`, `type='destination'`). Yangi jadval/model
+   * YO'Q — `attractions()` bilan BIR XIL naqsh: shu jadvaldan
+   * to'g'ridan-to'g'ri o'qiladi, faqat `status IN ('published','active')`
+   * (draft/archived — jamoat ko'rinishida YO'Q, admin.service.ts'dagi
+   * cmsList bilan bir xil qoida). `metadata.image_url`/`metadata.link`/
+   * `metadata.order` — admin.service.ts'dagi cmsAdminDto/normalizeCmsMetadata
+   * bilan bir xil kalitlar (banners/offers'da ham shu nomlar ishlatiladi).
+   */
+  async destinations() {
+    return this.cache.getOrSet('catalog:destinations', 300, async () => {
+      const rows = await this.postgres.query<DbRow>(`
+        SELECT id::text, slug, title, metadata, published_at, created_at
+        FROM cms_entries
+        WHERE type = 'destination'
+          AND status IN ('published', 'active')
+        ORDER BY
+          COALESCE((metadata ->> 'order')::int, (metadata ->> 'sortOrder')::int, 9999),
+          COALESCE(published_at, created_at) DESC
+      `);
+      return rows.map((row) => {
+        const meta = objectValue(row.metadata);
+        const link = String(meta.link ?? '').trim();
+        return {
+          id: row.id,
+          slug: row.slug,
+          name: row.title,
+          image_url: publicMediaUrl(meta.image_url ?? meta.imageUrl),
+          // Faqat relative (`/`-prefixed) yo'llar ruxsat etiladi — admin
+          // panelda ham (cms-destination-manager.tsx) shu qoida bilan
+          // tekshiriladi; tashqi/absolyut URL yoki `javascript:` kabi
+          // sxemalar XSS/open-redirect xavfi tug'dirishi mumkin.
+          link: link.startsWith('/') ? link : null,
+        };
+      });
+    });
+  }
+
   async partnersShowcase() {
     return this.cache.getOrSet('catalog:partners-showcase', 3600, async () => {
       return this.postgres.query(`

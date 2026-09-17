@@ -708,6 +708,22 @@ function toCmsBanner(row: ApiRecord): CmsBanner {
   };
 }
 
+function toCmsDestination(row: ApiRecord): CmsDestination {
+  const metadata = asRecord(row.metadata);
+  return {
+    id: asString(row.id),
+    title: localizedText(row.title, asString(row.slug, "Yo'nalish")),
+    imageUrl: asString(row.imageUrl ?? row.image_url ?? metadata.imageUrl ?? metadata.image_url),
+    link: asString(row.link ?? metadata.link, '/'),
+    isActive:
+      typeof row.isActive === 'boolean'
+        ? row.isActive
+        : asString(row.status) === 'published' ||
+          asString(row.status) === 'active',
+    order: asNumber(row.order ?? metadata.order ?? metadata.sortOrder),
+  };
+}
+
 function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
   const rowType = asString(row.type);
   const articleType: CmsArticle['type'] =
@@ -1048,6 +1064,29 @@ function cmsBannerPayload(banner: Omit<CmsBanner, 'id'> | Partial<CmsBanner>) {
       order: banner.order ?? 0,
     },
   };
+}
+
+function cmsDestinationPayload(
+  destination: Omit<CmsDestination, 'id'> | Partial<CmsDestination>,
+) {
+  const payload: Record<string, unknown> = {};
+  if (destination.title !== undefined) {
+    payload.slug = destination.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '');
+    payload.title = {
+      uz: destination.title,
+      ru: destination.title,
+      en: destination.title,
+    };
+  }
+  const metadata: Record<string, unknown> = {};
+  if (destination.imageUrl !== undefined) metadata.imageUrl = destination.imageUrl;
+  if (destination.link !== undefined) metadata.link = destination.link || '/';
+  if (destination.order !== undefined) metadata.order = destination.order;
+  if (Object.keys(metadata).length > 0) payload.metadata = metadata;
+  return payload;
 }
 
 export const AdminApi = {
@@ -1654,6 +1693,19 @@ export const AdminApi = {
     );
   },
 
+  // Uploads — real backend media store (Cloudflare R2 / local fallback,
+  // apps/backend/src/uploads/), the same endpoint web-partner already
+  // uses (see app/_lib/api/endpoints/partners.ts uploadImage). Content-Type
+  // is unset so the browser fills in the multipart boundary itself.
+  uploadImage: async (file: File): Promise<{ id: string; url: string }> => {
+    const formData = new FormData();
+    formData.set('file', file);
+    const { data } = await apiClient.post('/uploads/images', formData, {
+      headers: { 'Content-Type': undefined },
+    });
+    return { id: asString(data.id), url: asString(data.url) };
+  },
+
   // CMS
   getCmsBanners: async (): Promise<CmsBanner[]> => {
     const { data } = await apiClient.get('/admin/cms/banners');
@@ -1711,33 +1763,64 @@ export const AdminApi = {
     return toCmsArticle(asRecord(data), 'offer');
   },
 
-  // Destinations (Mashhur yo'nalishlar) Mocks
+  // Destinations (Mashhur yo'nalishlar) — /admin/cms/destinations orqali
+  // generik CMS yozuvlari (cms_entries, type='destination'), banners bilan
+  // bir xil naqsh (backend hech qanday o'zgarishsiz ishlaydi, chunki
+  // cmsTypesForResource 'destinations' -> 'destination'ni avtomatik chiqaradi).
   getCmsDestinations: async (): Promise<CmsDestination[]> => {
-    return [
-      { id: "1", city: "Toshkent", imageUrl: "/images/destinations/tashkent.jpg", sortOrder: 1, isActive: true, createdAt: new Date().toISOString() },
-      { id: "2", city: "Samarqand", imageUrl: "/images/destinations/samarkand.jpg", sortOrder: 2, isActive: true, createdAt: new Date().toISOString() },
-      { id: "3", city: "Buxoro", imageUrl: "/images/destinations/bukhara.jpg", sortOrder: 3, isActive: true, createdAt: new Date().toISOString() },
-    ] as any;
+    const { data } = await apiClient.get('/admin/cms/destinations');
+    return unknownItems(data)
+      .map((row) => toCmsDestination(asRecord(row)))
+      .sort((a, b) => a.order - b.order);
   },
 
-  createCmsDestination: async (payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    console.log("Mock createCmsDestination", payload);
-    return { ...payload, id: Date.now().toString(), createdAt: new Date().toISOString() } as CmsDestination;
+  createCmsDestination: async (
+    destination: Omit<CmsDestination, 'id'>,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.post(
+      '/admin/cms/destinations',
+      cmsDestinationPayload(destination),
+    );
+    if (destination.isActive) {
+      await apiClient.post(`/admin/cms/destinations/${data.id}/publish`);
+      return AdminApi.getCmsDestinations().then(
+        (destinations) =>
+          destinations.find((item) => item.id === data.id) ??
+          toCmsDestination(asRecord(data)),
+      );
+    }
+    return toCmsDestination(asRecord(data));
   },
 
-  updateCmsDestination: async (id: string, payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    console.log("Mock updateCmsDestination", id, payload);
-    return { ...payload, id, createdAt: new Date().toISOString() } as CmsDestination;
+  updateCmsDestination: async (
+    id: string,
+    destination: Partial<CmsDestination>,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.patch(
+      `/admin/cms/destinations/${id}`,
+      cmsDestinationPayload(destination),
+    );
+    if (typeof destination.isActive === 'boolean') {
+      const action = await apiClient.post(
+        `/admin/cms/destinations/${id}/${destination.isActive ? 'publish' : 'unpublish'}`,
+      );
+      return toCmsDestination(asRecord(action.data));
+    }
+    return toCmsDestination(asRecord(data));
   },
 
   deleteCmsDestination: async (id: string): Promise<void> => {
-    console.log("Mock deleteCmsDestination", id);
-    return Promise.resolve();
+    await apiClient.post(`/admin/cms/destinations/${id}/archive`);
   },
 
-  setCmsDestinationStatus: async (id: string, isActive: boolean): Promise<CmsDestination> => {
-    console.log("Mock setCmsDestinationStatus", id, isActive);
-    return { id, isActive, city: "Mock City", imageUrl: "", sortOrder: 1, createdAt: new Date().toISOString() } as CmsDestination;
+  setCmsDestinationStatus: async (
+    id: string,
+    isActive: boolean,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.post(
+      `/admin/cms/destinations/${id}/${isActive ? 'publish' : 'unpublish'}`,
+    );
+    return toCmsDestination(asRecord(data));
   },
   createCmsBanner: async (
     banner: Omit<CmsBanner, 'id'>,

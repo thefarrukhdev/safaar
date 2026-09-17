@@ -127,6 +127,7 @@ export const CMS_RESOURCES = [
   'pages',
   'templates',
   'broadcasts',
+  'destinations',
 ] as const;
 export type CmsResource = (typeof CMS_RESOURCES)[number];
 
@@ -577,11 +578,11 @@ export interface CmsArticle {
 
 export interface CmsDestination {
   id: string;
-  city: string;
+  title: string;
   imageUrl: string;
-  sortOrder: number;
+  link: string;
   isActive: boolean;
-  createdAt: string;
+  order: number;
 }
 
 /* ────────────────────────────────────────────

@@ -25,6 +25,7 @@ const RESOURCE_LABELS: Record<CmsResource, string> = {
   pages: "Sahifalar",
   templates: "Shablonlar",
   broadcasts: "Xabarnomalar",
+  destinations: "Yo'nalishlar",
 };
 
 const LANGUAGES: { code: string; label: string }[] = [

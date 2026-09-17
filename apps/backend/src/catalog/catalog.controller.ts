@@ -37,6 +37,11 @@ export class CatalogController {
     return this.catalogService.popularCities();
   }
 
+  @Get('destinations')
+  destinations() {
+    return this.catalogService.destinations();
+  }
+
   @Get('partners-showcase')
   partnersShowcase() {
     return this.catalogService.partnersShowcase();

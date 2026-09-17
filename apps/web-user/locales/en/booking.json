@@ -23,6 +23,7 @@
     "processing": "Processing",
     "paid": "Paid",
     "failed": "Failed",
-    "refunded": "Refunded"
+    "refunded": "Refunded",
+    "reversed": "Reversed by bank"
   }
 }

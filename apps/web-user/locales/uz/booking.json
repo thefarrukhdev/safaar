@@ -23,6 +23,7 @@
     "processing": "Jarayonda",
     "paid": "To'langan",
     "failed": "Muvaffaqiyatsiz",
-    "refunded": "Qaytarilgan"
+    "refunded": "Qaytarilgan",
+    "reversed": "Bank tomonidan bekor qilingan"
   }
 }

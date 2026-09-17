@@ -17,6 +17,11 @@ describe('AdminService frontend action endpoints', () => {
     partnerDashboardUpdated: jest.Mock;
   };
   let smsMock: { send: jest.Mock };
+  let cacheMock: {
+    getOrSet: jest.Mock;
+    delByPattern: jest.Mock;
+    del: jest.Mock;
+  };
   const actor: RequestActor = {
     id: '00000000-0000-0000-0000-000000000001',
     actorType: 'admin',
@@ -43,15 +48,19 @@ describe('AdminService frontend action endpoints', () => {
         .fn()
         .mockResolvedValue({ accepted: true, providerMessageId: '' }),
     };
-    service = new AdminService(
-      {
-        getOrSet: async <T>(
+    cacheMock = {
+      getOrSet: jest.fn(
+        async <T>(
           _key: string,
           _ttl: number,
           factory: () => Promise<T> | T,
         ): Promise<T> => Promise.resolve(factory()),
-        delByPattern: jest.fn(),
-      } as unknown as AppCacheService,
+      ),
+      delByPattern: jest.fn(),
+      del: jest.fn(),
+    };
+    service = new AdminService(
+      cacheMock as unknown as AppCacheService,
       { add: jest.fn() } as unknown as JobQueueService,
       pgMock as unknown as PostgresService,
       {
@@ -563,6 +572,94 @@ describe('AdminService frontend action endpoints', () => {
       expect.stringContaining('type = any($3::text[])'),
       [pageId, 'archived', ['page']],
     );
+  });
+
+  describe('invalidateCmsCache (regression: destinations admin write left the public /catalog/destinations cache stale for up to 5 minutes)', () => {
+    const destinationRow = {
+      id: '00000000-0000-7006-0000-000000000001',
+      type: 'destination',
+      slug: 'toshkent',
+      title_i18n: { uz: 'Toshkent', ru: null, en: null },
+      body_i18n: { uz: null, ru: null, en: null },
+      status: 'published',
+      metadata: {
+        imageUrl: 'https://example.com/t.jpg',
+        link: '/uz/hotels',
+        order: 1,
+      },
+      published_at: '2026-09-17T00:00:00.000Z',
+      created_at: '2026-09-17T00:00:00.000Z',
+      updated_at: '2026-09-17T00:00:00.000Z',
+    };
+
+    it('cmsCreate: destinations resource busts catalog:destinations, other resources do not', async () => {
+      pgMock.query.mockResolvedValueOnce([destinationRow]);
+      await service.cmsCreate('destinations', { title: 'Toshkent' });
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+
+      cacheMock.del.mockClear();
+      pgMock.query.mockResolvedValueOnce([
+        { ...destinationRow, type: 'page', slug: 'about' },
+      ]);
+      await service.cmsCreate('pages', { title: 'About' });
+      expect(cacheMock.del).not.toHaveBeenCalled();
+    });
+
+    it('cmsUpdate (edit): destinations resource busts catalog:destinations', async () => {
+      pgMock.query.mockResolvedValueOnce([destinationRow]);
+      await service.cmsUpdate('destinations', destinationRow.id, {
+        title: 'Toshkent 2',
+      });
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+    });
+
+    it('cmsAction (publish/unpublish — active/inactive toggle) busts catalog:destinations', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { ...destinationRow, status: 'draft' },
+      ]);
+      await service.cmsAction('destinations', destinationRow.id, 'unpublish');
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+
+      cacheMock.del.mockClear();
+      pgMock.query.mockResolvedValueOnce([destinationRow]);
+      await service.cmsAction('destinations', destinationRow.id, 'publish');
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+    });
+
+    it('cmsAction (reorder via cmsUpdate metadata.order) busts catalog:destinations', async () => {
+      // Reorder ishlaydi cmsUpdate orqali ({metadata:{order:n}} PATCH) —
+      // cms-destination-manager.tsx'dagi move() shu yo'lni ishlatadi,
+      // chunki cmsAction'ning o'z 'reorder' action'i statusMap'da yo'q.
+      pgMock.query.mockResolvedValueOnce([
+        {
+          ...destinationRow,
+          metadata: { ...destinationRow.metadata, order: 5 },
+        },
+      ]);
+      await service.cmsUpdate('destinations', destinationRow.id, {
+        metadata: { order: 5 },
+      });
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+    });
+
+    it('cmsTranslation: destinations resource busts catalog:destinations', async () => {
+      pgMock.query.mockResolvedValueOnce([destinationRow]);
+      await service.cmsTranslation('destinations', destinationRow.id, {
+        link: '/uz/hotels?city_id=toshkent',
+      });
+      expect(cacheMock.del).toHaveBeenCalledWith('catalog:destinations');
+    });
+
+    it('other CMS resources (banners) never call cache.del — existing behavior unchanged', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { ...destinationRow, type: 'banner', slug: 'summer-sale' },
+      ]);
+      await service.cmsUpdate('banners', destinationRow.id, {
+        title: 'Summer',
+      });
+      expect(cacheMock.del).not.toHaveBeenCalled();
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('cms:*');
+    });
   });
 
   it('creates an admin user without a DB NOT NULL violation (regression: H-1)', async () => {

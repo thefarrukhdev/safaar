@@ -4,7 +4,7 @@ import { isLocale, type Locale } from "@/i18n/config";
 import fs from "fs";
 import path from "path";
 
-import { Download, AlertCircle } from "lucide-react";
+import { Download } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -40,12 +40,6 @@ export default async function TermsPage({
     htmlContent = fs.readFileSync(fallbackPath, "utf8");
   }
 
-  const disclaimers: Record<Locale, string> = {
-    uz: "", // No disclaimer for the original version
-    ru: "Официальным и имеющим юридическую силу вариантом данного документа является версия на узбекском языке.",
-    en: "The official and legally binding version of this document is the Uzbek version."
-  };
-  
   const downloadTexts: Record<Locale, string> = {
     uz: "Hujjatni yuklab olish",
     ru: "Скачать документ",
@@ -54,26 +48,16 @@ export default async function TermsPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:py-12">
-      {/* Top action bar and disclaimer */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-        {lang !== 'uz' ? (
-          <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-900/50">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <p className="font-medium">{disclaimers[lang as Locale]}</p>
-          </div>
-        ) : (
-          <div></div> // Spacer for flex-between
-        )}
-        <div className={lang === 'uz' ? 'ml-auto' : ''}>
-          <a
-            href="/docs/safaar-oferta-uz.docx"
-            download
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl shadow-sm transition-all dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800 dark:hover:text-white active:scale-95"
-          >
-            <Download className="w-4 h-4" />
-            {downloadTexts[lang as Locale]}
-          </a>
-        </div>
+      {/* Top action bar */}
+      <div className="flex justify-end mb-6">
+        <a
+          href="/docs/safaar-oferta-uz.docx"
+          download
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl shadow-sm transition-all dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800 dark:hover:text-white active:scale-95"
+        >
+          <Download className="w-4 h-4" />
+          {downloadTexts[lang as Locale]}
+        </a>
       </div>
 
       <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16 dark:bg-slate-900 dark:border-slate-800">

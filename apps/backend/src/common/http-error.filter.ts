@@ -97,7 +97,29 @@ export class HttpErrorFilter implements ExceptionFilter {
     }>();
     const request = context.getRequest<{
       headers: Record<string, string | string[] | undefined>;
+      method?: string;
+      url?: string;
+      ip?: string;
     }>();
+
+    // 429 (ThrottlerException) — ThrottlerGuard bu xatoni request
+    // PerformanceInterceptor'ga yetib kelmasdan OLDIN (Nest'da Guard'lar
+    // Interceptor'lardan OLDIN ishlaydi) tashlaydi, shuning uchun
+    // "status_code":429 hech qachon PerformanceInterceptor loglarida
+    // ko'rinmaydi — production incident'ni (masalan "login 429 qaytaryapti")
+    // sabab qaysi route/IP ekanini aniqlab bo'lmaydigan qilib qo'yardi. Bu
+    // yagona, maxsus WARN qatori shu ko'rinmaslik bo'shlig'ini yopadi;
+    // hech qanday response/behavior o'zgarmaydi, faqat kuzatuv qo'shiladi.
+    if (exception instanceof HttpException && exception.getStatus() === 429) {
+      this.logger.warn(
+        JSON.stringify({
+          event: 'rate_limited',
+          method: request.method,
+          path: request.url,
+          ip: request.ip,
+        }),
+      );
+    }
     const requestIdHeader = request.headers['x-request-id'];
     const requestId = Array.isArray(requestIdHeader)
       ? requestIdHeader[0]

@@ -52,6 +52,14 @@ export interface PaymentView {
   status: string;
   provider: string;
   url?: string;
+  /** To'lov uchun HAQIQATDA to'langan/to'lanadigan yakuniy summa (fee bilan, mavjud bo'lsa). */
+  amount?: number;
+  /** Bron gross summasi (fee qo'shilmasdan oldin) — faqat karta-fee qo'llangan to'lovlarda mavjud. */
+  baseAmount?: number;
+  /** Qo'llangan fee stavkasi (masalan 0.015 = 1.5%) — faqat karta-fee qo'llangan to'lovlarda mavjud. */
+  feeRate?: number;
+  /** Foydalanuvchi to'laydigan qo'shimcha fee summasi — faqat karta-fee qo'llangan to'lovlarda mavjud. */
+  feeAmount?: number;
 }
 
 export interface BookingView {

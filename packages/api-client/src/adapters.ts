@@ -29,6 +29,13 @@ interface RawPayment {
   status?: string;
   provider?: string;
   paymentUrl?: string;
+  // Postgres DECIMAL ustunlari `pg` drayveri orqali STRING sifatida keladi
+  // (backend hech qanday joyda bu ustunlarni `::float8`ga cast qilmaydi,
+  // `bookings.totalAmount` bilan bir xil holat) — shu sabab `number | string`.
+  amount?: number | string;
+  baseAmount?: number | string;
+  feeRate?: number | string;
+  feeAmount?: number | string;
 }
 
 interface RawBooking {
@@ -46,12 +53,22 @@ interface RawEnvelope extends RawBooking {
   payment?: RawPayment;
 }
 
+function toOptionalNumber(value: number | string | undefined): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 function toPaymentView(raw: RawPayment | undefined): PaymentView | undefined {
   if (!raw) return undefined;
   return {
     status: raw.status ?? "pending",
     provider: raw.provider ?? "",
     url: raw.paymentUrl,
+    amount: toOptionalNumber(raw.amount),
+    baseAmount: toOptionalNumber(raw.baseAmount),
+    feeRate: toOptionalNumber(raw.feeRate),
+    feeAmount: toOptionalNumber(raw.feeAmount),
   };
 }
 

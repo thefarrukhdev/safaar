@@ -11,6 +11,14 @@ export interface PopularCityView {
   sortOrder: number;
 }
 
+export interface DestinationView {
+  id: string;
+  slug: string;
+  name: string;
+  imageUrl: string;
+  link: string | null;
+}
+
 export interface PartnerShowcaseView {
   id: string;
   companyName: string;
@@ -100,6 +108,14 @@ interface RawPopularCity {
   imageUrl?: string;
   hotelCount?: number;
   sortOrder?: number;
+}
+
+interface RawDestination {
+  id: string;
+  slug?: string;
+  name?: LocalizedValue;
+  imageUrl?: string;
+  link?: string | null;
 }
 
 interface RawPartnerShowcase {
@@ -192,6 +208,27 @@ export const catalogService = {
       imageUrl: item.imageUrl ?? "",
       hotelCount: item.hotelCount ?? 0,
       sortOrder: item.sortOrder ?? 0,
+    }));
+  },
+
+  /**
+   * `GET /catalog/destinations` — admin panelda boshqariladigan "Mashhur
+   * yo'nalishlar" (bosh sahifa). Faqat admin `faol` qilib belgilagan va
+   * tartiblagan yozuvlar qaytadi — backend allaqachon `status`ga qarab
+   * filtrlaydi va `order`ga qarab saralaydi, shuning uchun bu yerda
+   * qo'shimcha filtr/sort kerak emas.
+   */
+  async getDestinations(locale: Locale): Promise<DestinationView[]> {
+    const raw = await rawApi.get<unknown>("/catalog/destinations", {
+      next: { revalidate: 300 },
+    } as any);
+    const items = camelizeKeys<RawDestination[]>(raw);
+    return (items ?? []).map((item) => ({
+      id: item.id,
+      slug: item.slug ?? "",
+      name: pickLocale(item.name, locale),
+      imageUrl: item.imageUrl ?? "",
+      link: item.link ?? null,
     }));
   },
 

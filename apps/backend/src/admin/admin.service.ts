@@ -3980,6 +3980,26 @@ export class AdminService {
     `);
   }
 
+  /**
+   * `cmsCreate`/`cmsUpdate`/`cmsAction`/`cmsTranslation` faqat `cms:*`ni
+   * bo'shatadi — bu yetarli, chunki `/cms/*` va `/catalog/attractions`,
+   * `/catalog/restaurants` kabi generik o'qish endpointlari shu prefiks
+   * ostida keshlanadi. Lekin `catalog.service.ts`'dagi `destinations()`
+   * o'zining ALOHIDA `catalog:destinations` kalitida (300s TTL) keshlaydi
+   * (attractions/restaurants'dan farqli, ular o'z resurs-maxsus admin
+   * endpointlarida `catalog:*`ni bo'shatadi) — shu sabab resource
+   * 'destinations' bo'lganda buni ham aniq bo'shatish kerak, aks holda
+   * admin panelda active/inactive/edit/reorder qilingandan keyin ham
+   * public `/catalog/destinations` eski holatni to 5 daqiqagacha
+   * qaytaraveradi.
+   */
+  private invalidateCmsCache(resource: string): void {
+    void this.cache.delByPattern('cms:*');
+    if (resource === 'destinations') {
+      void this.cache.del('catalog:destinations');
+    }
+  }
+
   async cmsList(resource: string, query: QueryLike = {}) {
     const types = cmsTypesForResource(resource);
     const rows = await this.rows(
@@ -4084,7 +4104,7 @@ export class AdminService {
       throw error;
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4172,7 +4192,7 @@ export class AdminService {
       });
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4205,7 +4225,7 @@ export class AdminService {
       });
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4227,7 +4247,7 @@ export class AdminService {
       [id, JSON.stringify(body)],
     );
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return (
       rows[0] ?? {

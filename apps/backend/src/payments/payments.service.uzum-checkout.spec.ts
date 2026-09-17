@@ -505,8 +505,12 @@ describe('PaymentsService.createUzumCheckoutPayment (register seam)', () => {
     const open = { ...checkoutPayment, status: 'processing' };
     pg.query
       .mockResolvedValueOnce([bookingRow]) // assertBookingVisible
-      .mockResolvedValueOnce([]) // createPayment: no open payment
-      .mockResolvedValueOnce([open]); // createUzumCheckoutPayment: existing open
+      // `createPayment()`ning yagona, markazlashtirilgan existing-row
+      // tekshiruvi (endi `createUzumCheckoutPayment()`da ALOHIDA
+      // takrorlanmaydi) — so'ralgan provider ('uzum_checkout') mavjud
+      // qatorning provider'i ('uzum_checkout', card_scheme yo'q) bilan
+      // MOS kelgani uchun shu yerning o'zida qaytariladi.
+      .mockResolvedValueOnce([open]);
 
     const res = await service.createPayment(admin, 'booking-1', {
       provider: 'uzum_checkout',

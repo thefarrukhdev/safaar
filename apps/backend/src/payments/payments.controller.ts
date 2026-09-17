@@ -5,12 +5,11 @@ import {
   Headers,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@safaar/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
-import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/payment.dto';
@@ -20,28 +19,37 @@ import { CreatePaymentDto } from './dto/payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  // `@Roles(...)` ATAYLAB YO'Q (`bookings.controller.ts`dagi guest-checkout
+  // marshrutlari bilan BIR XIL naqsh) — auth SHART EMAS, `RolesGuard` shunda
+  // ham token bo'lsa (yaroqli/faol bo'lsa) `request.user`ni to'ldiradi, aks
+  // holda so'rov anonim (guest) sifatida o'tadi. Haqiqiy ruxsat qarori
+  // to'liq `PaymentsService.assertBookingVisible()`da: login qilgan
+  // foydalanuvchi/admin/partner — avvalgidek; guest — FAQAT `guestToken`
+  // AYNAN shu bookingId'ga bog'langan bo'lsa (mahsulot talabi: guest
+  // to'lov, xavfsiz, booking-specific, unguessable, expiring token bilan).
   @Get('payments/:bookingId')
   @UseGuards(RolesGuard)
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   payment(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('bookingId') bookingId: string,
+    @Query('guestToken') guestToken?: string,
   ) {
-    return this.paymentsService.payment(actor, bookingId);
+    return this.paymentsService.payment(actor, bookingId, guestToken);
   }
 
   @Post('payments/:bookingId/create')
   @UseGuards(RolesGuard)
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
   createPayment(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('bookingId') bookingId: string,
     @Body() body: CreatePaymentDto,
+    @Query('guestToken') guestToken?: string,
   ) {
     return this.paymentsService.createPayment(
       actor,
       bookingId,
       body as unknown as Record<string, unknown>,
+      guestToken,
     );
   }
 

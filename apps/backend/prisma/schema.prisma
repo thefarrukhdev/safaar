@@ -89,6 +89,8 @@ enum PaymentMethod {
   cash
   uzum
   uzum_checkout
+  visa
+  mastercard
 }
 
 enum BookingStatus {
@@ -967,6 +969,17 @@ model Payment {
   providerFeeRate     Decimal?      @map("provider_fee_rate") @db.Decimal(6, 4)
   providerFeeAmount   Decimal?      @map("provider_fee_amount") @db.Decimal(18, 2)
   netSettlementAmount Decimal?      @map("net_settlement_amount") @db.Decimal(18, 2)
+  // Foydalanuvchi to'lov haqi (fee) — Humo/Uzcard/Visa/Mastercard, mahsulot
+  // talabi (2026-09-16). `card_scheme` — foydalanuvchi ANIQ tanlagan karta
+  // turi (`provider` ustuni bu to'rttalasi uchun ham doim 'uzum_checkout'
+  // bo'lib qoladi — texnik transport; qarang card-scheme-fee.ts va
+  // payments.service.ts::createUzumCheckoutPayment()). Boshqa barcha
+  // provayderlar uchun `card_scheme`/`fee_rate`/`fee_amount` NULL yoki 0.
+  // `base_amount` + `fee_amount` = `amount` (fee qo'llanganda).
+  cardScheme          PaymentMethod? @map("card_scheme")
+  baseAmount          Decimal?      @map("base_amount") @db.Decimal(18, 2)
+  feeRate             Decimal?      @map("fee_rate") @db.Decimal(6, 4)
+  feeAmount           Decimal?      @map("fee_amount") @db.Decimal(18, 2)
   createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -1019,6 +1032,10 @@ model Refund {
   approvedAmount  Decimal?     @map("approved_amount") @db.Decimal(18, 2)
   currency        String       @default("UZS") @db.Char(3)
   reason          String?
+  // Tashqi provayder (Uzum Checkout `/acquiring/refund`) qaytargan
+  // `operationId` — faqat audit uchun; refund'ning o'zi hamon SAFAAR
+  // `refunds.status`/admin approve orqali boshqariladi (admin.service.ts).
+  providerRefundReference String? @map("provider_refund_reference") @db.VarChar(255)
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 

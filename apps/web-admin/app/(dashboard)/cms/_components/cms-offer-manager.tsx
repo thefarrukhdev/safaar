@@ -16,6 +16,7 @@ export function CmsOfferManager() {
   const [items, setItems] = useState<CmsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<Partial<CmsArticle> | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const loadItems = async () => {
     try {
@@ -237,19 +238,29 @@ export function CmsOfferManager() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
+                disabled={uploadingImage}
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setEditingItem({
-                      ...editingItem,
-                      metadata: { ...editingItem?.metadata, image_url: url },
-                    });
+                  if (!file) return;
+                  setUploadingImage(true);
+                  try {
+                    const uploaded = await AdminApi.uploadImage(file);
+                    setEditingItem((prev) => ({
+                      ...prev,
+                      metadata: { ...prev?.metadata, image_url: uploaded.url },
+                    }));
+                  } catch {
+                    toast.error("Rasm yuklashda xatolik yuz berdi");
+                  } finally {
+                    setUploadingImage(false);
                   }
                 }}
                 className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
               />
-              {editingItem?.metadata?.image_url && (
+              {uploadingImage && (
+                <div className="mt-2 text-xs text-[var(--text-muted)]">Yuklanmoqda...</div>
+              )}
+              {!uploadingImage && editingItem?.metadata?.image_url && (
                 <div className="mt-2 text-xs text-[var(--success)]">Rasm tanlandi</div>
               )}
             </div>
@@ -304,7 +315,7 @@ export function CmsOfferManager() {
             <Button variant="secondary" onClick={() => setEditingItem(null)}>
               Bekor qilish
             </Button>
-            <Button onClick={saveItem} className="gap-2">
+            <Button onClick={saveItem} disabled={uploadingImage} className="gap-2">
               <Send size={16} />
               Saqlash
             </Button>

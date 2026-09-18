@@ -219,18 +219,22 @@ export const catalogService = {
     return fetchCatalog("/catalog/amenities", locale);
   },
 
-  /** `GET /catalog/popular-cities` — bosh sahifa uchun mashhur shaharlar. */
+  /** `GET /catalog/destinations` — bosh sahifa uchun mashhur shaharlar (CMS Destinations). */
   async getPopularCities(locale: Locale): Promise<PopularCityView[]> {
-    const raw = await rawApi.get<unknown>("/catalog/popular-cities");
-    const items = camelizeKeys<RawPopularCity[]>(raw);
-    return (items ?? []).map((item) => ({
-      id: item.id,
-      name: pickLocale(item.name, locale),
-      slug: item.slug ?? "",
-      imageUrl: item.imageUrl ?? "",
-      hotelCount: item.hotelCount ?? 0,
-      sortOrder: item.sortOrder ?? 0,
-    }));
+    const raw = await rawApi.get<unknown>("/catalog/destinations");
+    const items = camelizeKeys<any[]>(raw);
+    return (items ?? []).map((item) => {
+      const title = item.title ?? {};
+      const metadata = item.metadata ?? {};
+      return {
+        id: item.id,
+        name: pickLocale(title, locale) || item.slug || "",
+        slug: item.slug ?? "",
+        imageUrl: metadata.imageUrl ?? metadata.image_url ?? "",
+        hotelCount: 0, // No longer directly available in CMS entries, but we can mock it or UI can hide it.
+        sortOrder: metadata.order ?? metadata.sortOrder ?? metadata.sort_order ?? 0,
+      };
+    });
   },
 
   /**

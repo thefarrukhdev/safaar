@@ -136,12 +136,26 @@ export function SiteFooter({
         </div>
 
         {/* Divider & Copyright */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row">
           <p className="text-xs text-slate-400">
             © {year} {dict.brand}. {dict.footer.rights}
           </p>
-          <div className="text-xs text-slate-400">
-            {dict.footer.secureBooking}
+          <div className="flex flex-col items-center sm:items-end gap-3 text-xs text-slate-400">
+            <span>{dict.footer.secureBooking}</span>
+            <div className="flex items-center gap-2">
+              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
+                <Image src="/payments/uzcard.jpg" alt="Uzcard" fill className="object-contain p-0.5" sizes="40px" />
+              </div>
+              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
+                <Image src="/payments/visa.jpeg" alt="Visa" fill className="object-contain p-0.5" sizes="40px" />
+              </div>
+              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
+                <Image src="/payments/mastercard.jpg" alt="Mastercard" fill className="object-contain p-0.5" sizes="40px" />
+              </div>
+              <div className="relative h-6 w-14 overflow-hidden rounded-sm bg-white">
+                <Image src="/payments/3dsecure.jpg" alt="3D Secure" fill className="object-contain p-0.5" sizes="56px" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,14 +1,14 @@
 import Image from "next/image";
 import type { HomeDict } from "@/i18n/dictionaries";
 
-export function Hero({ dict, children }: { dict: HomeDict["hero"], children?: React.ReactNode }) {
+export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], children?: React.ReactNode, bannerUrl?: string }) {
   return (
-    <section className="relative flex min-h-[70vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16">
+    <section className="relative flex min-h-[70vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10">
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src="/samarqans.jpg"
-          alt="Safaar — Samarqand"
+          src={bannerUrl || "/samarqans.jpg"}
+          alt="Safaar — O'zbekiston"
           fill
           priority
           className="object-cover object-center animate-image-zoom"
@@ -17,8 +17,6 @@ export function Hero({ dict, children }: { dict: HomeDict["hero"], children?: Re
         />
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/30" />
-        {/* Top white gradient blending with header */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white to-transparent" />
         {/* Bottom white gradient blending with content */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white via-white/80 to-transparent" />
       </div>

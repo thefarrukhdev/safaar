@@ -589,6 +589,7 @@ function toListing(row: ApiRecord): AdminListing {
     longitude: asOptionalNumber(row.longitude),
     stars: asNumber(row.stars),
     featured: asBoolean(row.featured, false),
+    featuredOrder: asOptionalNumber(row.featured_order),
     photos,
     description: localizedText(
       row.description ?? row.full_description ?? row.short_description,
@@ -1038,15 +1039,9 @@ function toTicketMessage(row: ApiRecord): TicketMessage {
     id: asString(row.id),
     ticketId: asString(row.ticketId ?? row.ticket_id),
     senderName: asString(row.senderName ?? row.sender_name, 'Foydalanuvchi'),
-    senderRole:
-      row.sender_type === 'admin' || row.senderRole === 'admin'
-        ? 'admin'
-        : 'customer',
+    senderRole: row.sender_type === 'admin' || row.senderRole === 'admin' ? 'admin' : 'customer',
     message: asString(row.message ?? row.body),
-    createdAt: asString(
-      row.createdAt ?? row.created_at,
-      new Date().toISOString(),
-    ),
+    createdAt: asString(row.createdAt ?? row.created_at, new Date().toISOString()),
   };
 }
 
@@ -1089,6 +1084,18 @@ function cmsDestinationPayload(
 }
 
 export const AdminApi = {
+  // Media Upload
+  uploadMedia: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<{ url: string }>('/uploads/images', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
+  },
+  
   // Auth
   login: async (username: string, password: string) => {
     const { data } = await apiClient.post('/auth/admin/login', {
@@ -2073,6 +2080,11 @@ export const AdminApi = {
     return data;
   },
 
+  updateListing: async (id: string, payload: Partial<AdminListing>): Promise<AdminListing> => {
+    const { data } = await apiClient.patch(`/admin/hotels/${id}`, payload);
+    return toListing(asRecord(data));
+  },
+
   // ── Availability (2026-09-14 gap closure) ───────────────────────────
   // Backend: GET/POST/DELETE /admin/rooms/:id/... (admin.controller.ts,
   // roomAvailabilityCalendar/Block/Unblock in admin.service.ts) — reuses
@@ -2212,7 +2224,21 @@ export const AdminApi = {
   // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
   // (verified live against the QA backend this session).
   toggleListingFeatured: async (id: string, featured: boolean) => {
-    console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
-    return Promise.resolve({ success: true, featured });
+    const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
+    return data;
+  },
+
+  // `orderedIds` — final display order. The server derives the actual
+  // `featured_order` values from array position; it never trusts a
+  // client-supplied number, and rejects any ID that isn't an existing,
+  // currently-featured hotel.
+  reorderFeaturedListings: async (orderedIds: string[]): Promise<{ updated: number }> => {
+    const { data } = await apiClient.post('/admin/hotels/featured/reorder', { orderedIds });
+    return data;
+  },
+
+  blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
+    const { data } = await apiClient.post(`/admin/hotels/${id}/blocked-dates`, payload);
+    return data;
   },
 };

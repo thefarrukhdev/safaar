@@ -176,6 +176,7 @@ export function usePartnerPhoneOtpVerify() {
         // priority over the `partnerType` the caller passed in.
         partnerType:
           tokens.organizationType ?? tokens.organization_type ?? partnerType ?? 'hotel',
+        isDemo: false,
       };
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
@@ -191,32 +192,32 @@ export function usePartnerPhoneOtpVerify() {
   });
 }
 
-export function usePartnerPasswordLogin() {
+export function usePartnerEmailLogin() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: async ({
-      phone,
-      password,
-    }: {
-      phone: string;
-      password?: string;
-    }) => {
-      const tokens = await auth.partnerPasswordLogin(phone, password);
+    mutationFn: async ({ email, password }: { email: string; password?: string }) => {
+      const tokens = await auth.partnerLogin(email, password);
       return {
-        phone,
+        email,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
         // Was hardcoded 'hotel' regardless of the real organization type
         // (confirmed live: restaurant/transport test partners both showed
         // a hotel-style dashboard after password login). Now uses the
         // authoritative partner_organizations.type the backend returns.
+        // (A prior attempt here checked tokens.partner_role === 'bus', but
+        // partner_role is the partner_users.role column -- team role like
+        // 'owner'/'manager' -- never an organization type, so that
+        // condition could never actually be true.)
         partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
+        isDemo: false,
       };
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
-      const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
+    onSuccess: ({ email, tokens, organizationId, partnerType, isDemo }) => {
+      // Build a session. Use email as identifier instead of phone.
+      const { user } = buildPartnerSession(email, tokens, partnerType, 'email');
       user.organizationId = organizationId;
       setSession(user, tokens);
       toast.success('Xush kelibsiz!');
@@ -255,6 +256,7 @@ export function usePartnerSetPassword() {
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
         partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
+        isDemo: false,
       };
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType }) => {

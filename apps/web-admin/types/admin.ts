@@ -36,6 +36,10 @@ export interface AdminListing {
   longitude?: number;
   stars: number;
   featured?: boolean;
+  /** Faqat `featured=true` bo'lganlar orasidagi tartib — `featured`dan
+   * ALOHIDA tushuncha (bir hotel featured bo'lib, hali tartib belgilanmagan
+   * bo'lishi mumkin). `null` = hali tartib berilmagan. */
+  featuredOrder?: number | null;
   photos?: string[];
   description?: string;
   amenities?: string[];

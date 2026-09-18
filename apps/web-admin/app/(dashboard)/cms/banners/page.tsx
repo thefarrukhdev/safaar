@@ -86,7 +86,7 @@ export default function BannersPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageUrl) {
-      toast.error("Rasm yuklanishini kuting");
+      toast.error("Rasm yuklanishini kuting yoki Iltimos rasm yuklang");
       return;
     }
     setSaving(true);
@@ -228,7 +228,6 @@ export default function BannersPage() {
               onChange={handleFileChange}
               disabled={uploading}
               className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
-              required={!imageUrl}
             />
             {uploading && (
               <p className="text-xs text-[var(--muted-foreground)]">Yuklanmoqda...</p>

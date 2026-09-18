@@ -38,6 +38,7 @@ interface RawBanner {
   imageUrl?: string;
   link?: string;
   order?: number;
+  status?: string;
 }
 
 export interface DealView {
@@ -205,10 +206,15 @@ export const cmsService = {
   /** `GET /cms/banners` — bosh sahifadagi banner/slayder uchun. */
   async getBanners(locale: Locale): Promise<BannerView[]> {
     const raw = await rawApi.get<unknown>('/cms/banners', {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     } as any);
     const items = camelizeKeys<RawBanner[]>(raw);
-    return (items ?? []).map((item) => toBannerView(item, locale));
+    return (items ?? [])
+      .filter((item) => {
+        const status = item.status ?? "active";
+        return status === "active" || status === "published";
+      })
+      .map((item) => toBannerView(item, locale));
   },
 
   /** `GET /cms/offers` — bosh sahifa "Chegirmadagi takliflar" uchun. */

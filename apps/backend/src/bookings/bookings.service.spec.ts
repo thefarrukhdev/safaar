@@ -1708,3 +1708,111 @@ describe('BookingsService — Idempotency-Key (PHASE 14G security fix)', () => {
     expect(pg.transaction).toHaveBeenCalledTimes(2); // key yo'q — har doim yangi yaratiladi
   });
 });
+
+describe('BookingsService — booking confirmation email uses an active CMS template when one exists (audit: template edits never reached real sends)', () => {
+  let service: BookingsService;
+  let pg: jest.Mocked<Pick<PostgresService, 'query'>> & {
+    transaction: jest.Mock;
+  };
+  let email: jest.Mocked<Pick<EmailService, 'send'>>;
+
+  beforeEach(() => {
+    pg = {
+      query: jest.fn(),
+      transaction: jest.fn(),
+    };
+    email = {
+      send: jest
+        .fn()
+        .mockResolvedValue({ providerMessageId: '', accepted: true }),
+    };
+    service = new BookingsService(
+      pg as unknown as PostgresService,
+      {
+        bookingStatusChanged: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+      } as unknown as EventsService,
+      email as unknown as EmailService,
+      noopPromosService() as unknown as PromosService,
+      {
+        buildCheckoutUrl: jest.fn().mockReturnValue(null),
+      } as unknown as PaymentsService,
+      noopCacheService() as unknown as AppCacheService,
+    );
+  });
+
+  const booking = {
+    id: 'booking-1',
+    booking_number: 'SAF-1001',
+    guest_name: 'Laziz',
+    guest_email: 'laziz@example.com',
+    total_amount: 500000,
+    currency: 'UZS',
+  };
+
+  it('uses the CMS template body/subject with {variables} substituted when an active booking_confirmation_email template exists', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        body: {
+          uz: "Salom {guestName}, bron {bookingNumber} uchun {totalAmount} {currency} to'landi.",
+        },
+        metadata: {
+          code: 'booking_confirmation_email',
+          subject: 'Bron #{bookingNumber} tasdiqlandi',
+        },
+      },
+    ]);
+
+    await (
+      service as unknown as {
+        sendBookingConfirmationEmail: (b: typeof booking) => Promise<void>;
+      }
+    ).sendBookingConfirmationEmail(booking);
+
+    expect(pg.query.mock.calls[0]?.[0]).toContain("type = 'template'");
+    expect(pg.query.mock.calls[0]?.[1]).toEqual(['booking_confirmation_email']);
+    expect(email.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'laziz@example.com',
+        subject: 'Bron #SAF-1001 tasdiqlandi',
+        text: "Salom Laziz, bron SAF-1001 uchun 500000 UZS to'landi.",
+      }),
+    );
+  });
+
+  it("falls back to the hardcoded message when no active template exists (xulq-atvor o'zgarmaydi)", async () => {
+    pg.query.mockResolvedValueOnce([]);
+
+    await (
+      service as unknown as {
+        sendBookingConfirmationEmail: (b: typeof booking) => Promise<void>;
+      }
+    ).sendBookingConfirmationEmail(booking);
+
+    expect(email.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'laziz@example.com',
+        subject: 'Safaar — bron tasdiqlandi (SAF-1001)',
+      }),
+    );
+    const sentText = (email.send.mock.calls[0]?.[0] as { text: string }).text;
+    expect(sentText).toContain('Broningiz qabul qilindi');
+  });
+
+  it('falls back safely if the template lookup query itself throws', async () => {
+    pg.query.mockRejectedValueOnce(new Error('db down'));
+
+    await (
+      service as unknown as {
+        sendBookingConfirmationEmail: (b: typeof booking) => Promise<void>;
+      }
+    ).sendBookingConfirmationEmail(booking);
+
+    expect(email.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'Safaar — bron tasdiqlandi (SAF-1001)',
+      }),
+    );
+  });
+});

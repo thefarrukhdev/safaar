@@ -2615,6 +2615,7 @@ export class AdminService {
           h.reviews_count,
           h.status::text,
           h.featured,
+          h.featured_order,
           h.check_in_time,
           h.check_out_time,
           h.cancellation_policy_code,
@@ -2797,6 +2798,10 @@ export class AdminService {
         rating_average: Number(row['rating_average'] ?? 0),
         reviews_count: Number(row['reviews_count'] ?? 0),
         featured: Boolean(row['featured']),
+        featured_order:
+          row['featured_order'] === null || row['featured_order'] === undefined
+            ? null
+            : Number(row['featured_order']),
         images: media.map((item) => item.url),
         image_ids: media.map((item) => item.id),
         amenities: amenities.map((item) => item.code),
@@ -3076,6 +3081,84 @@ export class AdminService {
       String(rows[0]['partner_organization_id']),
     );
     return updated;
+  }
+
+  /**
+   * Bosh sahifadagi "Featured hotels" tartibi — `featured` (a'zolik holati,
+   * partners.service.ts/admin edit orqali boshqariladi) va `featuredOrder`
+   * (shu a'zolar orasidagi tartib) ATAYLAB alohida tushunchalar: bu metod
+   * FAQAT tartibni yozadi, hech qaysi hotelni featured qilib belgilamaydi
+   * yoki olib tashlamaydi.
+   *
+   * `orderedIds` — clientning YAKUNIY tartibda joylashtirilgan hotel ID
+   * ro'yxati. Xavfsizlik: raqamli tartib qiymatlarini clientdan OLINMAYDI
+   * (client faqat ID'larning KETMA-KETLIGINI beradi) — server har bir ID
+   * uchun massivdagi index'ni haqiqiy `featured_order` sifatida yozadi, shu
+   * sabab duplicate/noto'g'ri raqam yuborish mumkin emas. Har bir ID
+   * `featured = true` bo'lgan, mavjud hotelga tegishli ekanligi serverda
+   * tasdiqlanadi (arbitrary ID orqali boshqa hotelni o'zgartirish yo'q) —
+   * mos kelmasa butun so'rov rad etiladi (qisman yozilmaydi).
+   */
+  async reorderFeaturedHotels(orderedIds: string[]) {
+    if (!Array.isArray(orderedIds)) {
+      throw new BadRequestException({
+        code: 'INVALID_ORDER',
+        message: "orderedIds massiv bo'lishi kerak",
+      });
+    }
+    const ids = orderedIds.map((id) => String(id));
+    if (ids.length === 0) {
+      return { updated: 0 };
+    }
+    if (!ids.every(isUuid)) {
+      throw new BadRequestException({
+        code: 'INVALID_ORDER',
+        message: "orderedIds ichida noto'g'ri ID mavjud",
+      });
+    }
+    const uniqueIds = new Set(ids);
+    if (uniqueIds.size !== ids.length) {
+      throw new BadRequestException({
+        code: 'DUPLICATE_HOTEL_ID',
+        message: 'orderedIds ichida takrorlangan ID mavjud',
+      });
+    }
+
+    await this.postgres.transaction(async (transaction) => {
+      // `FOR UPDATE` — parallel reorder so'rovlari (ikkita admin bir vaqtda
+      // saqlasa) ketma-ket bajariladi, bir-birining yozganini yo'qotmaydi.
+      const locked = await transaction.query<DbRow>(
+        `select id::text
+         from hotels
+         where id = any($1::uuid[])
+           and deleted_at is null
+           and featured = true
+         for update`,
+        [ids],
+      );
+      const lockedIds = new Set(locked.map((row) => String(row['id'])));
+      const invalidIds = ids.filter((id) => !lockedIds.has(id));
+      if (invalidIds.length > 0) {
+        throw new BadRequestException({
+          code: 'HOTEL_NOT_FEATURED',
+          message: "Ro'yxatdagi ba'zi hotellar mavjud emas yoki featured emas",
+          invalidIds,
+        });
+      }
+
+      for (let index = 0; index < ids.length; index += 1) {
+        await transaction.query(
+          `update hotels
+           set featured_order = $2, updated_at = now()
+           where id = $1::uuid`,
+          [ids[index], index],
+        );
+      }
+    });
+
+    this.invalidateAdminCache();
+    this.invalidatePublicHotelCache();
+    return { updated: ids.length };
   }
 
   private async prepareNextHotelDraft(

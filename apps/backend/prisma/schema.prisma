@@ -552,6 +552,13 @@ model Hotel {
   reviewsCount          Int         @default(0) @map("reviews_count")
   status                HotelStatus @default(draft)
   featured              Boolean     @default(false)
+  // `featured` (holat) va `featuredOrder` (tartib) ATAYLAB ALOHIDA: bu NULL
+  // bo'lishi mumkin bo'lgan, `featured=false` hotellar uchun mutlaqo
+  // e'tiborga olinmaydigan tartib raqami. Faqat admin `POST
+  // /admin/hotels/featured/reorder` orqali sozlaydi (admin.service.ts:
+  // reorderFeaturedHotels) — hech qachon `featured` bilan bir vaqtda
+  // implicit ravishda o'zgartirilmaydi.
+  featuredOrder         Int?        @map("featured_order")
   checkInTime           String?     @map("check_in_time") @db.VarChar(5)
   checkOutTime          String?     @map("check_out_time") @db.VarChar(5)
   cancellationPolicyId  String?     @map("cancellation_policy_id") @db.Uuid

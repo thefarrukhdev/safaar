@@ -576,6 +576,105 @@ describe('AdminService frontend action endpoints', () => {
     );
   });
 
+  describe('reorderFeaturedHotels (cms/featured-hotels reorder — was a frontend-only mock, no persistence)', () => {
+    const idA = '00000000-0000-9300-0000-000000000001';
+    const idB = '00000000-0000-9300-0000-000000000002';
+    const idC = '00000000-0000-9300-0000-000000000003';
+
+    it('persists server-derived order (array index), not any client-supplied number', async () => {
+      pgMock.query.mockResolvedValueOnce([{ id: idA }, { id: idB }]); // locked featured rows
+      pgMock.query.mockResolvedValueOnce([]); // update idB -> 0
+      pgMock.query.mockResolvedValueOnce([]); // update idA -> 1
+
+      const result = await service.reorderFeaturedHotels([idB, idA]);
+
+      expect(result).toEqual({ updated: 2 });
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('set featured_order = $2'),
+        [idB, 0],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('set featured_order = $2'),
+        [idA, 1],
+      );
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('hotels:list:*');
+    });
+
+    it('rejects the whole request if any ID is not an existing, featured hotel (no arbitrary-hotel-ID writes)', async () => {
+      pgMock.query.mockResolvedValueOnce([{ id: idA }]); // only idA is actually featured
+
+      await expect(
+        service.reorderFeaturedHotels([idA, idB]),
+      ).rejects.toMatchObject({
+        response: { code: 'HOTEL_NOT_FEATURED', invalidIds: [idB] },
+      });
+
+      // Nothing beyond the initial lookup was ever written.
+      expect(pgMock.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects duplicate IDs in the request (never silently collapses them into one order slot)', async () => {
+      await expect(
+        service.reorderFeaturedHotels([idA, idA]),
+      ).rejects.toMatchObject({ response: { code: 'DUPLICATE_HOTEL_ID' } });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-UUID entries instead of passing them through to SQL', async () => {
+      await expect(
+        service.reorderFeaturedHotels(['not-a-uuid']),
+      ).rejects.toMatchObject({ response: { code: 'INVALID_ORDER' } });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op for an empty list (does not touch the database)', async () => {
+      await expect(service.reorderFeaturedHotels([])).resolves.toEqual({
+        updated: 0,
+      });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent under a concurrent reorder — the second call fully overwrites the first (last write wins, no partial interleave)', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: idA },
+        { id: idB },
+        { id: idC },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reorderFeaturedHotels([idC, idB, idA]);
+
+      pgMock.query.mockResolvedValueOnce([
+        { id: idA },
+        { id: idB },
+        { id: idC },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reorderFeaturedHotels([idA, idB, idC]);
+
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('set featured_order = $2'),
+        [idA, 0],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        7,
+        expect.stringContaining('set featured_order = $2'),
+        [idB, 1],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        8,
+        expect.stringContaining('set featured_order = $2'),
+        [idC, 2],
+      );
+    });
+  });
+
   describe('invalidateCmsCache (regression: destinations admin write left the public /catalog/destinations cache stale for up to 5 minutes)', () => {
     const destinationRow = {
       id: '00000000-0000-7006-0000-000000000001',

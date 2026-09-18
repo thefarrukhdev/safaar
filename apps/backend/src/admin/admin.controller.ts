@@ -342,6 +342,15 @@ export class AdminController {
     );
   }
 
+  @Post('hotels/featured/reorder')
+  @Permissions(Permission.PartnersWrite)
+  hotelsFeaturedReorder(@Body() body: Record<string, unknown>) {
+    const orderedIds = Array.isArray(body.orderedIds)
+      ? (body.orderedIds as unknown[]).map((id) => String(id))
+      : [];
+    return this.adminService.reorderFeaturedHotels(orderedIds);
+  }
+
   @Get('trips')
   trips(@Query() query: Record<string, string | undefined>) {
     return this.adminService.trips(query);

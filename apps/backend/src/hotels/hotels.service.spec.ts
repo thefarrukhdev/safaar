@@ -95,6 +95,37 @@ describe('HotelsService.findAll', () => {
     );
   });
 
+  describe('?featured=true ordering (regression: admin featured-reorder had no persisted order, hotels only ever sorted by rating)', () => {
+    it('orders by the admin-set featured_order first when ?featured=true', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ featured: 'true' });
+
+      const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain(
+        'ORDER BY h.featured_order ASC NULLS LAST, h.rating_average DESC',
+      );
+    });
+
+    it('does not touch featured_order ordering for a normal (non-featured) listing query', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({});
+
+      const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).not.toContain('featured_order');
+      expect(sql).toContain('ORDER BY h.rating_average DESC');
+    });
+  });
+
   it.each(['dacha', 'resort', 'sanatorium'])(
     'filters by a single partner type when ?type=%s (category routes)',
     async (type) => {

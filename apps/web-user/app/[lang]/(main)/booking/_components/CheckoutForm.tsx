@@ -13,7 +13,6 @@ import { PaymentSelector } from "@/components/features/checkout/PaymentSelector"
 import { trackBookingStarted } from "@/lib/services/analytics/tracker";
 import { CheckoutMobileCtaBar } from "./CheckoutMobileCtaBar";
 
-
 function nightsBetween(checkIn: string, checkOut: string): number {
   const start = Date.parse(checkIn);
   const end = Date.parse(checkOut);
@@ -33,7 +32,7 @@ export function CheckoutForm({
   isGuest = false,
 }: {
   locale: Locale;
-  dict: CheckoutDict & { firstName?: string; lastName?: string; email?: string; phone?: string };
+  dict: CheckoutDict;
   hotelId: string;
   hotelName: string;
   room: { id: string; name: string; priceSum: number; capacity: number };
@@ -53,8 +52,7 @@ export function CheckoutForm({
 
   const getErrorMessage = (error: string) => {
     if (error === "ERROR") return dict.error;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const errorsDict = (dict as any).errors as Record<string, string> | undefined;
+    const errorsDict = dict.errors as Record<string, string> | undefined;
     return errorsDict?.[error] ?? error;
   };
 
@@ -83,25 +81,25 @@ export function CheckoutForm({
           {isGuest ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.firstName || "Ism"}</span>
+                <span className="text-sm font-medium">{dict.firstName}</span>
                 <Input
                   name="firstName"
                   autoComplete="given-name"
                   required
-                  placeholder={dict.firstName || "Ism"}
+                  placeholder={dict.firstName}
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.lastName || "Familiya"}</span>
+                <span className="text-sm font-medium">{dict.lastName}</span>
                 <Input
                   name="lastName"
                   autoComplete="family-name"
                   required
-                  placeholder={dict.lastName || "Familiya"}
+                  placeholder={dict.lastName}
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.email || "Elektron pochta"}</span>
+                <span className="text-sm font-medium">{dict.email}</span>
                 <Input
                   type="email"
                   name="email"
@@ -111,7 +109,7 @@ export function CheckoutForm({
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.phone || "Telefon raqami"}</span>
+                <span className="text-sm font-medium">{dict.phone}</span>
                 <Input
                   type="tel"
                   name="phone"
@@ -167,11 +165,11 @@ export function CheckoutForm({
           </div>
 
           <label className="flex flex-col gap-1 mt-2">
-            <span className="text-sm font-medium">Maxsus so'rovlar (ixtiyoriy)</span>
+            <span className="text-sm font-medium">{dict.specialRequests}</span>
             <textarea
               name="specialRequests"
               rows={3}
-              placeholder="Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing..."
+              placeholder={dict.specialRequestsPlaceholder}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
             />
           </label>
@@ -179,7 +177,7 @@ export function CheckoutForm({
 
         <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
-          <PaymentSelector defaultValue="click" name="paymentMethod" />
+          <PaymentSelector defaultValue="click" name="paymentMethod" dict={dict.paymentMethods} />
         </section>
       </div>
 
@@ -198,14 +196,14 @@ export function CheckoutForm({
 
         <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-500">Promokod (agar bo'lsa)</span>
+            <span className="text-xs font-semibold text-slate-500">{dict.promoCode}</span>
             <div className="flex gap-2">
               <Input
                 name="promoCode"
                 placeholder="PROMO2025"
                 className="text-sm"
               />
-              <Button type="button" variant="secondary" className="px-3">Qo'llash</Button>
+              <Button type="button" variant="secondary" className="px-3">{dict.applyPromo}</Button>
             </div>
           </label>
         </div>
@@ -233,7 +231,11 @@ export function CheckoutForm({
               className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
             />
             <span className="text-slate-600 dark:text-slate-400 leading-tight">
-              Men <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-primary-600 hover:underline">Ommaviy Oferta</Link> shartlariga roziman.
+              {dict.agreeTermsPrefix}
+              <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-primary-600 hover:underline">
+                {dict.termsLink}
+              </Link>
+              {dict.agreeTermsSuffix}
             </span>
           </label>
         </div>
@@ -247,15 +249,14 @@ export function CheckoutForm({
             loading={pending}
             disabled={nights < 1}
           >
-            {dict.confirm}
+            {dict.payButton || dict.confirm}
           </Button>
         </div>
       </aside>
 
       <CheckoutMobileCtaBar
         total={total}
-        totalLabel={dict.total || "Jami"}
-        buttonText="To'lash"
+        dict={{ total: dict.total, payButton: dict.payButton }}
         pending={pending}
         disabled={nights < 1}
         targetId="checkout-original-cta"

@@ -25,6 +25,11 @@ export interface PartnerApplicationDraft {
   address: string;
   taxId: string;
   note?: string;
+  /** `verifyPartnerRegistrationOtp()`dan olingan, bir martalik server-side
+   * proof — backend buni majburiy talab qiladi (`PARTNER_PHONE_NOT_VERIFIED`
+   * bilan rad etadi, agar yo'q/yaroqsiz/eskirgan/boshqa telefon uchun
+   * bo'lsa). Client claim emas — backend proof'ni o'zi qayta tasdiqlaydi. */
+  phoneVerificationToken: string;
 }
 
 export type PartnerAccessLookup = string | { phone?: string; email?: string };

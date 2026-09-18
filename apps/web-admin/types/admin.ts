@@ -8,9 +8,9 @@ export type AdminRole =
   | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'MODERATOR'
-  | 'FINANCE'
-  | 'SUPPORT'
-  | 'CONTENT';
+  | 'FINANCE_ADMIN'
+  | 'CONTENT_ADMIN'
+  | 'SUPPORT_ADMIN';
 
 export interface AdminUser {
   id: string;
@@ -36,6 +36,10 @@ export interface AdminListing {
   longitude?: number;
   stars: number;
   featured?: boolean;
+  /** Faqat `featured=true` bo'lganlar orasidagi tartib — `featured`dan
+   * ALOHIDA tushuncha (bir hotel featured bo'lib, hali tartib belgilanmagan
+   * bo'lishi mumkin). `null` = hali tartib berilmagan. */
+  featuredOrder?: number | null;
   photos?: string[];
   description?: string;
   amenities?: string[];
@@ -48,6 +52,7 @@ export interface AdminListing {
     cancellationPolicy?: string;
   };
   roomsCount?: number;
+  roomTypes?: AdminRoomType[];
   type?: string;
   status: 'draft' | 'under_review' | 'published' | 'rejected';
   submittedAt: string;
@@ -55,6 +60,117 @@ export interface AdminListing {
     isPublishable: boolean;
     missingFields: string[];
   };
+}
+
+/* ────────────────────────────────────────────
+   Rooms / Availability (2026-09-14 SAFAAR admin gap closure)
+   backend: GET /admin/hotels/:id already returns room_types[].rooms[]
+   (admin.service.ts groupAdminRoomTypes) — reused as-is, no new endpoint
+   needed just to list a hotel's rooms.
+   ──────────────────────────────────────────── */
+
+export interface AdminRoom {
+  id: string;
+  code: string;
+  name: string;
+  totalInventory: number;
+  basePrice: number;
+  status: string;
+}
+
+export interface AdminRoomType {
+  id: string;
+  code: string;
+  name: string;
+  rooms: AdminRoom[];
+}
+
+export type AvailabilityDayStatus =
+  | 'available'
+  | 'booked'
+  | 'blocked'
+  | 'partially_occupied';
+
+export interface AvailabilityDay {
+  date: string;
+  totalCount: number;
+  bookedCount: number;
+  blocked: boolean;
+  status: AvailabilityDayStatus;
+  sellableCount: number;
+}
+
+export interface RoomAvailability {
+  roomId: string;
+  hotelId: string;
+  totalInventory: number;
+  days: AvailabilityDay[];
+}
+
+/* ────────────────────────────────────────────
+   Reviews (2026-09-14 SAFAAR admin gap closure)
+   backend: reviews table + src/reviews/ (customer-facing, pre-existing);
+   admin list/moderate added in admin.service.ts (reviewsList/reviewModerate).
+   ──────────────────────────────────────────── */
+
+export type AdminReviewStatus = 'published' | 'hidden' | 'pending_review';
+
+/* ────────────────────────────────────────────
+   Generic CMS entry (2026-09-14 gap closure — Translations/SEO)
+   backend: cms_entries (title/body Json, metadata Json) via the EXISTING
+   generic GET/PATCH /admin/cms/:resource[/:id] (admin.service.ts
+   cmsList/cmsOne/cmsUpdate) — reused as-is, no new backend model.
+   The existing CmsBanner/CmsArticle types flatten title to one locale;
+   this one keeps the full {uz,ru,en} object for language-tabbed editing.
+   ──────────────────────────────────────────── */
+
+export const CMS_RESOURCES = [
+  'banners',
+  'offers',
+  'news',
+  'pages',
+  'templates',
+  'broadcasts',
+  'destinations',
+] as const;
+export type CmsResource = (typeof CMS_RESOURCES)[number];
+
+export interface CmsEntrySeo {
+  metaTitle?: string;
+  metaDescription?: string;
+  canonical?: string;
+  robots?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+}
+
+export interface CmsEntry {
+  id: string;
+  type: string;
+  slug: string | null;
+  title: Record<string, string>;
+  body: Record<string, string>;
+  status: string;
+  metadata: Record<string, unknown>;
+  seo: CmsEntrySeo;
+  updatedAt: string;
+}
+
+export interface AdminReview {
+  id: string;
+  userId: string;
+  userName: string;
+  bookingId: string | null;
+  targetType: string;
+  targetId: string;
+  targetName: string;
+  rating: number;
+  body: string;
+  photos: string[];
+  status: AdminReviewStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminRefund {
@@ -466,11 +582,11 @@ export interface CmsArticle {
 
 export interface CmsDestination {
   id: string;
-  city: string;
+  title: string;
   imageUrl: string;
-  sortOrder: number;
+  link: string;
   isActive: boolean;
-  createdAt: string;
+  order: number;
 }
 
 /* ────────────────────────────────────────────
@@ -524,37 +640,15 @@ export interface PromoCode {
 
 export type TicketStatus = 'open' | 'in_progress' | 'closed';
 
-export interface AdminReview {
-  id: string;
-  hotelId: string;
-  hotelName: string;
-  userId: string;
-  userName: string;
-  rating: number;
-  comment: string;
-  status: 'published' | 'hidden' | 'spam';
-  createdAt: string;
-}
+// develop (ce07fc27) independently added a shallower AdminReview here
+// (hotelId/hotelName/comment/status: 'published'|'hidden'|'spam') plus
+// AdminTranslation and AdminSeo, all backing mocked-only AdminApi methods
+// ("MOCKED - BACKEND ENDPOINT YETISHMAYDI"). Dropped as part of the merge
+// resolution in favor of the real AdminReview (line ~155) and the
+// CmsEntry/CmsEntrySeo-based translations/SEO model, both backed by the
+// actual /admin/reviews and /admin/cms/:resource routes verified live
+// against the QA backend this session.
 
-export interface AdminTranslation {
-  id: string;
-  key: string;
-  uz: string;
-  ru: string;
-  en: string;
-  createdAt: string;
-}
-
-export interface AdminSeo {
-  id: string;
-  path: string; // e.g. "/", "/hotels", "/about"
-  title: string;
-  description: string;
-  keywords: string;
-  updatedAt: string;
-}
-
-// Removed AdminBanner as we use CmsBanner now
 export interface TicketMessage {
   id: string;
   ticketId: string;

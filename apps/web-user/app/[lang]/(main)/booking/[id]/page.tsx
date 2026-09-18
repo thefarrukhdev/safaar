@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock,
   CreditCard,
+  RotateCcw,
   ShieldCheck,
 } from "lucide-react";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -23,11 +25,29 @@ function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function getBookingOrNull(id: string, token?: string) {
+async function getBookingOrNull(
+  id: string,
+  token?: string,
+  guestToken?: string,
+) {
   try {
-    return await api.bookings.getBooking(id, token ? { token } : undefined);
+    return await api.bookings.getBooking(
+      id,
+      token || guestToken ? { token, guestToken } : undefined,
+    );
   } catch (error) {
-    if (error instanceof ApiRequestError && error.statusCode === 404) {
+    // 404 (bron topilmadi) va 401/403 (token yo'q/yaroqsiz/muddati
+    // tugagan yoki boshqa bronga tegishli) — ikkalasida ham xom bron
+    // ID'ini "mavjud/mavjud emas"ligini tashqi kuzatuvchiga bildirmasdan,
+    // BIR XIL xavfsiz "topilmadi" holatiga tushiriladi (enumeration'ga
+    // qarshi, va guest-token muddati tugagan holatda ham sahifa CRASH
+    // bo'lish o'rniga xuddi shu, allaqachon mavjud xato holatini ko'rsatadi).
+    if (
+      error instanceof ApiRequestError &&
+      (error.statusCode === 404 ||
+        error.statusCode === 401 ||
+        error.statusCode === 403)
+    ) {
       return null;
     }
     throw error;
@@ -49,15 +69,18 @@ export default async function BookingDetailPage({
   const paymentQuery = one(sp.payment);
   const statusQuery = one(sp.status);
   const providerQuery = one(sp.provider);
+  const guestTokenQuery = one(sp.guestToken);
 
-  const [dict, session] = await Promise.all([
+  const [dict, checkoutDict, session] = await Promise.all([
     getDictionary(locale, "booking"),
+    getDictionary(locale, "checkout"),
     getSession(),
   ]);
 
   const booking: BookingView | null = await getBookingOrNull(
     id,
     session?.accessToken,
+    guestTokenQuery,
   );
 
   if (!booking) {
@@ -84,6 +107,15 @@ export default async function BookingDetailPage({
   const isFailed = paymentQuery === "failed" || payment?.status === "failed";
   const isAwaitingCash =
     paymentQuery === "cash" || payment?.status === "awaiting_cash";
+  // Backend'dagi REAL to'lov holatlari (`payments.status`): pending,
+  // awaiting_cash, processing, paid, failed, refunded, reversed. Backend
+  // — yagona haqiqat manbai; redirect query parametrlari (`paymentQuery`)
+  // faqat UI matnini tezroq ko'rsatish uchun, hech qachon `payment.status`
+  // o'rnini bosmaydi (docs/frontend-payment-integration.md, 6-bo'lim).
+  const isRefunded =
+    payment?.status === "refunded" || payment?.status === "reversed";
+  const isProcessing =
+    !isConfirmed && !isFailed && !isRefunded && payment?.status === "processing";
 
   return (
     <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
@@ -101,11 +133,11 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-7 w-7 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-emerald-950 dark:text-emerald-100 sm:text-2xl">
-              Broningiz muvaffaqiyatli tasdiqlandi!
+              {dict.confirmedTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-            Tafsilotlar va vaucher ma'lumotlari shaxsiy kabinetingizda saqlanadi.
+            {dict.confirmedSubtitle}
           </p>
         </div>
       ) : isFailed ? (
@@ -113,12 +145,11 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-7 w-7 shrink-0 text-red-600 dark:text-red-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-red-950 dark:text-red-100 sm:text-2xl">
-              To'lov tranzaksiyasi amalga oshmadi
+              {dict.failedTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-red-800 dark:text-red-300">
-            Tranzaksiya bekor qilindi yoki xatolik yuz berdi. Quyida to'lov
-            usulini qayta tanlab urinib ko'rishingiz mumkin.
+            {dict.failedSubtitle}
           </p>
         </div>
       ) : isAwaitingCash ? (
@@ -126,12 +157,38 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 shrink-0 text-amber-600 dark:text-amber-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-amber-950 dark:text-amber-100 sm:text-2xl">
-              Joyida to'lash usuli tanlandi
+              {dict.awaitingCashTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-            Joyingiz band qilindi. To'lov mehmonxonaga kelganda qabulxonada
-            amalga oshiriladi.
+            {dict.awaitingCashSubtitle}
+          </p>
+        </div>
+      ) : isRefunded ? (
+        <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+          <div className="flex items-center gap-3">
+            <RotateCcw className="h-7 w-7 shrink-0 text-slate-600 dark:text-slate-400" />
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+              To'lov qaytarildi
+            </h1>
+          </div>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {payment?.status === "reversed"
+              ? "To'lov bank tomonidan bekor qilindi va mablag' qaytarildi."
+              : "So'ralgan qaytarish amalga oshirildi. Mablag' bank kartangizga qaytariladi."}
+          </p>
+        </div>
+      ) : isProcessing ? (
+        <div className="flex flex-col gap-2 rounded-2xl border border-primary-200 bg-primary-50/80 p-6 shadow-sm dark:border-primary-900/50 dark:bg-primary-950/40">
+          <div className="flex items-center gap-3">
+            <Clock className="h-7 w-7 shrink-0 animate-pulse text-primary-600 dark:text-primary-400" />
+            <h1 className="text-xl font-extrabold tracking-tight text-primary-950 dark:text-primary-100 sm:text-2xl">
+              To'lov tekshirilmoqda
+            </h1>
+          </div>
+          <p className="text-sm font-medium text-primary-800 dark:text-primary-300">
+            To'lovingiz provayder tomonidan tasdiqlanishi kutilmoqda. Bu bir necha
+            daqiqa vaqt olishi mumkin — sahifani yangilab holatni qayta tekshiring.
           </p>
         </div>
       ) : (
@@ -141,12 +198,12 @@ export default async function BookingDetailPage({
       )}
 
       <section
-        aria-label="Receipt Summary"
+        aria-label={dict.receiptSummary}
         className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Kvitansiya xulosasi
+            {dict.receiptSummary}
           </span>
           <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-bold text-primary-800 dark:bg-primary-950 dark:text-primary-300">
             {statusLabel}
@@ -156,7 +213,7 @@ export default async function BookingDetailPage({
         <Row label={dict.number} value={booking.bookingNumber || id} />
 
         {booking.createdAt && (
-          <Row label="Yaratilgan sana">
+          <Row label={dict.createdAt}>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               {new Date(booking.createdAt).toLocaleString(locale)}
             </span>
@@ -175,23 +232,36 @@ export default async function BookingDetailPage({
         )}
       </section>
 
-      {(!isConfirmed && !isAwaitingCash) || isFailed ? (
+      {(!isConfirmed && !isAwaitingCash && !isRefunded) || isFailed ? (
         <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              To'lov usulini tanlang
-            </h2>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {isFailed || isProcessing ? "To'lovni qayta tanlang" : "To'lov usulini tanlang"}
+              </h2>
+            </div>
+            {isProcessing && (
+              <a
+                href={`/${locale}/booking/${booking.id}${guestTokenQuery ? `?guestToken=${encodeURIComponent(guestTokenQuery)}` : ""}`}
+                className="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400"
+              >
+                Holatni yangilash
+              </a>
+            )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Payme, Click, Uzcard/Humo yoki joyida to'lash usullari orqali to'lovni
-            amalga oshiring.
+            Click, Payme, Uzcard, Humo, Visa yoki Mastercard orqali to'lovni amalga
+            oshiring. Karta to'lovlari uchun to'lov haqi (fee) tanlangan usulga
+            qarab avtomatik hisoblanadi va pastda ko'rsatiladi.
           </p>
 
           <RetryPaymentForm
             bookingId={booking.id}
             locale={locale}
-            initialProvider={(providerQuery as PaymentProvider) ?? "click"}
+            initialProvider={(providerQuery as PaymentProvider) ?? (payment?.provider as PaymentProvider) ?? "click"}
+            guestToken={guestTokenQuery}
+            bookingAmount={booking.totalSum}
           />
         </section>
       ) : null}
@@ -206,11 +276,18 @@ export default async function BookingDetailPage({
         dict={{
           voucher: dict.voucher,
           backHome: dict.backHome,
+          actions: dict.actions,
+          cancelModal: dict.cancelModal,
         }}
       />
 
       <section className="mt-8">
-        <BookingChat bookingId={booking.id} token={session?.accessToken} />
+        <BookingChat
+          bookingId={booking.id}
+          token={session?.accessToken}
+          dict={dict.chat}
+          locale={locale}
+        />
       </section>
     </main>
   );

@@ -25,12 +25,55 @@
   "confirm": "Bronni tasdiqlash",
   "needDates": "Davom etish uchun kirish va chiqish sanasini tanlang.",
   "error": "Bron qilishda xatolik yuz berdi. Qayta urinib ko'ring.",
+  "specialRequests": "Maxsus so'rovlar (ixtiyoriy)",
+  "specialRequestsPlaceholder": "Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing...",
+  "promoCode": "Promokod (agar bo'lsa)",
+  "applyPromo": "Qo'llash",
+  "agreeTermsPrefix": "Men ",
+  "termsLink": "Ommaviy Oferta",
+  "agreeTermsSuffix": " shartlariga roziman.",
+  "payButton": "To'lash",
+  "paymentMethods": {
+    "click": {
+      "title": "Click Pass / Evolution",
+      "desc": "Click Evolution ilovasi yoki *880# USSD orqali zudlik bilan to'lash",
+      "badges": [
+        "1-click to'lov",
+        "Instant confirmation"
+      ]
+    },
+    "payme": {
+      "title": "Payme",
+      "desc": "Payme ilovasi yoki rasmiy sayti orqali xavfsiz va tezkor to'lov",
+      "badges": [
+        "0% komissiya",
+        "Zudlik bilan tasdiqlash"
+      ]
+    },
+    "card": {
+      "title": "Uzcard / Humo (Plastik karta)",
+      "desc": "Barcha milliy Uzcard va Humo plastik kartalari orqali to'g'ridan-to'g'ri to'lov",
+      "badges": [
+        "3D-Secure xavfsizlik",
+        "Milliy karta"
+      ]
+    },
+    "cash": {
+      "title": "Joyida to'lash (Naqd / Terminal)",
+      "desc": "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
+      "badges": [
+        "Oldindan to'lovsiz",
+        "Moslashuvchan bekor qilish"
+      ]
+    }
+  },
   "errors": {
     "ROOM_ALREADY_BOOKED": "Tanlangan xona ushbu sanalarda allaqachon band qilingan.",
     "VEHICLE_ALREADY_BOOKED": "Tanlangan avtomobil ushbu sanalarda allaqachon band qilingan.",
     "BOOKING_DATES_INVALID": "Bron qilish sanalari noto'g'ri tanlangan.",
     "GUEST_DETAILS_REQUIRED": "Mehmon ma'lumotlari kiritilishi shart.",
     "PROMO_INVALID": "Promokod noto'g'ri yoki muddati o'tgan.",
-    "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan."
+    "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
+    "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering."
   }
 }

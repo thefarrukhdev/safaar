@@ -11,9 +11,10 @@ export interface OtpRequestResponse {
 
 export interface PartnerEmailOtpRequestResponse {
   sent: boolean;
-  challenge_id: string;
-  expires_in_seconds: number;
-  resend_after_seconds: number;
+  challenge_id?: string;
+  expires_in_seconds?: number;
+  resend_after_seconds?: number;
+  dev_code?: string;
 }
 
 export interface PartnerEmailOtpVerifyDto {
@@ -27,14 +28,6 @@ export function requestOtp(phone: string): Promise<OtpRequestResponse> {
   return request<OtpRequestResponse>('/auth/otp/request', {
     method: 'POST',
     body: { phone },
-  });
-}
-
-/** OTP'ni tekshirib, JWT tokenlarini olish. */
-export function verifyOtp(dto: VerifyOtpDto): Promise<AuthTokens> {
-  return request<AuthTokens>('/auth/otp/verify', {
-    method: 'POST',
-    body: dto,
   });
 }
 
@@ -52,8 +45,69 @@ export interface PartnerLoginResponse extends AuthTokens {
   partner_role: string;
 }
 
+/** OTP'ni tekshirib, JWT tokenlarini olish. Backend: `POST /auth/otp/verify`
+ * -> `AuthService.verifyPartnerOtp` -> `issuePartnerTokensByPhone` (partner
+ * kontekstida chaqiriladi, shuning uchun oddiy `AuthTokens` emas —
+ * organization_id/partner_role bilan). */
+export function verifyOtp(dto: VerifyOtpDto): Promise<PartnerLoginResponse> {
+  return request<PartnerLoginResponse>('/auth/otp/verify', {
+    method: 'POST',
+    body: dto,
+  });
+}
+
 export type PartnerPhoneLoginResponse = PartnerLoginResponse;
 export type PartnerEmailLoginResponse = PartnerLoginResponse;
+
+export interface PartnerRegistrationOtpRequestResponse {
+  sent: boolean;
+  challenge_id: string;
+  expires_in_seconds: number;
+  resend_after_seconds: number;
+  dev_code?: string;
+}
+
+/** Registration'ning phone-ownership qadami (1/2) — LOGIN uchun ishlatiladigan
+ * `requestOtp()`/`/auth/otp/request`dan ATAYLAB alohida: backend buni
+ * o'zining `'partner_registration'` OTP purpose'i bilan chiqaradi (login
+ * challenge'lari bilan bo'lishilmaydi). Backend: `POST
+ * /auth/partner/registration-otp/request`. */
+export function requestPartnerRegistrationOtp(
+  phone: string,
+): Promise<PartnerRegistrationOtpRequestResponse> {
+  return request<PartnerRegistrationOtpRequestResponse>(
+    '/auth/partner/registration-otp/request',
+    { method: 'POST', body: { phone } },
+  );
+}
+
+export interface PartnerRegistrationOtpVerifyDto {
+  phone: string;
+  code: string;
+  challenge_id: string;
+}
+
+export interface PartnerRegistrationOtpVerifyResponse {
+  verified: true;
+  /** Bir martalik, qisqa umrli proof — hali hech qanday
+   * `partner_organizations` yozuvi yo'q, shuning uchun token/session emas.
+   * `submitPartnerApplication()`ga `phoneVerificationToken` sifatida
+   * yuboriladi; backend uni serverda qayta tasdiqlaydi (client'ning
+   * "verified" degan claimiga ishonmaydi). */
+  verification_token: string;
+  expires_in_seconds: number;
+}
+
+/** Registration'ning phone-ownership qadami (2/2). Backend: `POST
+ * /auth/partner/registration-otp/verify`. */
+export function verifyPartnerRegistrationOtp(
+  dto: PartnerRegistrationOtpVerifyDto,
+): Promise<PartnerRegistrationOtpVerifyResponse> {
+  return request<PartnerRegistrationOtpVerifyResponse>(
+    '/auth/partner/registration-otp/verify',
+    { method: 'POST', body: dto },
+  );
+}
 
 export function partnerPhoneLogin(
   phone: string,
@@ -119,4 +173,60 @@ export function partnerSetPassword(
     method: 'POST',
     body: dto,
   });
+}
+
+export interface PartnerForgotPasswordResponse {
+  actor_type: string;
+  sent: boolean;
+  challenge_id?: string;
+  expires_in_seconds?: number;
+  resend_after_seconds?: number;
+  dev_code?: string;
+}
+
+/** Backend: `POST /auth/partner/forgot-password` (phone OTP orqali parolni
+ * tiklash so'rovi — `partner/set-password`dan farqli, ALOHIDA 'password_reset'
+ * OTP purpose ishlatadi). Hozircha hech qaysi ekran chaqirmaydi — mavjud
+ * "Parolni unutdingizmi..." havolasi o'rniga set-password oqimini
+ * ishlatadi (login-form.tsx). Kelajakda kerak bo'lsa shu wrapper tayyor. */
+export function partnerForgotPassword(
+  phone: string,
+): Promise<PartnerForgotPasswordResponse> {
+  return request<PartnerForgotPasswordResponse>(
+    '/auth/partner/forgot-password',
+    { method: 'POST', body: { phone } },
+  );
+}
+
+export interface PartnerResetPasswordDto {
+  phone: string;
+  code: string;
+  challenge_id?: string;
+  password: string;
+}
+
+export interface PartnerResetPasswordResponse {
+  actor_type: string;
+  reset: boolean;
+}
+
+/** Backend: `POST /auth/partner/reset-password` — `partnerForgotPassword`ga
+ * hamkasb, hozircha chaqiruvchisi yo'q (izohga qarang). */
+export function partnerResetPassword(
+  dto: PartnerResetPasswordDto,
+): Promise<PartnerResetPasswordResponse> {
+  return request<PartnerResetPasswordResponse>(
+    '/auth/partner/reset-password',
+    { method: 'POST', body: dto },
+  );
+}
+
+/** Backend: `POST /auth/partner/logout` — joriy sessiyani (RolesGuard orqali
+ * aniqlangan) serverda bekor qiladi. Token yo'q/eskirgan bo'lsa ham
+ * mahalliy tozalash (`clearSession`) davom etishi kerak — shuning uchun
+ * `useLogout` bu chaqiruvni har doim `catch` bilan o'raydi. */
+export function partnerLogout(
+  token: string | null,
+): Promise<{ actor_id: string; logged_out: boolean }> {
+  return request('/auth/partner/logout', { method: 'POST', token });
 }

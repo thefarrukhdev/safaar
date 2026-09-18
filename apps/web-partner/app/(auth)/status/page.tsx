@@ -47,8 +47,19 @@ export default function ApplicationStatusPage() {
     if (!statusResult?.request?.id) return;
     setResubmitting(true);
     try {
-      // In real scenario, this would open a form prefilled with previous data.
-      // For now, we simulate calling the resubmit API endpoint.
+      // PRE-EXISTING STUB (out of scope for the 2026-09-15 phone-verification
+      // task): this doesn't actually resubmit the original application — it
+      // POSTs a brand-new one with fabricated placeholder data (fake email,
+      // fake city, hardcoded taxId). Left as-is; the real fix is a proper
+      // resubmit UI wired to PartnersService.resubmitApplication, which
+      // doesn't exist here and isn't part of this task's declared scope.
+      // `phoneVerificationToken` is now a required, backend-enforced proof
+      // (see register/page.tsx) — this stub never had a real phone-OTP step
+      // of its own, so it's passed empty. Previously this call would
+      // SILENTLY SUCCEED and create a garbage application; now the backend
+      // correctly rejects it with PARTNER_PHONE_NOT_VERIFIED instead — a
+      // safety improvement, not a regression, for a flow that was already
+      // non-functional.
       await access.submitPartnerApplication({
         type: "hotel",
         companyName: statusResult.request.companyName,
@@ -59,6 +70,7 @@ export default function ApplicationStatusPage() {
         address: "Qayta yuborilgan manzil",
         taxId: "123456789",
         note: "Qayta yuborilgan ariza",
+        phoneVerificationToken: "",
       });
       toast.success("Ariza muvaffaqiyatli qayta yuborildi");
       setStatusResult({ ...statusResult, status: "submitted" });

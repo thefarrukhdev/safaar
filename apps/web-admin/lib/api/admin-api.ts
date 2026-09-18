@@ -29,9 +29,15 @@ import {
   PartnerLedgerEntry,
   DeveloperApiKey,
   DeveloperWebhook,
+  AdminRoomType,
+  AdminRoom,
+  RoomAvailability,
+  AvailabilityDay,
+  AvailabilityDayStatus,
   AdminReview,
-  AdminTranslation,
-  AdminSeo,
+  AdminReviewStatus,
+  CmsEntry,
+  CmsEntrySeo,
   CmsDestination,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
@@ -458,6 +464,89 @@ function toBookingDetail(row: ApiRecord): BookingDetail {
   };
 }
 
+function toRoomTypes(value: unknown): AdminRoomType[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((rawType) => {
+    const type = asRecord(rawType);
+    const rawRooms = Array.isArray(type.rooms) ? type.rooms : [];
+    return {
+      id: asString(type.id),
+      code: asString(type.code),
+      name: localizedText(type.name, asString(type.code, 'Xona turi')),
+      rooms: rawRooms.map((rawRoom): AdminRoom => {
+        const room = asRecord(rawRoom);
+        return {
+          id: asString(room.id),
+          code: asString(room.code),
+          name: localizedText(room.name, asString(room.code, 'Xona')),
+          totalInventory: asNumber(room.total_inventory),
+          basePrice: asNumber(room.base_price),
+          status: asString(room.status, 'active'),
+        };
+      }),
+    };
+  });
+}
+
+function toI18nRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [lang, text] of Object.entries(value)) {
+    if (typeof text === 'string') out[lang] = text;
+  }
+  return out;
+}
+
+function toCmsEntry(row: ApiRecord): CmsEntry {
+  const metadata = isRecord(row.metadata) ? row.metadata : {};
+  const rawSeo = isRecord(metadata.seo) ? metadata.seo : {};
+  const seo: CmsEntrySeo = {
+    metaTitle: typeof rawSeo.metaTitle === 'string' ? rawSeo.metaTitle : undefined,
+    metaDescription:
+      typeof rawSeo.metaDescription === 'string' ? rawSeo.metaDescription : undefined,
+    canonical: typeof rawSeo.canonical === 'string' ? rawSeo.canonical : undefined,
+    robots: typeof rawSeo.robots === 'string' ? rawSeo.robots : undefined,
+    ogTitle: typeof rawSeo.ogTitle === 'string' ? rawSeo.ogTitle : undefined,
+    ogDescription:
+      typeof rawSeo.ogDescription === 'string' ? rawSeo.ogDescription : undefined,
+    ogImage: typeof rawSeo.ogImage === 'string' ? rawSeo.ogImage : undefined,
+  };
+  return {
+    id: asString(row.id),
+    type: asString(row.type),
+    slug: row.slug ? asString(row.slug) : null,
+    title: toI18nRecord(row.title_i18n ?? row.title),
+    body: toI18nRecord(row.body_i18n ?? row.body),
+    status: asString(row.status, 'draft'),
+    metadata,
+    seo,
+    updatedAt: asString(row.updated_at, new Date().toISOString()),
+  };
+}
+
+function toReview(row: ApiRecord): AdminReview {
+  const status = asString(row.status, 'published');
+  return {
+    id: asString(row.id),
+    userId: asString(row.user_id),
+    userName: asString(row.user_name, 'Mijoz'),
+    bookingId: row.booking_id ? asString(row.booking_id) : null,
+    targetType: asString(row.target_type),
+    targetId: asString(row.target_id),
+    targetName: asString(row.target_name, '—'),
+    rating: asNumber(row.rating),
+    body: asString(row.body),
+    photos: Array.isArray(row.photos)
+      ? row.photos.map((p) => String(p))
+      : [],
+    status: (['published', 'hidden', 'pending_review'].includes(status)
+      ? status
+      : 'published') as AdminReviewStatus,
+    createdAt: asString(row.created_at, new Date().toISOString()),
+    updatedAt: asString(row.updated_at, new Date().toISOString()),
+  };
+}
+
 function toListing(row: ApiRecord): AdminListing {
   const partner = asRecord(row.partner);
   const rawRules = isRecord(row.rules) ? row.rules : undefined;
@@ -500,6 +589,7 @@ function toListing(row: ApiRecord): AdminListing {
     longitude: asOptionalNumber(row.longitude),
     stars: asNumber(row.stars),
     featured: asBoolean(row.featured, false),
+    featuredOrder: asOptionalNumber(row.featured_order),
     photos,
     description: localizedText(
       row.description ?? row.full_description ?? row.short_description,
@@ -541,6 +631,7 @@ function toListing(row: ApiRecord): AdminListing {
         roomSummary.active_room_count ??
         roomSummary.total_inventory,
     ),
+    roomTypes: toRoomTypes(row.room_types),
     type:
       row.type || partner.type || row.listing_type
         ? asString(row.type ?? partner.type ?? row.listing_type)
@@ -617,6 +708,22 @@ function toCmsBanner(row: ApiRecord): CmsBanner {
   };
 }
 
+function toCmsDestination(row: ApiRecord): CmsDestination {
+  const metadata = asRecord(row.metadata);
+  return {
+    id: asString(row.id),
+    title: localizedText(row.title, asString(row.slug, "Yo'nalish")),
+    imageUrl: asString(row.imageUrl ?? row.image_url ?? metadata.imageUrl ?? metadata.image_url),
+    link: asString(row.link ?? metadata.link, '/'),
+    isActive:
+      typeof row.isActive === 'boolean'
+        ? row.isActive
+        : asString(row.status) === 'published' ||
+          asString(row.status) === 'active',
+    order: asNumber(row.order ?? metadata.order ?? metadata.sortOrder),
+  };
+}
+
 function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
   const rowType = asString(row.type);
   const articleType: CmsArticle['type'] =
@@ -638,31 +745,6 @@ function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
       new Date().toISOString(),
     ),
     metadata: isRecord(row.metadata) ? row.metadata : undefined,
-  };
-}
-
-function toCmsDestination(row: ApiRecord): CmsDestination {
-  const metadata = asRecord(row.metadata);
-  const title = asRecord(row.title);
-  return {
-    id: asString(row.id),
-    city: asString(title.uz ?? title.ru ?? title.en ?? ''),
-    imageUrl: asString(metadata.imageUrl ?? metadata.image_url),
-    sortOrder: asNumber(metadata.order ?? metadata.sortOrder ?? metadata.sort_order, 0),
-    isActive: row.status === 'published' || row.status === 'active',
-    createdAt: asString(row.created_at ?? row.createdAt, new Date().toISOString()),
-  };
-}
-
-function cmsDestinationPayload(dest: Partial<CmsDestination>) {
-  return {
-    slug: typeof dest.city === 'string' ? dest.city.toLowerCase().replace(/[^a-z0-9]+/gi, '-') : undefined,
-    title: typeof dest.city === 'string' ? { uz: dest.city } : undefined,
-    status: dest.isActive !== undefined ? (dest.isActive ? 'published' : 'draft') : undefined,
-    metadata: {
-      imageUrl: dest.imageUrl,
-      order: dest.sortOrder,
-    }
   };
 }
 
@@ -963,21 +1045,6 @@ function toTicketMessage(row: ApiRecord): TicketMessage {
   };
 }
 
-function toAdminReview(row: ApiRecord, index: number): AdminReview {
-  return {
-    id: asString(row.id, `rev-${index}`),
-    hotelId: asString(row.target_id),
-    hotelName: asString(row.target_name),
-    userId: asString(row.user_id),
-    userName: asString(row.user_name),
-    rating: asNumber(row.rating),
-    comment: asString(row.body),
-    status: (['published', 'hidden', 'spam'].includes(String(row.status)) ? String(row.status) : 'hidden') as AdminReview['status'],
-    createdAt: asString(row.created_at),
-  };
-}
-
-
 function cmsBannerPayload(banner: Omit<CmsBanner, 'id'> | Partial<CmsBanner>) {
   return {
     slug:
@@ -991,6 +1058,29 @@ function cmsBannerPayload(banner: Omit<CmsBanner, 'id'> | Partial<CmsBanner>) {
       order: banner.order ?? 0,
     },
   };
+}
+
+function cmsDestinationPayload(
+  destination: Omit<CmsDestination, 'id'> | Partial<CmsDestination>,
+) {
+  const payload: Record<string, unknown> = {};
+  if (destination.title !== undefined) {
+    payload.slug = destination.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '');
+    payload.title = {
+      uz: destination.title,
+      ru: destination.title,
+      en: destination.title,
+    };
+  }
+  const metadata: Record<string, unknown> = {};
+  if (destination.imageUrl !== undefined) metadata.imageUrl = destination.imageUrl;
+  if (destination.link !== undefined) metadata.link = destination.link || '/';
+  if (destination.order !== undefined) metadata.order = destination.order;
+  if (Object.keys(metadata).length > 0) payload.metadata = metadata;
+  return payload;
 }
 
 export const AdminApi = {
@@ -1276,6 +1366,22 @@ export const AdminApi = {
   
   resetTeamUser2FA: async (id: string): Promise<void> => {
     await apiClient.post(`/admin/admin-users/${id}/reset-2fa`);
+  },
+
+  // Real backend permission matrix — GET /admin/roles reads directly from
+  // `common/permissions.ts`'s `rolePermissions` (the actual enforcement
+  // map RolesGuard uses), not a separately-maintained/fake list.
+  getRoles: async (): Promise<{ id: string; permissions: string[] }[]> => {
+    const { data } = await apiClient.get('/admin/roles');
+    return unknownItems(data).map((row) => {
+      const r = asRecord(row);
+      return {
+        id: asString(r.id),
+        permissions: Array.isArray(r.permissions)
+          ? r.permissions.map((p) => String(p))
+          : [],
+      };
+    });
   },
 
   // Bookings
@@ -1733,29 +1839,63 @@ export const AdminApi = {
     return toCmsArticle(asRecord(data), 'offer');
   },
 
-  // Destinations (Mashhur yo'nalishlar)
+  // Destinations (Mashhur yo'nalishlar) — /admin/cms/destinations orqali
+  // generik CMS yozuvlari (cms_entries, type='destination'), banners bilan
+  // bir xil naqsh (backend hech qanday o'zgarishsiz ishlaydi, chunki
+  // cmsTypesForResource 'destinations' -> 'destination'ni avtomatik chiqaradi).
   getCmsDestinations: async (): Promise<CmsDestination[]> => {
     const { data } = await apiClient.get('/admin/cms/destinations');
-    return unknownItems(data).map((item) => toCmsDestination(asRecord(item)));
+    return unknownItems(data)
+      .map((row) => toCmsDestination(asRecord(row)))
+      .sort((a, b) => a.order - b.order);
   },
 
-  createCmsDestination: async (payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    const { data } = await apiClient.post('/admin/cms/destinations', cmsDestinationPayload(payload));
+  createCmsDestination: async (
+    destination: Omit<CmsDestination, 'id'>,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.post(
+      '/admin/cms/destinations',
+      cmsDestinationPayload(destination),
+    );
+    if (destination.isActive) {
+      await apiClient.post(`/admin/cms/destinations/${data.id}/publish`);
+      return AdminApi.getCmsDestinations().then(
+        (destinations) =>
+          destinations.find((item) => item.id === data.id) ??
+          toCmsDestination(asRecord(data)),
+      );
+    }
     return toCmsDestination(asRecord(data));
   },
 
-  updateCmsDestination: async (id: string, payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    const { data } = await apiClient.patch(`/admin/cms/destinations/${id}`, cmsDestinationPayload(payload));
+  updateCmsDestination: async (
+    id: string,
+    destination: Partial<CmsDestination>,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.patch(
+      `/admin/cms/destinations/${id}`,
+      cmsDestinationPayload(destination),
+    );
+    if (typeof destination.isActive === 'boolean') {
+      const action = await apiClient.post(
+        `/admin/cms/destinations/${id}/${destination.isActive ? 'publish' : 'unpublish'}`,
+      );
+      return toCmsDestination(asRecord(action.data));
+    }
     return toCmsDestination(asRecord(data));
   },
 
   deleteCmsDestination: async (id: string): Promise<void> => {
-    await apiClient.delete(`/admin/cms/destinations/${id}`);
+    await apiClient.post(`/admin/cms/destinations/${id}/archive`);
   },
 
-  setCmsDestinationStatus: async (id: string, isActive: boolean): Promise<CmsDestination> => {
-    const action = isActive ? 'publish' : 'unpublish';
-    const { data } = await apiClient.post(`/admin/cms/destinations/${id}/${action}`);
+  setCmsDestinationStatus: async (
+    id: string,
+    isActive: boolean,
+  ): Promise<CmsDestination> => {
+    const { data } = await apiClient.post(
+      `/admin/cms/destinations/${id}/${isActive ? 'publish' : 'unpublish'}`,
+    );
     return toCmsDestination(asRecord(data));
   },
   createCmsBanner: async (
@@ -1944,85 +2084,161 @@ export const AdminApi = {
     const { data } = await apiClient.patch(`/admin/hotels/${id}`, payload);
     return toListing(asRecord(data));
   },
+
+  // ── Availability (2026-09-14 gap closure) ───────────────────────────
+  // Backend: GET/POST/DELETE /admin/rooms/:id/... (admin.controller.ts,
+  // roomAvailabilityCalendar/Block/Unblock in admin.service.ts) — reuses
+  // the existing `room_inventory` table, no mock.
+  getRoomAvailability: async (
+    roomId: string,
+    from: string,
+    to: string,
+  ): Promise<RoomAvailability> => {
+    const { data } = await apiClient.get(`/admin/rooms/${roomId}/availability`, {
+      params: { from, to },
+    });
+    const row = asRecord(data);
+    const rawDays = Array.isArray(row.days) ? row.days : [];
+    return {
+      roomId: asString(row.room_id, roomId),
+      hotelId: asString(row.hotel_id),
+      totalInventory: asNumber(row.total_inventory),
+      days: rawDays.map((rawDay): AvailabilityDay => {
+        const day = asRecord(rawDay);
+        const status = asString(day.status, 'available');
+        return {
+          date: asString(day.date),
+          totalCount: asNumber(day.total_count),
+          bookedCount: asNumber(day.booked_count),
+          blocked: Boolean(day.blocked),
+          status: (['available', 'booked', 'blocked', 'partially_occupied'].includes(
+            status,
+          )
+            ? status
+            : 'available') as AvailabilityDayStatus,
+          sellableCount: asNumber(day.sellable_count),
+        };
+      }),
+    };
+  },
+
+  blockRoomAvailability: async (
+    roomId: string,
+    startDate: string,
+    endDate: string,
+    reason: string,
+  ) => {
+    const { data } = await apiClient.post(`/admin/rooms/${roomId}/block`, {
+      start_date: startDate,
+      end_date: endDate,
+      reason,
+    });
+    return data;
+  },
+
+  unblockRoomAvailability: async (
+    roomId: string,
+    startDate: string,
+    endDate: string,
+  ) => {
+    const { data } = await apiClient.delete(`/admin/rooms/${roomId}/block`, {
+      data: { start_date: startDate, end_date: endDate },
+    });
+    return data;
+  },
+
+  // ── Reviews (2026-09-14 gap closure) ────────────────────────────────
+  getReviews: async (filters?: {
+    status?: AdminReviewStatus | '';
+    targetType?: string;
+    minRating?: number;
+  }): Promise<AdminReview[]> => {
+    const { data } = await apiClient.get('/admin/reviews', {
+      params: {
+        status: filters?.status || undefined,
+        target_type: filters?.targetType || undefined,
+        min_rating: filters?.minRating || undefined,
+      },
+    });
+    return unknownItems(data).map((row) => toReview(asRecord(row)));
+  },
+
+  // Backend returns only {id, status, updated_at} (not a full review row) —
+  // typed narrowly here so callers don't mistake this for the complete
+  // AdminReview shape and accidentally overwrite good fields with defaults.
+  publishReview: async (
+    id: string,
+  ): Promise<{ id: string; status: AdminReviewStatus }> => {
+    const { data } = await apiClient.post(`/admin/reviews/${id}/publish`);
+    const row = asRecord(data);
+    return { id: asString(row.id, id), status: 'published' };
+  },
+
+  hideReview: async (
+    id: string,
+  ): Promise<{ id: string; status: AdminReviewStatus }> => {
+    const { data } = await apiClient.post(`/admin/reviews/${id}/hide`);
+    const row = asRecord(data);
+    return { id: asString(row.id, id), status: 'hidden' };
+  },
+
+  // ── Generic CMS entries (2026-09-14 gap closure — Translations/SEO) ──
+  // Reuses the EXISTING generic /admin/cms/:resource[/:id] backend
+  // (title/body Json + metadata Json, cmsList/cmsOne/cmsUpdate) — same
+  // data the resource-specific banners/news/pages/offers pages already
+  // read, just kept in its full {uz,ru,en} shape instead of flattened.
+  getCmsEntries: async (resource: string): Promise<CmsEntry[]> => {
+    const { data } = await apiClient.get(`/admin/cms/${resource}`);
+    return unknownItems(data).map((row) => toCmsEntry(asRecord(row)));
+  },
+
+  updateCmsEntryTranslations: async (
+    resource: string,
+    id: string,
+    title: Record<string, string>,
+    body: Record<string, string>,
+  ): Promise<CmsEntry> => {
+    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
+      title,
+      body,
+    });
+    return toCmsEntry(asRecord(data));
+  },
+
+  updateCmsEntrySeo: async (
+    resource: string,
+    id: string,
+    seo: CmsEntrySeo,
+  ): Promise<CmsEntry> => {
+    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
+      metadata: { seo },
+    });
+    return toCmsEntry(asRecord(data));
+  },
+
+  // develop (ce07fc27) independently added mocked getReviews/updateReviewStatus/
+  // deleteReview, getTranslations/createTranslation/updateTranslation/
+  // deleteTranslation and getSeoSettings/updateSeoSetting — all explicitly
+  // labeled "MOCKED - BACKEND ENDPOINT YETISHMAYDI". Dropped in favor of
+  // the real, backend-connected getReviews/publishReview/hideReview and
+  // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
+  // (verified live against the QA backend this session).
   toggleListingFeatured: async (id: string, featured: boolean) => {
     const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
     return data;
   },
 
-  reorderFeaturedListings: async (orderedIds: string[]) => {
-    // Mock for reordering featured listings
-    console.log(`Mock: Reordered featured listings:`, orderedIds);
-    return Promise.resolve({ success: true });
+  // `orderedIds` — final display order. The server derives the actual
+  // `featured_order` values from array position; it never trusts a
+  // client-supplied number, and rejects any ID that isn't an existing,
+  // currently-featured hotel.
+  reorderFeaturedListings: async (orderedIds: string[]): Promise<{ updated: number }> => {
+    const { data } = await apiClient.post('/admin/hotels/featured/reorder', { orderedIds });
+    return data;
   },
 
   blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
     const { data } = await apiClient.post(`/admin/hotels/${id}/blocked-dates`, payload);
     return data;
   },
-
-  // ────────────────────────────────────────────────────────────────────────
-  // REVIEWS
-  // ────────────────────────────────────────────────────────────────────────
-
-  getReviews: async (): Promise<AdminReview[]> => {
-    const { data } = await apiClient.get('/admin/reviews');
-    return unknownItems(data).map((row, i) => toAdminReview(asRecord(row), i));
-  },
-
-  updateReviewStatus: async (id: string, status: AdminReview['status']): Promise<void> => {
-    if (status === 'published') {
-      await apiClient.post(`/admin/reviews/${id}/publish`);
-    } else {
-      await apiClient.post(`/admin/reviews/${id}/hide`);
-    }
-  },
-
-  deleteReview: async (id: string): Promise<void> => {
-    // Backend doesn't have physical delete, we use hide
-    await apiClient.post(`/admin/reviews/${id}/hide`);
-  },
-
-  // ────────────────────────────────────────────────────────────────────────
-  // TRANSLATIONS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
-  // ────────────────────────────────────────────────────────────────────────
-
-  getTranslations: async (): Promise<AdminTranslation[]> => {
-    // Mock data
-    return [
-      { id: 'tr-1', key: 'home.hero.title', uz: 'Safaar bilan sayohat qiling', ru: 'Путешествуйте с Safaar', en: 'Travel with Safaar', createdAt: new Date().toISOString() },
-      { id: 'tr-2', key: 'auth.login.btn', uz: 'Tizimga kirish', ru: 'Войти в систему', en: 'Log into system', createdAt: new Date().toISOString() },
-    ];
-  },
-
-  createTranslation: async (payload: Omit<AdminTranslation, 'id' | 'createdAt'>): Promise<AdminTranslation> => {
-    // Mock
-    return Promise.resolve({ id: `tr-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
-  },
-
-  updateTranslation: async (id: string, payload: Partial<AdminTranslation>): Promise<AdminTranslation> => {
-    // Mock
-    return Promise.resolve({ id, key: 'mock', uz: 'mock', ru: 'mock', en: 'mock', createdAt: new Date().toISOString(), ...payload });
-  },
-
-  deleteTranslation: async (id: string): Promise<void> => {
-    // Mock
-    return Promise.resolve();
-  },
-
-  // ────────────────────────────────────────────────────────────────────────
-  // SEO & META TAGS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
-  // ────────────────────────────────────────────────────────────────────────
-
-  getSeoSettings: async (): Promise<AdminSeo[]> => {
-    return [
-      { id: 'seo-1', path: '/', title: 'Safaar - O\'zbekiston bo\'ylab mehmonxonalar', description: 'Eng yaxshi narxlarda mehmonxonalarni band qiling', keywords: 'mehmonxona, bron, safaar, sayohat, uzbekistan', updatedAt: new Date().toISOString() },
-      { id: 'seo-2', path: '/hotels/tashkent', title: 'Toshkentdagi mehmonxonalar', description: 'Toshkent shahrida arzon va qulay mehmonxonalar', keywords: 'toshkent, mehmonxona, arzon, markaz', updatedAt: new Date().toISOString() },
-    ];
-  },
-
-  updateSeoSetting: async (id: string, payload: Partial<AdminSeo>): Promise<AdminSeo> => {
-    // Mock
-    return Promise.resolve({ id, path: '/', title: 'mock', description: 'mock', keywords: 'mock', updatedAt: new Date().toISOString(), ...payload });
-  },
-
 };

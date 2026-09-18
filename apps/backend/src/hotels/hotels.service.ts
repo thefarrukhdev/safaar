@@ -115,6 +115,16 @@ export class HotelsService {
     const offsetParam = paramIndex++;
     params.push(pagination.limit, pagination.offset);
 
+    // `?featured=true` — admin `cms/featured-hotels` orqali belgilagan
+    // ANIQ tartib birinchi o'ringa qo'yiladi (NULLS LAST: hali tartib
+    // berilmagan, lekin featured=true bo'lgan hotel oxirida qoladi, hech
+    // qachon admin belgilagan tartibni buzmaydi). `featured != true`
+    // so'rovlarda bu ustun butunlay e'tiborga olinmaydi.
+    const orderBySql =
+      query.featured === 'true'
+        ? `h.featured_order ASC NULLS LAST, ${hotelOrderBySql(pagination.sortBy, pagination.order)}`
+        : hotelOrderBySql(pagination.sortBy, pagination.order);
+
     const rows = await this.pg.query(
       `SELECT h.id::text, h.partner_organization_id::text, h.slug, h.city_id::text,
         h.address, h.latitude::float8, h.longitude::float8, h.stars,
@@ -131,7 +141,7 @@ export class HotelsService {
       LEFT JOIN cities c ON c.id = h.city_id
       LEFT JOIN (SELECT hotel_id, MIN(base_price) as min_price FROM hotel_rooms WHERE status = 'active' GROUP BY hotel_id) rp ON rp.hotel_id = h.id
       WHERE ${conditions.join(' AND ')}
-      ORDER BY ${hotelOrderBySql(pagination.sortBy, pagination.order)}
+      ORDER BY ${orderBySql}
       LIMIT $${limitParam} OFFSET $${offsetParam}`,
       params,
     );

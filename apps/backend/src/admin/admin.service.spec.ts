@@ -6,6 +6,7 @@ import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
 import type { SmsService } from '../infrastructure/sms.service';
+import type { UzumCheckoutProvider } from '../payments/providers/uzum-checkout.provider';
 import { AdminService } from './admin.service';
 
 describe('AdminService frontend action endpoints', () => {
@@ -75,6 +76,7 @@ describe('AdminService frontend action endpoints', () => {
         hotelListingChanged: eventsMock.hotelListingChanged,
       } as unknown as EventsService,
       smsMock as unknown as SmsService,
+      { refund: jest.fn() } as unknown as UzumCheckoutProvider,
     );
   });
 
@@ -572,6 +574,105 @@ describe('AdminService frontend action endpoints', () => {
       expect.stringContaining('type = any($3::text[])'),
       [pageId, 'archived', ['page']],
     );
+  });
+
+  describe('reorderFeaturedHotels (cms/featured-hotels reorder — was a frontend-only mock, no persistence)', () => {
+    const idA = '00000000-0000-9300-0000-000000000001';
+    const idB = '00000000-0000-9300-0000-000000000002';
+    const idC = '00000000-0000-9300-0000-000000000003';
+
+    it('persists server-derived order (array index), not any client-supplied number', async () => {
+      pgMock.query.mockResolvedValueOnce([{ id: idA }, { id: idB }]); // locked featured rows
+      pgMock.query.mockResolvedValueOnce([]); // update idB -> 0
+      pgMock.query.mockResolvedValueOnce([]); // update idA -> 1
+
+      const result = await service.reorderFeaturedHotels([idB, idA]);
+
+      expect(result).toEqual({ updated: 2 });
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('set featured_order = $2'),
+        [idB, 0],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('set featured_order = $2'),
+        [idA, 1],
+      );
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('hotels:list:*');
+    });
+
+    it('rejects the whole request if any ID is not an existing, featured hotel (no arbitrary-hotel-ID writes)', async () => {
+      pgMock.query.mockResolvedValueOnce([{ id: idA }]); // only idA is actually featured
+
+      await expect(
+        service.reorderFeaturedHotels([idA, idB]),
+      ).rejects.toMatchObject({
+        response: { code: 'HOTEL_NOT_FEATURED', invalidIds: [idB] },
+      });
+
+      // Nothing beyond the initial lookup was ever written.
+      expect(pgMock.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects duplicate IDs in the request (never silently collapses them into one order slot)', async () => {
+      await expect(
+        service.reorderFeaturedHotels([idA, idA]),
+      ).rejects.toMatchObject({ response: { code: 'DUPLICATE_HOTEL_ID' } });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-UUID entries instead of passing them through to SQL', async () => {
+      await expect(
+        service.reorderFeaturedHotels(['not-a-uuid']),
+      ).rejects.toMatchObject({ response: { code: 'INVALID_ORDER' } });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op for an empty list (does not touch the database)', async () => {
+      await expect(service.reorderFeaturedHotels([])).resolves.toEqual({
+        updated: 0,
+      });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent under a concurrent reorder — the second call fully overwrites the first (last write wins, no partial interleave)', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: idA },
+        { id: idB },
+        { id: idC },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reorderFeaturedHotels([idC, idB, idA]);
+
+      pgMock.query.mockResolvedValueOnce([
+        { id: idA },
+        { id: idB },
+        { id: idC },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reorderFeaturedHotels([idA, idB, idC]);
+
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('set featured_order = $2'),
+        [idA, 0],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        7,
+        expect.stringContaining('set featured_order = $2'),
+        [idB, 1],
+      );
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        8,
+        expect.stringContaining('set featured_order = $2'),
+        [idC, 2],
+      );
+    });
   });
 
   describe('invalidateCmsCache (regression: destinations admin write left the public /catalog/destinations cache stale for up to 5 minutes)', () => {
@@ -1347,6 +1448,9 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: 'payment-1', provider: 'click', provider_reference: null },
+        ]) // SELECT payment FOR UPDATE (click — real provider refund YO'Q)
         .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded (RETURNING id, 1 qator)
         .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
         .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (negative)
@@ -1418,6 +1522,9 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ])
+        .mockResolvedValueOnce([
+          { id: 'payment-1', provider: 'click', provider_reference: null },
+        ]) // SELECT payment FOR UPDATE
         .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded (RETURNING id, 1 qator)
         .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (still reversed)
 
@@ -1452,6 +1559,9 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ]) // SELECT booking FOR UPDATE
+        // SELECT payment FOR UPDATE — 0 qator (allaqachon 'paid' emas, boshqa
+        // qator orqali refund qilingan) => provider-refund chaqirilmaydi.
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]); // UPDATE payments -> refunded: 0 QATOR (allaqachon 'paid' emas)
 
       const result = await service.refundApprove(actor, refundId, {});
@@ -1499,6 +1609,9 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: 'payment-1', provider: 'click', provider_reference: null },
+        ]) // SELECT payment FOR UPDATE
         .mockResolvedValueOnce([{ id: 'payment-1' }]) // UPDATE payments -> refunded
         .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
         .mockResolvedValueOnce([]); // INSERT partner_ledger_entries (proportional)
@@ -1548,6 +1661,9 @@ describe('AdminService frontend action endpoints', () => {
             currency: 'UZS',
           },
         ])
+        .mockResolvedValueOnce([
+          { id: 'payment-1', provider: 'click', provider_reference: null },
+        ]) // SELECT payment FOR UPDATE
         .mockResolvedValueOnce([{ id: 'payment-1' }])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
@@ -1595,6 +1711,164 @@ describe('AdminService frontend action endpoints', () => {
       await expect(
         service.refundApprove(actor, refundId, { approved_amount: 999999 }),
       ).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  describe('refundApprove — Uzum Checkout haqiqiy provider refund integratsiyasi (item 7)', () => {
+    const refundId = '00000000-0000-0000-0000-000000000030';
+    const bookingId = '00000000-0000-0000-0000-000000000031';
+    const partnerId = '00000000-0000-0000-0000-000000000032';
+    let checkoutMock: { refund: jest.Mock };
+
+    beforeEach(() => {
+      checkoutMock = (service as unknown as { checkout: { refund: jest.Mock } })
+        .checkout;
+    });
+
+    it("provider='uzum_checkout' VA provider_reference mavjud bo'lsa — HAQIQIY /acquiring/refund so'rovi yuboriladi, natija refunds.provider_refund_reference'ga yoziladi", async () => {
+      checkoutMock.refund.mockResolvedValue({
+        orderId: 'uzc-order-1',
+        refundId: 'uzum-operation-1',
+        rawStatus: 'REQUESTED',
+        raw: {},
+      });
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '100000',
+            currency: 'UZS',
+            reason: 'Mijoz iltimosi',
+          },
+        ]) // SELECT refund FOR UPDATE
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 100000 },
+        ]) // UPDATE refunds
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ]) // SELECT booking FOR UPDATE
+        .mockResolvedValueOnce([
+          {
+            id: 'payment-uzc-1',
+            provider: 'uzum_checkout',
+            provider_reference: 'uzc-order-1',
+          },
+        ]) // SELECT payment FOR UPDATE
+        .mockResolvedValueOnce([{ id: 'payment-uzc-1' }]) // UPDATE payments -> refunded
+        .mockResolvedValueOnce([]) // UPDATE refunds SET provider_refund_reference
+        .mockResolvedValueOnce([]) // UPDATE bookings -> cancelled
+        .mockResolvedValueOnce([]); // INSERT partner_ledger_entries
+
+      const result = await service.refundApprove(actor, refundId, {});
+
+      expect(result).toMatchObject({ status: 'approved' });
+      expect(checkoutMock.refund).toHaveBeenCalledWith({
+        orderId: 'uzc-order-1',
+        amountSom: 100000,
+        reason: 'Mijoz iltimosi',
+        operationId: refundId,
+      });
+      const providerRefCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('provider_refund_reference'),
+      );
+      expect(providerRefCall).toBeDefined();
+      expect(providerRefCall?.[1]).toEqual([refundId, 'uzum-operation-1']);
+    });
+
+    it("provider so'rovi MUVAFFAQIYATSIZ bo'lsa (Uzum xato/tarmoq) — HECH QANDAY ichki holat o'zgarmaydi (refund/payments/booking/ledger), aniq 503 xato qaytadi", async () => {
+      checkoutMock.refund.mockRejectedValue(new Error('ECONNRESET'));
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '100000',
+            currency: 'UZS',
+            reason: null,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 100000 },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'payment-uzc-1',
+            provider: 'uzum_checkout',
+            provider_reference: 'uzc-order-1',
+          },
+        ]); // SELECT payment FOR UPDATE
+
+      await expect(
+        service.refundApprove(actor, refundId, {}),
+      ).rejects.toMatchObject({
+        status: 503,
+        response: { code: 'REFUND_PROVIDER_ERROR' },
+      });
+
+      // Provider chaqiruvidan KEYIN hech qanday yozuv (UPDATE/INSERT)
+      // bo'lmasligi kerak — tranzaksiya throw bilan ROLLBACK bo'ladi.
+      const paymentUpdate = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes("UPDATE payments SET status = 'refunded'"),
+      );
+      expect(paymentUpdate).toBeUndefined();
+    });
+
+    it("provider='click' (real refund API yo'q) bo'lsa — checkout.refund() UMUMAN chaqirilmaydi, avvalgi (faqat ICHKI holat) xatti-harakat saqlanadi", async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: refundId,
+            booking_id: bookingId,
+            status: 'requested',
+            requested_amount: '100000',
+            currency: 'UZS',
+            reason: null,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: refundId, status: 'approved', approved_amount: 100000 },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: bookingId,
+            status: 'confirmed',
+            partner_organization_id: partnerId,
+            partner_payable: 88000,
+            total_amount: 100000,
+            currency: 'UZS',
+          },
+        ])
+        .mockResolvedValueOnce([
+          { id: 'payment-click-1', provider: 'click', provider_reference: null },
+        ])
+        .mockResolvedValueOnce([{ id: 'payment-click-1' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.refundApprove(actor, refundId, {});
+
+      expect(result).toMatchObject({ status: 'approved' });
+      expect(checkoutMock.refund).not.toHaveBeenCalled();
     });
   });
 

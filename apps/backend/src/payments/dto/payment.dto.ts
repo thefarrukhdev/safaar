@@ -1,11 +1,34 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 
+// `humo`/`uzcard`/`visa`/`mastercard` — barchasi Uzum Checkout orqali
+// ishlaydigan karta turlari (fee stavkasi karta turiga qarab farqlanadi,
+// qarang `providers/card-scheme-fee.ts`); alohida provayder EMAS.
 export class CreatePaymentDto {
   @ApiProperty({
-    enum: ['click', 'payme', 'uzcard', 'humo', 'cash', 'uzum', 'uzum_checkout'],
+    enum: [
+      'click',
+      'payme',
+      'uzcard',
+      'humo',
+      'visa',
+      'mastercard',
+      'cash',
+      'uzum',
+      'uzum_checkout',
+    ],
   })
-  @IsIn(['click', 'payme', 'uzcard', 'humo', 'cash', 'uzum', 'uzum_checkout'])
+  @IsIn([
+    'click',
+    'payme',
+    'uzcard',
+    'humo',
+    'visa',
+    'mastercard',
+    'cash',
+    'uzum',
+    'uzum_checkout',
+  ])
   provider!: string;
 }
 

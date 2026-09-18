@@ -8,6 +8,43 @@
   "voucher": "Vaucherni yuklab olish",
   "backHome": "Bosh sahifaga",
   "error": "Bron ma'lumotini yuklab bo'lmadi.",
+  "confirmedTitle": "Bron tasdiqlandi!",
+  "confirmedSubtitle": "Tabriklaymiz! Broningiz muvaffaqiyatli tasdiqlandi.",
+  "failedTitle": "To'lov amalga oshmadi",
+  "failedSubtitle": "To'lovda xatolik yuz berdi. Qayta urinib ko'ring.",
+  "awaitingCashTitle": "Naqd to'lov kutilmoqda",
+  "awaitingCashSubtitle": "Joyga kelganingizda naqd to'lov qiling.",
+  "receiptSummary": "Chek xulosasi",
+  "createdAt": "Bron sanasi",
+  "actions": {
+    "printVoucher": "Vaucherni chop etish",
+    "cancelBooking": "Bekor qilish",
+    "myBookings": "Mening bronlarim",
+    "backHome": "Bosh sahifaga",
+    "error": "Xatolik yuz berdi",
+    "userCancelledReason": "Foydalanuvchi bekor qildi"
+  },
+  "cancelModal": {
+    "title": "Bronni bekor qilish",
+    "calculating": "Hisoblanmoqda...",
+    "rulesIntro": "Bekor qilish shartlari:",
+    "paidAmount": "To'langan summa:",
+    "refundAmount": "Qaytariladigan summa:",
+    "penalty": "Jarima:",
+    "penaltyAmount": "Jarima summasi:",
+    "policyLabel": "Qoida:",
+    "cancelling": "Bekor qilinmoqda...",
+    "confirm": "Tasdiqlash",
+    "confirmCancel": "Bekor qilishni tasdiqlash",
+    "cancel": "Ortga"
+  },
+  "chat": {
+    "title": "Mehmonxona bilan chat",
+    "empty": "Hozircha xabarlar yo'q...",
+    "placeholder": "Xabar yozing...",
+    "loading": "Xabarlar yuklanmoqda...",
+    "send": "Yuborish"
+  },
   "statuses": {
     "PENDING": "Kutilmoqda",
     "AWAITING_PAYMENT": "To'lov kutilmoqda",
@@ -23,6 +60,7 @@
     "processing": "Jarayonda",
     "paid": "To'langan",
     "failed": "Muvaffaqiyatsiz",
-    "refunded": "Qaytarilgan"
+    "refunded": "Qaytarilgan",
+    "reversed": "Bank tomonidan bekor qilingan"
   }
 }

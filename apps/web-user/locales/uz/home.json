@@ -76,5 +76,13 @@
   },
   "error": {
     "loadFailed": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring."
+  },
+  "promos": {
+    "title": "Promo-kodlar",
+    "subtitle": "Bron qilishda ushbu kodlardan foydalanib chegirma oling",
+    "clickToCopy": "Bosib nusxalang",
+    "copied": "Nusxalandi!",
+    "copySuccess": "Promo kod nusxalandi!",
+    "copyError": "Nusxalashda xatolik yuz berdi."
   }
 }

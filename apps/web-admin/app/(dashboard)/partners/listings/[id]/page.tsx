@@ -4,12 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell, CalendarX, type LucideIcon } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell, CalendarClock, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Modal from "@/components/ui/Modal";
-import Input from "@/components/ui/Input";
 import { AdminApi } from "@/lib/api/admin-api";
 import { extractApiErrorMessage } from "@/lib/utils";
 import type { AdminListing } from "@/types/admin";
@@ -48,10 +46,6 @@ export default function ListingDetailsPage() {
   const [listing, setListing] = useState<AdminListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
-
-  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
-  const [blockForm, setBlockForm] = useState({ startDate: "", endDate: "", reason: "" });
-  const [isBlocking, setIsBlocking] = useState(false);
 
   useEffect(() => {
     if (!listingId) return;
@@ -110,25 +104,6 @@ export default function ListingDetailsPage() {
     }
   };
 
-  const handleBlockDates = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!blockForm.startDate || !blockForm.endDate || !blockForm.reason) {
-      toast.error("Barcha maydonlarni to'ldiring");
-      return;
-    }
-    setIsBlocking(true);
-    try {
-      await AdminApi.blockListingDates(listing.id, blockForm);
-      toast.success("Tanlangan sanalar muvaffaqiyatli bloklandi");
-      setIsBlockModalOpen(false);
-      setBlockForm({ startDate: "", endDate: "", reason: "" });
-    } catch (error) {
-      toast.error(extractApiErrorMessage(error, "Xatolik yuz berdi"));
-    } finally {
-      setIsBlocking(false);
-    }
-  };
-
   return (
     <div className="max-w-[1000px] mx-auto flex flex-col gap-6 animate-fade-in pb-12">
       {/* Header */}
@@ -153,9 +128,11 @@ export default function ListingDetailsPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button variant="danger" icon={<CalendarX size={16} />} onClick={() => setIsBlockModalOpen(true)}>
-            Sanalarni bloklash
-          </Button>
+          <Link href={`/partners/listings/${listing.id}/availability`}>
+            <Button variant="secondary" icon={<CalendarClock size={16} />}>
+              Availability
+            </Button>
+          </Link>
           <Link href={`/partners/listings/${listing.id}/edit`}>
             <Button variant="secondary" icon={<Info size={16} />}>
               Tahrirlash
@@ -320,49 +297,6 @@ export default function ListingDetailsPage() {
           )}
         </div>
       </div>
-
-      <Modal
-        open={isBlockModalOpen}
-        onClose={() => setIsBlockModalOpen(false)}
-        title="Sanalarni bloklash (Sotuvdan olish)"
-      >
-        <form onSubmit={handleBlockDates} className="space-y-4">
-          <p className="text-sm text-[var(--text-secondary)]">
-            Ushbu funksiya orqali ma'lum sanalarni sotuvdan majburiy to'xtatishingiz mumkin (masalan, overbooking holatlarida).
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Boshlanish sanasi"
-              type="date"
-              value={blockForm.startDate}
-              onChange={(e) => setBlockForm({ ...blockForm, startDate: e.target.value })}
-              required
-            />
-            <Input
-              label="Tugash sanasi"
-              type="date"
-              value={blockForm.endDate}
-              onChange={(e) => setBlockForm({ ...blockForm, endDate: e.target.value })}
-              required
-            />
-          </div>
-          <Input
-            label="Bloklash sababi (Faqat adminlar uchun)"
-            value={blockForm.reason}
-            onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })}
-            placeholder="Masalan: Overbooking qilingan"
-            required
-          />
-          <div className="flex gap-3 justify-end pt-4">
-            <Button type="button" variant="secondary" onClick={() => setIsBlockModalOpen(false)}>
-              Bekor qilish
-            </Button>
-            <Button type="submit" variant="danger" loading={isBlocking}>
-              Bloklash
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

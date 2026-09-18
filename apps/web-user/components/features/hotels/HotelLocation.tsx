@@ -1,4 +1,5 @@
 import { MapPin, ExternalLink } from "lucide-react";
+import type { HotelDetailDict } from "@/i18n/dictionaries";
 
 /**
  * Avvalgi versiya butunlay statik edi (props qabul qilmasdan): Toshkentning
@@ -17,10 +18,12 @@ export function HotelLocation({
   address,
   latitude,
   longitude,
+  dict,
 }: {
   address: string;
   latitude: number;
   longitude: number;
+  dict?: HotelDetailDict["location"];
 }) {
   const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
   const mapsUrl = hasCoordinates
@@ -35,7 +38,7 @@ export function HotelLocation({
           <span className="text-sm font-medium text-slate-900">{address}</span>
           {!hasCoordinates && (
             <span className="text-xs text-slate-400">
-              Aniq joylashuv koordinatalari mavjud emas
+              {dict?.noCoordinates ?? "Aniq joylashuv koordinatalari mavjud emas"}
             </span>
           )}
         </div>
@@ -48,7 +51,7 @@ export function HotelLocation({
         className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-50"
       >
         <ExternalLink className="h-4 w-4 text-slate-400" />
-        Google Maps'da ochish
+        {dict?.openInMaps ?? "Google Maps'da ochish"}
       </a>
     </div>
   );

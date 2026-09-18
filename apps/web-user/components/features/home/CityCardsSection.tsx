@@ -9,13 +9,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 import { resolveImage } from "@/lib/images";
 
-const FALLBACK_CITY_IMAGES: Record<string, string> = {
-  tashkent: "/Tashkent-skyline-night.jpeg",
-  samarqand: "/Samarkand-Registan-cinematic.jpeg",
-  buxoro: "/Bukhara-old-city-golden-hour.jpeg",
-  xiva: "/Khiva-Ichan-Kala-aerial.jpeg",
-  chimgan: "/Chimgan-mountains-landscape.jpeg",
-};
+const FALLBACK_IMAGE = "/Uzbekistan-travel.jpeg";
 
 export async function CityCardsSection({
   locale,
@@ -24,29 +18,33 @@ export async function CityCardsSection({
   locale: Locale;
   dict: HomeDict["popularCities"];
 }) {
-  const raw = await api.catalog.getPopularCities(locale);
-  const cities = raw
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .slice(0, 5)
-    .map((city) => {
-      // 1. Backenddan rasm olishga urinish (resolveImage orqali)
-      const backendImage = resolveImage(city.imageUrl);
-      
-      // 2. Agar backend null bersa, shahar nomiga qarab fallback rasmni topish
-      const fallbackImage = FALLBACK_CITY_IMAGES[city.slug] || "/Uzbekistan-travel.jpeg";
+  // Admin panel ("Mashhur yo'nalishlar" — /cms/destinations) orqali
+  // boshqariladi. Backend faqat faol/nashr qilingan yozuvlarni, admin
+  // belgilagan tartibda qaytaradi — bu yerda qo'shimcha filtr/sort kerak
+  // emas. API xato bersa ham sahifa buzilmasligi uchun try/catch bilan
+  // o'raladi va bo'sh holat ko'rsatiladi.
+  let destinations: Awaited<ReturnType<typeof api.catalog.getDestinations>> = [];
+  try {
+    destinations = await api.catalog.getDestinations(locale);
+  } catch (error) {
+    console.error("Failed to load popular destinations", error);
+  }
 
-      return {
-        name: city.name,
-        image: backendImage || fallbackImage,
-        hotelCount: String(city.hotelCount),
-        href: `/${locale}/hotels?city_id=${encodeURIComponent(city.slug)}`,
-      };
-    })
+  const cities = destinations
+    .map((destination) => ({
+      name: destination.name,
+      image: resolveImage(destination.imageUrl) || FALLBACK_IMAGE,
+      href:
+        destination.link ||
+        (destination.slug
+          ? `/${locale}/hotels?city_id=${encodeURIComponent(destination.slug)}`
+          : `/${locale}/hotels`),
+    }))
     .filter((city) => city.name && city.image);
 
   const galleryItems = cities.map((city) => ({
     image: city.image,
-    label: Number(city.hotelCount) > 0 ? `${city.name} • ${city.hotelCount} ${dict.hotels}` : city.name,
+    label: city.name,
     link: city.href,
     alt: city.name,
   }));
@@ -63,7 +61,7 @@ export async function CityCardsSection({
           <div className="mt-6">
             <EmptyState 
               icon={<MapPin className="h-10 w-10 text-slate-400" />}
-              title={(dict as any).empty || "Hozircha bo'sh"} 
+              title={dict.empty || "Hozircha bo'sh"}
               description="Ayni paytda mashhur shaharlar ruyxati shakllanmoqda." 
             />
           </div>

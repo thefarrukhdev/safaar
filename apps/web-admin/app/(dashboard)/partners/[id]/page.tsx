@@ -197,7 +197,21 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
         {[
           { label: "Telefon", value: partner.phone },
           { label: "Email", value: partner.email },
-          { label: "Komissiya", value: `${partner.commissionPercent}%`, highlight: true },
+          {
+            label: "Komissiya",
+            value: `${partner.commissionPercent}%`,
+            highlight: true,
+            // 2026-09-14 SAFAAR ADMIN audit: `commissionPercent`
+            // (`default_commission_rate`) mehmonxona/hostel/guest house
+            // turlari uchun HAQIQIY qo'llanilmaydi — Excel jadvali
+            // (hudud+tur+yulduz) HAR DOIM ustun (2026-09-13 tasdiqlangan
+            // biznes qoida). Bu yerda oldin bu farq HECH QAYERDA
+            // ko'rsatilmagan edi — admin bu raqamni "hamma bron shu
+            // foizda" deb noto'g'ri tushunishi mumkin edi.
+            note: ["hotel", "hostel", "guesthouse"].includes(partner.type)
+              ? "Excel jadvali ustuvor — bu raqam faqat Excel qamrab olmagan holatlar uchun"
+              : undefined,
+          },
           { label: "Ro'yxat sanasi", value: formatDate(partner.createdAt) },
           { label: "Bank", value: partner.bankName ?? "—" },
         ].map((info) => (
@@ -219,6 +233,9 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
                 </button>
               )}
             </div>
+            {info.note && (
+              <p className="text-[10px] text-[var(--text-muted)] mt-1 leading-tight">{info.note}</p>
+            )}
           </Card>
         ))}
       </div>

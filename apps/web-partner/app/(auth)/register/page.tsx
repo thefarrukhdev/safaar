@@ -13,10 +13,12 @@ import { PhoneInput } from '../../_components/ui/phone-input';
 import { PasswordInput } from '../../_components/ui/password-input';
 import { Label } from '../../_components/ui/label';
 import { access } from '../../_lib/api';
-import { usePartnerPhoneOtpRequest } from '../../_hooks/use-auth';
+import {
+  usePartnerRegistrationOtpRequest,
+  usePartnerRegistrationOtpVerify,
+} from '../../_hooks/use-auth';
 import {
   isValidPhone,
-  maskPhone,
   normalizePhone,
 } from '../../_lib/utils/phone';
 
@@ -54,14 +56,22 @@ export default function RegisterPage() {
   const [submitted, setSubmitted] = useState<{ id: string } | null>(null);
   const [error, setError] = useState('');
   
-  // Registration flow steps
+  // Registration flow: fill the whole form -> request real SMS OTP for the
+  // entered phone -> verify it against the real backend -> submit the
+  // pending form values together with the one-time server-side proof that
+  // verify returns (see handleVerifyCodeAndSubmit).
   const [step, setStep] = useState<'form' | 'code'>('form');
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
-  const [challenge, setChallenge] = useState<{ phone: string; devCode?: string } | null>(null);
+  const [challenge, setChallenge] = useState<{
+    phone: string;
+    challengeId: string;
+    devCode?: string;
+  } | null>(null);
   const [codeValue, setCodeValue] = useState('');
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-  
-  const otpRequest = usePartnerPhoneOtpRequest();
+
+  const otpRequest = usePartnerRegistrationOtpRequest();
+  const otpVerify = usePartnerRegistrationOtpVerify();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -85,8 +95,10 @@ export default function RegisterPage() {
       const result = await otpRequest.mutateAsync(values.phone);
       setChallenge({
         phone: result.phone,
+        challengeId: result.challengeId,
         devCode: result.devCode,
       });
+      setCodeValue('');
       setPendingValues(values);
       setStep('code');
     } catch (err) {
@@ -94,26 +106,42 @@ export default function RegisterPage() {
     }
   });
 
+  /**
+   * 2026-09-15: was `codeValue === challenge?.devCode || codeValue === '000000'`
+   * — a client-side-only check with a hardcoded '000000' bypass. Now calls
+   * the real backend (`POST /auth/partner/registration-otp/verify`), which
+   * consumes the OTP under its own 'partner_registration' purpose and, on
+   * success, returns a one-time server-side proof (`verificationToken`).
+   * That proof — not this function's local belief that the code was
+   * correct — is what `submitPartnerApplication` sends and the backend
+   * re-checks; see PartnersService.submitPublicPartnerRequest. Verify and
+   * submit happen together here since the whole form (pendingValues) was
+   * already collected in onSubmitForm, before the OTP step.
+   */
   const handleVerifyCodeAndSubmit = async () => {
     setError('');
     if (codeValue.length < 4) {
       setError("Kodni to'g'ri kiriting");
       return;
     }
-    
-    // Demo verification
-    if (codeValue !== challenge?.devCode && codeValue !== '000000') {
-      setError("Kod noto'g'ri kiritildi");
+    if (!challenge || !pendingValues) {
+      setError("Avval formani to'ldiring");
+      setStep('form');
       return;
     }
 
-    if (!pendingValues) return;
-    
     setIsSubmittingForm(true);
     try {
+      const verified = await otpVerify.mutateAsync({
+        phone: challenge.phone,
+        code: codeValue,
+        challengeId: challenge.challengeId,
+      });
+
       const result = await access.submitPartnerApplication({
         ...pendingValues,
         phone: normalizePhone(pendingValues.phone),
+        phoneVerificationToken: verified.verificationToken,
       } as any); // casting to any to allow password
       setSubmitted({ id: result?.item?.id || 'demo-id' });
     } catch (cause: any) {
@@ -127,12 +155,12 @@ export default function RegisterPage() {
         setError(
           cause.payload.message || "Iltimos formadagi xatoliklarni to'g'irlang",
         );
+        setStep('form'); // Go back to form to fix field errors
       } else {
         setError(
-          cause instanceof Error ? cause.message : 'Ariza yuborishda xatolik',
+          cause instanceof Error ? cause.message : "Kod noto'g'ri yoki ariza yuborishda xatolik",
         );
       }
-      setStep('form'); // Go back to form to fix errors
     } finally {
       setIsSubmittingForm(false);
     }
@@ -221,7 +249,13 @@ export default function RegisterPage() {
             <Button type="button" variant="outline" size="lg" onClick={() => setStep('form')} className="w-1/3">
               Orqaga
             </Button>
-            <Button type="button" size="lg" onClick={handleVerifyCodeAndSubmit} loading={isSubmittingForm} className="w-2/3">
+            <Button
+              type="button"
+              size="lg"
+              onClick={handleVerifyCodeAndSubmit}
+              loading={isSubmittingForm}
+              className="w-2/3"
+            >
               Tasdiqlash va Yuborish
             </Button>
           </div>

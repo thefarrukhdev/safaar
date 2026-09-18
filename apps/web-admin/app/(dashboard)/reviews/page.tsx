@@ -1,229 +1,260 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AdminApi } from "@/lib/api/admin-api";
-import type { AdminReview } from "@/types/admin";
-import DataTable from "@/components/ui/DataTable";
-import type { Column } from "@/components/ui/DataTable";
+import { Star, Eye, EyeOff, ShieldOff, Image as ImageIcon } from "lucide-react";
+import Card from "@/components/ui/Card";
+import DataTable, { Column } from "@/components/ui/DataTable";
+import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import { Star, ShieldAlert, CheckCircle2, Trash2, Eye } from "lucide-react";
-import Modal from "@/components/ui/Modal";
+import { AdminApi } from "@/lib/api/admin-api";
+import { extractApiErrorMessage } from "@/lib/utils";
+import type { AdminReview, AdminReviewStatus } from "@/types/admin";
+
+/**
+ * 2026-09-14 SAFAAR admin gap closure — real Reviews moderation UI,
+ * wired to GET/POST /admin/reviews (admin.service.ts::reviewsList /
+ * reviewModerate, both new this session). No mock data.
+ */
+
+const STATUS_OPTIONS = [
+  { value: "", label: "Barcha holatlar" },
+  { value: "published", label: "Nashr qilingan" },
+  { value: "pending_review", label: "Ko'rib chiqilmoqda" },
+  { value: "hidden", label: "Yashirilgan" },
+];
+
+const RATING_OPTIONS = [
+  { value: "", label: "Barcha reytinglar" },
+  { value: "4", label: "4+ yulduz" },
+  { value: "3", label: "3+ yulduz" },
+  { value: "2", label: "2+ yulduz" },
+];
+
+const STATUS_BADGE: Record<AdminReviewStatus, { label: string; className: string }> = {
+  published: { label: "Nashr qilingan", className: "bg-emerald-100 text-emerald-700" },
+  pending_review: { label: "Ko'rib chiqilmoqda", className: "bg-amber-100 text-amber-700" },
+  hidden: { label: "Yashirilgan", className: "bg-slate-200 text-slate-600" },
+};
+
+function isForbidden(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "response" in err &&
+    (err as { response?: { status?: number } }).response?.status === 403
+  );
+}
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReview, setSelectedReview] = useState<AdminReview | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("");
+  const [actingId, setActingId] = useState<string | null>(null);
 
-  const fetchReviews = async () => {
-    try {
-      const data = await AdminApi.getReviews();
-      setReviews(data);
-    } catch (error) {
-      toast.error("Fikr-mulohazalarni yuklashda xatolik yuz berdi");
-    } finally {
-      setLoading(false);
-    }
+  const fetchReviews = () => {
+    setLoading(true);
+    setError(false);
+    setForbidden(false);
+    AdminApi.getReviews({
+      status: statusFilter as AdminReviewStatus | "",
+      minRating: ratingFilter ? Number(ratingFilter) : undefined,
+    })
+      .then((items) => setReviews(items))
+      .catch((err) => {
+        if (isForbidden(err)) setForbidden(true);
+        else setError(true);
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchReviews();
-  }, []);
+    const load = () => fetchReviews();
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, ratingFilter]);
 
-  const handleStatusChange = async (id: string, newStatus: AdminReview['status']) => {
+  const handleModerate = async (review: AdminReview, action: "publish" | "hide") => {
+    setActingId(review.id);
     try {
-      await AdminApi.updateReviewStatus(id, newStatus);
-      toast.success("Izoh holati yangilandi");
-      setReviews(reviews.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
-    } catch (error) {
-      toast.error("Holatni o'zgartirishda xatolik yuz berdi");
+      const result =
+        action === "publish"
+          ? await AdminApi.publishReview(review.id)
+          : await AdminApi.hideReview(review.id);
+      setReviews((prev) =>
+        prev.map((r) => (r.id === review.id ? { ...r, status: result.status } : r)),
+      );
+      toast.success(
+        action === "publish" ? "Sharh nashr qilindi" : "Sharh yashirildi",
+      );
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(err, "Amalni bajarib bo'lmadi"),
+      );
+    } finally {
+      setActingId(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Haqiqatan ham bu izohni o'chirmoqchimisiz?")) return;
-    try {
-      await AdminApi.deleteReview(id);
-      toast.success("Izoh o'chirildi");
-      setReviews(reviews.filter((r) => r.id !== id));
-    } catch (error) {
-      toast.error("O'chirishda xatolik yuz berdi");
-    }
-  };
-
-  const columns: Column<AdminReview>[] = [
-    {
-      key: "hotelName",
-      label: "Obyekt nomi",
-      render: (row) => <div className="font-medium text-[var(--foreground)]">{row.hotelName}</div>,
-      sortable: true,
-    },
-    {
-      key: "userName",
-      label: "Foydalanuvchi",
-      render: (row) => <div className="text-[var(--muted-foreground)]">{row.userName}</div>,
-    },
-    {
-      key: "rating",
-      label: "Baho",
-      render: (row) => (
-        <div className="flex items-center gap-1">
-          <Star size={14} className="fill-[var(--warning)] text-[var(--warning)]" />
-          <span className="font-semibold">{row.rating}</span>
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      key: "comment",
-      label: "Izoh",
-      render: (row) => (
-        <div className="max-w-xs truncate text-[var(--muted-foreground)]" title={row.comment}>
-          {row.comment}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Holat",
-      render: (row) => {
-        switch (row.status) {
-          case 'published':
-            return <Badge color="#2ECC71" bg="rgba(46,204,113,0.12)">Nashr qilingan</Badge>;
-          case 'hidden':
-            return <Badge color="#F39C12" bg="rgba(243,156,18,0.12)">Yashiringan</Badge>;
-          case 'spam':
-            return <Badge color="#E74C3C" bg="rgba(231,76,60,0.12)">Spam</Badge>;
-          default:
-            return <Badge>{row.status}</Badge>;
-        }
+  const columns: Column<AdminReview>[] = useMemo(
+    () => [
+      {
+        key: "userName",
+        label: "Mijoz",
+        render: (r) => (
+          <div>
+            <div className="font-medium text-[var(--text-primary)]">{r.userName}</div>
+            <div className="text-xs text-[var(--text-muted)]">
+              {new Date(r.createdAt).toLocaleDateString("uz-UZ", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </div>
+          </div>
+        ),
       },
-    },
-    {
-      key: "actions",
-      label: "Amallar",
-      render: (row) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setSelectedReview(row);
-              setIsModalOpen(true);
-            }}
-            title="Ko'rish"
+      {
+        key: "targetName",
+        label: "Obyekt",
+        render: (r) => (
+          <div>
+            <div className="text-[var(--text-primary)]">{r.targetName}</div>
+            <div className="text-xs text-[var(--text-muted)] capitalize">{r.targetType}</div>
+          </div>
+        ),
+      },
+      {
+        key: "rating",
+        label: "Reyting",
+        render: (r) => (
+          <span className="inline-flex items-center gap-1 font-medium text-[var(--text-primary)]">
+            <Star size={14} className="fill-[var(--warning)] text-[var(--warning)]" aria-hidden />
+            {r.rating.toFixed(1)}
+          </span>
+        ),
+      },
+      {
+        key: "body",
+        label: "Sharh matni",
+        render: (r) => (
+          <div className="max-w-xs">
+            <p className="line-clamp-2 text-[var(--text-secondary)]">
+              {r.body || <span className="text-[var(--text-muted)]">Matn yo&apos;q</span>}
+            </p>
+            {r.photos.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)] mt-1">
+                <ImageIcon size={12} aria-hidden /> {r.photos.length} ta rasm
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "status",
+        label: "Holat",
+        render: (r) => (
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_BADGE[r.status].className}`}
           >
-            <Eye size={16} />
-          </Button>
-          {row.status !== 'published' && (
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleStatusChange(row.id, 'published')}
-              title="Tasdiqlash"
-            >
-              <CheckCircle2 size={16} />
-            </Button>
-          )}
-          {row.status !== 'spam' && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-              onClick={() => handleStatusChange(row.id, 'spam')}
-              title="Spam deb belgilash"
-            >
-              <ShieldAlert size={16} />
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => handleDelete(row.id)}
-            title="O'chirish"
-          >
-            <Trash2 size={16} />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+            {STATUS_BADGE[r.status].label}
+          </span>
+        ),
+      },
+      {
+        key: "actions",
+        label: "",
+        render: (r) => (
+          <div className="flex justify-end gap-2">
+            {r.status !== "published" && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Eye size={14} aria-hidden />}
+                loading={actingId === r.id}
+                onClick={() => void handleModerate(r, "publish")}
+                aria-label={`${r.userName} sharhini nashr qilish`}
+              >
+                Nashr qilish
+              </Button>
+            )}
+            {r.status !== "hidden" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[var(--danger)]"
+                icon={<EyeOff size={14} aria-hidden />}
+                loading={actingId === r.id}
+                onClick={() => void handleModerate(r, "hide")}
+                aria-label={`${r.userName} sharhini yashirish`}
+              >
+                Yashirish
+              </Button>
+            )}
+          </div>
+        ),
+      },
+    ],
+    [actingId],
+  );
 
-  return (
-    <div className="p-6 max-w-[1400px] mx-auto animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">Fikr-mulohazalar moderatsiyasi</h1>
-          <p className="text-[var(--muted-foreground)] mt-1">
-            Foydalanuvchilar qoldirgan sharhlar, baholar va spam xabarlarni tekshirish
+  if (forbidden) {
+    return (
+      <Card padding="lg">
+        <div className="flex flex-col items-center text-center gap-3 py-16">
+          <ShieldOff size={28} className="text-[var(--danger)]" aria-hidden />
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            Bu bo&apos;lim uchun ruxsatingiz yo&apos;q
+          </p>
+          <p className="text-xs text-[var(--text-muted)] max-w-sm">
+            Sharhlarni ko&apos;rish uchun reviews:read ruxsati kerak.
           </p>
         </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Sharhlar</h1>
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
+            Mijozlarning mehmonxona/xizmat sharhlarini moderatsiya qilish
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <div className="w-44">
+            <Select
+              options={STATUS_OPTIONS}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Holat bo'yicha filtr"
+            />
+          </div>
+          <div className="w-44">
+            <Select
+              options={RATING_OPTIONS}
+              value={ratingFilter}
+              onChange={(e) => setRatingFilter(e.target.value)}
+              aria-label="Reyting bo'yicha filtr"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] shadow-sm">
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
-          </div>
-        ) : (
-          <DataTable
-            data={reviews}
-            columns={columns}
-            keyField="id"
-            emptyMessage="Izohlar topilmadi"
-          />
-        )}
-      </div>
-
-      <Modal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Izoh tafsilotlari"
-        size="md"
-      >
-        {selectedReview && (
-          <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase">Obyekt</label>
-              <p className="font-semibold text-lg text-[var(--foreground)]">{selectedReview.hotelName}</p>
-            </div>
-            <div className="flex justify-between border-b border-[var(--border)] pb-4">
-              <div>
-                <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase">Mijoz</label>
-                <p className="text-[var(--foreground)]">{selectedReview.userName}</p>
-              </div>
-              <div className="text-right">
-                <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase">Baho</label>
-                <div className="flex items-center gap-1 justify-end">
-                  <Star size={16} className="fill-[var(--warning)] text-[var(--warning)]" />
-                  <span className="font-bold text-lg">{selectedReview.rating} / 5</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase mb-2 block">To'liq izoh matni</label>
-              <div className="p-4 bg-gray-50 rounded-lg text-[var(--foreground)] italic">
-                "{selectedReview.comment}"
-              </div>
-            </div>
-            
-            <div className="pt-4 flex justify-end gap-3 border-t border-[var(--border)]">
-              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Yopish</Button>
-              <Button 
-                variant="danger" 
-                onClick={() => {
-                  handleDelete(selectedReview.id);
-                  setIsModalOpen(false);
-                }}
-              >
-                O'chirish
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <DataTable
+        columns={columns}
+        data={reviews}
+        keyField="id"
+        emptyMessage="Sharhlar topilmadi"
+        isLoading={loading}
+        isError={error}
+        onRetry={fetchReviews}
+      />
     </div>
   );
 }

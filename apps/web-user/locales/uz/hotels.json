@@ -6,10 +6,12 @@
   "clearFilters": "Filtrlarni tozalash",
   "error": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring.",
   "retry": "Qayta urinish",
-  "perNight": "kecha",
+  "perNight": "/ kecha",
   "reviews": "sharh",
   "viewDetails": "Batafsil",
   "removeFilter": "Filtrni olib tashlash",
+  "bannerTitle": "Mehmonxona, Dacha, Sanatoriya va Oromgohlar qidirish xizmati",
+  "bannerSubtitle": "O'zbekiston bo'ylab o'zingizga mos va qulay turar joylarni arzon narxlarda kashf eting.",
   "filters": {
     "title": "Filtrlar",
     "toggle": "Filtrlar",
@@ -22,7 +24,34 @@
     "priceMax": "Eng yuqori narx",
     "currency": "so'm",
     "apply": "Qo'llash",
-    "reset": "Tozalash"
+    "reset": "Tozalash",
+    "pricePerNight": "Narx (1 kecha)",
+    "propertyType": "Mahsulot turi",
+    "amenities": "Qulayliklar",
+    "paymentType": "To'lov turi"
+  },
+  "starOptions": {
+    "five": "5 yulduz",
+    "fourPlus": "4 va yuqori",
+    "threePlus": "3 va yuqori"
+  },
+  "types": {
+    "hotels": "Mehmonxonalar",
+    "dachas": "Dachalar",
+    "sanatoriums": "Sanatoriylar",
+    "resorts": "Oromgohlar"
+  },
+  "amenityOptions": {
+    "wifi": "Wi-Fi",
+    "pool": "Basseyn",
+    "sauna": "Sauna",
+    "breakfast": "Nonushta",
+    "parking": "Avtoturargoh",
+    "gym": "Fitnes zal"
+  },
+  "paymentOptions": {
+    "online": "Onlayn to'lov (Karta)",
+    "atProperty": "Joyida to'lash (Naqd)"
   },
   "sort": {
     "label": "Saralash",

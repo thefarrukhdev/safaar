@@ -82,6 +82,7 @@ export function RegisterForm({
     EMAIL_REQUIRED: dict.emailRequired,
     OTP_INVALID: dict.codeInvalid,
     OTP_EXPIRED: dict.codeExpired,
+    TERMS_NOT_ACCEPTED: dict.termsNotAccepted,
   };
 
   return (

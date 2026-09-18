@@ -2,10 +2,16 @@
   "error": "Failed to load data. Check that the backend is running.",
   "about": "Description",
   "address": "Address",
-  "amenities": "Amenities",
+  "amenities": {
+    "title": "Amenities",
+    "showAll": "Show all {count} amenities"
+  },
   "checkIn": "Check-in",
   "checkOut": "Check-out",
-  "rooms": "Rooms",
+  "rooms": {
+    "title": "Rooms",
+    "noRoomsFound": "No other rooms found."
+  },
   "perNight": "night",
   "capacity": "Capacity",
   "guests": "guests",
@@ -17,5 +23,42 @@
   "ratingSummary": "Based on {count} reviews",
   "from": "from",
   "selectRoom": "Select a room",
-  "bookingBox": "Booking"
+  "bookingBox": "Booking",
+  "locationTitle": "Location",
+  "highlights": {
+    "centralLocationTitle": "Central Location",
+    "centralLocationDesc": "Highly rated by recent guests",
+    "freeCancellationTitle": "Free Cancellation",
+    "freeCancellationDesc": "Cancel anytime before check-in",
+    "superbRatingTitle": "Superb Rating",
+    "superbRatingDesc": "Guests loved the cleanliness"
+  },
+  "nav": {
+    "photos": "Photos",
+    "amenities": "Amenities",
+    "rooms": "Rooms",
+    "reviews": "Reviews",
+    "location": "Location"
+  },
+  "booking": {
+    "checkIn": "Check-in",
+    "checkOut": "Checkout",
+    "addDate": "Add date",
+    "guests": "Guests",
+    "oneGuest": "1 guest",
+    "checkAvailability": "Check availability",
+    "noChargeNotice": "You won't be charged yet",
+    "nightsCount": "{count} nights",
+    "serviceFee": "Service fee",
+    "total": "Total"
+  },
+  "location": {
+    "noCoordinates": "Exact location coordinates are not available",
+    "openInMaps": "Open in Google Maps"
+  },
+  "gallery": {
+    "mainViewAlt": "Main view",
+    "photoCountSuffix": "photos",
+    "allPhotos": "All photos"
+  }
 }

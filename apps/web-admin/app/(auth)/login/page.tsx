@@ -7,6 +7,40 @@ import Cookies from "js-cookie";
 import { AdminApi } from "../../../lib/api/admin-api";
 import { useAuthStore } from "../../../lib/store/auth";
 
+interface LoginApiError {
+  response?: {
+    status?: number;
+    data?: { error?: { message?: string } };
+    headers?: Record<string, string>;
+  };
+}
+
+/**
+ * `AdminApi.login()` xato bo'lganda axios reject qiladi — `err.message`
+ * (masalan "Request failed with status code 429") axios'ning O'ZINING
+ * umumiy, inglizcha, foydalanuvchiga hech narsa anglatmaydigan matni,
+ * backend'ning haqiqiy xabari (`err.response.data.error.message`) EMAS.
+ * 429 uchun backend `Retry-After` header ham beradi (ThrottlerGuard
+ * avtomatik qo'shadi) — buni ko'rsatish orqali foydalanuvchi aniq qachon
+ * qayta urinib ko'rishini biladi.
+ */
+function extractLoginErrorMessage(err: unknown): string {
+  const apiError = err as LoginApiError;
+  const status = apiError?.response?.status;
+
+  if (status === 429) {
+    const retryAfter = apiError.response?.headers?.["retry-after"];
+    return retryAfter
+      ? `Juda ko'p urinish. ${retryAfter} soniyadan so'ng qayta urinib ko'ring.`
+      : "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring.";
+  }
+
+  const backendMessage = apiError?.response?.data?.error?.message;
+  if (backendMessage) return backendMessage;
+
+  return err instanceof Error ? err.message : "Xatolik yuz berdi";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -41,7 +75,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(extractLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }

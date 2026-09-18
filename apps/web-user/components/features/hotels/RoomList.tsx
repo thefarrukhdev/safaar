@@ -48,6 +48,7 @@ export function RoomList({
         return (
           <li
             key={room.id}
+            data-testid="room-card"
             className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-card p-5 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="flex flex-col gap-2">

@@ -90,7 +90,14 @@ export const SIDEBAR_ITEMS: NavItem[] = [
       { label: "SEO / Meta", href: "/cms/seo", icon: "Code2" },
       { label: "Shablonlar", href: "/cms/templates", icon: "Mail" },
       { label: "Xabarnomalar", href: "/cms/broadcasts", icon: "Send" },
+      { label: "Tarjimalar", href: "/cms/translations", icon: "Languages" },
+      { label: "SEO", href: "/cms/seo", icon: "Search" },
     ],
+  },
+  {
+    label: "Sharhlar",
+    href: "/reviews",
+    icon: "Star",
   },
   {
     label: "Katalog",

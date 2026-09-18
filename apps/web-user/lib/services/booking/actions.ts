@@ -36,8 +36,24 @@ export async function createBookingAction(
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
 
   const session = await getSession();
-  
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as "click" | "payme" | "uzcard" | "humo" | "cash";
+
+  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as
+    | "click"
+    | "payme"
+    | "uzcard"
+    | "humo"
+    | "visa"
+    | "mastercard"
+    | "cash";
+  // HTML checkboxlar FAQAT belgilangan holatda FormData'ga tushadi —
+  // mavjudligi checked holatini bildiradi. Client checkboxning o'zi
+  // source of truth emas: backend `agree_terms`ni qat'iy qayta tekshiradi
+  // (`TERMS_NOT_ACCEPTED` bilan rad etadi) — shu yerdagi tekshiruv faqat
+  // tezroq, aniqroq xabar berish uchun.
+  const agreeTerms = formData.get("agreeTerms") != null;
+  if (!agreeTerms) {
+    return { error: "TERMS_NOT_ACCEPTED" };
+  }
   const input = {
     hotelId: String(formData.get("hotelId") ?? ""),
     roomId: String(formData.get("roomId") ?? ""),
@@ -51,28 +67,21 @@ export async function createBookingAction(
     phone: formData.get("phone") ? String(formData.get("phone")) : undefined,
     specialRequests: formData.get("specialRequests") ? String(formData.get("specialRequests")) : undefined,
     promoCode: formData.get("promoCode") ? String(formData.get("promoCode")) : undefined,
+    agreeTerms,
   };
   let bookingId = "";
-  let checkoutUrl = "";
+  let guestAccessTokenParam = "";
 
   try {
     const booking = await api.bookings.createHotelBooking(input, { token: session?.accessToken });
     bookingId = booking.id;
-
-    if (paymentMethod === "cash") {
-      redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash`);
-    }
-
-    try {
-      const paymentSession = await api.payments.createPaymentSession(bookingId, paymentMethod, {
-        token: session?.accessToken,
-      });
-      if (paymentSession.paymentUrl) {
-        checkoutUrl = paymentSession.paymentUrl;
-      }
-    } catch {
-      // Fall back to booking details page if payment session fails
-    }
+    // Guest (login qilmagan) checkout uchun backend opaque guest-access
+    // token qaytaradi — u bo'lmasa, keyingi `/booking/:id` yuklanishida
+    // GET so'rovi rad etiladi (guest'ning o'z sessiyasi yo'q). Login
+    // qilingan foydalanuvchi uchun bu maydon yo'q (kerak ham emas).
+    guestAccessTokenParam = booking.guestAccessToken
+      ? `&guestToken=${encodeURIComponent(booking.guestAccessToken)}`
+      : "";
   } catch (error) {
     await redirectToLoginIfSessionExpired(error, locale);
     return {
@@ -80,11 +89,18 @@ export async function createBookingAction(
     };
   }
 
-  if (checkoutUrl) {
-    redirect(checkoutUrl);
+  if (paymentMethod === "cash") {
+    redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestAccessTokenParam}`);
   }
 
-  redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
+  // MUHIM: bu yerdan endi Uzum/Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI
+  // o'tilmaydi — booking allaqachon o'zining "qoralama" to'lov qatoriga
+  // ega (backend, booking yaratishning bir qismi sifatida). Foydalanuvchi
+  // booking detail sahifasiga o'tkaziladi — u yerda to'lov usuli/fee/
+  // yakuniy summa aniq ko'rsatiladi (RetryPaymentForm), va HAQIQIY
+  // provider checkoutiga o'tish FAQAT foydalanuvchi buni ko'rib, aniq
+  // tasdiqlagandan keyin sodir bo'ladi.
+  redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}${guestAccessTokenParam}`);
 }
 
 
@@ -109,14 +125,20 @@ export async function createBusBookingAction(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as "click" | "payme" | "uzcard" | "humo" | "cash";
+  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as
+    | "click"
+    | "payme"
+    | "uzcard"
+    | "humo"
+    | "visa"
+    | "mastercard"
+    | "cash";
 
   if (!tripId || seats.length === 0) {
     return { error: "NO_SEATS" };
   }
 
   let bookingId = "";
-  let checkoutUrl = "";
   try {
     const booking = await api.bookings.createBusBooking({
       tripId,
@@ -124,21 +146,6 @@ export async function createBusBookingAction(
       paymentMethod,
     }, { token: session.accessToken });
     bookingId = booking.id;
-
-    if (paymentMethod === "cash") {
-      redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash`);
-    }
-
-    try {
-      const paymentSession = await api.payments.createPaymentSession(bookingId, paymentMethod, {
-        token: session.accessToken,
-      });
-      if (paymentSession.paymentUrl) {
-        checkoutUrl = paymentSession.paymentUrl;
-      }
-    } catch {
-      // Fall back to booking details page
-    }
   } catch (error) {
     await redirectToLoginIfSessionExpired(error, locale);
     return {
@@ -146,9 +153,12 @@ export async function createBusBookingAction(
     };
   }
 
-  if (checkoutUrl) {
-    redirect(checkoutUrl);
+  if (paymentMethod === "cash") {
+    redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash`);
   }
 
+  // Hotel oqimidagi bilan bir xil tuzatish: to'g'ridan-to'g'ri provider
+  // checkoutiga EMAS, booking detail sahifasiga (fee/yakuniy summa
+  // ko'rsatilib, foydalanuvchi tasdiqlagach checkoutga o'tadi).
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
 }

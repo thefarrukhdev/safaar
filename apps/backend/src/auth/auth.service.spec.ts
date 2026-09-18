@@ -2430,6 +2430,59 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
     });
   });
 
+  describe("partner/login (email) — regression: another concurrent change to this exact login path (usePartnerEmailLogin) replicated the same partnerType='hotel' bug via a different, always-false condition (tokens.partner_role === 'bus')", () => {
+    it('returns the real partner_organizations.type, not just status', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          organization_id: ORG_ID,
+          email: 'partner15@safaar.uz',
+          password_hash: 'hashed',
+          full_name: 'Test Owner 15',
+          role: 'owner',
+          status: 'active',
+        },
+      ]); // findPartnerUser
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([
+        { id: ORG_ID, status: 'approved', type: 'restaurant' },
+      ]); // orgRows
+
+      const result = await service.partnerLogin({
+        email: 'partner15@safaar.uz',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({
+        organization_type: 'restaurant',
+        organizationType: 'restaurant',
+      });
+    });
+
+    it("defaults to 'hotel' only when the organization row is genuinely missing the type (never silently mislabels a real type)", async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          organization_id: ORG_ID,
+          email: 'partner01@safaar.uz',
+          password_hash: 'hashed',
+          full_name: 'Test Owner 01',
+          role: 'owner',
+          status: 'active',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID, status: 'approved' }]); // no `type` column returned
+
+      const result = await service.partnerLogin({
+        email: 'partner01@safaar.uz',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({ organizationType: 'hotel' });
+    });
+  });
+
   describe('partner/set-password', () => {
     it('rejects an invalid/expired OTP without touching the database', async () => {
       await expect(

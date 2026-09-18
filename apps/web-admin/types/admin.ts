@@ -554,14 +554,6 @@ export interface AdminSeo {
   updatedAt: string;
 }
 
-export interface AdminBanner {
-  id: string;
-  title: string;
-  imageUrl: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
 export interface TicketMessage {
   id: string;
   ticketId: string;

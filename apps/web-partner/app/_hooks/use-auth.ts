@@ -31,7 +31,15 @@ export function usePartnerPhoneLogin() {
       }
 
       const tokens = await auth.partnerPhoneLogin(phone);
-      const partnerType = accessStatus.request?.type || 'hotel';
+      // `tokens.organizationType` (partner_organizations.type, from
+      // issuePartnerTokensByPhone) is the authoritative source — prefer it
+      // over the pre-login access-status lookup, which is a separate,
+      // potentially-stale snapshot.
+      const partnerType =
+        tokens.organizationType ??
+        tokens.organization_type ??
+        accessStatus.request?.type ??
+        'hotel';
       return {
         phone,
         tokens,
@@ -164,7 +172,10 @@ export function usePartnerPhoneOtpVerify() {
         phone,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: partnerType || 'hotel',
+        // `tokens.organizationType` (authoritative, from the backend) takes
+        // priority over the `partnerType` the caller passed in.
+        partnerType:
+          tokens.organizationType ?? tokens.organization_type ?? partnerType ?? 'hotel',
       };
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
@@ -197,7 +208,11 @@ export function usePartnerPasswordLogin() {
         phone,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: 'hotel',
+        // Was hardcoded 'hotel' regardless of the real organization type
+        // (confirmed live: restaurant/transport test partners both showed
+        // a hotel-style dashboard after password login). Now uses the
+        // authoritative partner_organizations.type the backend returns.
+        partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
       };
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
@@ -239,7 +254,7 @@ export function usePartnerSetPassword() {
         phone,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: 'hotel',
+        partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
       };
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType }) => {

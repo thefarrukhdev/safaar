@@ -34,6 +34,14 @@ export function requestOtp(phone: string): Promise<OtpRequestResponse> {
 export interface PartnerLoginResponse extends AuthTokens {
   organization_id: string;
   organizationId?: string;
+  /** `partner_organizations.type` — authoritative source for partner-type
+   * UI branching (room/bed/table/vehicle management etc). Backend:
+   * `issuePartnerTokensByPhone` (auth.service.ts), same helper behind
+   * every partner login path (OTP verify, phone-login, password-login,
+   * set-password), so this is populated consistently regardless of which
+   * one was used. */
+  organization_type?: string;
+  organizationType?: string;
   partner_role: string;
 }
 

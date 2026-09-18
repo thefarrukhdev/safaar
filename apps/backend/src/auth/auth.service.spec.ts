@@ -2307,6 +2307,40 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
       });
     });
 
+    it("returns the real partner_organizations.type (regression: web-partner's password-login hardcoded partnerType='hotel' regardless of the actual org type — confirmed live for restaurant/transport test partners)", async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]); // findPartnerUserByPhone
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          organization_type: 'restaurant',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensByPhone
+
+      const result = await service.partnerPasswordLogin({
+        phone: '+998901112201',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({
+        organization_type: 'restaurant',
+        organizationType: 'restaurant',
+      });
+    });
+
     it('wrong password is rejected without revealing which part was wrong', async () => {
       pg.query.mockResolvedValueOnce([
         {

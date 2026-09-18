@@ -24,7 +24,6 @@ export default function BannersPage() {
   const [link, setLink] = useState("/");
   const [imageUrl, setImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [link, setLink] = useState("/");
 
   const fetchBanners = async () => {
     try {
@@ -47,7 +46,6 @@ export default function BannersPage() {
     setLink(item.link || "/");
     setImageUrl(item.imageUrl);
     setIsActive(item.isActive);
-    setLink(item.link || "/");
     setIsModalOpen(true);
   };
 
@@ -57,7 +55,6 @@ export default function BannersPage() {
     setLink("/");
     setImageUrl("");
     setIsActive(true);
-    setLink("/");
     setIsModalOpen(true);
   };
 
@@ -112,23 +109,7 @@ export default function BannersPage() {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploading(true);
-    try {
-      const { url } = await AdminApi.uploadMedia(file);
-      setImageUrl(url);
-      toast.success("Rasm yuklandi");
-    } catch (error) {
-      toast.error("Rasmni yuklashda xatolik yuz berdi");
-    } finally {
-      setUploading(false);
-    }
-  };
 
->>>>>>> 0d628aa (feat(safaar): complete CMS integrations, partner auth and god mode logic)
   const columns: Column<CmsBanner>[] = [
     {
       key: "imageUrl",

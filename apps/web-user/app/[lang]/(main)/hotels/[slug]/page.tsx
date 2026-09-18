@@ -293,7 +293,7 @@ export default async function Page({
 
           <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <h2 className="text-2xl font-bold text-slate-900">Location</h2>
-            <HotelLocation />
+            <HotelLocation address={hotel.address} latitude={hotel.latitude} longitude={hotel.longitude} />
           </section>
         </div>
 

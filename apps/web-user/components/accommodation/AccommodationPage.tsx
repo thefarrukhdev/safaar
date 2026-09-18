@@ -335,7 +335,7 @@ export async function AccommodationPage({
       {items.length === 0 ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
           <Suspense fallback={null}>
-            <HotelFilters dict={{ filters: dict.filters }} sortSelect={null} />
+            <HotelFilters dict={{ filters: dict.filters, types: dict.types }} sortSelect={null} />
           </Suspense>
           <section aria-label={dict.title}>
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -359,7 +359,7 @@ export async function AccommodationPage({
           filters={
             <Suspense key="filters" fallback={null}>
               <HotelFilters
-                dict={{ filters: dict.filters }}
+                dict={{ filters: dict.filters, types: dict.types }}
                 sortSelect={
                   <Suspense key="mobileSortSelect" fallback={null}>
                     <HotelSortSelect dict={dict.sort} />

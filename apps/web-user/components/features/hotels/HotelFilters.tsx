@@ -12,7 +12,7 @@ export function HotelFilters({
   dict,
   sortSelect,
 }: {
-  dict: Pick<HotelsDict, "filters">;
+  dict: Pick<HotelsDict, "filters" | "types">;
   sortSelect?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -169,10 +169,10 @@ export function HotelFilters({
         <FilterGroup title="MAHSULOT TURI">
           <div className="flex flex-col gap-2 pt-1">
             {[
-              { id: "hotels", name: "Mehmonxonalar", count: 4 },
-              { id: "dachas", name: "Dachalar", count: 1 },
-              { id: "sanatoriums", name: "Sanatoriylar", count: 1 },
-              { id: "resorts", name: "Oromgohlar", count: 0 },
+              { id: "hotels", name: dict.types.hotels, count: 4 },
+              { id: "dachas", name: dict.types.dachas, count: 1 },
+              { id: "sanatoriums", name: dict.types.sanatoriums, count: 1 },
+              { id: "resorts", name: dict.types.resorts, count: 0 },
             ].map((cat) => (
               <label
                 key={cat.id}

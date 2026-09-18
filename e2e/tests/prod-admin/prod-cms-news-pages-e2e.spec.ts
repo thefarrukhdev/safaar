@@ -29,7 +29,7 @@ for (const resource of [
   test(`CMS ${resource.heading} — create survives reload (was local-state-only mock)`, async ({ page }) => {
     await login(page);
     await page.goto(`${ADMIN_URL}${resource.path}`, { waitUntil: 'networkidle', timeout: 30000 });
-    await expect(page.getByRole('heading', { name: resource.heading })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('heading', { name: resource.heading })).toBeVisible();
 
     const title = `E2E ${resource.heading} ${Date.now()}`;
     await page.getByRole('button', { name: resource.addLabel }).click();

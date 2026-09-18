@@ -785,7 +785,7 @@ export class AuthService {
     await this.resetLoginAttempts(lockoutKey);
 
     const orgRows = await this.pg.query<DbRow>(
-      `SELECT id::text, status
+      `SELECT id::text, status, type::text as type
        FROM partner_organizations
        WHERE id = $1
        LIMIT 1`,
@@ -800,6 +800,11 @@ export class AuthService {
         message: 'Hamkor tashkilot faol emas',
       });
     }
+    // Authoritative partner-type source (same field issuePartnerTokensByPhone
+    // returns for the phone-based login paths) -- without this, the
+    // frontend has no real way to tell a restaurant/transport/hostel/etc
+    // partner apart from a hotel one, and silently defaults to 'hotel'.
+    const organizationType = String(organization?.['type'] ?? 'hotel');
 
     return {
       ...(await this.issueTokens({
@@ -812,6 +817,8 @@ export class AuthService {
       organizationId: partnerUser.organization_id,
       organization_status: organizationStatus,
       organizationStatus,
+      organization_type: organizationType,
+      organizationType,
       partner_role: partnerUser.role,
     };
   }

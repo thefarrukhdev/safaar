@@ -149,75 +149,30 @@ export async function request<T>(
   };
 
   try {
-    // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-    const method = init.method || 'GET';
-    const basePath = path.split('?')[0];
-    
-    // Qaysi ro'yxat bilan ishlashni aniqlash
-    let entityType = 'general';
-    if (basePath.includes('vehicle') || basePath.includes('bus')) entityType = 'vehicles';
-    if (basePath.includes('hotel') || basePath.includes('listing')) entityType = 'hotels';
-    if (basePath.includes('booking')) entityType = 'bookings';
+    const response = await fetch(buildUrl(path, searchParams), init);
 
-    // Block dates (Blackout) mock
-    if (method === 'POST' && basePath.endsWith('/blackout')) {
-      const bBody = body as any;
-      const reservations = mockDb.get('bookings') || [];
-      const newBooking = {
-        id: `blk-${Date.now()}`,
-        status: 'completed', // completed looks grayed out on calendar
-        check_in: bBody.startDate,
-        check_out: bBody.endDate,
-        guest_name: `🔒 Bloklangan: ${bBody.reason || "Inventar yopilgan"}`,
-        room_number: bBody.roomNumber,
-        created_at: new Date().toISOString(),
-        policy_snapshot: { source: 'WALK_IN' },
-        item: { 
-          nights: Math.max(1, Math.round((new Date(bBody.endDate).getTime() - new Date(bBody.startDate).getTime()) / (1000 * 3600 * 24)))
-        }
-      };
-      mockDb.set('bookings', [...reservations, newBooking]);
-      return { ok: true, success: true } as any;
+    if (!response.ok) {
+      const apiError = await parseErrorPayload(response);
+      const error = new HttpError(response.status, apiError.message, apiError);
+      handleUnauthorized(error, token);
+      throw error;
     }
 
-    // Yaratish yoki Yangilash (POST / PUT / PATCH)
-    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
-      const items = mockDb.get(entityType) || [];
-      const newItem = { id: String(Date.now()), createdAt: new Date().toISOString(), ...(body as any || {}) };
-      mockDb.set(entityType, [...items, newItem]);
-      return Object.assign({}, newItem, { success: true }) as any;
+    if (response.status === 204) {
+      return {} as T;
     }
-    
-    // O'chirish (DELETE)
-    if (method === 'DELETE') {
-      return { success: true } as any;
+
+    const payload = (await response.json()) as T | ApiEnvelope<T>;
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'success' in payload &&
+      'data' in payload
+    ) {
+      return (payload as ApiEnvelope<T>).data;
     }
-    
-    // Ro'yxatni olish (GET)
-    if (method === 'GET') {
-      const items = mockDb.get(entityType) || [];
-      return Object.assign([...items], { 
-        items, 
-        meta: { total: items.length, page: 1, limit: 10 }, 
-        data: items,
-        id: 'demo-id',
-        status: 'active',
-        success: true,
-        url: '/placeholder.jpg'
-      }) as any;
-    }
-    
-    // Boshqa barcha so'rovlar uchun standart bo'sh obyekt
-    return Object.assign([], { 
-      items: [], 
-      meta: { total: 0, page: 1, limit: 10 }, 
-      data: [],
-      id: 'demo-id',
-      status: 'active',
-      success: true,
-      url: '/placeholder.jpg'
-    }) as any;
-    // ────────────────────────────────────────────────────────────────────────
+
+    return payload as T;
   } catch (cause) {
     // fetch'ning o'zi otgan xato: tarmoq yo'q, CORS, backend offline va h.k.
     throw new HttpError(
@@ -244,48 +199,35 @@ export async function requestFormData<T>(
     ...rest
   } = options;
 
-  // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-  // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
-  return Object.assign([], { 
-    items: [], 
-    meta: { total: 0, page: 1, limit: 10 }, 
-    data: [],
-    id: 'demo-id',
-    status: 'active',
-    success: true,
-    url: '/placeholder.jpg'
-  }) as any;
-  // ────────────────────────────────────────────────────────────────────────
+  const response = await fetch(buildUrl(path, searchParams), {
+    ...rest,
+    method: rest.method ?? 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(organizationId ? { 'x-organization-id': organizationId } : {}),
+      ...headers,
+    },
+    body: formData,
+  });
 
-  // const response = await fetch(buildUrl(path, searchParams), {
-  //   ...rest,
-  //   method: rest.method ?? 'POST',
-  //   headers: {
-  //     Accept: 'application/json',
-  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  //     ...(organizationId ? { 'x-organization-id': organizationId } : {}),
-  //     ...headers,
-  //   },
-  //   body: formData,
-  // });
+  if (!response.ok) {
+    const apiError = await parseErrorPayload(response);
+    const error = new HttpError(response.status, apiError.message, apiError);
 
-  // if (!response.ok) {
-  //   const apiError = await parseErrorPayload(response);
-  //   const error = new HttpError(response.status, apiError.message, apiError);
+    handleUnauthorized(error, token);
+    throw error;
+  }
 
-  //   handleUnauthorized(error, token);
-  //   throw error;
-  // }
+  const payload = (await response.json()) as T | ApiEnvelope<T>;
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'success' in payload &&
+    'data' in payload
+  ) {
+    return (payload as ApiEnvelope<T>).data;
+  }
 
-  // const payload = (await response.json()) as T | ApiEnvelope<T>;
-  // if (
-  //   typeof payload === 'object' &&
-  //   payload !== null &&
-  //   'success' in payload &&
-  //   'data' in payload
-  // ) {
-  //   return (payload as ApiEnvelope<T>).data;
-  // }
-
-  // return payload as T;
+  return payload as T;
 }

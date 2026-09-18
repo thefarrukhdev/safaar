@@ -1822,8 +1822,14 @@ export const AdminApi = {
   },
 
   toggleListingFeatured: async (id: string, featured: boolean) => {
-    console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
-    return Promise.resolve({ success: true, featured });
+    const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
+    return data;
+  },
+
+  reorderFeaturedListings: async (orderedIds: string[]) => {
+    // Mock for reordering featured listings
+    console.log(`Mock: Reordered featured listings:`, orderedIds);
+    return Promise.resolve({ success: true });
   },
 
   blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {

@@ -69,20 +69,19 @@ export function usePartnerPhoneLogin() {
 export function usePartnerPhoneOtpRequest() {
   return useMutation({
     mutationFn: async (phone: string) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+      const result = await auth.requestOtp(phone);
       return {
         phone,
-        challengeId: 'demo-challenge-id',
-        expiresInSeconds: 300,
-        resendAfterSeconds: 60,
+        challengeId: result.challenge_id,
+        expiresInSeconds: result.expires_in_seconds,
+        resendAfterSeconds: result.resend_after_seconds,
         partnerType: 'hotel',
-        devCode: '000000'
+        devCode: result.dev_code
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ challengeId, phone }) => {
+    onSuccess: ({ challengeId, phone, devCode }) => {
       toast.info(
-        `Demo rejim: "000000" kodni kiriting`,
+        devCode ? `Dasturlash rejimi: Kodi - ${devCode}` : `Sms yuborildi`,
         { duration: 8000 },
       );
     },
@@ -109,21 +108,6 @@ export function usePartnerPhoneOtpVerify() {
       challengeId: string;
       partnerType?: string;
     }) => {
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (challengeId === 'demo-challenge-id') {
-        if (code !== DEMO_CODE) {
-          throw new Error(`Demo rejimda kod: ${DEMO_CODE}`);
-        }
-        return {
-          phone,
-          tokens: DEMO_TOKENS as any,
-          organizationId: 'demo-org-id',
-          partnerType: partnerType || 'hotel',
-          isDemo: true,
-        };
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
       const tokens = await auth.verifyOtp({
         phone,
         code,
@@ -161,21 +145,14 @@ export function usePartnerPasswordLogin() {
 
   return useMutation({
     mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      let pType = 'hotel';
-      if (password && password.startsWith('demo:')) {
-        pType = password.split(':')[1];
-      } else if (password !== 'demo123') {
-        throw new Error("Noto'g'ri parol. Demo parol: demo123 (Mehmonxona) yoki demo:bus (Transport), demo:restaurant kabi kiriting.");
-      }
+      const tokens = await auth.partnerPasswordLogin(phone, password);
       return {
         phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
-        partnerType: pType,
-        isDemo: true,
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
+        partnerType: tokens.partner_role === 'bus' ? 'bus' : 'hotel',
+        isDemo: false,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
@@ -210,18 +187,19 @@ export function usePartnerSetPassword() {
       challengeId: string;
       password?: string;
     }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      if (code !== '000000') {
-        throw new Error("Demo rejimda kod: 000000 ni kiriting");
-      }
+      const tokens = await auth.partnerSetPassword({
+        phone,
+        code,
+        challenge_id: challengeId,
+        password,
+      });
       return {
         phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
-        partnerType: 'hotel',
-        isDemo: true,
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
+        partnerType: tokens.partner_role === 'bus' ? 'bus' : 'hotel',
+        isDemo: false,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { PaymentsController } from './payments.controller';
 import { UzumWebhookController } from './uzum-webhook.controller';
 import { UzumCheckoutController } from './uzum-checkout.controller';
@@ -20,6 +21,9 @@ import { UzumCheckoutProvider } from './providers/uzum-checkout.provider';
     PaymeProvider,
     UzumProvider,
     UzumCheckoutProvider,
+    // `AppCacheService` (`InfrastructureModule`) orqali — guest to'lov
+    // (bookings.service.ts'dagi bilan BIR XIL cache-backed token).
+    GuestBookingAccessService,
   ],
   exports: [PaymentsService],
 })

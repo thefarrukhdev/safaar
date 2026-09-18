@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -21,6 +23,8 @@ export function RestaurantBookingSection({
 }: {
   restaurant: RestaurantDetailView;
 }) {
+  const params = useParams<{ lang?: string }>();
+  const locale = params?.lang || "uz";
   const [selectedTableId, setSelectedTableId] = useState<string>(
     restaurant.tables[0]?.id ?? ""
   );
@@ -34,6 +38,7 @@ export function RestaurantBookingSection({
   const [guestName, setGuestName] = useState<string>("");
   const [guestPhone, setGuestPhone] = useState<string>("");
   const [guestEmail, setGuestEmail] = useState<string>("");
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
 
   // Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
@@ -88,6 +93,10 @@ export function RestaurantBookingSection({
         return;
       }
     }
+    if (!agreeTerms) {
+      setErrorMsg("Davom etish uchun Ommaviy Oferta shartlariga rozilik bering");
+      return;
+    }
 
     setErrorMsg(null);
     setLoading(true);
@@ -107,6 +116,7 @@ export function RestaurantBookingSection({
         guestEmail,
         source: "web-user",
         paymentMethod: paymentMethod === "card" ? "click" : "cash",
+        agreeTerms,
       });
 
       const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
@@ -429,6 +439,27 @@ export function RestaurantBookingSection({
                   Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi.
                 </div>
               )}
+
+              <label className="flex items-start gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  required
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-slate-600 dark:text-slate-400 leading-tight">
+                  Men{" "}
+                  <Link
+                    href={`/${locale}/terms`}
+                    target="_blank"
+                    className="font-semibold text-primary-600 hover:underline"
+                  >
+                    Ommaviy Oferta
+                  </Link>{" "}
+                  shartlariga roziman.
+                </span>
+              </label>
 
               <Button
                 type="submit"

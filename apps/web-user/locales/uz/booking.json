@@ -23,46 +23,7 @@
     "processing": "Jarayonda",
     "paid": "To'langan",
     "failed": "Muvaffaqiyatsiz",
-    "refunded": "Qaytarilgan"
-  },
-  "confirmedTitle": "Broningiz muvaffaqiyatli tasdiqlandi!",
-  "confirmedSubtitle": "Tafsilotlar va vaucher ma'lumotlari shaxsiy kabinetingizda saqlanadi.",
-  "failedTitle": "To'lov tranzaksiyasi amalga oshmadi",
-  "failedSubtitle": "Tranzaksiya bekor qilindi yoki xatolik yuz berdi. Quyida to'lov usulini qayta tanlab urinib ko'rishingiz mumkin.",
-  "awaitingCashTitle": "Joyida to'lash usuli tanlandi",
-  "awaitingCashSubtitle": "Joyingiz band qilindi. To'lov mehmonxonaga kelganda qabulxonada amalga oshiriladi.",
-  "receiptSummary": "Kvitansiya xulosasi",
-  "createdAt": "Yaratilgan sana",
-  "selectPaymentMethod": "To'lov usulini tanlang",
-  "selectPaymentMethodDesc": "Payme, Click, Uzcard/Humo yoki joyida to'lash usullari orqali to'lovni amalga oshiring.",
-  "chat": {
-    "title": "Mehmonxona bilan chat",
-    "loading": "Xabarlar yuklanmoqda...",
-    "empty": "Hozircha xabarlar yo'q. Mehmonxonaga savollaringizni yuborishingiz mumkin.",
-    "placeholder": "Xabaringizni yozing...",
-    "send": "Yuborish"
-  },
-  "actions": {
-    "error": "Xatolik yuz berdi",
-    "userCancelledReason": "Foydalanuvchi bekor qildi",
-    "printVoucher": "Vaucherni chop etish",
-    "cancelBooking": "Bekor qilish",
-    "myBookings": "Mening bronlarim",
-    "backHome": "Bosh sahifaga"
-  },
-  "cancelModal": {
-    "title": "Bronni bekor qilish",
-    "calculating": "Hisoblanmoqda...",
-    "rulesIntro": "Agar siz ushbu bronni bekor qilsangiz, quyidagi qoidalar qo'llaniladi:",
-    "paidAmount": "To'langan summa:",
-    "refundAmount": "Qaytariladigan summa:",
-    "penaltyAmount": "Jarima:",
-    "policyLabel": "Qoida:",
-    "cancelling": "Bekor qilinmoqda...",
-    "confirm": "Tasdiqlash"
-  },
-  "retryPayment": {
-    "error": "To'lovni amalga oshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
-    "submit": "Qayta to'lash (To'lov sahifasiga o'tish)"
+    "refunded": "Qaytarilgan",
+    "reversed": "Bank tomonidan bekor qilingan"
   }
 }

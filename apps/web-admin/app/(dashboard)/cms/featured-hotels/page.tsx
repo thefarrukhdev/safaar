@@ -19,10 +19,15 @@ export default function FeaturedHotelsPage() {
     const load = async () => {
       try {
         setLoading(true);
-        // Barcha mehmonxonalarni olamiz va faqat mashhurlarini ajratamiz
+        // Barcha mehmonxonalarni olamiz va faqat mashhurlarini ajratamiz,
+        // avvalgi saqlangan tartib (featuredOrder) bo'yicha — aks holda
+        // refresh'dan keyin tartib boshqa (updated_at) ustunga qaytib ketardi.
+        // Hali tartib berilmagan (null) elementlar oxirida qoladi.
         const all = await AdminApi.getListings();
         if (!cancelled) {
-          const featured = all.filter((l) => l.featured);
+          const featured = all
+            .filter((l) => l.featured)
+            .sort((a, b) => (a.featuredOrder ?? Infinity) - (b.featuredOrder ?? Infinity));
           setItems(featured);
         }
       } catch (error) {

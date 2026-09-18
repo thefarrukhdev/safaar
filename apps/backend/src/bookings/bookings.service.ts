@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
@@ -17,6 +17,7 @@ import {
   resolveAccommodationCommissionRate,
 } from '../common/finance';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
+import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
 import {
@@ -96,6 +97,17 @@ export interface BookingRow {
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
 
+  /**
+   * `cache`dan qurilgan yordamchi (Nest DI param EMAS — konstruktor
+   * signature'i shu sabab o'zgarmadi, mavjud test fayllaridagi `new
+   * BookingsService(...)` chaqiruvlari buzilmaydi). Guest-access token
+   * mantig'i `PaymentsService` bilan bo'lishish uchun shu yerdan
+   * `common/guest-booking-access.service.ts`ga ko'chirildi — cache-kalit
+   * prefiksi/TTL/xeshlash BIR XIL saqlangan (production'da allaqachon
+   * chiqarilgan tokenlar yaroqli qolishi uchun).
+   */
+  private readonly guestAccess: GuestBookingAccessService;
+
   constructor(
     private readonly pg: PostgresService,
     private readonly events: EventsService,
@@ -103,7 +115,9 @@ export class BookingsService {
     private readonly promosService: PromosService,
     private readonly paymentsService: PaymentsService,
     private readonly cache: AppCacheService,
-  ) {}
+  ) {
+    this.guestAccess = new GuestBookingAccessService(cache);
+  }
 
   /**
    * `Idempotency-Key` header orqali booking-yaratish so'rovlarini
@@ -1837,33 +1851,17 @@ export class BookingsService {
     return this.assertBooking(id, actor);
   }
 
-  // Guest booking confirmation sahifasi bir necha kun davomida qayta
-  // ochilishi (to'lov holatini tekshirish, kvitansiyani qayta ko'rish)
-  // mumkin bo'lgani uchun bir martalik emas — `JWT_REFRESH_TTL`ning
-  // standart qiymati (30 kun) bilan bir xil, ishlatilgan muddat.
-  private readonly GUEST_BOOKING_ACCESS_TTL_SECONDS = 30 * 24 * 60 * 60;
-
-  private guestBookingAccessKey(token: string): string {
-    return `booking:guest-access:${createHash('sha256').update(token).digest('hex')}`;
-  }
-
   /**
    * Guest (login qilmagan) mijoz o'z bronini keyinroq (masalan tasdiqlash
    * sahifasini qayta yuklash orqali) ko'rishi uchun opaque, cache-backed
-   * ruxsat tokeni — xuddi `AuthService`dagi parol-tiklash tokeni bilan bir
-   * xil naqsh (xom token hech qachon DB/cache'da saqlanmaydi, faqat uning
-   * SHA-256 xeshi cache kaliti sifatida ishlatiladi).
+   * ruxsat tokeni. Endi `GuestBookingAccessService`ga ko'chirilgan
+   * (`PaymentsService` ham qayta ishlatadi guest to'lov uchun) — bu yerda
+   * faqat nomlar moslik uchun saqlangan.
    */
   private async issueGuestBookingAccessToken(
     bookingId: string,
   ): Promise<string> {
-    const token = randomBytes(32).toString('base64url');
-    await this.cache.set(
-      this.guestBookingAccessKey(token),
-      { bookingId },
-      this.GUEST_BOOKING_ACCESS_TTL_SECONDS,
-    );
-    return token;
+    return this.guestAccess.issue(bookingId);
   }
 
   /** Peek — NOT consumed, chunki guest bir nechta martalik (sahifani qayta
@@ -1871,15 +1869,20 @@ export class BookingsService {
   private async resolveGuestBookingAccessTokenBookingId(
     token: string,
   ): Promise<string | undefined> {
-    const context = await this.cache.get<{ bookingId: string }>(
-      this.guestBookingAccessKey(token),
-    );
-    return context?.bookingId;
+    return this.guestAccess.resolve(token);
   }
 
   private paymentMethod(value: unknown): string {
     const method = String(value ?? 'click');
-    return ['click', 'payme', 'uzcard', 'humo', 'cash'].includes(method)
+    return [
+      'click',
+      'payme',
+      'uzcard',
+      'humo',
+      'visa',
+      'mastercard',
+      'cash',
+    ].includes(method)
       ? method
       : 'click';
   }

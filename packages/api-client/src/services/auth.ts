@@ -147,7 +147,10 @@ export const authService = {
     return camelizeKeys<{ reset: boolean }>(raw);
   },
 
-  /** `POST /auth/user/complete-profile` — birinchi marta kirgan foydalanuvchi profilini to'ldiradi. */
+  /** `POST /auth/user/complete-profile` — birinchi marta kirgan foydalanuvchi profilini to'ldiradi.
+   * `agreeTerms` backend tomonidan MAJBURIY tekshiriladi (`true` bo'lmasa
+   * `TERMS_NOT_ACCEPTED` bilan rad etiladi) — bu yerda faqat uzatiladi,
+   * client'ning o'zi hech narsani "tasdiqlagan" deb hisoblamaydi. */
   async completeProfile(
     token: string,
     data: {
@@ -156,6 +159,7 @@ export const authService = {
       phone?: string;
       email?: string;
       password?: string;
+      agreeTerms: boolean;
     },
   ): Promise<CompleteProfileResult> {
     const body: Record<string, unknown> = {
@@ -163,6 +167,7 @@ export const authService = {
       last_name: data.lastName,
       phone: data.phone,
       email: data.email,
+      agree_terms: data.agreeTerms,
     };
     if (data.password) {
       body.password = data.password;

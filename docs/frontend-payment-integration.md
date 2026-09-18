@@ -14,7 +14,10 @@
 > to'g'ridan-to'g'ri o'qib tasdiqlangan — taxmin/standart Uzum
 > dokumentatsiyasiga tayanilmagan.
 >
-> **Repo holati:** `temp/save-all-work` branch, 2026-09-16.
+> **Repo holati:** `temp/save-all-work` branch, 2026-09-17 (v2 — 2026-09-16
+> product talabi bo'yicha backend'ga HUMO/UZCARD/VISA/MASTERCARD fee,
+> guest to'lov va Uzum Checkout refund integratsiyasi qo'shilgandan
+> keyingi holat).
 > API global prefiksi: **`/v1`** (`API_PREFIX` env, default `v1`). Pastdagi
 > barcha endpoint yo'llari shu prefiksdan KEYIN yoziladi (masalan
 > `POST /payments/:bookingId/create` haqiqatda
@@ -25,6 +28,28 @@
 > `{ success: false, error: { code, message, fields }, meta }`
 > ko'rinishida (`HttpErrorFilter`). Pastdagi "Response body" ustunlarida
 > faqat `data` ichidagi shaklni yozamiz.
+>
+> ### v1 dan v2 ga nima o'zgardi (frontend uchun MUHIM)
+>
+> 1. **HUMO/UZCARD/VISA/MASTERCARD endi HAQIQATAN ISHLAYDI** — barchasi
+>    Uzum Checkout orqali, backend fee'ni hisoblab, Uzum'ga yuboriladigan
+>    summaga QO'SHADI. Avval `uzcard`/`humo` har doim 503 berardi,
+>    `visa`/`mastercard` umuman mavjud emas edi (4-bo'lim).
+> 2. **Guest (login qilmagan) to'lov endi ISHLAYDI** — mavjud
+>    `guestAccessToken` (booking yaratishda qaytariladigan) endi
+>    `/payments/*` so'rovlariga `?guestToken=` query parametri sifatida
+>    qo'shilishi mumkin (9-bo'lim). Avval bu HAR DOIM 401 berardi.
+> 3. **"Boshqa to'lov usulini tanlash" bugi tuzatildi** — avval, agar
+>    bronda allaqachon ochiq (pending/processing) payment qatori bo'lsa,
+>    `POST /payments/:bookingId/create`ga yuborilgan `provider` HECH QANDAY
+>    ta'sir qilmasdi (eski qator har doim qaytardi). Endi boshqa usul
+>    so'ralsa va eski qator hali hech qanday tashqi provayderga tegmagan
+>    bo'lsa — xavfsiz almashtiriladi (3-bo'lim).
+> 4. **Refund endi Uzum Checkout bilan HAQIQIY integratsiyalangan** — admin
+>    `uzum_checkout` orqali to'langan bronni tasdiqlasa, backend haqiqiy
+>    `/acquiring/refund` so'rovini yuboradi (10-bo'lim). Bu web-user
+>    frontendiga bevosita ta'sir qilmaydi (refund admin panel ishi), lekin
+>    "refund ishlaydimi" degan savolga endi aniq javob bor.
 
 ---
 
@@ -153,23 +178,45 @@ WHERE booking_id = $1 AND status IN ('pending', 'processing')
 ORDER BY created_at DESC LIMIT 1
 ```
 
-Agar shunday qator topilsa — **o'sha AYNAN SHU qator** (o'zgarishsiz)
-qaytariladi, yangi qator yaratilmaydi. Demak: bir xil bronga bir necha marta
+Agar shunday qator topilsa VA **so'ralgan usul mavjud qatornikiga mos
+kelsa** — **o'sha AYNAN SHU qator** (o'zgarishsiz) qaytariladi, yangi qator
+yaratilmaydi. Demak: bir xil bronga, bir xil usul bilan bir necha marta
 `POST /payments/:bookingId/create` yuborilsa (masalan tugma ikki marta
 bosilsa, yoki tarmoq sekinligidan foydalanuvchi qayta bossa) — bir xil
 natija qaytadi, xavfli dublikat yo'q.
 
-**MUHIM, kodda tasdiqlangan nozik holat (frontend buni bilishi shart):**
-Bu "mavjud bo'lsa — o'shani qaytar" tekshiruvi `buildCheckoutUrl()`dan
-**OLDIN** ishlaydi. Ya'ni agar booking yaratilishida ICHKI yaratilgan
-birinchi payment qatorida `payment_url` biror sababdan `null` bo'lib
-qolgan bo'lsa (masalan o'sha payt provayder sozlanmagan edi) — keyinchalik
-`POST /payments/:bookingId/create` ni qayta chaqirish **checkout URL'ni
-qayta generatsiya QILMAYDI**, faqat o'sha eski, `payment_url: null` qatorni
-qaytaraveradi (HTTP 200, xatosiz). **Frontend buni alohida holat sifatida
-ushlashi kerak:** `status === 200` VA `payment_url` bo'sh — bu ham "to'lov
-hozircha mumkin emas" degani, faqat "so'rov muvaffaqiyatsiz" (network xato)
-bilan bir xil emas. Pastga, 14-bo'limga qarang.
+**v2'da TUZATILGAN bug (frontend eski hujjatga tayanmasin):** Ilgari bu
+tekshiruv `provider`ni o'qishdan OLDIN ishlar edi — ya'ni bronda ALLAQACHON
+ochiq qator bo'lsa (masalan booking yaratilishida avtomatik yaratilgan),
+`POST /payments/:bookingId/create`ga yuborilgan `provider` **umuman
+e'tiborga olinmasdi**, har doim eski qator qaytardi. **Endi tuzatildi:**
+- Agar so'ralgan usul mavjud qatorning usuli bilan **mos kelsa** — o'sha
+  qator qaytadi (yuqoridagi kabi, idempotent).
+- Agar **boshqa** usul so'ralsa VA mavjud qator hali **hech qanday tashqi
+  provayderga tegmagan** bo'lsa (`status='pending'`, `provider_reference`
+  yo'q — masalan booking yaratilishida ichki yaratilgan, checkout URL'i
+  hali yo'q qator) — backend uni **xavfsiz almashtiradi**, yangi so'ralgan
+  usul bilan.
+- Agar boshqa usul so'ralsa, lekin mavjud qator **allaqachon haqiqiy tashqi
+  sessiyaga ega** (`status='processing'` yoki `provider_reference` bor —
+  masalan Uzum Checkout'da haqiqiy `orderId` bilan ro'yxatdan o'tgan) —
+  backend uni ALMASHTIRMAYDI, o'sha (eski) qatorni qaytaradi. **Frontend
+  buni bilishi kerak:** agar foydalanuvchi hali natijasi noma'lum (pending/
+  processing) to'lovda boshqa usul tanlasa, javobdagi `provider` so'ralgan
+  bilan mos kelmasligi mumkin — bu XATO EMAS, backend eski, hali yakunlanishi
+  mumkin bo'lgan to'lovni tasodifan bekor qilib qo'ymaslik uchun ataylab
+  shunday. Foydalanuvchiga eski usul bo'yicha checkout'ni yakunlashni yoki
+  kutishni taklif qiling.
+
+**`payment_url` bo'sh qaytishi mumkin bo'lgan holat (hamon amal qiladi):**
+Agar tanlangan provayder (masalan `click`/`payme`) sozlanmagan bo'lsa,
+backend endi **aniq 503 xato** qaytaradi (`PAYMENT_PROVIDER_NOT_CONFIGURED`)
+— jim `payment_url: null` bilan HTTP 200 QAYTARMAYDI. Bundan mustasno: agar
+mavjud qator boshqa usul uchun ALLAQACHON `payment_url: null` bilan
+yaratilgan bo'lsa (yuqoridagi "tashqi sessiyaga ega emas" holatidan farqli
+o'laroq, masalan eski, hali chaqirilmagan holatlar) — bu kamdan-kam va
+frontend uni alohida "hozircha to'lash imkoni yo'q" holati sifatida ushlashi
+tavsiya etiladi. Pastga, 14-bo'limga qarang.
 
 **Loading/disable:** Real kodda bu React `useActionState`'ning o'zi
 boshqaradigan `pending` flag orqali — `Button`ga `loading={pending}` uzatiladi,
@@ -191,139 +238,155 @@ batafsil.
 
 ## 4. To'lov usullari va komissiya (fee) hisob-kitobi
 
-> ⚠️ **Bu bo'lim topshiriqdagi misoldan (HUMO/UZCARD 1.5%, VISA/MASTERCARD
-> 3.5%) FARQ QILADI.** Repo kodi to'liq o'qib chiqildi — quyida REAL holat,
-> taxmin emas.
+> ✅ **v2 (2026-09-16/17): HUMO/UZCARD/VISA/MASTERCARD endi HAQIQATAN
+> ISHLAYDI, fee real oqimga ulangan.** Quyida real, testlar bilan
+> tasdiqlangan holat.
 
-### Real frontend to'lov usullari (PaymentSelector.tsx)
+### Real provider capability (nega arxitektura shunday)
 
-Hozirgi UI'da (`components/features/checkout/PaymentSelector.tsx`) foydalanuvchiga
-aynan **4 ta** variant ko'rsatiladi:
+Uzum Checkout — bitta hosted checkout sahifasi orqali Humo/Uzcard/Visa/
+Mastercard kartalarining barchasini avtomatik qabul qiladigan YAGONA real
+karta-integratsiyasi (`UzumCheckoutProvider.register()`, rasmiy wire-format
+2026-09-11dan tasdiqlangan). Shu sabab backend arxitekturasi **alohida 4 ta
+provayder EMAS**, balki:
 
-| UI id | Nomi (UI matni) | Backend `provider` qiymati |
-|---|---|---|
-| `click` | Click Pass / Evolution | `click` |
-| `payme` | Payme | `payme` |
-| `uzcard` | **"Uzcard / Humo (Plastik karta)"** — ikkalasi BITTA variantga birlashtirilgan | `uzcard` |
-| `cash` | Joyida to'lash (Naqd / Terminal) | `cash` |
+- **Transport (`payments.provider` ustuni) — har doim `uzum_checkout`**
+  bo'lib qoladi (mavjud callback/reconciliation/cron mantig'i
+  o'zgarishsiz ishlashi uchun).
+- **Foydalanuvchi tanlagan karta turi — YANGI `payments.card_scheme`
+  ustunida** saqlanadi (`humo`/`uzcard`/`visa`/`mastercard`), fee
+  stavkasini belgilaydi.
+- Frontend uchun bu FARQ ko'rinmaydi — `provider` so'rov maydoniga
+  to'g'ridan-to'g'ri `"humo"`/`"uzcard"`/`"visa"`/`"mastercard"` yuboriladi
+  (`CreatePaymentDto` shu 4 qiymatni ham qabul qiladi), va javobdagi
+  `provider` maydonida ham AYNAN shu qiymat qaytadi (ichki `uzum_checkout`
+  transport YASHIRILADI).
 
-**`humo` alohida tanlanadigan variant sifatida UI'da YO'Q** — backend enum'ida
-bor (`humo` ham `CreatePaymentDto.provider`ning qonuniy qiymati), lekin
-frontend uni hech qachon yubormaydi (UI "Uzcard / Humo" tugmasi bosilganda
-har doim `"uzcard"` yuboradi). **VISA va MASTERCARD degan alohida
-to'lov-usuli tanlovi backend enumida ham, frontend UI'da ham UMUMAN YO'Q.**
-
-### Komissiya/fee — real kod holati
-
-Butun repoda (backend + frontend, `apps/backend/src`, `apps/web-user`,
-`apps/web-partner`) `"3.5"`, `"VISA"`, `"MASTERCARD"` kabi fee bilan bog'liq
-hech qanday kod topilmadi (grep bilan tasdiqlangan — VISA/MASTERCARD faqat
-marketing matnlarida, masalan `SiteFooter.tsx`dagi logotip ro'yxatida, ko'rinadi).
-
-Kodda topilgan **YAGONA** haqiqiy fee mantig'i:
+### Real fee stavkalari (kod: `payments/providers/card-scheme-fee.ts`)
 
 ```ts
-// apps/backend/src/payments/providers/uzum-checkout-commission.ts
-export const UZUM_CHECKOUT_COMMISSION_RATE = 0.015; // 1.5%, FLAT
-export const UZUM_CHECKOUT_FEE_BEARER: 'USER' | 'PARTNER' | 'SAFAAR' = 'USER';
+export const CARD_SCHEME_FEE_RATES = {
+  humo: 0.015,       // 1.5%
+  uzcard: 0.015,      // 1.5%
+  visa: 0.035,        // 3.5%
+  mastercard: 0.035,  // 3.5%
+};
+export const CARD_SCHEME_FEE_BEARER = 'USER'; // foydalanuvchi to'laydi
 ```
 
-Fakt bo'yicha:
+Bu — mahsulot talabi (2026-09-16) bilan **aynan mos** (topshiriqdagi
+misoldan endi FARQ qilmaydi). 500,000 so'm uchun (testlar bilan
+tasdiqlangan, `payments.service.card-scheme.spec.ts`):
 
-1. **1.5% stavka faqat `uzum_checkout` provayderiga tegishli** — karta
-   turiga (Humo/Uzcard/Visa/Mastercard) qarab FARQLANMAYDI. Uzum
-   Checkout'ning o'zi ichida foydalanuvchi qaysi kartani kiritishidan
-   qat'i nazar, backend kodida stavka BIR XIL — 1.5%.
-2. **Click/Payme/Uzcard/Humo (standalone provayderlar sifatida) uchun
-   HECH QANDAY fee/komissiya logikasi kodda YO'Q** — na foiz, na summa.
-3. **2026-09-13 biznes tomonidan tasdiqlangan qaror** (kod izohida
-   qayd etilgan): bu 1.5%ni **mijoz/user to'laydi**, na hamkor
-   (`partner_payable`), na SAFAAR (`commission_amount`) bu summani
-   ko'tarmaydi.
-4. **ENG MUHIMI — bu hisob-kitob HALI REAL OQIMGA ULANMAGAN:**
-   - `calculateUzumCheckoutCommission()` va uni ishlatuvchi
-     `calculatePaymentBreakdown()` (`common/finance.ts`) — repo bo'ylab
-     grep qilinganda, ular FAQAT o'zlarining `.spec.ts` fayllarida
-     chaqiriladi. Hech qaysi controller, service yoki real so'rov
-     yo'lida ISHLATILMAYDI.
-   - `createUzumCheckoutPayment()` (`payments.service.ts`) Uzum'ning
-     `/payment/register` so'roviga **faqat `booking.total_amount`ni
-     (gross, hech qanday fee qo'shilmagan holda)** yuboradi. Buni
-     kodning o'zidagi izoh ham tasdiqlaydi: *"bu maydon HECH QANDAY
-     tashqi so'rovga avtomatik ulanmaydi — FAQAT SAFAAR ICHKI
-     hisobot/ko'rsatish uchun"*.
-   - `payments` jadvalidagi `amount` ustuni ham har doim gross
-     summaga teng — fee alohida qo'shilmaydi.
-   - Migratsiya (`provider_fee_rate`/`provider_fee_amount`/
-     `net_settlement_amount` ustunlari uchun,
-     `20260911000000_uzum_checkout_commission_fields`) **DIZAYN
-     QILINGAN, lekin ATAYLAB productionga qo'llanilmagan** —
-     kodning o'zidagi `TODO(uzum-checkout-commission)` izohi buni
-     aniq deydi.
-
-### Frontendga bu nimani anglatadi
-
-- **Hozircha backend hech qaysi real API javobida fee/komissiya
-  maydonini QAYTARMAYDI** — na `POST /payments/:bookingId/create`
-  javobida, na `GET /payments/:bookingId`da. `amount` maydoni har doim
-  bron summasining O'ZI (gross), fee qo'shilmagan.
-- Shuning uchun frontend **hozircha checkout'da "to'lov haqi" qatorini
-  ko'rsata OLMAYDI** — chunki ko'rsatadigan RASMIY raqam backend'dan
-  kelmaydi. Buni mustaqil hisoblab chiqarish (masalan "agar uzum_checkout
-  bo'lsa +1.5%" degan frontend-side formula yozish) **QATIYAN TAVSIYA
-  ETILMAYDI** — bu backend to'laydigan/undiradigan real summadan farq
-  qilishi va foydalanuvchini chalg'itishi mumkin (backend hali bu summani
-  hech qanday real so'rovga qo'shmayapti).
-- Agar/qachon backend bu maydonlarni ulasa (masalan
-  `POST /payments/:bookingId/create` javobiga
-  `provider_fee_amount`/`customer_total_amount` qo'shsa) — frontend O'SHA
-  paytda backend qaytargan tayyor summani ko'rsatishi kerak, o'zi
-  hisoblamasligi kerak. Bu backend allaqachon qabul qilgan arxitektura
-  yo'nalishi (`calculatePaymentBreakdown()` funksiyasi aynan shu maqsadda
-  tayyorlangan, faqat hali chaqirilmayapti).
-
-### Topshiriqdagi 500,000 so'm misoli haqida — aniq taqqoslash
-
-| | Topshiriqda so'ralgan (tasdiqlanmagan taxmin) | Repo'dagi REAL holat |
+| Karta turi | Fee | Yakuniy (backend Uzum'ga yuboradigan) summa |
 |---|---|---|
-| Humo/Uzcard stavkasi | 1.5% | Bunday ALOHIDA stavka yo'q (Humo/Uzcard standalone provayder sifatida fee'siz, lekin checkout URL ham yaratilmaydi — pastga, 18-bo'limga qarang) |
-| Visa/Mastercard stavkasi | 3.5% | Kodda VISA/MASTERCARD tushunchasi UMUMAN yo'q |
-| Kim to'laydi | Foydalanuvchi | Faqat `uzum_checkout` uchun — ha, foydalanuvchi (2026-09-13 tasdiqlangan), lekin bu HALI hech qanday real summaga ta'sir qilmaydi |
-| 500,000 so'm -> 507,500 (Humo/Uzcard) | Kutilgan | Hozir: backend HAR DOIM 500,000 so'mni qaytaradi, fee qo'shilmaydi |
-| 500,000 so'm -> 517,500 (Visa/MC) | Kutilgan | Mos keluvchi kod yo'q |
-| Yagona real formula (agar `uzum_checkout` tanlansa, GELAJAKDA ulansa) | — | `commissionAmountSom = round(gross * 0.015)`, `customerTotal = gross + commissionAmountSom` — 500,000 so'm uchun **507,500 so'm** (bu, tasodifan, so'ralgan Humo/Uzcard misoliga miqdor jihatdan mos keladi, chunki ikkalasi ham 1.5%; farq shundaki bu stavka karta turiga emas, `uzum_checkout` provayderining O'ZIGA tegishli va hali ishlatilmayapti) |
+| HUMO | 7,500 so'm (1.5%) | **507,500 so'm** |
+| UZCARD | 7,500 so'm (1.5%) | **507,500 so'm** |
+| VISA | 17,500 so'm (3.5%) | **517,500 so'm** |
+| MASTERCARD | 17,500 so'm (3.5%) | **517,500 so'm** |
 
-### SAFAAR komissiyasi vs. to'lov-provayder fee — ikki ALOHIDA tushuncha
+**Muhim, real amaliyot cheklovi (Uzum Checkout kontraktidan kelib
+chiqadi):** Uzum Checkout'ning rasmiy `/payment/register` so'rovi karta
+turini OLDINDAN bilishni talab qilmaydi va OLDINDAN so'ramaydi — fee
+foydalanuvchi SAFAAR UI'da qaysi tugmani bosishiga (Humo/Uzcard/Visa/
+Mastercard) qarab, checkout'ga o'tishdan OLDIN hisoblanadi va Uzum'ga
+yuboriladigan summaga QO'SHILADI. Uzum'ning rasmiy `AcquiringCallbackData`
+callback schema'sida karta tarmog'ini (Humo/Uzcard/Visa/Mastercard)
+qaytaradigan maydon YO'Q (faqat `cardType`: 1=korporativ/2=shaxsiy — bu
+karta TARMOG'I EMAS) — ya'ni backend foydalanuvchi checkout sahifasida
+HAQIQATDA qaysi kartani kiritganini keyinchalik tekshira olmaydi. Bu —
+Uzum Checkout'ning o'zi qo'yadigan cheklov, SAFAAR arxitekturasi
+o'zgartira olmaydigan holat; frontend UI'da foydalanuvchiga tanlagan karta
+turi bilan checkout'da kiritadigan karta BIR XIL bo'lishi kerakligini aniq
+ko'rsatishi tavsiya etiladi.
 
-Kodda ikkalasi aniq ajratilgan (`common/finance.ts`):
+### Backend qanday hisoblaydi va qaytaradi (`POST /payments/:bookingId/create`)
 
-- **SAFAAR komissiyasi** (`safaarCommissionAmountSom`) — hamkor (partner)
-  bilan SAFAAR o'rtasidagi biznes shartnoma bo'yicha, `partner_payable`dan
-  ayriladi. Foydalanuvchining to'lagan summasiga TA'SIR QILMAYDI — bu
-  butunlay backend/moliya ichki hisob-kitobi, frontendga umuman
-  ko'rsatilmaydi va ko'rsatilmasligi ham kerak.
-- **Uzum Checkout fee (1.5%, hozircha faqat reference)** — yuqorida
-  tasvirlangan, foydalanuvchi to'laydi (agar/qachon ulansa), hamkorga
-  ham, SAFAAR komissiyasiga ham aloqasi yo'q.
+`provider` sifatida `humo`/`uzcard`/`visa`/`mastercard` yuborilganda,
+javob endi to'liq fee taqsimotini o'z ichiga oladi:
 
-Bu ikkalasini frontendda ARALASHTIRMASLIK kerak — SAFAAR komissiyasi
-umuman frontendga tegishli emas (API javoblarida ham chiqmaydi).
+```json
+{
+  "id": "uuid",
+  "booking_id": "uuid",
+  "provider": "visa",
+  "status": "processing",
+  "payment_url": "https://checkout.uzum.uz/pay/...",
+  "amount": 517500,
+  "base_amount": 500000,
+  "fee_rate": 0.035,
+  "fee_amount": 17500,
+  "currency": "UZS",
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
+
+- **`amount`** — Uzum'ga HAQIQATDA yuborilgan/checkout sahifasida
+  foydalanuvchi ko'radigan yakuniy summa (fee QO'SHILGAN holda). Bu —
+  **backend'ning yagona haqiqat manbai**; frontend bu qiymatni
+  o'zgartirmasdan, boshqa hisob-kitobsiz ishlatishi kerak.
+- **`base_amount`** — bron gross summasi (fee qo'shilmasdan oldin).
+- **`fee_rate`** / **`fee_amount`** — qo'llangan stavka va summa, faqat
+  ko'rsatish/tushuntirish uchun (masalan "shu jumladan X so'm karta
+  to'lov haqi" degan matn checkout'da).
+- Click/Payme/Cash/Uzum (merchant)/schemasiz `uzum_checkout` uchun —
+  `fee_rate`/`fee_amount` = `0`, `base_amount` = `amount` (fee yo'q,
+  o'zgarmagan).
+
+**Frontend fee'ni MUSTAQIL HISOBLAMASLIGI SHART** — checkout'da "to'lov
+usuli" tanlanganda, yakuniy summani ko'rsatish uchun ENG TO'G'RI yo'l:
+`POST /payments/:bookingId/create` chaqirib (yoki kelajakda alohida
+"quote" endpoint qo'shilsa, o'shani chaqirib — hozircha bunday alohida
+preview endpoint YO'Q, real yaratish so'rovining o'zi darhol yakuniy
+summani qaytaradi), backend qaytargan `amount`/`fee_amount`ni ko'rsatish.
+`PaymentSelector` UI'da usul almashtirilganda YANGI `POST
+.../create` so'rovi yuborish kerak bo'ladi (3-bo'limdagi "boshqa usul
+so'ralsa xavfsiz almashtiriladi" qoidasi tufayli bu endi TO'G'RI ishlaydi).
+
+### Real frontend PaymentSelector — YANGILANISHI KERAK (hozircha ESKI holatda)
+
+`components/features/checkout/PaymentSelector.tsx` **HALI HAM** faqat 4 ta
+eski variant ko'rsatadi (`click`, `payme`, birlashtirilgan `"Uzcard /
+Humo"`, `cash`) — VISA/MASTERCARD uchun UI hali YO'Q, va "Uzcard/Humo"
+tugmasi hamon faqat `"uzcard"` yuboradi (`"humo"`ni alohida tanlash
+imkoni yo'q). Bu backend o'zgarishi bilan **avtomatik yangilanmaydi** —
+frontend TODO (17-bo'lim).
+
+### SAFAAR komissiyasi vs. to'lov-provayder fee — ikki ALOHIDA tushuncha (o'zgarishsiz)
+
+- **SAFAAR komissiyasi** (`partner_payable` hisoblashda) — hamkor bilan
+  SAFAAR o'rtasidagi shartnoma bo'yicha, foydalanuvchi to'lagan summaga
+  TA'SIR QILMAYDI, frontendga umuman ko'rsatilmaydi.
+- **Karta turi fee'si** (yuqorida, `card-scheme-fee.ts`) — foydalanuvchi
+  to'laydi, hamkor to'lovi (`partner_payable`)dan **ayirilmaydi** (bu
+  testlar bilan tasdiqlangan: partner ledger krediti booking'ning gross
+  summasidan hisoblanadi, `payments.amount`dagi fee'dan MUSTAQIL).
+
+Ikkalasi bir-biriga ARALASHTIRILMAYDI — kod darajasida ham (ikkita
+alohida modul: `common/finance.ts` va `providers/card-scheme-fee.ts`),
+ham DB darajasida (`bookings.partner_payable` fee ustunlariga bog'liq
+emas).
 
 ---
 
 ## 5. Uzum Checkout redirect
 
-`uzum_checkout` provayderi tanlansa, oqim boshqa provayderlardan (click/payme)
-**tubdan farq qiladi**:
+`uzum_checkout` **YOKI** `humo`/`uzcard`/`visa`/`mastercard` (barchasi bir
+xil texnik transport, 4-bo'lim) tanlansa, oqim boshqa provayderlardan
+(click/payme) **tubdan farq qiladi**:
 
 - Click/Payme uchun: `payment_url` **lokal ravishda, sinxron** quriladi
   (`ClickProvider.buildCheckoutUrl()` / `PaymeProvider.buildCheckoutUrl()`)
   — hech qanday tashqi API chaqirilmaydi.
-- `uzum_checkout` uchun: backend Uzum'ning **haqiqiy** `/payment/register`
-  API'siga chiquvchi (outbound) so'rov yuboradi (`UzumCheckoutProvider.register()`,
-  2026-09-11dan rasmiy wire-format bilan tasdiqlangan) va javobdagi
-  `orderId` + `paymentUrl`ni saqlaydi. Ya'ni `payment_url` Uzum'ning O'ZI
-  qaytargan haqiqiy checkout sahifasi manzili.
+- `uzum_checkout`/karta turlari uchun: backend Uzum'ning **haqiqiy**
+  `/payment/register` API'siga chiquvchi (outbound) so'rov yuboradi
+  (`UzumCheckoutProvider.register()`, 2026-09-11dan rasmiy wire-format
+  bilan tasdiqlangan) va javobdagi `orderId` + `paymentUrl`ni saqlaydi.
+  Ya'ni `payment_url` Uzum'ning O'ZI qaytargan haqiqiy checkout sahifasi
+  manzili. Karta turi tanlangan bo'lsa, `register()`ga yuboriladigan
+  `amount` allaqachon fee QO'SHILGAN holda (4-bo'lim) — checkout
+  sahifasida foydalanuvchi darhol yakuniy (fee-inclusive) summani ko'radi.
 
 **Frontend uchun amaliy oqim ikkala holatda ham BIR XIL:**
 1. `POST /payments/:bookingId/create` javobidagi `payment_url`ni oling.
@@ -464,73 +527,71 @@ FAQAT guest (login qilmagan) foydalanuvchiga tegishli.
 
 ---
 
-## 9. Guest (mehmon) to'lov — MUHIM, TASDIQLANGAN CHEKLOV
+## 9. Guest (mehmon) to'lov — v2: ENDI ISHLAYDI (`guestToken` orqali)
 
-**Qisqa xulosa: hozirgi backendda guest (login qilmagan) foydalanuvchi
-ONLAYN to'lovni HECH QACHON yakunlay olmaydi — na birinchi urinishda, na
-qayta urinishda.** Bu taxmin emas — kod orqali to'liq tasdiqlangan:
+> ✅ **v1 hujjatida bu bo'lim "guest onlayn to'lay olmaydi" deb tasdiqlangan
+> edi — bu HAQIQIY, tasdiqlangan bug edi. v2'da backend tuzatildi.**
+> Frontend HALI BU YANGI YO'LNI ISHLATMAYDI — bu sof frontend TODO
+> (17-bo'lim).
 
-### Nega
+### Qanday ishlaydi (real, testlar bilan tasdiqlangan)
 
-1. **`POST /payments/:bookingId/create` va `GET /payments/:bookingId`
-   ikkalasi ham `@Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)`** — guest
-   token (`guestAccessToken`) uchun HECH QANDAY qabul qilish yo'li yo'q.
-   `PaymentsController` umuman `guestAccessToken` parametrini bilmaydi.
-2. `PaymentsService.assertBookingVisible()`ning birinchi tekshiruvi:
-   ```ts
-   if (!actor) {
-     throw new UnauthorizedException({ code: 'AUTH_TOKEN_INVALID', ... });
-   }
-   ```
-   — token yo'q bo'lsa, bron egasi kim bo'lishidan qat'i nazar, darhol 401.
-3. Guest bron yaratganda `bookings.user_id = null` qilib yoziladi
-   (`const userId = actor?.id ?? null;`, `bookings.service.ts`). Buni
-   FAQAT keyinchalik olingan `guestAccessToken` orqali (`GET /bookings/:id`
-   ichida) ko'rish mumkin — lekin bu token `PaymentsController` tomonidan
-   TANILMAYDI.
-4. Hatto guest keyinroq ro'yxatdan o'tib/login qilib **haqiqiy USER
-   akkauntga ega bo'lsa ham** — `assertBookingVisible()`dagi tekshiruv
-   `booking.user_id === actor.id` bo'lib qoladi, `booking.user_id` esa
-   ABADIY `null` (booking yaratilgandan keyin hech qayerda
-   yangilanmaydi/"claim" qilinmaydi) — demak login qilingandan keyin ham
-   `ForbiddenException (BOOKING_FORBIDDEN)` chiqadi. Guest bron bilan
-   yangi USER akkauntni "bog'lash" mexanizmi kodda YO'Q.
+Guest bron yaratilganda backend ALLAQACHON (o'zgarishsiz) opaque,
+xavfsiz `guestAccessToken` qaytaradi (`common/guest-booking-access.service.ts`
+— avval `bookings.service.ts` ichida edi, endi `PaymentsService` bilan
+BO'LISHILGAN umumiy servis, cache-kalit/TTL/xeshlash BIR XIL saqlangan):
 
-### Frontendda bu qanday ko'rinadi (real, kuzatilgan xatti-harakat)
+- **unguessable**: `randomBytes(32)` (256 bit), brute-force qilib
+  bo'lmaydi;
+- **booking-specific**: token FAQAT o'zi yaratilgan bookingId uchun
+  ishlaydi — boshqa bronni ochish uchun ishlatib bo'lmaydi (IDOR himoyasi,
+  testlar bilan tasdiqlangan);
+- **expiring**: 30 kun (cache TTL) — muddati o'tgach avtomatik yaroqsiz;
+- **xom token hech qachon saqlanmaydi** — faqat SHA-256 xeshi cache
+  kaliti sifatida;
+- **boshqa user/session ma'lumotiga access bermaydi** — token FAQAT
+  `{ bookingId }`ni "ochadi", boshqa hech narsani emas.
 
-- **Birinchi checkout paytida** (`createBookingAction`): guest uchun
-  `session` yo'q, shuning uchun `token: session?.accessToken` ===
-  `undefined`. `api.payments.createPaymentSession(...)` 401 bilan
-  qaytadi, lekin bu **`try/catch` ichida jim yutiladi** — foydalanuvchiga
-  hech qanday xato ko'rsatilmaydi, shunchaki `?payment=pending` bilan
-  booking sahifasiga o'tkaziladi. Guest hech narsa tushunmay
-  "to'lov kutilmoqda" holatida qolib ketadi.
-- **Qayta urinishda** (`RetryPaymentForm` -> `createPaymentSessionAction`):
-  bu action **aniq** `if (!session) redirect(login...)` qiladi — ya'ni
-  guestni to'g'ridan-to'g'ri login sahifasiga yuboradi. Lekin yuqorida
-  ko'rsatilganidek, login qilgandan keyin ham bron `BOOKING_FORBIDDEN`
-  bilan rad etiladi (chunki `user_id` mos kelmaydi) — bu login-redirect
-  muammoni HAQIQATDA HAL QILMAYDI.
-- **Yagona ishlaydigan guest yo'li: `cash`** ("joyida to'lash"). Bunda
-  `/payments/*` endpointlariga umuman murojaat qilinmaydi — bron yaratish
-  endpointining o'zi `confirmCashBookingIfNeeded()` orqali bronni darhol
-  tasdiqlaydi/`awaiting_partner_confirmation`ga o'tkazadi. Bu guest uchun
-  100% ishlaydi.
+**Endi `/payments/:bookingId` va `/payments/:bookingId/create` ikkalasi
+ham bu tokenni `?guestToken=<token>` query parametri orqali qabul
+qiladi:**
 
-### Frontendga aniq ko'rsatma
+```
+GET  /payments/:bookingId?guestToken=<guestAccessToken>
+POST /payments/:bookingId/create?guestToken=<guestAccessToken>
+Body: { "provider": "click" }   (yoki humo/uzcard/visa/mastercard/cash)
+```
 
-- Guest checkout oqimida, agar foydalanuvchi `cash`dan boshqa to'lov
-  usulini tanlasa — buni ochiq-oydin cheklash (masalan online usullarni
-  guest uchun disable qilib, "Onlayn to'lov uchun avval ro'yxatdan o'ting
-  yoki kiring" degan xabar bilan) frontend darajasida qo'shish **kerak
-  bo'lishi mumkin** — lekin bu backend o'zgarishi emas, balki mavjud
-  cheklovni UI'da TO'G'RI aks ettirish masalasi.
-- Bu — backend cheklovi, frontend uni "tuzatolmaydi" (guest uchun
-  `/payments/*`ga kirish yo'q). Frontend faqat buni foydalanuvchiga
-  tushunarli qilib ko'rsatishi mumkin.
-- Bu masala 18-bo'limda ("Backend cheklovlari/bloklovchilar") ham qayd
-  etilgan — bu joyda **backendni o'zgartirish tavsiya etilmaydi**, faqat
-  frontend buni bilib UI qarorini shunga moslashi kerak.
+**Ruxsat mantig'i (`PaymentsService.assertBookingVisible()`):**
+1. Agar `Authorization: Bearer` bilan haqiqiy login qilingan foydalanuvchi/
+   admin/partner bo'lsa — **avvalgidek**, guest tokendan MUSTAQIL (8-bo'lim,
+   o'zgarishsiz).
+2. Agar token yo'q bo'lsa (guest): `guestToken` berilgan VA bron
+   `user_id IS NULL` (hali haqiqiy foydalanuvchiga tegishli emas) VA token
+   AYNAN shu bookingId uchun chiqarilgan bo'lsa — ruxsat beriladi.
+3. Aks holda (token yo'q, noto'g'ri, boshqa bookingga tegishli, yoki
+   bron allaqachon haqiqiy foydalanuvchiga tegishli) — **401
+   `AUTH_TOKEN_INVALID`** (авvalgidek).
+
+**Controller darajasida:** `PaymentsController`dagi ikkala endpointdan
+`@Roles(...)` ATAYLAB olib tashlandi (`bookings.controller.ts`dagi
+guest-checkout marshrutlari bilan BIR XIL naqsh — auth ixtiyoriy,
+`RolesGuard` token bo'lsa uni to'ldiradi, bo'lmasa anonim/guest sifatida
+o'tkazadi). Haqiqiy ruxsat qarori 100% servis darajasida — guard
+darajasida hech narsa "zaiflashtirilmagan", faqat qo'shimcha, aniq
+belgilangan guest-yo'l qo'shilgan.
+
+### Frontend uchun aniq ko'rsatma (hali BAJARILMAGAN — 17-bo'lim)
+
+- Guest checkout (`createBookingAction`) allaqachon `booking.guestAccessToken`ni
+  oladi (mavjud kod). Endi shu tokenni `api.payments.createPaymentSession(...)`
+  chaqiruviga (va keyinchalik `RetryPaymentForm`/booking detail sahifasidagi
+  holat tekshiruviga) **query parametr sifatida qo'shish kerak** — hozircha
+  bu ULANMAGAN (frontend hali eski, faqat `token: session?.accessToken`
+  yuboradigan yo'lni ishlatadi, guest uchun bu `undefined` bo'lib, 401ga olib
+  keladi — xuddi v1'dagidek, chunki FRONTEND hali yangilanmagan).
+- **`cash`** — avvalgidek, `/payments/*`ga umuman murojaat qilmaydi,
+  guest uchun 100% ishlaydi (o'zgarmadi).
 
 ---
 
@@ -559,6 +620,22 @@ Bu — **so'rov yaratish**, pul HALI KO'CHIRILMAYDI. Agar bronga allaqachon
 `status != 'rejected'` bo'lgan refund mavjud bo'lsa — backend YANGISINI
 yaratmaydi, **mavjudini qaytaradi** (idempotent, xuddi to'lov yaratishga
 o'xshash naqsh).
+
+### v2: admin tasdiqlashi endi Uzum Checkout bilan HAQIQIY integratsiyalangan
+
+Bu **web-user frontendiga bevosita ta'sir qilmaydi** (quyidagi
+"Frontend NIMA QILMASLIGI kerak" bandiga ko'ra bu har doim admin panel
+ishi bo'lib qoladi), lekin savolga aniq javob uchun: `POST
+/admin/refunds/:id/approve` endi, agar tegishli to'lov `uzum_checkout`
+orqali qilingan bo'lsa (shu jumladan humo/uzcard/visa/mastercard —
+barchasi shu transport), HAQIQIY Uzum Checkout `/acquiring/refund`
+so'rovini yuboradi (`UzumCheckoutProvider.refund()`, sandboxda
+qisman+to'liq refund bilan tasdiqlangan). Agar bu so'rov muvaffaqiyatsiz
+bo'lsa — **hech qanday ichki holat (refund/payment/booking/ledger)
+o'zgarmaydi**, admin aniq xato ko'radi va qayta urinishi mumkin
+(tranzaksiya butunlay rollback bo'ladi). Click/Payme/Cash/Uzum (merchant)
+uchun real refund API integratsiyasi hamon yo'q — faqat ICHKI holat
+yoziladi (avvalgidek).
 
 ### Frontend NIMA QILMASLIGI kerak
 
@@ -630,12 +707,17 @@ Bular kodning haqiqiy arxitekturasidan kelib chiqadigan, majburiy qoidalar:
 
 | Frontend harakati | Method | Endpoint | Auth | Request | Response (`data`) | Frontendda ishlatilishi |
 |---|---|---|---|---|---|---|
-| To'lov sessiyasi yaratish/olish | `POST` | `/payments/:bookingId/create` | Bearer (USER/ADMIN/SUPER_ADMIN) | `{ provider }` | `{ id, booking_id, provider, status, payment_url, amount, currency, created_at, updated_at }` | `payment_url`ga redirect |
-| To'lov holatini tekshirish | `GET` | `/payments/:bookingId` | Bearer (USER/ADMIN/SUPER_ADMIN) | — | yuqoridagi bilan bir xil shakl | Status ko'rsatish |
+| To'lov sessiyasi yaratish/olish | `POST` | `/payments/:bookingId/create?guestToken=` (guest uchun ixtiyoriy) | Bearer (USER/ADMIN/SUPER_ADMIN) **YOKI** `guestToken` (guest, faqat o'z bronida) | `{ provider }` — `click`\|`payme`\|`uzcard`\|`humo`\|`visa`\|`mastercard`\|`cash`\|`uzum`\|`uzum_checkout` | `{ id, booking_id, provider, status, payment_url, amount, base_amount, fee_rate, fee_amount, currency, created_at, updated_at }` | `payment_url`ga redirect; `amount`ni ko'rsatish (fee-inclusive) |
+| To'lov holatini tekshirish | `GET` | `/payments/:bookingId?guestToken=` (guest uchun ixtiyoriy) | Bearer (USER/ADMIN/SUPER_ADMIN) **YOKI** `guestToken` | — | yuqoridagi bilan bir xil shakl | Status ko'rsatish |
 | Bron + to'lov holatini birga olish | `GET` | `/bookings/:id` | Bearer YOKI `guestAccessToken` (query) | — | `{ ...booking, payment: {...} | null }` | Booking detail sahifasi (real ishlatiladigan yo'l) |
 | Refund so'rash | `POST` | `/refunds` | Bearer (USER) | `{ booking_id, reason }` | `{ id, booking_id, user_id, status: "requested", requested_amount, reason, ... }` | Hozircha UI YO'Q — TODO |
 | O'z refundlarini ko'rish | `GET` | `/me/refunds` | Bearer (USER) | — | `refunds[]` | Hozircha UI YO'Q — TODO |
 | Bitta refundni ko'rish | `GET` | `/refunds/:id` | Bearer (USER, faqat o'ziniki) | — | `refund` obyekti | Hozircha UI YO'Q — TODO |
+
+**v2 eslatma:** `guestToken` — `POST /bookings/hotel` (va boshqa guest
+checkout endpointlari) javobidagi `guestAccessToken` maydonining O'ZI,
+faqat endi `/payments/*`ga ham query parametr sifatida qo'shilishi mumkin
+(9-bo'lim). Faqat `booking.user_id IS NULL` bo'lgan bronlar uchun ishlaydi.
 
 Frontenddan **hech qachon** chaqirilmasligi kerak bo'lgan endpointlar
 (to'liqlik uchun sanab o'tilgan, kontraktga kirmaydi):
@@ -686,9 +768,10 @@ Backend xato javob shakli (barcha endpointlar uchun bir xil,
 | Bron boshqa foydalanuvchiniki | 403 | `BOOKING_FORBIDDEN` | "Bu bron sizga tegishli emas" — qayta urinish tugmasi ko'rsatmang |
 | Bron topilmadi/muddati tugagan | 404 | `BOOKING_EXPIRED` | "Bron topilmadi" xabari, bosh sahifaga qaytarish |
 | To'lov topilmadi | 404 | `PAYMENT_PROVIDER_ERROR` | Kamdan-kam holat — booking hali payment qatorisiz bo'lganda |
-| Provayder sozlanmagan (click/payme/uzcard/humo/uzum_checkout) | 503 | `PAYMENT_PROVIDER_NOT_CONFIGURED` | "Bu to'lov usuli hozircha mavjud emas" — boshqa usul tanlashni taklif qiling, umumiy "server xatosi" ko'rsatmang |
+| Provayder sozlanmagan (click/payme/yoki Uzum Checkout ENV to'liq emas — humo/uzcard/visa/mastercard shu orqali ishlaydi) | 503 | `PAYMENT_PROVIDER_NOT_CONFIGURED` | "Bu to'lov usuli hozircha mavjud emas" — boshqa usul tanlashni taklif qiling, umumiy "server xatosi" ko'rsatmang |
 | Webhook summasi/valyutasi mos kelmadi (backend ichki) | 422 | `PAYMENT_AMOUNT_MISMATCH` / `PAYMENT_CURRENCY_MISMATCH` | Frontendga bevosita ta'sir qilmaydi (server-to-server), lekin natijada payment holati o'zgarmay qolishi mumkin — "pending" holatini kutish kerak |
 | Muvaffaqiyatli, lekin `payment_url` bo'sh | 200 | — (`payment_url: null`) | 3-bo'limdagi kabi alohida ushlang — "hozircha to'lash imkoni yo'q" |
+| (Admin panel, web-user'ga bevosita tegishli emas) Refund provider so'rovi muvaffaqiyatsiz | 503 | `REFUND_PROVIDER_ERROR` | web-user chaqirmaydi (10-bo'lim) — faqat to'liqlik uchun |
 
 **Timeout:** kodda frontend uchun maxsus timeout siyosati yo'q — oddiy
 `fetch()` ishlatiladi (`lib/services/payments/payments.ts`), brauzer/Next.js
@@ -775,98 +858,134 @@ tasdiqlangan xatti-harakatlarga mos):
     qo'lda yangilash — holat o'zgarmasligi (`paid` bo'lib qolishi) kerak.
 12. **Qayta urinish (retry):** `failed` holatidagi bronda boshqa
     provayder tanlab qayta urinish — yangi `payment_url` olinishi.
-13. **Guest oqimi (cheklangan!):** guest sifatida `cash` bilan bron —
-    to'liq ishlashi kerak (booking darhol tasdiqlanadi). Guest sifatida
-    `click`/`payme`/`uzcard` bilan bron — **hozirgi backendda muvaffaqiyatli
-    yakunlanmasligini** test qilib tasdiqlash (9-bo'limdagi cheklovni
-    regression sifatida kuzatish uchun foydali test — "guest onlayn to'lay
-    olmasligi kerak" emas, balki "guest onlayn to'lay OLMAYDI, va bu
-    UI'da tushunarli ko'rsatilishi kerak" degan ma'noda).
+13. **Guest oqimi — endi backend tomon ISHLAYDI (frontend TODO
+    qolganidan keyin to'liq test qilinsin):** guest sifatida `cash` bilan
+    bron — avvalgidek to'liq ishlaydi. Guest sifatida `humo`/`visa` bilan
+    bron + `POST /payments/:bookingId/create?guestToken=<token>` —
+    frontend `guestToken`ni ulagandan keyin (17-bo'lim, band 3) bu ham
+    ishlashi kerak. Token YO'Q yoki NOTO'G'RI bo'lsa — `401
+    AUTH_TOKEN_INVALID` (9-bo'lim).
+14. **HUMO/UZCARD/VISA/MASTERCARD fee:** har birini alohida tanlab
+    `POST /payments/:bookingId/create` chaqirish — javobdagi
+    `amount`/`base_amount`/`fee_rate`/`fee_amount` mahsulot talabidagi
+    misolga mos kelishini tekshirish (4-bo'lim: 500,000 so'm ->
+    Humo/Uzcard 507,500; Visa/Mastercard 517,500).
+15. **Usul almashtirish (v2, tuzatilgan bug):** `click` bilan to'lov
+    boshlab (hali `pending`, checkout ochilmagan), keyin `humo` bilan
+    qayta so'rash — yangi, `humo` uchun fee-aware qator qaytishi kerak
+    (3-bo'lim). Keyin, agar birinchi urinish `uzum_checkout` orqali
+    haqiqiy `orderId` bilan "processing"ga o'tgan bo'lsa, boshqa usul
+    so'ralganda ESKI qator qaytishini tekshirish (almashtirilmasligi).
 
 ---
 
 ## 17. Frontend TODO (faqat frontend qilishi kerak bo'lgan ishlar)
 
-Bular — backend ALLAQACHON qo'llab-quvvatlaydigan, lekin frontendda hali
-ulanmagan/ko'rsatilmagan narsalar:
+Bular — backend **v2'da ALLAQACHON qo'llab-quvvatlaydigan**, lekin
+frontendda hali ulanmagan/ko'rsatilmagan narsalar. Eng yuqori ustuvorlik —
+1 va 2 (yangi mahsulot talabi shularga bog'liq):
 
-1. **Guest uchun onlayn to'lov tanlovini UI darajasida cheklash** —
-   hozir `CheckoutForm.tsx` guestga `click`/`payme`/`uzcard`ni erkin
-   tanlashga ruxsat beradi, natija esa jim muvaffaqiyatsizlik (9-bo'lim).
-   Kamida: guest holatida bu variantlarni yashirish/disable qilish, yoki
-   aniq "Onlayn to'lov uchun ro'yxatdan o'ting" xabari ko'rsatish.
-2. **`RetryPaymentForm`da xato holatini aniqroq ajratish** — hozir barcha
+1. **`PaymentSelector`ga VISA/MASTERCARD qo'shish va HUMO/UZCARD'ni
+   ALOHIDA tugmalarga ajratish** — hozir UI faqat 4 ta variant
+   ko'rsatadi, "Uzcard/Humo" bitta tugmaga birlashtirilgan, VISA/
+   MASTERCARD umuman yo'q. Backend endi `provider: "humo"|"uzcard"|
+   "visa"|"mastercard"` qiymatlarining barchasini alohida qabul qiladi
+   va ishlaydi (4-bo'lim) — UI shunga mos kengaytirilishi kerak.
+2. **Fee/yakuniy summani checkout'da ko'rsatish** — backend endi
+   `POST /payments/:bookingId/create` javobida `base_amount`/`fee_rate`/
+   `fee_amount`/`amount` (fee-inclusive) qaytaradi (4-bo'lim). Frontend
+   usul tanlanganda shu chaqiruvni qilib (yoki usul o'zgarganda qayta
+   chaqirib — 3-bo'limdagi tuzatilgan "xavfsiz almashtirish" qoidasi
+   buni endi to'g'ri qo'llab-quvvatlaydi), yakuniy summani foydalanuvchiga
+   ANIQ ko'rsatishi kerak ("Jami: 517,500 so'm, shundan 17,500 so'm —
+   karta to'lov haqi" kabi). Fee'ni MUSTAQIL hisoblamang — backend
+   qiymatini ishlating.
+3. **Guest to'lov uchun `guestAccessToken`ni `/payments/*` so'rovlariga
+   ulash** — backend endi `?guestToken=` query parametrini qabul qiladi
+   (9-bo'lim), lekin `lib/services/payments/payments.ts`/`actions.ts`
+   hali buni yubormaydi. Kerak: `paymentsService.createPaymentSession()`/
+   `getPaymentStatus()`ga ixtiyoriy `guestToken` parametri qo'shish, va
+   `createBookingAction()`/`RetryPaymentForm` oqimlarida (guest holatida)
+   `booking.guestAccessToken`ni shu yerga uzatish. Bu qilinmaguncha
+   guest onlayn to'lov FRONTEND darajasida hamon ishlamaydi (backend
+   tayyor bo'lsa ham).
+4. **`RetryPaymentForm`da xato holatini aniqroq ajratish** — hozir barcha
    xatolar bitta umumiy matn bilan ko'rsatiladi ("To'lovni amalga
    oshirishda xatolik yuz berdi"); backend `error.code` (masalan
    `PAYMENT_PROVIDER_NOT_CONFIGURED`) allaqachon farqli xabar berish
    imkonini beradi — frontend buni ishlatmayapti.
-3. **`payment_url: null` (lekin HTTP 200) holatini alohida ushlash** —
-   hozir bu holat oddiy "muvaffaqiyat" kabi ko'rinib, foydalanuvchi
-   hech narsa tushunmay qolishi mumkin (3-bo'lim).
-4. **Refund UI** — backend `POST /refunds`, `GET /me/refunds`,
+5. **"Boshqa usul so'ralganda eski (hali natijasi noma'lum) to'lov
+   qatori qaytishi mumkinligi" holatini UI'da ko'rsatish** (3-bo'lim,
+   v2'da tuzatilgan bug) — agar javobdagi `provider` foydalanuvchi
+   so'ragan bilan mos kelmasa (masalan `visa` so'ralgan, lekin eski
+   `click` to'lovi hali "processing"da), frontend buni tushunarli
+   ko'rsatishi kerak ("Avvalgi to'lovni yakunlang yoki biroz kuting").
+6. **Refund UI** — backend `POST /refunds`, `GET /me/refunds`,
    `GET /refunds/:id` tayyor, lekin web-userda hech qanday komponent/
    action bu bilan ishlamaydi (10-bo'lim). Kerak bo'lsa: "Bekor qilish /
    pulni qaytarish so'rash" tugmasi + o'z refundlari ro'yxati sahifasi.
-5. **To'lov holatini yangilash uchun UX** — webhook kechikishi holatlarida
-   foydalanuvchiga "holatni tekshirish" tugmasi yoki qisqa muddatli
-   client-side polling qo'shish (hozir faqat qo'lda `F5` orqali ishlaydi).
-6. **`createBookingAction()`dagi jim yutilgan xatoni ko'rinadigan qilish**
+7. **To'lov holatini yangilash uchun UX** — webhook/cron kechikishi
+   holatlarida foydalanuvchiga "holatni tekshirish" tugmasi yoki qisqa
+   muddatli client-side polling qo'shish (hozir faqat qo'lda `F5` orqali
+   ishlaydi).
+8. **`createBookingAction()`dagi jim yutilgan xatoni ko'rinadigan qilish**
    — hozir `catch { /* fallback */ }` hech qanday signal bermaydi;
    kamida analytics/log yuborish, imkon bo'lsa foydalanuvchiga ham xabar.
-7. **Fee/komissiya UI — HOZIRCHA QO'SHMASLIK** (4-bo'lim) — backend tayyor
-   bo'lgach (agar `calculatePaymentBreakdown()` real oqimga ulansa va
-   API javobiga `provider_fee_amount`/`customer_total_amount` kabi
-   maydonlar qo'shilsa), frontend O'SHA maydonlarni ko'rsatadigan UI
-   qo'shishi kerak bo'ladi — hozircha bu backend o'zgarishini kutadi.
 
 ---
 
 ## 18. Backend cheklovlari / bloklovchilar (frontend to'liq bajara olmaydigan sabablar)
 
-1. **Guest onlayn to'lov — arxitektura darajasidagi cheklov** (9-bo'lim).
-   Frontend buni "tuzatolmaydi" — `PaymentsController` guest tokenlarini
-   umuman qabul qilmaydi, va guest bron `user_id=null` bo'lgani uchun
-   keyinchalik login qilish ham yordam bermaydi. Bu **backend o'zgarishi**
-   talab qiladi (masalan guest-token qo'llab-quvvatlash yoki
-   booking->user "claim" mexanizmi) — frontend faqat cheklovni UI'da
-   to'g'ri aks ettira oladi, hal qila olmaydi.
-2. **`uzcard`/`humo` standalone provayder sifatida checkout URL YARATA
-   OLMAYDI.** `buildCheckoutUrl()` bu ikkalasi uchun har doim `503
-   PAYMENT_PROVIDER_NOT_CONFIGURED` tashlaydi (kod izohi: "hozircha
-   checkout URL generatsiyasi qo'shilmagan"). Amaliy natija: hozirgi
-   `PaymentSelector`dagi "Uzcard / Humo" varianti tanlansa, foydalanuvchi
-   HAR DOIM to'lay olmaydi (agar backend buni implement qilmagunicha).
-   Frontend buni backend implement qilgunicha UI'dan olib tashlashi yoki
-   "tez orada" belgisi bilan cheklashi mumkin — lekin buni ISHLATIB
-   BO'LMAYDI.
-3. **`uzum_checkout` to'liq ishlashi uchun backend ENV to'liq
-   sozlanishi shart** (auth + fiskal parametrlar) — sozlanmagan bo'lsa
-   har doim 503. Bu — infratuzilma/konfiguratsiya masalasi, frontend
-   kod bilan hal qilinmaydi.
-4. **Uzum Checkout callback productionda HAR DOIM rad etiladi (401)** —
+**v2'da RESOLVED (endi bloklovchi EMAS):** guest onlayn to'lov (backend
+tomon — 9-bo'lim), `uzcard`/`humo`/`visa`/`mastercard` checkout yaratish
+(4-bo'lim), fee real oqimga ulanmaganligi (4-bo'lim), "boshqa usul
+so'ralsa e'tiborga olinmasligi" bugi (3-bo'lim), refund'ning provider
+bilan integratsiyalanmaganligi (10-bo'lim). Quyidagilar HALI OCHIQ:
+
+1. **`uzum_checkout` (demak humo/uzcard/visa/mastercard HAM) to'liq
+   ishlashi uchun backend ENV to'liq sozlanishi SHART** (auth:
+   `UZUM_CHECKOUT_BASE_URL`/`TERMINAL_ID`/`API_KEY` + fiskal:
+   `SPIC`/`PACKAGE_CODE`/`VAT_PERCENT`/TIN-yoki-PINFL) — sozlanmagan
+   muhitda (masalan hali sozlanmagan production yoki lokal/QA) HAR DOIM
+   503 `PAYMENT_PROVIDER_NOT_CONFIGURED` qaytadi. Bu — infratuzilma/
+   konfiguratsiya masalasi, kod bilan hal qilinmaydi; frontend buni
+   kutilgan (muhitga bog'liq) xatti-harakat sifatida hisobga olishi
+   kerak, umumiy "backend buzilgan" deb talqin qilmasligi kerak.
+2. **Uzum Checkout callback productionda HAR DOIM rad etiladi (401)** —
    rasmiy signature sxemasi hali yo'qligi sababli, ataylab shunday
-   qilingan (kod izohi: *"placeholder" imzo sxemasini productionga
-   qabul qilish YO'Q*). Haqiqiy tasdiqlash faqat
-   `reconcileUzumCheckoutPaymentsCron` (har daqiqada, backend'ning o'z
-   `getOrderStatus()` so'rovi orqali) ishlaydi — ya'ni `uzum_checkout`
-   orqali to'lagan foydalanuvchi holati **kamida bir necha daqiqa
-   kechikishi mumkin** (callback emas, cron orqali tasdiqlanadi). Frontend
-   buni "webhook darhol keladi" deb TAXMIN QILMASLIGI kerak — refresh/
-   polling UX (17-bo'lim, band 5) ayni shu sabab muhim.
-5. **Payme webhook hali to'liq ishlamaydi** — `PaymeProvider`dagi
+   qilingan. Haqiqiy tasdiqlash faqat `reconcileUzumCheckoutPaymentsCron`
+   (har daqiqada, backend'ning o'z `getOrderStatus()` so'rovi orqali)
+   ishlaydi — ya'ni `humo`/`uzcard`/`visa`/`mastercard` orqali to'lagan
+   foydalanuvchi holati **kamida bir necha daqiqa kechikishi mumkin**
+   (callback emas, cron orqali tasdiqlanadi). Frontend buni "webhook
+   darhol keladi" deb TAXMIN QILMASLIGI kerak — refresh/polling UX
+   (17-bo'lim, band 7) ayni shu sabab muhim.
+3. **Payme webhook hali to'liq ishlamaydi** — `PaymeProvider`dagi
    kod izohi bo'yicha: *"PaymentsController'dagi `webhooks/payme` route
    hozircha eski umumiy yo'l bilan ishlaydi va Payme bilan hali real
    ishlamaydi"*. Ya'ni checkout URL yaratilishi mumkin (agar
    `PAYME_MERCHANT_ID` sozlangan bo'lsa), lekin to'lov tasdiqlanishi
    (webhook orqali `paid` bo'lish) ishonchli emas.
-6. **Fee/komissiya real oqimga ulanmagan** (4-bo'lim) — frontend
-   backend'dan hech qanday fee ma'lumotini olmaydi, chunki backend
-   hali buni qaytarmaydi.
-7. **Click/Payme muhitga bog'liq (`CLICK_SERVICE_ID`/`CLICK_MERCHANT_ID`/
+4. **Click/Payme muhitga bog'liq (`CLICK_SERVICE_ID`/`CLICK_MERCHANT_ID`/
    `CLICK_SECRET_KEY`, `PAYME_MERCHANT_ID`)** — sozlanmagan muhitda
    (masalan lokal/QA) bu provayderlar ham 503 beradi. Frontend buni
    muhitga qarab kutilgan xatti-harakat sifatida hisobga olishi kerak
    (bu xato emas, konfiguratsiya holati).
+5. **Fee'ning haqiqiy karta turi bilan mos kelishini backend TEKSHIRA
+   OLMAYDI** (4-bo'lim) — Uzum Checkout'ning rasmiy callback/status
+   API'sida karta TARMOG'ini (Humo/Uzcard/Visa/Mastercard) qaytaradigan
+   maydon yo'q. Bu Uzum'ning o'zi qo'yadigan cheklov — na backend, na
+   frontend o'zgartira oladi; UI orqali foydalanuvchini to'g'ri
+   yo'naltirish (tanlangan usul bilan bir xil kartani kiritish) yagona
+   amaliy yumshatish.
+6. **Uzum Checkout refund'ning ASINXRON yakuniy tasdiqlanishi
+   kuzatilmaydi** (10-bo'lim) — `refundApprove()` Uzum'ga refund so'rovi
+   yuboradi va operationId'ni saqlaydi, lekin Uzum buni asinxron qayta
+   ishlaydi (`RefundResponse`da yakuniy tasdiqlash yo'q, faqat
+   `getOrderStatus().refundedAmount` orqali keyinroq tekshirish mumkin).
+   Hozircha bunga alohida reconciliation cron YO'Q (kelajakdagi ish,
+   bu safargi ish doirasidan tashqarida — web-user frontendiga bevosita
+   ta'sir qilmaydi, chunki refund UI umuman yo'q, 17-bo'lim).
 
 ---
 

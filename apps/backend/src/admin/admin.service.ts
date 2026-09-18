@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { BookingStatus, Role } from '@safaar/types';
@@ -28,6 +29,10 @@ import {
   type PostgresTransaction,
 } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
+import {
+  UzumCheckoutError,
+  UzumCheckoutProvider,
+} from '../payments/providers/uzum-checkout.provider';
 
 type DbRow = Record<string, unknown>;
 
@@ -497,6 +502,7 @@ export class AdminService {
     private readonly postgres: PostgresService,
     private readonly events: EventsService,
     private readonly sms: SmsService,
+    private readonly checkout: UzumCheckoutProvider,
   ) {}
 
   private async rows(sql: string, params: readonly unknown[] = []) {
@@ -2609,6 +2615,7 @@ export class AdminService {
           h.reviews_count,
           h.status::text,
           h.featured,
+          h.featured_order,
           h.check_in_time,
           h.check_out_time,
           h.cancellation_policy_code,
@@ -2791,6 +2798,10 @@ export class AdminService {
         rating_average: Number(row['rating_average'] ?? 0),
         reviews_count: Number(row['reviews_count'] ?? 0),
         featured: Boolean(row['featured']),
+        featured_order:
+          row['featured_order'] === null || row['featured_order'] === undefined
+            ? null
+            : Number(row['featured_order']),
         images: media.map((item) => item.url),
         image_ids: media.map((item) => item.id),
         amenities: amenities.map((item) => item.code),
@@ -3070,6 +3081,84 @@ export class AdminService {
       String(rows[0]['partner_organization_id']),
     );
     return updated;
+  }
+
+  /**
+   * Bosh sahifadagi "Featured hotels" tartibi — `featured` (a'zolik holati,
+   * partners.service.ts/admin edit orqali boshqariladi) va `featuredOrder`
+   * (shu a'zolar orasidagi tartib) ATAYLAB alohida tushunchalar: bu metod
+   * FAQAT tartibni yozadi, hech qaysi hotelni featured qilib belgilamaydi
+   * yoki olib tashlamaydi.
+   *
+   * `orderedIds` — clientning YAKUNIY tartibda joylashtirilgan hotel ID
+   * ro'yxati. Xavfsizlik: raqamli tartib qiymatlarini clientdan OLINMAYDI
+   * (client faqat ID'larning KETMA-KETLIGINI beradi) — server har bir ID
+   * uchun massivdagi index'ni haqiqiy `featured_order` sifatida yozadi, shu
+   * sabab duplicate/noto'g'ri raqam yuborish mumkin emas. Har bir ID
+   * `featured = true` bo'lgan, mavjud hotelga tegishli ekanligi serverda
+   * tasdiqlanadi (arbitrary ID orqali boshqa hotelni o'zgartirish yo'q) —
+   * mos kelmasa butun so'rov rad etiladi (qisman yozilmaydi).
+   */
+  async reorderFeaturedHotels(orderedIds: string[]) {
+    if (!Array.isArray(orderedIds)) {
+      throw new BadRequestException({
+        code: 'INVALID_ORDER',
+        message: "orderedIds massiv bo'lishi kerak",
+      });
+    }
+    const ids = orderedIds.map((id) => String(id));
+    if (ids.length === 0) {
+      return { updated: 0 };
+    }
+    if (!ids.every(isUuid)) {
+      throw new BadRequestException({
+        code: 'INVALID_ORDER',
+        message: "orderedIds ichida noto'g'ri ID mavjud",
+      });
+    }
+    const uniqueIds = new Set(ids);
+    if (uniqueIds.size !== ids.length) {
+      throw new BadRequestException({
+        code: 'DUPLICATE_HOTEL_ID',
+        message: 'orderedIds ichida takrorlangan ID mavjud',
+      });
+    }
+
+    await this.postgres.transaction(async (transaction) => {
+      // `FOR UPDATE` — parallel reorder so'rovlari (ikkita admin bir vaqtda
+      // saqlasa) ketma-ket bajariladi, bir-birining yozganini yo'qotmaydi.
+      const locked = await transaction.query<DbRow>(
+        `select id::text
+         from hotels
+         where id = any($1::uuid[])
+           and deleted_at is null
+           and featured = true
+         for update`,
+        [ids],
+      );
+      const lockedIds = new Set(locked.map((row) => String(row['id'])));
+      const invalidIds = ids.filter((id) => !lockedIds.has(id));
+      if (invalidIds.length > 0) {
+        throw new BadRequestException({
+          code: 'HOTEL_NOT_FEATURED',
+          message: "Ro'yxatdagi ba'zi hotellar mavjud emas yoki featured emas",
+          invalidIds,
+        });
+      }
+
+      for (let index = 0; index < ids.length; index += 1) {
+        await transaction.query(
+          `update hotels
+           set featured_order = $2, updated_at = now()
+           where id = $1::uuid`,
+          [ids[index], index],
+        );
+      }
+    });
+
+    this.invalidateAdminCache();
+    this.invalidatePublicHotelCache();
+    return { updated: ids.length };
   }
 
   private async prepareNextHotelDraft(
@@ -3465,8 +3554,9 @@ export class AdminService {
         status: string;
         requested_amount: string | number;
         currency: string;
+        reason: string | null;
       }>(
-        `SELECT id::text, booking_id::text, status::text, requested_amount, currency
+        `SELECT id::text, booking_id::text, status::text, requested_amount, currency, reason
          FROM refunds WHERE id = $1::uuid FOR UPDATE`,
         [id],
       );
@@ -3534,6 +3624,62 @@ export class AdminService {
       }
 
       if (booking) {
+        // Tashqi provayderga (Uzum Checkout) HAQIQIY refund so'rovi —
+        // faqat `provider='uzum_checkout'` VA haqiqiy `provider_reference`
+        // (Uzum `orderId`) mavjud bo'lsa. Boshqa provayderlar (click/payme/
+        // cash/uzum) uchun real refund API integratsiyasi YO'Q — avvalgidek
+        // faqat ICHKI holat yoziladi (o'zgarishsiz).
+        //
+        // ATAYLAB shu (bir) DB tranzaksiyasi ICHIDA: agar tashqi so'rov
+        // muvaffaqiyatsiz bo'lsa, PUL HALI QAYTARILMAGAN — shuning uchun
+        // HECH QANDAY ichki holat (refund.status/payments.status/booking/
+        // ledger) ham o'zgarmasligi SHART (throw -> avtomatik ROLLBACK,
+        // `PostgresService.transaction()`). Cheklov: bu DB pool ulanishini
+        // Uzum so'rovi davomida (ichki `AbortSignal.timeout` bilan
+        // chegaralangan, ~15-30s) band qilib turadi — refund admin
+        // tomonidan qo'lda, kam chastotada tasdiqlanadigani uchun bu
+        // amaliy xavf past deb baholandi (ongli qaror, keyinchalik
+        // tranzaksiyadan tashqariga chiqarish mumkin).
+        const [payableRow] = await tx.query<{
+          id: string;
+          provider: string;
+          provider_reference: string | null;
+        }>(
+          `SELECT id::text, provider::text, provider_reference::text
+           FROM payments WHERE booking_id = $1::uuid AND status = 'paid'
+           FOR UPDATE`,
+          [booking.id],
+        );
+
+        let providerRefundReference: string | null = null;
+        if (
+          payableRow &&
+          payableRow.provider === 'uzum_checkout' &&
+          payableRow.provider_reference
+        ) {
+          try {
+            const providerResult = await this.checkout.refund({
+              orderId: payableRow.provider_reference,
+              amountSom: approvedAmount,
+              reason: refund.reason ?? undefined,
+              // `refunds.id` — barqaror, qayta urinishda (masalan shu
+              // chaqiruv muvaffaqiyatsiz commit bo'lsa) BIR XIL operationId,
+              // Uzum tomonida ikkinchi mustaqil operatsiya sifatida
+              // ko'rilmasligi uchun (rasmiy kontrakt: `X-Operation-Id`
+              // idempotentlik kaliti).
+              operationId: id,
+            });
+            providerRefundReference = providerResult.refundId;
+          } catch (err) {
+            const code =
+              err instanceof UzumCheckoutError ? err.code : 'network_error';
+            throw new ServiceUnavailableException({
+              code: 'REFUND_PROVIDER_ERROR',
+              message: `To'lov provayderiga refund so'rovi yuborilmadi (${code}) — hech qanday ichki holat o'zgartirilmadi, qayta urinib ko'ring`,
+            });
+          }
+        }
+
         // MUHIM (double-ledger-debit bugini tuzatish): shu bookingga bir
         // nechta MUSTAQIL `refunds` qatori mavjud bo'lishi mumkin (foydalanuvchi
         // so'rovi + hamkor rad etishi + tizim avto-refundi — barchasi turli
@@ -3551,6 +3697,13 @@ export class AdminService {
           [booking.id, now],
         );
         const paymentActuallyRefunded = paymentUpdate.length > 0;
+
+        if (paymentActuallyRefunded && providerRefundReference) {
+          await tx.query(
+            `UPDATE refunds SET provider_refund_reference = $2 WHERE id = $1::uuid`,
+            [id, providerRefundReference],
+          );
+        }
 
         if (
           paymentActuallyRefunded &&

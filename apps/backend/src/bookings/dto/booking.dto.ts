@@ -93,10 +93,10 @@ export class CreateHotelBookingDto {
 
   @ApiPropertyOptional({
     default: 'click',
-    enum: ['click', 'payme', 'uzcard', 'humo', 'cash'],
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
   })
   @IsOptional()
-  @IsIn(['click', 'payme', 'uzcard', 'humo', 'cash'])
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
   payment_method?: string;
 
   @ApiPropertyOptional({
@@ -206,10 +206,10 @@ export class CreateBusBookingDto {
 
   @ApiPropertyOptional({
     default: 'click',
-    enum: ['click', 'payme', 'uzcard', 'humo', 'cash'],
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
   })
   @IsOptional()
-  @IsIn(['click', 'payme', 'uzcard', 'humo', 'cash'])
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
   payment_method?: string;
 
   @ApiPropertyOptional({ example: 'SUMMER10' })
@@ -256,10 +256,10 @@ export class CreateVehicleRentalDto {
 
   @ApiPropertyOptional({
     default: 'click',
-    enum: ['click', 'payme', 'uzcard', 'humo', 'cash'],
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
   })
   @IsOptional()
-  @IsIn(['click', 'payme', 'uzcard', 'humo', 'cash'])
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
   payment_method?: string;
 
   @ApiPropertyOptional({

@@ -118,7 +118,13 @@ export function BookingActions({
           </Button>
         )}
 
-        {isConfirmed && bookingId && (
+        {/* `POST /bookings/:id/cancel(-preview)` — `@Roles(USER, PARTNER,
+            ADMIN, SUPER_ADMIN)`, guest-token qo'llab-quvvatlanmaydi
+            (controller darajasida). Guestga bu tugmani ko'rsatish har doim
+            401 bilan tugaydigan, chalkash amalni taklif qilardi — shu
+            sabab faqat `token` (login qilingan sessiya) mavjud bo'lganda
+            ko'rsatiladi. */}
+        {isConfirmed && bookingId && token && (
           <Button
             type="button"
             variant="secondary"

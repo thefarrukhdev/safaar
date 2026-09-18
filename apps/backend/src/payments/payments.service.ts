@@ -12,6 +12,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
+import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import {
   PostgresService,
   type PostgresTransaction,
@@ -40,6 +41,11 @@ import {
   UzumProvider,
   UzumWebhookError,
 } from './providers/uzum.provider';
+import {
+  calculateCardSchemeFee,
+  isCardScheme,
+  type CardScheme,
+} from './providers/card-scheme-fee';
 
 type HeaderMap = Record<string, string | string[] | undefined>;
 
@@ -96,10 +102,15 @@ interface BookingRow {
 export interface PaymentRow {
   id: string;
   booking_id: string;
+  provider?: string;
   amount: string | number;
   currency: string;
   status?: string;
   provider_reference?: string | null;
+  card_scheme?: string | null;
+  base_amount?: string | number | null;
+  fee_rate?: string | number | null;
+  fee_amount?: string | number | null;
   updated_at?: string;
   [key: string]: unknown;
 }
@@ -124,10 +135,21 @@ export class PaymentsService {
     private readonly payme: PaymeProvider,
     private readonly uzum: UzumProvider,
     private readonly checkout: UzumCheckoutProvider,
+    // Ixtiyoriy (DI orqali productionda HAR DOIM mavjud, `PaymentsModule`ga
+    // qarang) — mavjud `new PaymentsService(...)` test chaqiruvlari (6 ta
+    // argument bilan) buzilmasligi uchun optional qilib qoldirilgan. Guest
+    // to'lov (9-band, mahsulot talabi) shu orqali ishlaydi; berilmasa
+    // (testlarda) guest-token yo'li shunchaki hech qachon mos kelmaydi —
+    // avvalgi (auth majburiy) xatti-harakat saqlanadi.
+    private readonly guestAccess?: GuestBookingAccessService,
   ) {}
 
-  async payment(actor: RequestActor | undefined, bookingId: string) {
-    await this.assertBookingVisible(actor, bookingId);
+  async payment(
+    actor: RequestActor | undefined,
+    bookingId: string,
+    guestAccessToken?: string,
+  ) {
+    await this.assertBookingVisible(actor, bookingId, guestAccessToken);
     const [payment] = await this.pg.query<PaymentRow>(
       'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
       [bookingId],
@@ -138,15 +160,21 @@ export class PaymentsService {
         message: 'Payment topilmadi',
       });
     }
-    return payment;
+    return this.shapePaymentResponse(payment);
   }
 
   async createPayment(
     actor: RequestActor | undefined,
     bookingId: string,
     body: Record<string, unknown>,
+    guestAccessToken?: string,
   ) {
-    const booking = await this.assertBookingVisible(actor, bookingId);
+    const booking = await this.assertBookingVisible(
+      actor,
+      bookingId,
+      guestAccessToken,
+    );
+    const requested = this.provider(body.provider);
 
     // Shu bron uchun hali natijasi chiqmagan (pending/processing) payment
     // bo'lsa — yangisini yaratmasdan o'shani qaytaramiz. Aks holda har bir
@@ -161,50 +189,110 @@ export class PaymentsService {
       [booking.id],
     );
     if (existing) {
-      return existing;
+      // `card_scheme` mavjud bo'lsa — foydalanuvchi ANIQ shu karta turini
+      // so'ragan (humo/uzcard/visa/mastercard, hammasi `provider=
+      // 'uzum_checkout'` orqali ishlaydi); aks holda `provider`ning o'zi
+      // so'ralgan usul (click/payme/cash/uzum/uzum_checkout-schemasiz).
+      const existingMethod = String(existing.card_scheme ?? existing.provider);
+      if (existingMethod === requested) {
+        // Bir xil usul qayta so'raldi — mavjud (pending/processing) qatorni
+        // o'zgarishsiz qaytaramiz (real idempotentlik/duplicate-click himoyasi).
+        return this.shapePaymentResponse(existing);
+      }
+      const hasLiveExternalSession =
+        existing.status === 'processing' || Boolean(existing.provider_reference);
+      if (hasLiveExternalSession) {
+        // Boshqa (yangi so'ralgan) usulga hali o'ta olmaymiz — eskisi
+        // allaqachon HAQIQIY tashqi sessiya bilan bog'langan (masalan Uzum
+        // Checkout `orderId`), uni jim tashlab yuborish reconciliation'ni
+        // chalkashtirar edi. Frontend eskisi failed/expired bo'lgunicha
+        // kutishi yoki (agar u ham `failed`ga o'tsa) qayta urinishi kerak.
+        return this.shapePaymentResponse(existing);
+      }
+      // Zararsiz qoralama qator — hali hech qanday tashqi provayder
+      // (webhook/register) tegmagan (`pending`, `provider_reference` yo'q).
+      // Bu odatda booking yaratilishida ICHKI yaratilgan birinchi qator
+      // (`bookings.service.ts::createPayment()`), agar checkout URL'i
+      // darhol tuzilmagan bo'lsa. Xavfsiz almashtiramiz — aks holda
+      // foydalanuvchi boshqa to'lov usulini TANLAY OLMAS edi (ilgari shu
+      // audit findingi: `provider` so'rov maydoni butunlay e'tiborga
+      // olinmasdi, chunki bu tekshiruv `provider`ni o'qishdan OLDIN
+      // qaytib ketardi).
+      await this.pg.query('DELETE FROM payments WHERE id = $1', [
+        existing.id,
+      ]);
     }
 
-    const provider = this.provider(body.provider);
+    return this.writeNewPayment(booking, requested);
+  }
 
-    // Uzum Checkout — ALOHIDA oqim: to'lov URL'i faqat Uzum `/payment/register`
-    // javobidan keyin ma'lum bo'ladi (Click/Payme kabi lokal URL qurish EMAS).
-    // Bu shart mavjud sinxron yo'lni (click/payme/uzcard/humo/cash/uzum)
-    // umuman o'zgartirmaydi — faqat erta `return`.
-    if (provider === 'uzum_checkout') {
-      return this.createUzumCheckoutPayment(booking);
+  private async writeNewPayment(
+    booking: BookingVisibilityRow,
+    requested: string,
+  ) {
+    // HUMO/UZCARD/VISA/MASTERCARD — barchasi Uzum Checkout orqali (yagona
+    // real, checkout-sahifali karta integratsiyasi; karta turi faqat fee
+    // stavkasini belgilaydi, alohida provayder EMAS). `uzum_checkout`
+    // (schemasiz) — eski/umumiy qiymat, orqaga moslik uchun saqlangan,
+    // fee'siz (avvalgidek).
+    if (isCardScheme(requested)) {
+      return this.createUzumCheckoutPayment(booking, requested);
+    }
+    if (requested === 'uzum_checkout') {
+      return this.createUzumCheckoutPayment(booking, undefined);
     }
 
     const id = randomUUID();
     const now = new Date().toISOString();
     const amount = Number(booking.total_amount);
-    const paymentUrl = this.buildCheckoutUrl(provider, booking.id, amount);
+    const paymentUrl = this.buildCheckoutUrl(requested, booking.id, amount);
+    const status = requested === 'cash' ? 'awaiting_cash' : 'pending';
 
     await this.pg.query(
-      `INSERT INTO payments (id, booking_id, provider, status, amount, currency, payment_url, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO payments
+         (id, booking_id, provider, status, amount, base_amount, fee_rate,
+          fee_amount, currency, payment_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)`,
       [
         id,
         booking.id,
-        provider,
-        provider === 'cash' ? 'awaiting_cash' : 'pending',
-        booking.total_amount,
+        requested,
+        status,
+        amount,
+        amount,
+        0,
+        0,
         booking.currency,
         paymentUrl,
-        now,
         now,
       ],
     );
     return {
       id,
       booking_id: booking.id,
-      provider,
-      status: 'pending',
+      provider: requested,
+      status,
       payment_url: paymentUrl,
-      amount: Number(booking.total_amount),
+      amount,
+      base_amount: amount,
+      fee_rate: 0,
+      fee_amount: 0,
       currency: booking.currency,
       created_at: now,
       updated_at: now,
     };
+  }
+
+  /**
+   * DB qatoridan (yoki yangi yaratilgan payload'dan) frontendga qaytariladigan
+   * shaklni quradi. `card_scheme` mavjud bo'lsa (humo/uzcard/visa/mastercard)
+   * — `provider` maydonida AYNAN SHU qiymat qaytariladi (frontend so'ragan
+   * qiymatning o'zi — ichki transport `uzum_checkout` YASHIRILADI), aks
+   * holda haqiqiy `provider` ustuni.
+   */
+  private shapePaymentResponse(row: PaymentRow): PaymentRow {
+    const provider = row.card_scheme ? String(row.card_scheme) : row.provider;
+    return { ...row, provider };
   }
 
   /**
@@ -229,13 +317,17 @@ export class PaymentsService {
       return null;
     }
 
-    // Uzum CHECKOUT — redirect URL faqat `/payment/register` javobidan keladi,
-    // shuning uchun `createPayment()` uni `createUzumCheckoutPayment()` orqali
-    // ALOHIDA hal qiladi. Bu sinxron yordamchi Checkout uchun ishlatilmaydi;
-    // agar shu yerga yetib kelinsa (masalan `bookings.service.createPayment`
-    // sinxron `buildCheckoutUrl` chaqirsa) — hali ulanmagani uchun aniq 503,
-    // jim `null` emas.
-    if (provider === 'uzum_checkout') {
+    // Uzum CHECKOUT (schemasiz YOKI humo/uzcard/visa/mastercard — barchasi
+    // BITTA texnik yo'l) — redirect URL faqat `/payment/register`
+    // javobidan keladi, shuning uchun `createPayment()` buni
+    // `createUzumCheckoutPayment()` orqali ALOHIDA (asinxron) hal qiladi.
+    // Bu sinxron yordamchi shu usullar uchun ISHLATILMAYDI; agar shu
+    // yerga yetib kelinsa (masalan `bookings.service.ts::createPayment()`
+    // booking yaratishda sinxron `buildCheckoutUrl` chaqirsa) — aniq 503,
+    // jim `null` emas (chaqiruvchi buni ushlab, keyinroq
+    // `POST /payments/:bookingId/create` orqali asl asinxron yo'lni qayta
+    // ochishi kutiladi).
+    if (provider === 'uzum_checkout' || isCardScheme(provider)) {
       throw new ServiceUnavailableException({
         code: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
         message:
@@ -267,8 +359,6 @@ export class PaymentsService {
       return this.payme.buildCheckoutUrl({ bookingId, amount, returnUrl });
     }
 
-    // uzcard/humo — hozircha checkout URL generatsiyasi qo'shilmagan
-    // (real API/spec integratsiyasi kelajakdagi ish sifatida qoladi).
     throw new ServiceUnavailableException({
       code: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
       message: `${provider} to‘lov provayderi hali ulanmagan`,
@@ -283,10 +373,19 @@ export class PaymentsService {
 
   /**
    * Uzum Checkout to'lovini yaratadi — Merchant (`provider='uzum'`) oqimidan
-   * MUTLAQO ALOHIDA. Mavjud ochiq (`pending`/`processing`) payment bo'lsa
-   * uni qaytaradi (idempotent); aks holda Uzum `/payment/register` chaqiriladi
-   * va javobdagi `orderId` + to'lov URL'i bilan yangi `payments` qatori
-   * (`provider = 'uzum_checkout'`) yoziladi.
+   * MUTLAQO ALOHIDA. `createPayment()` allaqachon mavjud ochiq
+   * (`pending`/`processing`) qatorlarni hal qilib bo'lgan (qayta ishlatish/
+   * xavfsiz almashtirish) — bu metod har doim HAQIQIY Uzum `/payment/register`
+   * chaqiradi va javobdagi `orderId` + to'lov URL'i bilan yangi `payments`
+   * qatori (`provider = 'uzum_checkout'`) yozadi.
+   *
+   * `scheme` berilsa (humo/uzcard/visa/mastercard — mahsulot talabi,
+   * 2026-09-16) — `card-scheme-fee.ts` orqali fee hisoblanadi va Uzum'ga
+   * YUBORILADIGAN summaning O'ZIGA (`amountSom`) qo'shiladi (foydalanuvchi
+   * checkout sahifasida ALLAQACHON fee qo'shilgan yakuniy summani ko'radi
+   * va to'laydi — bu backend'ning YAGONA haqiqat manbai, frontend
+   * mustaqil hisoblamaydi). `scheme` berilmasa (eski/umumiy
+   * `provider=uzum_checkout` so'rovi) — avvalgidek fee'siz, gross summa.
    *
    * Mapping:
    *   bookings.booking_number      -> Uzum `orderNumber`
@@ -298,19 +397,15 @@ export class PaymentsService {
    * wire-format bilan HAQIQIY so'rov yuboradi (`docs/payments-uzum-checkout.md`),
    * LEKIN to'liq env (auth + fiskal — `UZUM_CHECKOUT_*`) sozlanmasa hamon
    * FAIL-CLOSED (`NOT_CONFIGURED`) — bu yerda u aniq 503'ga aylantiriladi
-   * (uzcard/humo bilan bir xil UX) va HECH QANDAY qator yozilmaydi.
+   * va HECH QANDAY qator yozilmaydi.
    */
-  private async createUzumCheckoutPayment(booking: BookingVisibilityRow) {
-    const [existing] = await this.pg.query<PaymentRow>(
-      `SELECT * FROM payments
-       WHERE booking_id = $1 AND status IN ('pending', 'processing')
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [booking.id],
-    );
-    if (existing) {
-      return existing;
-    }
+  private async createUzumCheckoutPayment(
+    booking: BookingVisibilityRow,
+    scheme: CardScheme | undefined,
+  ) {
+    const grossAmount = Number(booking.total_amount);
+    const fee = scheme ? calculateCardSchemeFee(grossAmount, scheme) : null;
+    const registerAmount = fee ? fee.totalPayableAmountSom : grossAmount;
 
     const paymentId = randomUUID();
     let reg: RegisterCheckoutResult;
@@ -319,7 +414,7 @@ export class PaymentsService {
         bookingId: booking.id,
         orderNumber: booking.booking_number,
         merchantOperationId: paymentId,
-        amountSom: Number(booking.total_amount),
+        amountSom: registerAmount,
         currency: booking.currency,
         successUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=success`,
         failureUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=failed`,
@@ -341,25 +436,27 @@ export class PaymentsService {
     }
 
     const now = new Date().toISOString();
-    // TODO(uzum-checkout-commission): `register()` 2026-09-11dan buyon
-    // to'liq sozlangan terminalda (auth + fiskal env) HAQIQIY so'rov
-    // yuboradi — bu qator ENDI bajariladi. Hali qo'shilmagan:
-    // `provider_fee_rate/provider_fee_amount/net_settlement_amount` —
-    // `calculateUzumCheckoutCommission(booking.total_amount)` orqali
-    // (qarang `uzum-checkout-commission.ts` + `docs/payments-uzum-checkout.md`
-    // "Uzum Checkout komissiyasi"). Migratsiya
-    // (`20260911000000_uzum_checkout_commission_fields`) DIZAYN QILINGAN,
-    // lekin ATAYLAB productionga qo'llanilmagan — shu ustunlarni to'ldirish
-    // ALOHIDA, ongli qaror bilan qo'shiladi (bu commit doirasidan tashqarida).
+    // ESLATMA: `provider_fee_rate/provider_fee_amount/net_settlement_amount`
+    // (20260911000000) — Uzum-SAFAAR bank SETTLEMENT texnik detali, HALI
+    // TASDIQLANMAGAN, bu yerda ATAYLAB to'ldirilmaydi (`uzum-checkout-
+    // commission.ts`ga qarang). `base_amount/fee_rate/fee_amount` (bu
+    // metod to'ldiradigan) — MUSTAQIL, mahsulot tomonidan TASDIQLANGAN
+    // foydalanuvchi-fee (`card-scheme-fee.ts`) — ikkalasi ARALASHTIRILMAYDI.
     await this.pg.query(
       `INSERT INTO payments
-         (id, booking_id, provider, status, amount, currency, payment_url,
-          provider_reference, idempotency_key, created_at, updated_at)
-       VALUES ($1, $2, 'uzum_checkout', 'processing', $3, $4, $5, $6, $7, $8, $8)`,
+         (id, booking_id, provider, status, amount, base_amount, fee_rate,
+          fee_amount, card_scheme, currency, payment_url, provider_reference,
+          idempotency_key, created_at, updated_at)
+       VALUES ($1, $2, 'uzum_checkout', 'processing', $3, $4, $5, $6, $7, $8,
+               $9, $10, $11, $12, $12)`,
       [
         paymentId,
         booking.id,
-        booking.total_amount,
+        registerAmount,
+        grossAmount,
+        fee ? fee.feeRate : 0,
+        fee ? fee.feeAmountSom : 0,
+        scheme ?? null,
         booking.currency,
         reg.paymentUrl,
         reg.orderId,
@@ -371,10 +468,13 @@ export class PaymentsService {
     return {
       id: paymentId,
       booking_id: booking.id,
-      provider: 'uzum_checkout',
+      provider: scheme ?? 'uzum_checkout',
       status: 'processing',
       payment_url: reg.paymentUrl,
-      amount: Number(booking.total_amount),
+      amount: registerAmount,
+      base_amount: grossAmount,
+      fee_rate: fee ? fee.feeRate : 0,
+      fee_amount: fee ? fee.feeAmountSom : 0,
       currency: booking.currency,
       created_at: now,
       updated_at: now,
@@ -786,6 +886,7 @@ export class PaymentsService {
   private async assertBookingVisible(
     actor: RequestActor | undefined,
     bookingId: string,
+    guestAccessToken?: string,
   ) {
     const [booking] = await this.pg.query<BookingVisibilityRow>(
       'SELECT * FROM bookings WHERE id = $1',
@@ -798,7 +899,23 @@ export class PaymentsService {
       });
     }
     if (!actor) {
-      // Anonim (tokensiz) chaqiruv — bron egasini aniqlab bo'lmaydi.
+      // Guest (login qilmagan) mijoz — FAQAT aynan shu bron yaratilishida
+      // o'ziga berilgan opaque access-token bilan, VA faqat bron haqiqatan
+      // ham egasiz (`user_id` NULL) bo'lsagina o'tkaziladi. Bu
+      // `bookings.service.ts::assertBooking()`dagi bilan BIR XIL token
+      // (`GuestBookingAccessService`, `common/`) — guest xom bron ID'ini
+      // bilishning o'zi HECH QACHON yetarli emas (IDOR'ga qarshi): token
+      // AYNAN shu bookingId'ga bog'langan, boshqa bronni ochish uchun
+      // ishlatib bo'lmaydi.
+      if (guestAccessToken && !booking.user_id && this.guestAccess) {
+        const grantedBookingId =
+          await this.guestAccess.resolve(guestAccessToken);
+        if (grantedBookingId === bookingId) {
+          return booking;
+        }
+      }
+      // Anonim (tokensiz yoki yaroqsiz/mos kelmaydigan guest-token)
+      // chaqiruv — bron egasini aniqlab bo'lmaydi.
       throw new UnauthorizedException({
         code: 'AUTH_TOKEN_INVALID',
         message: 'Sessiya topilmadi yoki token yaroqsiz',
@@ -948,6 +1065,8 @@ export class PaymentsService {
       'payme',
       'uzcard',
       'humo',
+      'visa',
+      'mastercard',
       'cash',
       'uzum',
       'uzum_checkout',

@@ -73,6 +73,7 @@
     "BOOKING_DATES_INVALID": "Invalid booking dates.",
     "GUEST_DETAILS_REQUIRED": "Guest details are required.",
     "PROMO_INVALID": "Promo code is invalid or expired.",
-    "PROMO_LIMIT_REACHED": "Promo code usage limit reached."
+    "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
+    "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue."
   }
 }

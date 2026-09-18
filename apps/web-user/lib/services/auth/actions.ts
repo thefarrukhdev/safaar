@@ -89,6 +89,10 @@ export async function verifyOtpAction(
   const lastName = String(formData.get("lastName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // HTML checkboxlar FAQAT belgilangan holatda FormData'ga tushadi
+  // (belgilanmagan bo'lsa umuman yo'q, "false" emas) — shuning uchun
+  // mavjudligi checked holatini bildiradi.
+  const agreeTerms = formData.get("agreeTerms") != null;
 
   if (!phone) return { error: "PHONE_REQUIRED" };
 
@@ -110,6 +114,12 @@ export async function verifyOtpAction(
         if (!password) return { error: "PASSWORD_REQUIRED" };
         const passwordError = validatePassword(password);
         if (passwordError) return { error: passwordError };
+        // Client checkboxning o'zi source of truth emas — backend
+        // `agree_terms`ni qat'iy qayta tekshiradi (`TERMS_NOT_ACCEPTED`
+        // bilan rad etadi). Bu yerdagi tekshiruv faqat tezroq, aniqroq
+        // xabar berish uchun (masalan JS/native validation chetlab
+        // o'tilgan holatda ham).
+        if (!agreeTerms) return { error: "TERMS_NOT_ACCEPTED" };
 
         await api.auth.completeProfile(session.accessToken, {
           firstName,
@@ -117,6 +127,7 @@ export async function verifyOtpAction(
           phone: phone || undefined,
           email: email || undefined,
           password: password || undefined,
+          agreeTerms,
         });
         await setSession({ ...session });
 
@@ -262,6 +273,7 @@ export async function completeProfileAction(
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const password = String(formData.get("password") ?? "");
+  const agreeTerms = formData.get("agreeTerms") != null;
 
   if (!firstName) {
     return { error: "FIRST_NAME_REQUIRED" };
@@ -271,6 +283,9 @@ export async function completeProfileAction(
   }
   if (!password) {
     return { error: "PASSWORD_REQUIRED" };
+  }
+  if (!agreeTerms) {
+    return { error: "TERMS_NOT_ACCEPTED" };
   }
 
   const passwordError = validatePassword(password);
@@ -288,6 +303,7 @@ export async function completeProfileAction(
       phone: phone || undefined,
       email,
       password: password || undefined,
+      agreeTerms,
     });
     await setSession({ ...session });
   } catch (error) {

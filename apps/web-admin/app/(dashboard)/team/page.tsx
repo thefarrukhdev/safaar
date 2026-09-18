@@ -3,10 +3,11 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, MoreVertical, Key, Edit, Ban, CheckCircle2, Mail, Phone, Calendar } from "lucide-react";
+import { Plus, Search, MoreVertical, Key, Edit, Ban, CheckCircle2, Mail, Phone, Calendar, Check, X, ShieldQuestion } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import { AdminApi } from "@/lib/api/admin-api";
 import { AdminUser, AdminRole } from "@/types/admin";
@@ -17,29 +18,87 @@ const teamUserSchema = z.object({
   fullName: z.string().min(2, "F.I.SH kamida 2 harfdan iborat bo'lishi kerak"),
   email: z.string().email("Yaroqli elektron pochta kiriting"),
   phone: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "ADMIN", "MODERATOR", "FINANCE", "SUPPORT", "CONTENT"]),
+  role: z.enum([
+    "SUPER_ADMIN",
+    "ADMIN",
+    "MODERATOR",
+    "FINANCE_ADMIN",
+    "CONTENT_ADMIN",
+    "SUPPORT_ADMIN",
+  ]),
   password: z.string().optional(),
 });
 
 type TeamUserFormValues = z.infer<typeof teamUserSchema>;
 
+// 2026-09-14 SAFAAR ADMIN audit: backenddagi `Role` enum'ida (`packages/types`)
+// ALLAQACHON mavjud bo'lgan, lekin bu yerda YO'Q edi — `ADMIN`/`SUPPORT_ADMIN`
+// tanlab bo'lmasdi (backend qabul qiladi, lekin UI orqali hech qachon
+// tanlanmas edi). "PARTNER_MANAGER" — mavjud `MODERATOR` roliga moslashtirildi
+// (backend `common/permissions.ts`ga qarang, yangi parallel rol yaratilmadi).
 const ROLE_LABELS: Record<AdminRole, string> = {
   SUPER_ADMIN: "Super Admin",
   ADMIN: "Admin",
-  MODERATOR: "Moderator",
-  FINANCE: "Moliya Admini",
-  SUPPORT: "Yordam Admini",
-  CONTENT: "Kontent Admini",
+  MODERATOR: "Hamkor menejeri",
+  FINANCE_ADMIN: "Moliya menejeri",
+  CONTENT_ADMIN: "Kontent menejeri",
+  SUPPORT_ADMIN: "Qo'llab-quvvatlash menejeri",
 };
 
 const ROLE_COLORS: Record<AdminRole, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-700 border-purple-200",
   ADMIN: "bg-indigo-100 text-indigo-700 border-indigo-200",
   MODERATOR: "bg-blue-100 text-blue-700 border-blue-200",
-  FINANCE: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  SUPPORT: "bg-pink-100 text-pink-700 border-pink-200",
-  CONTENT: "bg-amber-100 text-amber-700 border-amber-200",
+  FINANCE_ADMIN: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  CONTENT_ADMIN: "bg-amber-100 text-amber-700 border-amber-200",
+  SUPPORT_ADMIN: "bg-cyan-100 text-cyan-700 border-cyan-200",
 };
+
+// Faqat KO'RSATISH uchun (guruh nomi/tartib) — ruxsatlarning O'ZI
+// hardcoded emas, GET /admin/roles orqali real backenddan keladi. Yangi
+// domen backendda paydo bo'lsa, bu yerda yo'q bo'lsa ham matritsada
+// (raw key bilan) ko'rinaveradi — hech narsa yashirilmaydi.
+const PERMISSION_DOMAIN_LABELS: Record<string, string> = {
+  users: "Foydalanuvchilar",
+  partners: "Hamkorlar",
+  bookings: "Bronlar",
+  finance: "Moliya",
+  payments: "To'lovlar",
+  settlements: "Hisob-kitoblar",
+  customers: "Mijozlar",
+  cms: "Kontent (CMS)",
+  reviews: "Sharhlar",
+  translations: "Tarjimalar",
+  seo: "SEO",
+  support: "Qo'llab-quvvatlash",
+  settings: "Sozlamalar",
+  "admin-users": "Xodimlar (yaratish/tahrirlash)",
+  admins: "Xodimlarni boshqarish",
+  roles: "Rol/ruxsatlar",
+  "audit-logs": "Audit jurnali",
+  listings: "E'lonlar",
+  availability: "Xona availability",
+};
+
+function permissionDomainLabel(permission: string): string {
+  const domain = permission.split(":")[0];
+  return PERMISSION_DOMAIN_LABELS[domain] ?? domain;
+}
+
+function permissionActionLabel(permission: string): string {
+  const action = permission.split(":")[1] ?? permission;
+  const ACTION_LABELS: Record<string, string> = {
+    read: "ko'rish",
+    write: "yozish/tahrirlash",
+    edit: "tahrirlash",
+    moderate: "moderatsiya",
+    manage: "boshqarish",
+    block: "bloklash",
+    cancel: "bekor qilish",
+    refund: "qaytarish",
+  };
+  return ACTION_LABELS[action] ?? action;
+}
 
 export default function TeamPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -67,6 +126,13 @@ export default function TeamPage() {
   });
 
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+
+  // Permission matrix — real GET /admin/roles data (common/permissions.ts
+  // rolePermissions, the actual map RolesGuard enforces), not a hardcoded
+  // duplicate list that could silently drift from backend reality.
+  const [roleMatrix, setRoleMatrix] = useState<{ id: string; permissions: string[] }[]>([]);
+  const [matrixLoading, setMatrixLoading] = useState(true);
+  const [matrixError, setMatrixError] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -101,6 +167,21 @@ export default function TeamPage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await AdminApi.getRoles();
+        if (!cancelled) setRoleMatrix(data);
+      } catch {
+        if (!cancelled) setMatrixError(true);
+      } finally {
+        if (!cancelled) setMatrixLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, []);
 
   const openAddModal = () => {
     setEditingUser(null);
@@ -160,10 +241,15 @@ export default function TeamPage() {
     setDropdownOpen(null);
   };
 
-  const filteredUsers = users.filter(u => 
-    u.fullName.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredUsers = users.filter(u =>
+    u.fullName.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Backend admin.service.ts::adminUserUpdate ATAYLAB rad etadi (403
+  // ADMIN_SELF_ROLE_CHANGE_DENIED) — frontend shu holatni oldindan
+  // ko'rsatadi, lekin haqiqiy himoya baribir backendda.
+  const isEditingSelf = Boolean(editingUser && editingUser.id === currentUser?.id);
 
   const columns: Column<AdminUser>[] = [
     {
@@ -322,6 +408,117 @@ export default function TeamPage() {
         className="flex-1"
       />
 
+      {/* Permission Matrix — real backend rolePermissions (2026-09-14).
+          Heading/error text intentionally matches what
+          e2e/tests/admin/critical-flow.spec.ts already expected
+          (pre-existing test, written before this section existed). */}
+      <Card padding="lg" className="mt-6">
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Rollar va ruxsatlar</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1 mb-4">
+          Har bir rol nimani ko&apos;ra/o&apos;zgartira olishi — to&apos;g&apos;ridan-to&apos;g&apos;ri
+          backend RolesGuard tomonidan ishlatiladigan haqiqiy ruxsatlar ro&apos;yxati
+          (frontendda alohida saqlanmaydi). SUPER_ADMIN har doim barcha ruxsatga ega.
+        </p>
+
+        {matrixLoading ? (
+          <div className="space-y-2" role="status" aria-label="Yuklanmoqda">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-9 bg-[var(--bg-tertiary)] rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : matrixError ? (
+          <div className="flex flex-col items-center text-center gap-3 py-10">
+            <ShieldQuestion size={24} className="text-[var(--danger)]" aria-hidden />
+            <p className="text-sm text-[var(--text-secondary)]">
+              Ruxsatlarni yuklab bo&apos;lmadi
+            </p>
+          </div>
+        ) : (
+          (() => {
+            // USER/PARTNER — bular admin-panel roli EMAS (mijoz/hamkor
+            // portali uchun, `rolePermissions`da bor lekin bu "Admin
+            // Jamoasi" matritsasiga aloqasi yo'q) — ROLE_LABELS'dagi 6 ta
+            // admin roliga cheklaymiz.
+            const adminRoleMatrix = roleMatrix.filter((r) =>
+              Object.prototype.hasOwnProperty.call(ROLE_LABELS, r.id.toUpperCase()),
+            );
+            const roleIds = adminRoleMatrix.map((r) => r.id.toUpperCase());
+            const allPermissions = Array.from(
+              new Set(adminRoleMatrix.flatMap((r) => r.permissions)),
+            ).sort();
+            const grouped = new Map<string, string[]>();
+            for (const permission of allPermissions) {
+              const domain = permissionDomainLabel(permission);
+              grouped.set(domain, [...(grouped.get(domain) ?? []), permission]);
+            }
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm" role="grid" aria-label="Rol va ruxsatlar matritsasi">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="text-left font-medium text-[var(--text-muted)] pb-2 pr-4 sticky left-0 bg-white">
+                        Ruxsat
+                      </th>
+                      {roleIds.map((roleId) => (
+                        <th
+                          key={roleId}
+                          scope="col"
+                          className="text-center font-medium text-[var(--text-muted)] pb-2 px-3 whitespace-nowrap"
+                        >
+                          {ROLE_LABELS[roleId as AdminRole] ?? roleId}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...grouped.entries()].map(([domainLabel, permissions]) => (
+                      <Fragment key={domainLabel}>
+                        <tr>
+                          <td
+                            colSpan={roleIds.length + 1}
+                            className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+                          >
+                            {domainLabel}
+                          </td>
+                        </tr>
+                        {permissions.map((permission) => (
+                          <tr key={permission} className="border-t border-[var(--border)]">
+                            <td className="py-2 pr-4 text-[var(--text-secondary)] sticky left-0 bg-white">
+                              {permissionActionLabel(permission)}
+                              <span className="text-[var(--text-muted)] text-xs ml-1">({permission})</span>
+                            </td>
+                            {adminRoleMatrix.map((role) => {
+                              const granted = role.permissions.includes(permission);
+                              return (
+                                <td key={role.id} className="text-center px-3">
+                                  {granted ? (
+                                    <Check
+                                      size={16}
+                                      className="inline text-[var(--success)]"
+                                      aria-label="Ruxsat berilgan"
+                                    />
+                                  ) : (
+                                    <X
+                                      size={16}
+                                      className="inline text-slate-300"
+                                      aria-label="Ruxsat yo'q"
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()
+        )}
+      </Card>
+
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -366,15 +563,24 @@ export default function TeamPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Rol</label>
+                <label htmlFor="team-role-select" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Rol</label>
                 <select
+                  id="team-role-select"
                   {...register("role")}
-                  className="w-full px-4 py-2 text-sm rounded-lg border border-[var(--border)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-all"
+                  disabled={isEditingSelf}
+                  className="w-full px-4 py-2 text-sm rounded-lg border border-[var(--border)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
                 >
-                  {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
+                  {Object.entries(ROLE_LABELS)
+                    .filter(([key]) => key !== "SUPER_ADMIN" || currentUser?.role === "SUPER_ADMIN")
+                    .map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
                 </select>
+                {isEditingSelf && (
+                  <p className="text-slate-400 text-xs mt-1">
+                    O&apos;zingizning rolingizni o&apos;zgartira olmaysiz — backend buni bloklaydi.
+                  </p>
+                )}
               </div>
 
               <div>

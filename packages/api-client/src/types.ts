@@ -116,6 +116,10 @@ export interface ReviewView {
   avatarUrl?: string;
   photos?: string[];
   isVerifiedGuest?: boolean;
+  cleanliness?: number;
+  staff?: number;
+  location?: number;
+  valueForMoney?: number;
 }
 
 export interface SupportTicketView {

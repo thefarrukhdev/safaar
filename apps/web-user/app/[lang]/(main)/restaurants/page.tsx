@@ -40,7 +40,7 @@ export default async function RestaurantsPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <RestaurantsView dict={restaurantsDict} items={restaurants} />
+      <RestaurantsView dict={restaurantsDict} items={restaurants} locale={locale} />
     </main>
   );
 }

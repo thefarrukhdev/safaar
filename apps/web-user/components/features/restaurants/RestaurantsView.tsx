@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Clock, MapPin, PhoneCall, Star, Utensils, Search } from "lucide-react";
 import { formatSum } from "@/lib/money";
+import type { Locale } from "@/i18n/config";
 import type { CatalogDict } from "@/i18n/dictionaries";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import type { RestaurantItem } from "@/components/catalog/types";
@@ -16,9 +17,11 @@ export type { RestaurantItem };
 function RestaurantCard({
   item,
   dict,
+  locale,
 }: {
   item: RestaurantItem;
   dict: CatalogDict["restaurants"];
+  locale: Locale;
 }) {
   const price = item.averageCheckSum > 0 ? item.averageCheckSum : 180000;
   const tags = [
@@ -28,7 +31,7 @@ function RestaurantCard({
 
   return (
     <UniversalCard
-      href={`/restaurants/${item.id}`}
+      href={`/${locale}/restaurants/${item.id}`}
       imageSrc={item.imageUrl}
       imageAlt={item.name}
       showFavorite
@@ -47,9 +50,11 @@ function RestaurantCard({
 export function RestaurantsView({
   dict,
   items,
+  locale,
 }: {
   dict: CatalogDict["restaurants"];
   items: RestaurantItem[];
+  locale: Locale;
 }) {
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
@@ -131,7 +136,7 @@ export function RestaurantsView({
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
           {filtered.map((item) => (
-            <RestaurantCard key={item.id} item={item} dict={dict} />
+            <RestaurantCard key={item.id} item={item} dict={dict} locale={locale} />
           ))}
         </div>
       )}

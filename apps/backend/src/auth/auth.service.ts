@@ -1549,6 +1549,8 @@ export class AuthService {
       organizationId: string;
       organization_status: string;
       organizationStatus: string;
+      organization_type: string;
+      organizationType: string;
       partner_role: string;
     }
   > {
@@ -1557,6 +1559,7 @@ export class AuthService {
         select
           po.id::text as organization_id,
           po.status::text as organization_status,
+          po.type::text as organization_type,
           pu.id::text as user_id,
           pu.status::text as user_status,
           COALESCE(pu.role, 'owner')::text as partner_role
@@ -1586,6 +1589,7 @@ export class AuthService {
 
     const organizationId = String(row['organization_id']);
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
+    const organizationType = String(row['organization_type'] ?? 'hotel');
 
     return {
       ...(await this.issueTokens({
@@ -1598,6 +1602,8 @@ export class AuthService {
       organizationId,
       organization_status: organizationStatus,
       organizationStatus,
+      organization_type: organizationType,
+      organizationType,
       partner_role: String(row['partner_role'] ?? 'owner'),
     };
   }

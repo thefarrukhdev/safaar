@@ -11,6 +11,7 @@ import { CityCardsSection } from "@/components/features/home/CityCardsSection";
 
 import { FeaturedHotelsCarousel } from "@/components/features/home/FeaturedHotelsCarousel";
 import { DealsSection, type DealItem } from "@/components/features/home/DealsSection";
+import { BannerStrip } from "@/components/features/home/BannerStrip";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { CityPills } from "@/components/features/home/CityPills";
@@ -126,16 +127,18 @@ export default async function HomePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [common, dict, cities, featuredResult, rawDeals, publicStats] = await Promise.all([
+  const [common, dict, cities, featuredResult, rawDeals, publicStats, banners] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "home"),
     api.catalog.getCities(locale),
     api.hotels.getFeaturedHotels(locale, { limit: 10 }),
     api.cms.getDeals(locale),
     api.cms.getPublicStats().catch(() => null),
+    api.cms.getBanners(locale).catch(() => []),
   ]);
 
   const hotels = [...featuredResult.items];
+  const bannerUrl = banners[0]?.imageUrl || undefined;
 
   const deals: DealItem[] = rawDeals.map((d) => ({
     id: d.id,
@@ -155,7 +158,7 @@ export default async function HomePage({
       {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
       <div className="flex min-h-svh flex-col justify-between">
         <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
-          <Hero dict={dict.hero}>
+          <Hero dict={dict.hero} bannerUrl={bannerUrl}>
             <div className="w-full">
               <section id="search-section" className="bg-transparent pb-4 sm:pb-6">
                 <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -180,6 +183,12 @@ export default async function HomePage({
           </Suspense>
         </div>
       </div>
+
+      {banners.length > 0 && (
+        <div className="py-8 sm:py-10 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "300ms" }}>
+          <BannerStrip banners={banners} locale={locale} />
+        </div>
+      )}
 
       {/* EKRAN 2: Chegirmadagi takliflar */}
       <div className="py-10 sm:py-14 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "450ms" }}>

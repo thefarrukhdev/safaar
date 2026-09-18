@@ -2307,6 +2307,40 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
       });
     });
 
+    it("returns the real partner_organizations.type (regression: web-partner's password-login hardcoded partnerType='hotel' regardless of the actual org type — confirmed live for restaurant/transport test partners)", async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]); // findPartnerUserByPhone
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([]); // audit insert
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'approved',
+          organization_type: 'restaurant',
+          user_id: USER_ID,
+          user_status: 'active',
+          partner_role: 'owner',
+        },
+      ]); // issuePartnerTokensByPhone
+
+      const result = await service.partnerPasswordLogin({
+        phone: '+998901112201',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({
+        organization_type: 'restaurant',
+        organizationType: 'restaurant',
+      });
+    });
+
     it('wrong password is rejected without revealing which part was wrong', async () => {
       pg.query.mockResolvedValueOnce([
         {
@@ -2393,6 +2427,59 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
           password: 'wrong',
         }),
       ).rejects.toMatchObject({ response: { code: 'AUTH_ACCOUNT_LOCKED' } });
+    });
+  });
+
+  describe("partner/login (email) — regression: another concurrent change to this exact login path (usePartnerEmailLogin) replicated the same partnerType='hotel' bug via a different, always-false condition (tokens.partner_role === 'bus')", () => {
+    it('returns the real partner_organizations.type, not just status', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          organization_id: ORG_ID,
+          email: 'partner15@safaar.uz',
+          password_hash: 'hashed',
+          full_name: 'Test Owner 15',
+          role: 'owner',
+          status: 'active',
+        },
+      ]); // findPartnerUser
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([
+        { id: ORG_ID, status: 'approved', type: 'restaurant' },
+      ]); // orgRows
+
+      const result = await service.partnerLogin({
+        email: 'partner15@safaar.uz',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({
+        organization_type: 'restaurant',
+        organizationType: 'restaurant',
+      });
+    });
+
+    it("defaults to 'hotel' only when the organization row is genuinely missing the type (never silently mislabels a real type)", async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          organization_id: ORG_ID,
+          email: 'partner01@safaar.uz',
+          password_hash: 'hashed',
+          full_name: 'Test Owner 01',
+          role: 'owner',
+          status: 'active',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID, status: 'approved' }]); // no `type` column returned
+
+      const result = await service.partnerLogin({
+        email: 'partner01@safaar.uz',
+        password: 'correct-password',
+      });
+
+      expect(result).toMatchObject({ organizationType: 'hotel' });
     });
   });
 

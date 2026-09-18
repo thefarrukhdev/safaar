@@ -3,30 +3,31 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminApi } from "@/lib/api/admin-api";
-import type { AdminBanner } from "@/types/admin";
+import type { CmsBanner } from "@/types/admin";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Plus, Edit2, Trash2, Save, Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
 
 export default function BannersPage() {
-  const [items, setItems] = useState<AdminBanner[]>([]);
+  const [items, setItems] = useState<CmsBanner[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<AdminBanner | null>(null);
+  const [editingItem, setEditingItem] = useState<CmsBanner | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Form states
   const [title, setTitle] = useState("");
+  const [link, setLink] = useState("/");
   const [imageUrl, setImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const fetchBanners = async () => {
     try {
-      const data = await AdminApi.getBanners();
+      const data = await AdminApi.getCmsBanners();
       setItems(data);
     } catch (error) {
       toast.error("Bannerlarni yuklashda xatolik yuz berdi");
@@ -39,9 +40,10 @@ export default function BannersPage() {
     fetchBanners();
   }, []);
 
-  const handleEdit = (item: AdminBanner) => {
+  const handleEdit = (item: CmsBanner) => {
     setEditingItem(item);
     setTitle(item.title);
+    setLink(item.link || "/");
     setImageUrl(item.imageUrl);
     setIsActive(item.isActive);
     setIsModalOpen(true);
@@ -50,6 +52,7 @@ export default function BannersPage() {
   const handleAddNew = () => {
     setEditingItem(null);
     setTitle("");
+    setLink("/");
     setImageUrl("");
     setIsActive(true);
     setIsModalOpen(true);
@@ -58,7 +61,7 @@ export default function BannersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Haqiqatan ham bu bannerni o'chirmoqchimisiz?")) return;
     try {
-      await AdminApi.deleteBanner(id);
+      await AdminApi.deleteCmsBanner(id);
       toast.success("Banner o'chirildi");
       setItems(items.filter((t) => t.id !== id));
     } catch (error) {
@@ -66,17 +69,35 @@ export default function BannersPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const uploaded = await AdminApi.uploadImage(file);
+      setImageUrl(uploaded.url);
+    } catch (error) {
+      toast.error("Rasm yuklashda xatolik yuz berdi");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!imageUrl) {
+      toast.error("Rasm yuklanishini kuting yoki Iltimos rasm yuklang");
+      return;
+    }
     setSaving(true);
     try {
-      const payload = { title, imageUrl, isActive };
+      const payload = { title, imageUrl, link, isActive, order: editingItem?.order ?? items.length };
       if (editingItem) {
-        const updated = await AdminApi.updateBanner(editingItem.id, payload);
+        const updated = await AdminApi.updateCmsBanner(editingItem.id, payload);
         setItems(items.map((t) => (t.id === updated.id ? updated : t)));
         toast.success("Banner yangilandi");
       } else {
-        const created = await AdminApi.createBanner(payload);
+        const created = await AdminApi.createCmsBanner(payload);
         setItems([created, ...items]);
         toast.success("Yangi banner qo'shildi");
       }
@@ -88,7 +109,8 @@ export default function BannersPage() {
     }
   };
 
-  const columns: Column<AdminBanner>[] = [
+
+  const columns: Column<CmsBanner>[] = [
     {
       key: "imageUrl",
       label: "Rasm",
@@ -109,6 +131,11 @@ export default function BannersPage() {
       label: "Sarlavha",
       render: (row) => <div className="font-medium text-[var(--foreground)]">{row.title}</div>,
       sortable: true,
+    },
+    {
+      key: "link",
+      label: "Havola",
+      render: (row) => <span className="text-sm text-[var(--muted-foreground)]">{row.link}</span>,
     },
     {
       key: "isActive",
@@ -184,20 +211,30 @@ export default function BannersPage() {
           </div>
 
           <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--foreground)]">Havola (bosilganda ochiladigan sahifa)</label>
+            <input
+              type="text"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="/hotels yoki /uz/deals"
+              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
+            />
+          </div>
+
+
+          <div className="space-y-1">
             <label className="text-sm font-medium text-[var(--foreground)]">Rasm yuklash</label>
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setImageUrl(URL.createObjectURL(file));
-                }
-              }}
+              onChange={handleFileChange}
+              disabled={uploading}
               className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
-              required={!imageUrl}
             />
-            {imageUrl && (
+            {uploading && (
+              <p className="text-xs text-[var(--muted-foreground)]">Yuklanmoqda...</p>
+            )}
+            {imageUrl && !uploading && (
               <div className="mt-2 relative w-full h-32 rounded border border-[var(--border)] overflow-hidden">
                 <img src={imageUrl} alt="Preview" className="object-cover w-full h-full" />
               </div>
@@ -221,7 +258,7 @@ export default function BannersPage() {
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
               Bekor qilish
             </Button>
-            <Button type="submit" disabled={saving} icon={<Save size={16} />}>
+            <Button type="submit" disabled={saving || uploading} icon={<Save size={16} />}>
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
           </div>

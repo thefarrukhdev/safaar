@@ -45,7 +45,15 @@ export function usePartnerPhoneLogin() {
       }
 
       const tokens = await auth.partnerPhoneLogin(phone);
-      const partnerType = accessStatus.request?.type || 'hotel';
+      // `tokens.organizationType` (partner_organizations.type, from
+      // issuePartnerTokensByPhone) is the authoritative source — prefer it
+      // over the pre-login access-status lookup, which is a separate,
+      // potentially-stale snapshot.
+      const partnerType =
+        tokens.organizationType ??
+        tokens.organization_type ??
+        accessStatus.request?.type ??
+        'hotel';
       return {
         phone,
         tokens,
@@ -69,20 +77,19 @@ export function usePartnerPhoneLogin() {
 export function usePartnerPhoneOtpRequest() {
   return useMutation({
     mutationFn: async (phone: string) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
+      const result = await auth.requestOtp(phone);
       return {
         phone,
-        challengeId: 'demo-challenge-id',
-        expiresInSeconds: 300,
-        resendAfterSeconds: 60,
+        challengeId: result.challenge_id,
+        expiresInSeconds: result.expires_in_seconds,
+        resendAfterSeconds: result.resend_after_seconds,
         partnerType: 'hotel',
-        devCode: '000000'
+        devCode: result.dev_code
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ challengeId, phone }) => {
+    onSuccess: ({ challengeId, phone, devCode }) => {
       toast.info(
-        `Demo rejim: "000000" kodni kiriting`,
+        devCode ? `Dasturlash rejimi: Kodi - ${devCode}` : `Sms yuborildi`,
         { duration: 8000 },
       );
     },
@@ -109,21 +116,6 @@ export function usePartnerPhoneOtpVerify() {
       challengeId: string;
       partnerType?: string;
     }) => {
-      // ── Demo rejim ──────────────────────────────────────────────────────────
-      if (challengeId === 'demo-challenge-id') {
-        if (code !== DEMO_CODE) {
-          throw new Error(`Demo rejimda kod: ${DEMO_CODE}`);
-        }
-        return {
-          phone,
-          tokens: DEMO_TOKENS as any,
-          organizationId: 'demo-org-id',
-          partnerType: partnerType || 'hotel',
-          isDemo: true,
-        };
-      }
-      // ────────────────────────────────────────────────────────────────────────
-
       const tokens = await auth.verifyOtp({
         phone,
         code,
@@ -134,7 +126,10 @@ export function usePartnerPhoneOtpVerify() {
         phone,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
-        partnerType: partnerType || 'hotel',
+        // `tokens.organizationType` (authoritative, from the backend) takes
+        // priority over the `partnerType` the caller passed in.
+        partnerType:
+          tokens.organizationType ?? tokens.organization_type ?? partnerType ?? 'hotel',
         isDemo: false,
       };
     },
@@ -155,30 +150,32 @@ export function usePartnerPhoneOtpVerify() {
   });
 }
 
-export function usePartnerPasswordLogin() {
+export function usePartnerEmailLogin() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      let pType = 'hotel';
-      if (password && password.startsWith('demo:')) {
-        pType = password.split(':')[1];
-      } else if (password !== 'demo123') {
-        throw new Error("Noto'g'ri parol. Demo parol: demo123 (Mehmonxona) yoki demo:bus (Transport), demo:restaurant kabi kiriting.");
-      }
+    mutationFn: async ({ email, password }: { email: string; password?: string }) => {
+      const tokens = await auth.partnerLogin(email, password);
       return {
-        phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
-        partnerType: pType,
-        isDemo: true,
+        email,
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
+        // Was hardcoded 'hotel' regardless of the real organization type
+        // (confirmed live: restaurant/transport test partners both showed
+        // a hotel-style dashboard after password login). Now uses the
+        // authoritative partner_organizations.type the backend returns.
+        // (A prior attempt here checked tokens.partner_role === 'bus', but
+        // partner_role is the partner_users.role column -- team role like
+        // 'owner'/'manager' -- never an organization type, so that
+        // condition could never actually be true.)
+        partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
+        isDemo: false,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
-      const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
+    onSuccess: ({ email, tokens, organizationId, partnerType, isDemo }) => {
+      // Build a session. Use email as identifier instead of phone.
+      const { user } = buildPartnerSession(email, tokens, partnerType, 'email');
       user.organizationId = organizationId;
       setSession(user, tokens);
       if (isDemo) {
@@ -210,18 +207,19 @@ export function usePartnerSetPassword() {
       challengeId: string;
       password?: string;
     }) => {
-      // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-      if (code !== '000000') {
-        throw new Error("Demo rejimda kod: 000000 ni kiriting");
-      }
+      const tokens = await auth.partnerSetPassword({
+        phone,
+        code,
+        challenge_id: challengeId,
+        password,
+      });
       return {
         phone,
-        tokens: DEMO_TOKENS as any,
-        organizationId: 'demo-org-id',
-        partnerType: 'hotel',
-        isDemo: true,
+        tokens,
+        organizationId: tokens.organizationId ?? tokens.organization_id,
+        partnerType: tokens.organizationType ?? tokens.organization_type ?? 'hotel',
+        isDemo: false,
       };
-      // ────────────────────────────────────────────────────────────────────────
     },
     onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');

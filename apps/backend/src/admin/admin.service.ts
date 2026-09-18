@@ -3910,6 +3910,26 @@ export class AdminService {
     `);
   }
 
+  /**
+   * `cmsCreate`/`cmsUpdate`/`cmsAction`/`cmsTranslation` faqat `cms:*`ni
+   * bo'shatadi — bu yetarli, chunki `/cms/*` va `/catalog/attractions`,
+   * `/catalog/restaurants` kabi generik o'qish endpointlari shu prefiks
+   * ostida keshlanadi. Lekin `catalog.service.ts`'dagi `destinations()`
+   * o'zining ALOHIDA `catalog:destinations` kalitida (300s TTL) keshlaydi
+   * (attractions/restaurants'dan farqli, ular o'z resurs-maxsus admin
+   * endpointlarida `catalog:*`ni bo'shatadi) — shu sabab resource
+   * 'destinations' bo'lganda buni ham aniq bo'shatish kerak, aks holda
+   * admin panelda active/inactive/edit/reorder qilingandan keyin ham
+   * public `/catalog/destinations` eski holatni to 5 daqiqagacha
+   * qaytaraveradi.
+   */
+  private invalidateCmsCache(resource: string): void {
+    void this.cache.delByPattern('cms:*');
+    if (resource === 'destinations') {
+      void this.cache.del('catalog:destinations');
+    }
+  }
+
   async cmsList(resource: string, query: QueryLike = {}) {
     const types = cmsTypesForResource(resource);
     const rows = await this.rows(
@@ -4014,7 +4034,7 @@ export class AdminService {
       throw error;
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4102,7 +4122,7 @@ export class AdminService {
       });
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4135,7 +4155,7 @@ export class AdminService {
       });
     }
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return cmsAdminDto(rows[0]);
   }
@@ -4157,7 +4177,7 @@ export class AdminService {
       [id, JSON.stringify(body)],
     );
 
-    void this.cache.delByPattern('cms:*');
+    this.invalidateCmsCache(resource);
     this.invalidateAdminCache();
     return (
       rows[0] ?? {
@@ -4840,11 +4860,25 @@ export class AdminService {
     return rows[0] ?? { id };
   }
 
+  /**
+   * Broadcasts o'zining generic CMS uch holatidan (draft/published/archived)
+   * FARQLI, to'rt holatli status lug'atiga ega (draft/sending/sent/failed —
+   * `broadcasts/page.tsx`dagi STATUS_LABELS/handleAction bilan bir xil),
+   * chunki bu yerda haqiqiy asinxron yetkazib berish jarayoni ifodalanadi.
+   * Audit topilmasi: `action='send'`/`'cancel'` bu lug'atda YO'Q edi, shuning
+   * uchun `newStatus` literal `'send'` satrini yozar edi — na CMS, na UI
+   * status lug'atiga mos kelmaydigan, "qotib qolgan" qatorga olib kelardi.
+   * DIQQAT: bu faqat status-qiymat izchilligini tuzatadi — haqiqiy
+   * push/SMS/in-app YETKAZIB BERISH hali yo'q (pastdagi izohga qarang),
+   * shuning uchun bu yerda `sentCount`ga tegilmaydi (haqiqatan 0).
+   */
   async notificationBroadcastAction(id: string, action: string) {
     const statusMap: Record<string, string> = {
       publish: 'published',
       unpublish: 'draft',
       archive: 'archived',
+      send: 'sending',
+      cancel: 'draft',
     };
     const newStatus = statusMap[action] ?? action;
 

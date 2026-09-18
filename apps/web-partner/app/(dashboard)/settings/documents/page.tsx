@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { FileText, Upload, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { PartnerDocument, listDocuments, uploadDocument } from "@/app/_lib/api/endpoints/partners";
+import { PartnerDocument, listDocuments, uploadDocumentFile } from "@/app/_lib/api/endpoints/partners";
 import { formatDate } from "@/app/_lib/utils/format";
 
 export default function DocumentsSettingsPage() {
@@ -35,17 +35,14 @@ export default function DocumentsSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Simulated file upload for now
     setUploading(true);
     try {
-      // Create a dummy URL (in reality, you upload to a storage bucket first, get URL, then send to backend)
-      const mockUrl = URL.createObjectURL(file);
-      await uploadDocument({ name: file.name, type: selectedType, url: mockUrl }, null);
+      await uploadDocumentFile(file, selectedType, null);
       toast.success("Hujjat yuklandi va tasdiqlash uchun yuborildi");
       const data = await listDocuments(null);
       setDocuments(data);
-    } catch {
-      toast.error("Hujjat yuklashda xatolik");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Hujjat yuklashda xatolik");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -159,13 +156,13 @@ export default function DocumentsSettingsPage() {
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                           <CheckCircle2 size={14} /> Tasdiqlangan
                         </span>
-                      ) : doc.status === 'pending' ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-                          <Clock size={14} /> Kutilmoqda
-                        </span>
-                      ) : (
+                      ) : doc.status === 'rejected' ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400">
                           <AlertCircle size={14} /> Rad etilgan
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+                          <Clock size={14} /> Ko'rib chiqilmoqda
                         </span>
                       )}
                     </td>

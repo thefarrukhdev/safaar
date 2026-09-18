@@ -37,6 +37,11 @@ export class CatalogController {
     return this.catalogService.popularCities();
   }
 
+  @Get('destinations')
+  destinations() {
+    return this.catalogService.destinations();
+  }
+
   @Get('partners-showcase')
   partnersShowcase() {
     return this.catalogService.partnersShowcase();
@@ -58,6 +63,11 @@ export class CatalogController {
     @Query('check_out') checkOut?: string,
   ) {
     return this.catalogService.transports(checkIn, checkOut);
+  }
+
+  @Get('transports/:id')
+  transport(@Param('id') id: string) {
+    return this.catalogService.transport(id);
   }
 }
 

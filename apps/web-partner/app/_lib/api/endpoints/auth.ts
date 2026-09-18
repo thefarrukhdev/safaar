@@ -41,6 +41,14 @@ export function verifyOtp(dto: VerifyOtpDto): Promise<AuthTokens> {
 export interface PartnerLoginResponse extends AuthTokens {
   organization_id: string;
   organizationId?: string;
+  /** `partner_organizations.type` — authoritative source for partner-type
+   * UI branching (room/bed/table/vehicle management etc). Backend:
+   * `issuePartnerTokensByPhone` (auth.service.ts), same helper behind
+   * every partner login path (OTP verify, phone-login, password-login,
+   * set-password), so this is populated consistently regardless of which
+   * one was used. */
+  organization_type?: string;
+  organizationType?: string;
   partner_role: string;
 }
 
@@ -53,6 +61,16 @@ export function partnerPhoneLogin(
   return request<PartnerPhoneLoginResponse>('/auth/partner/phone-login', {
     method: 'POST',
     body: { phone },
+  });
+}
+
+export function partnerLogin(
+  email: string,
+  password?: string,
+): Promise<PartnerLoginResponse> {
+  return request<PartnerLoginResponse>('/auth/partner/login', {
+    method: 'POST',
+    body: { email, password },
   });
 }
 

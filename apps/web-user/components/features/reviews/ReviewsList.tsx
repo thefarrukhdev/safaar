@@ -108,6 +108,20 @@ export function ReviewsList({
         ).toFixed(1)
       : "0.0";
 
+  // Real per-category breakdown (reviews.cleanliness/staff/location/value_for_money —
+  // hozircha ixtiyoriy maydonlar, shuning uchun faqat kamida bitta haqiqiy
+  // bahoga ega kategoriyalar ko'rsatiladi; hech kim baholamagan kategoriya
+  // butunlay yashiriladi, 0/fake qiymat ko'rsatilmaydi).
+  const CATEGORY_KEYS = ["cleanliness", "staff", "location", "valueForMoney"] as const;
+  const categoryBreakdown = CATEGORY_KEYS.map((key) => {
+    const values = reviewsList
+      .map((r) => r[key])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    if (values.length === 0) return null;
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    return { key, avg };
+  }).filter((entry): entry is { key: (typeof CATEGORY_KEYS)[number]; avg: number } => entry !== null);
+
   return (
     <div className="flex flex-col gap-8">
       {/* Header Summary & Rating Breakdown */}
@@ -126,30 +140,27 @@ export function ReviewsList({
           </div>
         </div>
 
-        {/* Right Side: Breakdown (Mocked) */}
-        <div className="flex-1 max-w-md w-full flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-900 w-24">Cleanliness</span>
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-slate-900 rounded-full" style={{ width: '98%' }}></div>
-            </div>
-            <span className="text-sm font-bold text-slate-900 w-8 text-right">4.9</span>
+        {/* Right Side: Real per-category breakdown (reviews.cleanliness/staff/location/value_for_money) */}
+        {categoryBreakdown.length > 0 && (
+          <div className="flex-1 max-w-md w-full flex flex-col gap-4">
+            {categoryBreakdown.map(({ key, avg }) => (
+              <div key={key} className="flex items-center gap-4">
+                <span className="text-sm font-medium text-slate-900 w-24">
+                  {dict.categories?.[key] ?? key}
+                </span>
+                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-slate-900 rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(0, (avg / 5) * 100))}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-bold text-slate-900 w-8 text-right">
+                  {avg.toFixed(1)}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-900 w-24">Location</span>
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-slate-900 rounded-full" style={{ width: '100%' }}></div>
-            </div>
-            <span className="text-sm font-bold text-slate-900 w-8 text-right">5.0</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-900 w-24">Service</span>
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-slate-900 rounded-full" style={{ width: '96%' }}></div>
-            </div>
-            <span className="text-sm font-bold text-slate-900 w-8 text-right">4.8</span>
-          </div>
-        </div>
+        )}
 
         {authed && hotelId && !isFormOpen && (
           <Button onClick={() => setIsFormOpen(true)} variant="secondary" className="border-slate-200 text-slate-900">

@@ -554,14 +554,7 @@ export interface AdminSeo {
   updatedAt: string;
 }
 
-export interface AdminBanner {
-  id: string;
-  title: string;
-  imageUrl: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
+// Removed AdminBanner as we use CmsBanner now
 export interface TicketMessage {
   id: string;
   ticketId: string;

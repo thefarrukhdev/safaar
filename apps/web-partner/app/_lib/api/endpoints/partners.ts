@@ -590,17 +590,131 @@ export interface PartnerDocument {
   id: string;
   name: string;
   type: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'uploaded';
   url: string;
   uploaded_at: string;
 }
 
-export function listDocuments(token?: string | null) {
-  return request<PartnerDocument[]>('/partner/documents', { token });
+// Backend (`partners.service.ts#documents`) `file_name`/`file_url`/
+// `created_at` qaytaradi (media_files bilan JOIN orqali) — `name`/`url`/
+// `uploaded_at` EMAS. Shu mos kelmaslik sabab ro'yxat har doim bo'sh
+// nom/sana ko'rsatar edi (blob: URL bugidan MUSTAQIL, alohida bug).
+interface RawPartnerDocument {
+  id: string;
+  type: string;
+  status: string;
+  file_name?: string | null;
+  file_url?: string | null;
+  created_at: string;
 }
 
-export function uploadDocument(body: Record<string, unknown>, token?: string | null) {
-  return request<PartnerDocument>('/partner/documents', { method: 'POST', body, token });
+export async function listDocuments(token?: string | null): Promise<PartnerDocument[]> {
+  const rows = await request<RawPartnerDocument[]>('/partner/documents', { token });
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.file_name ?? '',
+    type: row.type,
+    status: (row.status as PartnerDocument['status']) ?? 'uploaded',
+    url: row.file_url ?? '',
+    uploaded_at: row.created_at,
+  }));
+}
+
+/**
+ * `POST /partner/documents` (`partnersService.addDocument`) `file_id`ni
+ * talab qiladi — `name`/`url` emas (backend ularni o'qimaydi ham). Fayl
+ * o'zi avval umumiy uploads tizimida (`media_files`) ro'yxatdan
+ * o'tkazilishi shart, shundan keyingina uning `id`si shu yerga yuboriladi.
+ */
+async function addPartnerDocument(
+  fileId: string,
+  type: string,
+  token?: string | null,
+): Promise<PartnerDocument> {
+  const raw = await request<RawPartnerDocument>('/partner/documents', {
+    method: 'POST',
+    body: { file_id: fileId, type },
+    token,
+  });
+  return {
+    id: raw.id,
+    name: raw.file_name ?? '',
+    type: raw.type,
+    status: (raw.status as PartnerDocument['status']) ?? 'uploaded',
+    url: raw.file_url ?? '',
+    uploaded_at: raw.created_at,
+  };
+}
+
+interface PresignUploadResult {
+  upload_url: string;
+  method: string;
+  headers?: Record<string, string>;
+  url?: string;
+  mime_type: string;
+  filename: string;
+}
+
+function presignUpload(
+  input: { type: 'image' | 'document'; mimeType: string; size: number; filename: string },
+  token?: string | null,
+) {
+  return request<PresignUploadResult>('/uploads/presign', {
+    method: 'POST',
+    body: {
+      type: input.type,
+      mime_type: input.mimeType,
+      size: input.size,
+      filename: input.filename,
+    },
+    token,
+  });
+}
+
+/**
+ * Hujjat (litsenziya/pasport/soliq guvohnomasi) yuklash — real, doimiy
+ * saqlash bilan: `/uploads/documents` (image'lardan farqli) to'g'ridan-
+ * to'g'ri multipart qabul qilmaydi, shuning uchun avval presign orqali
+ * haqiqiy yuklash URL olinadi, fayl saqlash xizmatiga to'g'ridan-to'g'ri
+ * yuboriladi, so'ng natija backend media-jadvalida ro'yxatga olinadi va
+ * OXIRIDA hamkor hujjatiga bog'lanadi. `URL.createObjectURL` (avvalgi
+ * bug) faqat yuklovchining o'z brauzer sessiyasida ishlaydi — bu yerda
+ * hech qanday shunday vaqtinchalik URL SAQLANMAYDI.
+ */
+export async function uploadDocumentFile(
+  file: File,
+  type: string,
+  token?: string | null,
+): Promise<PartnerDocument> {
+  const presigned = await presignUpload(
+    { type: 'document', mimeType: file.type, size: file.size, filename: file.name },
+    token,
+  );
+
+  const putResponse = await fetch(presigned.upload_url, {
+    method: presigned.method || 'PUT',
+    headers: presigned.headers,
+    body: file,
+  });
+  if (!putResponse.ok) {
+    throw new Error("Faylni saqlash xizmatiga yuklab bo'lmadi");
+  }
+  if (!presigned.url) {
+    throw new Error("Yuklangan fayl manzili aniqlanmadi");
+  }
+
+  const media = await request<{ id: string }>('/uploads/documents', {
+    method: 'POST',
+    body: {
+      url: presigned.url,
+      mime_type: presigned.mime_type,
+      size: file.size,
+      caption: file.name,
+    },
+    token,
+  });
+
+  return addPartnerDocument(media.id, type, token);
 }
 
 // DEVELOPER API KEYS & WEBHOOKS

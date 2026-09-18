@@ -51,15 +51,22 @@ export function useListing() {
 /** E'lon to'ldirilganligini tekshirish. */
 export function useListingCompleteness() {
   const { data: listing } = useListing();
+  const type = useAuthStore((s) => s.user?.partnerType);
+  const isBus = type === 'bus' || type === 'rent_car';
+
   const missing: string[] = [];
   if (listing.name.trim().length < 3) missing.push('Nomi juda qisqa');
   if (listing.shortDescription.trim().length < 20)
     missing.push("Qisqa tavsif to'ldirilmagan (min 20 belgi)");
   if (listing.fullDescription.trim().length < 100)
     missing.push('Batafsil tavsif juda qisqa (min 100 belgi)');
-  if (listing.photos.length < 3) missing.push('Kamida 3 ta rasm kerak');
-  if (listing.amenities.length < 3)
-    missing.push('Kamida 3 ta qulaylik belgilash');
+    
+  if (!isBus) {
+    if (listing.photos.length < 3) missing.push('Kamida 3 ta rasm kerak');
+    if (listing.amenities.length < 3)
+      missing.push('Kamida 3 ta qulaylik belgilash');
+  }
+  
   if (!listing.address.trim()) missing.push('Manzil kiritilmagan');
   if (
     typeof listing.latitude !== 'number' ||

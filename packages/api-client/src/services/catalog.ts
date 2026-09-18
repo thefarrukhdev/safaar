@@ -85,6 +85,28 @@ export interface TransportCatalogView {
   phone: string;
 }
 
+export interface TransportDetailView {
+  id: string;
+  name: string;
+  cityName: string;
+  categoryKey: string;
+  categoryDefault: string;
+  seats: number;
+  hasDriver: boolean;
+  fuelType: string;
+  transmission: string;
+  hasAc: boolean;
+  luggageCapacityBags: number | null;
+  plateNumber: string | null;
+  pricePerDaySum: number;
+  companyName: string;
+  rating: number;
+  reviewsCount: number;
+  phone: string;
+  imageUrl: string;
+  images: string[];
+}
+
 type Localized = Partial<Record<Locale, string>> & Record<string, string>;
 type LocalizedValue = Localized | string | undefined;
 
@@ -181,18 +203,22 @@ export const catalogService = {
     return fetchCatalog("/catalog/amenities", locale);
   },
 
-  /** `GET /catalog/popular-cities` — bosh sahifa uchun mashhur shaharlar. */
+  /** `GET /catalog/destinations` — bosh sahifa uchun mashhur shaharlar (CMS Destinations). */
   async getPopularCities(locale: Locale): Promise<PopularCityView[]> {
-    const raw = await rawApi.get<unknown>("/catalog/popular-cities");
-    const items = camelizeKeys<RawPopularCity[]>(raw);
-    return (items ?? []).map((item) => ({
-      id: item.id,
-      name: pickLocale(item.name, locale),
-      slug: item.slug ?? "",
-      imageUrl: item.imageUrl ?? "",
-      hotelCount: item.hotelCount ?? 0,
-      sortOrder: item.sortOrder ?? 0,
-    }));
+    const raw = await rawApi.get<unknown>("/catalog/destinations");
+    const items = camelizeKeys<any[]>(raw);
+    return (items ?? []).map((item) => {
+      const title = item.title ?? {};
+      const metadata = item.metadata ?? {};
+      return {
+        id: item.id,
+        name: pickLocale(title, locale) || item.slug || "",
+        slug: item.slug ?? "",
+        imageUrl: metadata.imageUrl ?? metadata.image_url ?? "",
+        hotelCount: 0, // No longer directly available in CMS entries, but we can mock it or UI can hide it.
+        sortOrder: metadata.order ?? metadata.sortOrder ?? metadata.sort_order ?? 0,
+      };
+    });
   },
 
   /** `GET /catalog/partners-showcase` — bosh sahifa uchun hamkor logolari. */
@@ -310,5 +336,34 @@ export const catalogService = {
       imageUrl: item.imageUrl ?? "",
       phone: item.phone ?? "",
     }));
+  },
+
+  async getTransport(id: string, locale: Locale): Promise<TransportDetailView> {
+    const raw = await rawApi.get<unknown>(`/catalog/transports/${encodeURIComponent(id)}`, {
+      cache: "no-store",
+    } as any);
+    const item = camelizeKeys<any>(raw);
+    return {
+      id: item.id,
+      name: item.name ?? "",
+      cityName: pickLocale(item.cityName, locale),
+      categoryKey: item.categoryKey ?? "",
+      categoryDefault: item.categoryDefault ?? "",
+      seats: Number(item.seats ?? 0),
+      hasDriver: Boolean(item.hasDriver),
+      fuelType: item.fuelType ?? "",
+      transmission: item.transmission ?? "",
+      hasAc: Boolean(item.hasAc),
+      luggageCapacityBags:
+        item.luggageCapacityBags == null ? null : Number(item.luggageCapacityBags),
+      plateNumber: item.plateNumber ?? null,
+      pricePerDaySum: Number(item.pricePerDay ?? 0),
+      companyName: item.companyName ?? "",
+      rating: Number(item.rating ?? 0),
+      reviewsCount: Number(item.reviewsCount ?? 0),
+      phone: item.phone ?? "",
+      imageUrl: item.imageUrl ?? "",
+      images: Array.isArray(item.images) ? item.images : [],
+    };
   },
 };

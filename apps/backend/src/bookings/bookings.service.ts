@@ -1585,6 +1585,55 @@ export class BookingsService {
    * o'zi muvaffaqiyatli qolishi kerak), shuning uchun chaqiruvchi tomonda
    * `await`siz, xatosi yutilgan holda ishlatiladi.
    */
+  /**
+   * Admin `cms/templates` panelida `code='booking_confirmation_email'`
+   * bilan yaratib faollashtirilgan shablon bo'lsa — shu matn ishlatiladi
+   * ({bookingNumber}/{guestName}/{totalAmount}/{currency} joylashtiriladi).
+   * Topilmasa/faol bo'lmasa — pastdagi standart matn ishlatiladi (xulq-atvor
+   * o'zgarmaydi). OTP SMS/email'lardan farqli — bu xabar provayderda
+   * tasdiqlangan shablonga bog'liq EMAS (oddiy SMTP/Resend), shuning uchun
+   * CMS orqali tahrirlash xavfsiz.
+   */
+  private async resolveCmsEmailTemplate(
+    code: string,
+  ): Promise<{ subject: string; body: string } | null> {
+    try {
+      const [row] = await this.pg.query<{
+        body: unknown;
+        metadata: unknown;
+      }>(
+        `SELECT body, metadata FROM cms_entries
+         WHERE type = 'template' AND metadata ->> 'code' = $1
+           AND status IN ('published', 'active')
+         LIMIT 1`,
+        [code],
+      );
+      if (!row) return null;
+
+      const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+      const subject =
+        typeof metadata.subject === 'string' ? metadata.subject.trim() : '';
+      const rawBody = row.body as Record<string, unknown> | string | null;
+      const body =
+        typeof rawBody === 'string' ? rawBody : String(rawBody?.uz ?? '');
+
+      if (!subject || !body.trim()) return null;
+      return { subject, body };
+    } catch {
+      return null;
+    }
+  }
+
+  private renderCmsTemplate(
+    text: string,
+    vars: Record<string, string>,
+  ): string {
+    return text.replace(
+      /\{(\w+)\}/g,
+      (match, key: string) => vars[key] ?? match,
+    );
+  }
+
   private async sendBookingConfirmationEmail(booking: {
     id: string;
     booking_number: string;
@@ -1598,13 +1647,30 @@ export class BookingsService {
       return;
     }
 
+    const vars = {
+      bookingNumber: booking.booking_number,
+      guestName: booking.guest_name ?? '',
+      totalAmount: String(booking.total_amount),
+      currency: booking.currency,
+    };
+    const fallbackSubject = `Safaar — bron tasdiqlandi (${booking.booking_number})`;
+    const fallbackText = `Assalomu alaykum${booking.guest_name ? ', ' + booking.guest_name : ''}!\n\nBroningiz qabul qilindi.\nBron raqami: ${booking.booking_number}\nSumma: ${booking.total_amount} ${booking.currency}\n\nBronni keyinchalik tekshirish uchun saytda "Bronni topish" bo'limida bron raqami va shu email manzilingizni kiriting.`;
+
+    const template = await this.resolveCmsEmailTemplate(
+      'booking_confirmation_email',
+    );
+    const subject = template
+      ? this.renderCmsTemplate(template.subject, vars)
+      : fallbackSubject;
+    const text = template
+      ? this.renderCmsTemplate(template.body, vars)
+      : fallbackText;
+    const html = template
+      ? `<p>${text.replace(/\n/g, '<br/>')}</p>`
+      : `<p>Assalomu alaykum${booking.guest_name ? ', ' + booking.guest_name : ''}!</p><p>Broningiz qabul qilindi.</p><p><b>Bron raqami:</b> ${booking.booking_number}<br/><b>Summa:</b> ${booking.total_amount} ${booking.currency}</p><p>Bronni keyinchalik tekshirish uchun saytda "Bronni topish" bo'limida bron raqami va shu email manzilingizni kiriting.</p>`;
+
     try {
-      await this.emailService.send({
-        to,
-        subject: `Safaar — bron tasdiqlandi (${booking.booking_number})`,
-        text: `Assalomu alaykum${booking.guest_name ? ', ' + booking.guest_name : ''}!\n\nBroningiz qabul qilindi.\nBron raqami: ${booking.booking_number}\nSumma: ${booking.total_amount} ${booking.currency}\n\nBronni keyinchalik tekshirish uchun saytda "Bronni topish" bo'limida bron raqami va shu email manzilingizni kiriting.`,
-        html: `<p>Assalomu alaykum${booking.guest_name ? ', ' + booking.guest_name : ''}!</p><p>Broningiz qabul qilindi.</p><p><b>Bron raqami:</b> ${booking.booking_number}<br/><b>Summa:</b> ${booking.total_amount} ${booking.currency}</p><p>Bronni keyinchalik tekshirish uchun saytda "Bronni topish" bo'limida bron raqami va shu email manzilingizni kiriting.</p>`,
-      });
+      await this.emailService.send({ to, subject, text, html });
     } catch (error) {
       this.logger.warn(
         `Booking tasdiqlash emaili yuborilmadi (booking_id=${booking.id}): ${

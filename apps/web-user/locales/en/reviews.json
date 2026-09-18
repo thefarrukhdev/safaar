@@ -1,5 +1,12 @@
 {
   "title": "Reviews",
   "empty": "No reviews yet. Be the first to share your feedback!",
-  "anonymous": "User"
+  "anonymous": "User",
+  "writeReview": "Write a review",
+  "categories": {
+    "cleanliness": "Cleanliness",
+    "staff": "Service",
+    "location": "Location",
+    "valueForMoney": "Value for money"
+  }
 }

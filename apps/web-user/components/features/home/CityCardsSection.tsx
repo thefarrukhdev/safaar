@@ -46,7 +46,7 @@ export async function CityCardsSection({
 
   const galleryItems = cities.map((city) => ({
     image: city.image,
-    label: `${city.name} • ${city.hotelCount} ${dict.hotels}`,
+    label: Number(city.hotelCount) > 0 ? `${city.name} • ${city.hotelCount} ${dict.hotels}` : city.name,
     link: city.href,
     alt: city.name,
   }));

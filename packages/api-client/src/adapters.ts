@@ -252,6 +252,14 @@ interface RawReview {
   avatarUrl?: string;
   photos?: unknown;
   isVerifiedGuest?: boolean;
+  cleanliness?: number | null;
+  staff?: number | null;
+  location?: number | null;
+  valueForMoney?: number | null;
+}
+
+function optionalRating(value: number | null | undefined): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 export function toReviewView(raw: RawReview): ReviewView {
@@ -272,6 +280,10 @@ export function toReviewView(raw: RawReview): ReviewView {
     ...(raw.avatarUrl ? { avatarUrl: raw.avatarUrl } : {}),
     ...(photos && photos.length > 0 ? { photos } : {}),
     ...(raw.isVerifiedGuest === true ? { isVerifiedGuest: true } : {}),
+    ...(optionalRating(raw.cleanliness) !== undefined ? { cleanliness: optionalRating(raw.cleanliness) } : {}),
+    ...(optionalRating(raw.staff) !== undefined ? { staff: optionalRating(raw.staff) } : {}),
+    ...(optionalRating(raw.location) !== undefined ? { location: optionalRating(raw.location) } : {}),
+    ...(optionalRating(raw.valueForMoney) !== undefined ? { valueForMoney: optionalRating(raw.valueForMoney) } : {}),
   };
 }
 

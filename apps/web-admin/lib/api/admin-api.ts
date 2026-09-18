@@ -32,7 +32,6 @@ import {
   AdminReview,
   AdminTranslation,
   AdminSeo,
-  AdminBanner,
   CmsDestination,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
@@ -642,6 +641,31 @@ function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
   };
 }
 
+function toCmsDestination(row: ApiRecord): CmsDestination {
+  const metadata = asRecord(row.metadata);
+  const title = asRecord(row.title);
+  return {
+    id: asString(row.id),
+    city: asString(title.uz ?? title.ru ?? title.en ?? ''),
+    imageUrl: asString(metadata.imageUrl ?? metadata.image_url),
+    sortOrder: asNumber(metadata.order ?? metadata.sortOrder ?? metadata.sort_order, 0),
+    isActive: row.status === 'published' || row.status === 'active',
+    createdAt: asString(row.created_at ?? row.createdAt, new Date().toISOString()),
+  };
+}
+
+function cmsDestinationPayload(dest: Partial<CmsDestination>) {
+  return {
+    slug: typeof dest.city === 'string' ? dest.city.toLowerCase().replace(/[^a-z0-9]+/gi, '-') : undefined,
+    title: typeof dest.city === 'string' ? { uz: dest.city } : undefined,
+    status: dest.isActive !== undefined ? (dest.isActive ? 'published' : 'draft') : undefined,
+    metadata: {
+      imageUrl: dest.imageUrl,
+      order: dest.sortOrder,
+    }
+  };
+}
+
 function toWithdrawal(row: ApiRecord): WithdrawalRequest {
   return {
     id: asString(row.id),
@@ -933,17 +957,26 @@ function toTicketMessage(row: ApiRecord): TicketMessage {
     id: asString(row.id),
     ticketId: asString(row.ticketId ?? row.ticket_id),
     senderName: asString(row.senderName ?? row.sender_name, 'Foydalanuvchi'),
-    senderRole:
-      row.sender_type === 'admin' || row.senderRole === 'admin'
-        ? 'admin'
-        : 'customer',
+    senderRole: row.sender_type === 'admin' || row.senderRole === 'admin' ? 'admin' : 'customer',
     message: asString(row.message ?? row.body),
-    createdAt: asString(
-      row.createdAt ?? row.created_at,
-      new Date().toISOString(),
-    ),
+    createdAt: asString(row.createdAt ?? row.created_at, new Date().toISOString()),
   };
 }
+
+function toAdminReview(row: ApiRecord, index: number): AdminReview {
+  return {
+    id: asString(row.id, `rev-${index}`),
+    hotelId: asString(row.target_id),
+    hotelName: asString(row.target_name),
+    userId: asString(row.user_id),
+    userName: asString(row.user_name),
+    rating: asNumber(row.rating),
+    comment: asString(row.body),
+    status: (['published', 'hidden', 'spam'].includes(String(row.status)) ? String(row.status) : 'hidden') as AdminReview['status'],
+    createdAt: asString(row.created_at),
+  };
+}
+
 
 function cmsBannerPayload(banner: Omit<CmsBanner, 'id'> | Partial<CmsBanner>) {
   return {
@@ -961,6 +994,18 @@ function cmsBannerPayload(banner: Omit<CmsBanner, 'id'> | Partial<CmsBanner>) {
 }
 
 export const AdminApi = {
+  // Media Upload
+  uploadMedia: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<{ url: string }>('/uploads/images', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
+  },
+  
   // Auth
   login: async (username: string, password: string) => {
     const { data } = await apiClient.post('/auth/admin/login', {
@@ -1548,6 +1593,19 @@ export const AdminApi = {
     );
   },
 
+  // Uploads — real backend media store (Cloudflare R2 / local fallback,
+  // apps/backend/src/uploads/), the same endpoint web-partner already
+  // uses (see app/_lib/api/endpoints/partners.ts uploadImage). Content-Type
+  // is unset so the browser fills in the multipart boundary itself.
+  uploadImage: async (file: File): Promise<{ id: string; url: string }> => {
+    const formData = new FormData();
+    formData.set('file', file);
+    const { data } = await apiClient.post('/uploads/images', formData, {
+      headers: { 'Content-Type': undefined },
+    });
+    return { id: asString(data.id), url: asString(data.url) };
+  },
+
   // CMS
   getCmsBanners: async (): Promise<CmsBanner[]> => {
     const { data } = await apiClient.get('/admin/cms/banners');
@@ -1557,9 +1615,79 @@ export const AdminApi = {
     const { data } = await apiClient.get('/admin/cms/news');
     return unknownItems(data).map((row) => toCmsArticle(asRecord(row), 'news'));
   },
+  createCmsNews: async (news: Omit<CmsArticle, 'id'>): Promise<CmsArticle> => {
+    const payload = {
+      slug: news.slug,
+      status: news.status,
+      title: { uz: news.title, ru: news.title, en: news.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: news.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/news', payload);
+    return toCmsArticle(asRecord(data), 'news');
+  },
+  updateCmsNews: async (
+    id: string,
+    news: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (news.slug !== undefined) payload.slug = news.slug;
+    if (news.status !== undefined) payload.status = news.status;
+    if (news.title !== undefined) payload.title = { uz: news.title, ru: news.title, en: news.title };
+    if (news.metadata !== undefined) payload.metadata = news.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/news/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'news');
+  },
+  deleteCmsNews: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/news/${id}`);
+  },
+  setCmsNewsStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/news/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'news');
+  },
   getCmsPages: async (): Promise<CmsArticle[]> => {
     const { data } = await apiClient.get('/admin/cms/pages');
     return unknownItems(data).map((row) => toCmsArticle(asRecord(row), 'page'));
+  },
+  createCmsPage: async (pageItem: Omit<CmsArticle, 'id'>): Promise<CmsArticle> => {
+    const payload = {
+      slug: pageItem.slug,
+      status: pageItem.status,
+      title: { uz: pageItem.title, ru: pageItem.title, en: pageItem.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: pageItem.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/pages', payload);
+    return toCmsArticle(asRecord(data), 'page');
+  },
+  updateCmsPage: async (
+    id: string,
+    pageItem: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (pageItem.slug !== undefined) payload.slug = pageItem.slug;
+    if (pageItem.status !== undefined) payload.status = pageItem.status;
+    if (pageItem.title !== undefined) payload.title = { uz: pageItem.title, ru: pageItem.title, en: pageItem.title };
+    if (pageItem.metadata !== undefined) payload.metadata = pageItem.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/pages/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'page');
+  },
+  deleteCmsPage: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/pages/${id}`);
+  },
+  setCmsPageStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/pages/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'page');
   },
   getCmsOffers: async (): Promise<CmsArticle[]> => {
     const { data } = await apiClient.get('/admin/cms/offers');
@@ -1605,33 +1733,30 @@ export const AdminApi = {
     return toCmsArticle(asRecord(data), 'offer');
   },
 
-  // Destinations (Mashhur yo'nalishlar) Mocks
+  // Destinations (Mashhur yo'nalishlar)
   getCmsDestinations: async (): Promise<CmsDestination[]> => {
-    return [
-      { id: "1", city: "Toshkent", imageUrl: "/images/destinations/tashkent.jpg", sortOrder: 1, isActive: true, createdAt: new Date().toISOString() },
-      { id: "2", city: "Samarqand", imageUrl: "/images/destinations/samarkand.jpg", sortOrder: 2, isActive: true, createdAt: new Date().toISOString() },
-      { id: "3", city: "Buxoro", imageUrl: "/images/destinations/bukhara.jpg", sortOrder: 3, isActive: true, createdAt: new Date().toISOString() },
-    ] as any;
+    const { data } = await apiClient.get('/admin/cms/destinations');
+    return unknownItems(data).map((item) => toCmsDestination(asRecord(item)));
   },
 
   createCmsDestination: async (payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    console.log("Mock createCmsDestination", payload);
-    return { ...payload, id: Date.now().toString(), createdAt: new Date().toISOString() } as CmsDestination;
+    const { data } = await apiClient.post('/admin/cms/destinations', cmsDestinationPayload(payload));
+    return toCmsDestination(asRecord(data));
   },
 
   updateCmsDestination: async (id: string, payload: Partial<CmsDestination>): Promise<CmsDestination> => {
-    console.log("Mock updateCmsDestination", id, payload);
-    return { ...payload, id, createdAt: new Date().toISOString() } as CmsDestination;
+    const { data } = await apiClient.patch(`/admin/cms/destinations/${id}`, cmsDestinationPayload(payload));
+    return toCmsDestination(asRecord(data));
   },
 
   deleteCmsDestination: async (id: string): Promise<void> => {
-    console.log("Mock deleteCmsDestination", id);
-    return Promise.resolve();
+    await apiClient.delete(`/admin/cms/destinations/${id}`);
   },
 
   setCmsDestinationStatus: async (id: string, isActive: boolean): Promise<CmsDestination> => {
-    console.log("Mock setCmsDestinationStatus", id, isActive);
-    return { id, isActive, city: "Mock City", imageUrl: "", sortOrder: 1, createdAt: new Date().toISOString() } as CmsDestination;
+    const action = isActive ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/destinations/${id}/${action}`);
+    return toCmsDestination(asRecord(data));
   },
   createCmsBanner: async (
     banner: Omit<CmsBanner, 'id'>,
@@ -1816,64 +1941,45 @@ export const AdminApi = {
   },
 
   updateListing: async (id: string, payload: Partial<AdminListing>): Promise<AdminListing> => {
-    // Mock
-    console.log(`Mock: Updated listing ${id}`, payload);
-    return Promise.resolve({ id, ...payload } as AdminListing);
+    const { data } = await apiClient.patch(`/admin/hotels/${id}`, payload);
+    return toListing(asRecord(data));
   },
-
   toggleListingFeatured: async (id: string, featured: boolean) => {
-    console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
-    return Promise.resolve({ success: true, featured });
+    const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
+    return data;
   },
 
-  blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
-    // Mock for blocking dates
-    console.log(`Mock: Blocked dates for listing ${id}`, payload);
+  reorderFeaturedListings: async (orderedIds: string[]) => {
+    // Mock for reordering featured listings
+    console.log(`Mock: Reordered featured listings:`, orderedIds);
     return Promise.resolve({ success: true });
   },
 
+  blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
+    const { data } = await apiClient.post(`/admin/hotels/${id}/blocked-dates`, payload);
+    return data;
+  },
+
   // ────────────────────────────────────────────────────────────────────────
-  // REVIEWS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
+  // REVIEWS
   // ────────────────────────────────────────────────────────────────────────
 
   getReviews: async (): Promise<AdminReview[]> => {
-    // Vaqtincha mock (qotirilgan) ma'lumotlar qaytaramiz
-    return [
-      {
-        id: 'rev-1',
-        hotelId: 'h-1',
-        hotelName: 'Hilton Tashkent',
-        userId: 'u-1',
-        userName: 'Alisher Navoiy',
-        rating: 5,
-        comment: "Ajoyib xizmat! Nonushta juda mazzali edi.",
-        status: 'published',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'rev-2',
-        hotelId: 'h-2',
-        hotelName: 'Hyatt Regency',
-        userId: 'u-2',
-        userName: 'Spam User',
-        rating: 1,
-        comment: "Buy here cheap rolex watches http://spam.com",
-        status: 'spam',
-        createdAt: new Date().toISOString()
-      }
-    ];
+    const { data } = await apiClient.get('/admin/reviews');
+    return unknownItems(data).map((row, i) => toAdminReview(asRecord(row), i));
   },
 
   updateReviewStatus: async (id: string, status: AdminReview['status']): Promise<void> => {
-    // Mock
-    console.log(`Mock: Updated review ${id} to ${status}`);
-    return Promise.resolve();
+    if (status === 'published') {
+      await apiClient.post(`/admin/reviews/${id}/publish`);
+    } else {
+      await apiClient.post(`/admin/reviews/${id}/hide`);
+    }
   },
 
   deleteReview: async (id: string): Promise<void> => {
-    // Mock
-    console.log(`Mock: Deleted review ${id}`);
-    return Promise.resolve();
+    // Backend doesn't have physical delete, we use hide
+    await apiClient.post(`/admin/reviews/${id}/hide`);
   },
 
   // ────────────────────────────────────────────────────────────────────────
@@ -1919,41 +2025,4 @@ export const AdminApi = {
     return Promise.resolve({ id, path: '/', title: 'mock', description: 'mock', keywords: 'mock', updatedAt: new Date().toISOString(), ...payload });
   },
 
-  // ────────────────────────────────────────────────────────────────────────
-  // BANNERS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
-  // ────────────────────────────────────────────────────────────────────────
-
-  getBanners: async (): Promise<AdminBanner[]> => {
-    return [
-      {
-        id: 'banner-1',
-        title: 'Asosiy sahifa - Registon maydoni',
-        imageUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=2952&auto=format&fit=crop',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'banner-2',
-        title: 'Qishki takliflar - Amirsoy',
-        imageUrl: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=2940&auto=format&fit=crop',
-        isActive: false,
-        createdAt: new Date().toISOString()
-      }
-    ];
-  },
-
-  createBanner: async (payload: Omit<AdminBanner, 'id' | 'createdAt'>): Promise<AdminBanner> => {
-    // Mock
-    return Promise.resolve({ id: `banner-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
-  },
-
-  updateBanner: async (id: string, payload: Partial<AdminBanner>): Promise<AdminBanner> => {
-    // Mock
-    return Promise.resolve({ id, title: 'mock', imageUrl: 'mock', isActive: true, createdAt: new Date().toISOString(), ...payload });
-  },
-
-  deleteBanner: async (id: string): Promise<void> => {
-    // Mock
-    return Promise.resolve();
-  },
 };

@@ -1,5 +1,12 @@
 {
   "title": "Отзывы",
   "empty": "Пока нет отзывов. Будьте первым!",
-  "anonymous": "Пользователь"
+  "anonymous": "Пользователь",
+  "writeReview": "Оставить отзыв",
+  "categories": {
+    "cleanliness": "Чистота",
+    "staff": "Обслуживание",
+    "location": "Расположение",
+    "valueForMoney": "Цена/качество"
+  }
 }

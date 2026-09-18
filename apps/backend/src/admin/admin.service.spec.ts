@@ -1684,4 +1684,38 @@ describe('AdminService frontend action endpoints', () => {
       ).rejects.toMatchObject({ status: 404 });
     });
   });
+
+  describe("notificationBroadcastAction (regression: 'send'/'cancel' wrote the literal string 'send' as status, matching neither the UI's nor the CMS's status vocabulary)", () => {
+    it("maps action='send' to status='sending' (matches broadcasts/page.tsx STATUS_LABELS)", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: 'b-1', status: 'sending', updated_at: '2026-09-18T00:00:00Z' },
+      ]);
+
+      const result = await service.notificationBroadcastAction('b-1', 'send');
+
+      expect(pgMock.query.mock.calls[0]?.[1]).toEqual(['b-1', 'sending']);
+      expect(result.status).toBe('sending');
+    });
+
+    it("maps action='cancel' back to status='draft'", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: 'b-1', status: 'draft', updated_at: '2026-09-18T00:00:00Z' },
+      ]);
+
+      const result = await service.notificationBroadcastAction('b-1', 'cancel');
+
+      expect(pgMock.query.mock.calls[0]?.[1]).toEqual(['b-1', 'draft']);
+      expect(result.status).toBe('draft');
+    });
+
+    it('still maps the generic CMS actions (publish/unpublish/archive) unchanged', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: 'b-1', status: 'published', updated_at: '2026-09-18T00:00:00Z' },
+      ]);
+
+      await service.notificationBroadcastAction('b-1', 'publish');
+
+      expect(pgMock.query.mock.calls[0]?.[1]).toEqual(['b-1', 'published']);
+    });
+  });
 });

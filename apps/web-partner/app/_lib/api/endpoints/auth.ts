@@ -56,6 +56,16 @@ export function partnerPhoneLogin(
   });
 }
 
+export function partnerLogin(
+  email: string,
+  password?: string,
+): Promise<PartnerLoginResponse> {
+  return request<PartnerLoginResponse>('/auth/partner/login', {
+    method: 'POST',
+    body: { email, password },
+  });
+}
+
 export function requestPartnerEmailOtp(
   email: string,
 ): Promise<PartnerEmailOtpRequestResponse> {

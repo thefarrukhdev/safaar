@@ -80,9 +80,10 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     href: "/cms",
     icon: "PanelsTopLeft",
     children: [
+      { label: "Mashhur takliflar", href: "/cms/featured-hotels", icon: "Star" },
+      { label: "Chegirmali takliflar", href: "/cms/deals", icon: "Tag" },
       { label: "Bannerlar", href: "/cms/banners", icon: "Image" },
       { label: "Yo'nalishlar", href: "/cms/destinations", icon: "MapPin" },
-      { label: "Chegirmali takliflar", href: "/cms/offers", icon: "Tag" },
       { label: "Yangiliklar", href: "/cms/news", icon: "Newspaper" },
       { label: "Sahifalar", href: "/cms/pages", icon: "FileText" },
       { label: "Tarjimalar", href: "/cms/translations", icon: "ScrollText" },

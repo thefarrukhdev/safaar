@@ -139,23 +139,24 @@ export function usePartnerPhoneOtpVerify() {
   });
 }
 
-export function usePartnerPasswordLogin() {
+export function usePartnerEmailLogin() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      const tokens = await auth.partnerPasswordLogin(phone, password);
+    mutationFn: async ({ email, password }: { email: string; password?: string }) => {
+      const tokens = await auth.partnerLogin(email, password);
       return {
-        phone,
+        email,
         tokens,
         organizationId: tokens.organizationId ?? tokens.organization_id,
         partnerType: tokens.partner_role === 'bus' ? 'bus' : 'hotel',
         isDemo: false,
       };
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
-      const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
+    onSuccess: ({ email, tokens, organizationId, partnerType, isDemo }) => {
+      // Build a session. Use email as identifier instead of phone.
+      const { user } = buildPartnerSession(email, tokens, partnerType, 'email');
       user.organizationId = organizationId;
       setSession(user, tokens);
       if (isDemo) {

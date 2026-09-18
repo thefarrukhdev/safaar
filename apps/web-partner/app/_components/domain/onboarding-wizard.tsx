@@ -7,8 +7,9 @@ import { Dialog } from "../ui/dialog";
 import { CheckCircle2, ArrowRight, Building2, BedDouble, Wallet } from "lucide-react";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useRooms } from "../../_hooks/use-rooms";
+import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
-import { getPartnerLabels } from "../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBuses } from "../../_lib/utils/partner-labels";
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -17,15 +18,18 @@ export function OnboardingWizard() {
   const user = useAuthStore((s) => s.user);
   
   const partnerType = user?.partnerType ?? "hotel";
+  const isBus = hasBuses(partnerType);
   const labels = getPartnerLabels(partnerType);
   
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  const hasRoomTypes = roomTypes.data && roomTypes.data.length > 0;
-  const hasRooms = rooms.data && rooms.data.length > 0;
+  const vehicles = useVehicles();
   
-  const isLoaded = !roomTypes.isLoading && !rooms.isLoading;
+  const hasRoomTypes = isBus ? true : (roomTypes.data && roomTypes.data.length > 0);
+  const hasRooms = isBus ? (vehicles.data && vehicles.data.length > 0) : (rooms.data && rooms.data.length > 0);
+  
+  const isLoaded = isBus ? !vehicles.isLoading : (!roomTypes.isLoading && !rooms.isLoading);
 
   useEffect(() => {
     if (isLoaded && !hasRoomTypes && !hasRooms && !dismissed) {
@@ -111,7 +115,7 @@ export function OnboardingWizard() {
                 <div className="mt-3">
                   <Button onClick={() => { setOpen(false); router.push('/rooms'); }} size="sm" className="gap-2">
                     <BedDouble className="w-4 h-4" />
-                    Xonalarni qo'shish
+                    {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)} qo'shish
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>

@@ -10,7 +10,7 @@ export default function LoginPage() {
           Tizimga Kirish
         </h2>
         <p className="text-sm text-slate-500">
-          Telefon raqamingizni kiriting — SMS orqali tasdiqlash kodini yuboramiz.
+          Email manzil va parolingizni kiritib tizimga kiring.
         </p>
       </div>
 

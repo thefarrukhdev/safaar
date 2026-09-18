@@ -138,6 +138,7 @@ export default async function HomePage({
   ]);
 
   const hotels = [...featuredResult.items];
+  const bannerUrl = banners[0]?.imageUrl || undefined;
 
   const deals: DealItem[] = rawDeals.map((d) => ({
     id: d.id,
@@ -157,7 +158,7 @@ export default async function HomePage({
       {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
       <div className="flex min-h-svh flex-col justify-between">
         <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
-          <Hero dict={dict.hero}>
+          <Hero dict={dict.hero} bannerUrl={bannerUrl}>
             <div className="w-full">
               <section id="search-section" className="bg-transparent pb-4 sm:pb-6">
                 <div className="mx-auto max-w-5xl px-4 sm:px-6">

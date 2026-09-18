@@ -70,8 +70,8 @@ export function HeaderWrapper(props: HeaderProps) {
           </div>
         </div>
       </header>
-      {/* Spacer div to prevent content from hiding under the fixed header */}
-      <div className="h-14 md:h-16 w-full shrink-0 pointer-events-none" />
+      {/* Spacer div to prevent content from hiding under the fixed header. On the home page, we want the transparent header to float over the hero image, so we hide the spacer. */}
+      {!isHome && <div className="h-14 md:h-16 w-full shrink-0 pointer-events-none" />}
     </>
   );
 }

@@ -73,6 +73,46 @@ export default async function AccountFavoritesPage({
         };
         return { favId: fav.id, hotel: item };
       }
+
+      // Restoran/transportning o'z detail sahifasi bor (bu audit
+      // fixidan keyin) — shu sabab ularni ham haqiqiy nom/rasm bilan
+      // to'g'ri sahifaga bog'laymiz, xuddi hotel kabi. Boshqa (masalan
+      // hali detail sahifasi yo'q) target turlari uchun soxta route
+      // YARATILMAYDI — pastdagi bosilmaydigan holatda qoladi.
+      if (fav.targetType === "restaurant") {
+        try {
+          const restaurant = await api.catalog.getRestaurant(fav.targetId, locale);
+          return {
+            favId: fav.id,
+            linked: {
+              href: `/${locale}/restaurants/${fav.targetId}`,
+              name: restaurant.name,
+              subtitle: restaurant.cityName,
+              imageUrl: restaurant.imageUrl,
+            },
+          };
+        } catch {
+          return { favId: fav.id, targetId: fav.targetId, targetType: fav.targetType };
+        }
+      }
+
+      if (fav.targetType === "transport" || fav.targetType === "vehicle") {
+        try {
+          const transport = await api.catalog.getTransport(fav.targetId, locale);
+          return {
+            favId: fav.id,
+            linked: {
+              href: `/${locale}/transport/${fav.targetId}`,
+              name: transport.name,
+              subtitle: transport.cityName,
+              imageUrl: transport.imageUrl,
+            },
+          };
+        } catch {
+          return { favId: fav.id, targetId: fav.targetId, targetType: fav.targetType };
+        }
+      }
+
       return { favId: fav.id, targetId: fav.targetId, targetType: fav.targetType };
     })
   );
@@ -132,6 +172,45 @@ export default async function AccountFavoritesPage({
           );
         }
 
+        if ("linked" in item && item.linked) {
+          const { linked } = item;
+          const imageUrl = resolveImage(linked.imageUrl);
+          return (
+            <Link
+              key={item.favId}
+              href={linked.href}
+              className="group block overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+              <article className="flex h-full overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={linked.name}
+                      fill
+                      sizes="128px"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <span className="flex h-full items-center justify-center text-primary-400">
+                      <Building2 className="h-8 w-8" />
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col justify-center p-3">
+                  <h3 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">
+                    {linked.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{linked.subtitle}</p>
+                </div>
+              </article>
+            </Link>
+          );
+        }
+
+        // Bu target turi uchun hali haqiqiy detail sahifa yo'q (yoki
+        // ma'lumotni olib bo'lmadi) — soxta route yaratmasdan, aniq
+        // (bosilmaydigan) holatda ko'rsatamiz.
         return (
           <Card key={item.favId}>
             <CardBody className="flex items-center gap-3">

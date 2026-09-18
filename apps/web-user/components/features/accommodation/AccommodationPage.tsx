@@ -127,7 +127,7 @@ export async function AccommodationPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
         <Suspense fallback={null}>
-          <HotelFilters dict={{ filters: dict.filters, types: dict.types }} />
+          <HotelFilters dict={{ filters: dict.filters, types: dict.types, starOptions: dict.starOptions, amenityOptions: dict.amenityOptions, paymentOptions: dict.paymentOptions }} />
         </Suspense>
 
         <section aria-label={dict.title}>

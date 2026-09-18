@@ -12,7 +12,7 @@ export function HotelFilters({
   dict,
   sortSelect,
 }: {
-  dict: Pick<HotelsDict, "filters" | "types">;
+  dict: Pick<HotelsDict, "filters" | "types" | "starOptions" | "amenityOptions" | "paymentOptions">;
   sortSelect?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -100,21 +100,21 @@ export function HotelFilters({
       </div>
 
       <FilterSidebar
-        title="FILTRLAR"
+        title={dict.filters.title}
         isOpen={open}
         onClose={() => setOpen(false)}
         onApply={apply}
         onReset={reset}
-        applyLabel="Natijalarni ko'rsatish"
-        resetLabel="Tozalash"
+        applyLabel={dict.filters.apply}
+        resetLabel={dict.filters.reset}
       >
         {/* NARX (1 KECHA) */}
-        <FilterGroup title="NARX (1 KECHA)">
+        <FilterGroup title={dict.filters.pricePerNight}>
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-              <span>0 so'm</span>
+              <span>0 {dict.filters.currency}</span>
               <span className="text-blue-600 dark:text-blue-400 font-extrabold">
-                {priceRange.toLocaleString("fr-FR").replace(/\s/g, " ")} so'm
+                {priceRange.toLocaleString("fr-FR").replace(/\s/g, " ")} {dict.filters.currency}
               </span>
             </div>
             <input
@@ -130,12 +130,12 @@ export function HotelFilters({
         </FilterGroup>
 
         {/* YULDUZLAR */}
-        <FilterGroup title="YULDUZLAR">
+        <FilterGroup title={dict.filters.stars}>
           <div className="flex flex-col gap-2 pt-1">
             {[
-              { val: "5", label: "5 yulduz", starsCount: 5, count: 2 },
-              { val: "4", label: "4 va yuqori", starsCount: 4, count: 3 },
-              { val: "3", label: "3 va yuqori", starsCount: 3, count: 5 },
+              { val: "5", label: dict.starOptions.five, starsCount: 5, count: 2 },
+              { val: "4", label: dict.starOptions.fourPlus, starsCount: 4, count: 3 },
+              { val: "3", label: dict.starOptions.threePlus, starsCount: 3, count: 5 },
             ].map((item) => (
               <label
                 key={item.val}
@@ -166,7 +166,7 @@ export function HotelFilters({
         </FilterGroup>
 
         {/* MAHSULOT TURI */}
-        <FilterGroup title="MAHSULOT TURI">
+        <FilterGroup title={dict.filters.propertyType}>
           <div className="flex flex-col gap-2 pt-1">
             {[
               { id: "hotels", name: dict.types.hotels, count: 4 },
@@ -196,15 +196,15 @@ export function HotelFilters({
         </FilterGroup>
 
         {/* QULAYLIKLAR (AMENITIES) */}
-        <FilterGroup title="QULAYLIKLAR">
+        <FilterGroup title={dict.filters.amenities}>
           <div className="flex flex-col gap-2 pt-1">
             {[
-              { id: "wifi", name: "Wi-Fi" },
-              { id: "pool", name: "Basseyn" },
-              { id: "sauna", name: "Sauna" },
-              { id: "breakfast", name: "Nonushta" },
-              { id: "parking", name: "Avtoturargoh" },
-              { id: "gym", name: "Fitnes zal" },
+              { id: "wifi", name: dict.amenityOptions.wifi },
+              { id: "pool", name: dict.amenityOptions.pool },
+              { id: "sauna", name: dict.amenityOptions.sauna },
+              { id: "breakfast", name: dict.amenityOptions.breakfast },
+              { id: "parking", name: dict.amenityOptions.parking },
+              { id: "gym", name: dict.amenityOptions.gym },
             ].map((amenity) => (
               <label
                 key={amenity.id}
@@ -237,11 +237,11 @@ export function HotelFilters({
         </FilterGroup>
 
         {/* TO'LOV TURI (PAYMENT TYPE) */}
-        <FilterGroup title="TO'LOV TURI">
+        <FilterGroup title={dict.filters.paymentType}>
           <div className="flex flex-col gap-2 pt-1">
             {[
-              { id: "online_payment", name: "Onlayn to'lov (Karta)" },
-              { id: "pay_at_property", name: "Joyida to'lash (Naqd)" },
+              { id: "online_payment", name: dict.paymentOptions.online },
+              { id: "pay_at_property", name: dict.paymentOptions.atProperty },
             ].map((ptype) => (
               <label
                 key={ptype.id}

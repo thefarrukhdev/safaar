@@ -61,7 +61,7 @@ export function HotelAmenities({
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title={dict.amenities || 'What this place offers'}
+        title={typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}
       >
         <div className="flex flex-col gap-6">
           <ul className="flex flex-col gap-6">

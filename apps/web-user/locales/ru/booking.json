@@ -8,6 +8,43 @@
   "voucher": "Скачать ваучер",
   "backHome": "На главную",
   "error": "Не удалось загрузить данные брони.",
+  "confirmedTitle": "Бронь подтверждена!",
+  "confirmedSubtitle": "Поздравляем! Ваша бронь успешно подтверждена.",
+  "failedTitle": "Оплата не прошла",
+  "failedSubtitle": "Произошла ошибка при оплате. Попробуйте снова.",
+  "awaitingCashTitle": "Ожидается наличная оплата",
+  "awaitingCashSubtitle": "Оплатите наличными при прибытии.",
+  "receiptSummary": "Сводка чека",
+  "createdAt": "Дата брони",
+  "actions": {
+    "printVoucher": "Распечатать ваучер",
+    "cancelBooking": "Отменить",
+    "myBookings": "Мои брони",
+    "backHome": "На главную",
+    "error": "Произошла ошибка",
+    "userCancelledReason": "Отменено пользователем"
+  },
+  "cancelModal": {
+    "title": "Отмена брони",
+    "calculating": "Вычисляется...",
+    "rulesIntro": "Условия отмены:",
+    "paidAmount": "Оплаченная сумма:",
+    "refundAmount": "Сумма возврата:",
+    "penalty": "Штраф:",
+    "penaltyAmount": "Размер штрафа:",
+    "policyLabel": "Правило:",
+    "cancelling": "Отменяется...",
+    "confirm": "Подтвердить",
+    "confirmCancel": "Подтвердить отмену",
+    "cancel": "Назад"
+  },
+  "chat": {
+    "title": "Чат с отелем",
+    "empty": "Сообщений пока нет...",
+    "placeholder": "Напишите сообщение...",
+    "loading": "Загрузка сообщений...",
+    "send": "Отправить"
+  },
   "statuses": {
     "PENDING": "Ожидание",
     "AWAITING_PAYMENT": "Ожидает оплаты",

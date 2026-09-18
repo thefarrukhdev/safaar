@@ -20,8 +20,11 @@ export type PaymentMethodId =
 
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
-  dictKey: "click" | "payme" | "card" | "cash";
+  dictKey?: "click" | "payme" | "card" | "cash";
   type: "online" | "card" | "cash";
+  name?: string;
+  subtitle?: string;
+  badges?: string[];
   colorTheme: {
     badgeBg: string;
     badgeText: string;
@@ -52,7 +55,7 @@ const INTL_CARD_THEME = {
 // informativ belgi (badge) sifatida ko'rsatiladi — yakuniy summa hech
 // qachon shu qiymatdan frontendda HISOBLANMAYDI, backend qaytargan
 // haqiqiy `fee_amount`/`amount` ishlatiladi (checkout sahifasida).
-const PAYMENT_OPTIONS: PaymentOption[] = [
+const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "click",
     dictKey: "click",
@@ -162,10 +165,11 @@ export function PaymentSelector({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map((option) => {
           const isSelected = selected === option.id;
-          const methodInfo = dict?.[option.dictKey];
-          const nameText = methodInfo?.title ?? option.dictKey;
+          const methodInfo: CheckoutDict["paymentMethods"][keyof CheckoutDict["paymentMethods"]] | undefined =
+            option.dictKey ? dict?.[option.dictKey] : undefined;
+          const nameText = methodInfo?.title ?? option.dictKey ?? option.id;
           const subtitleText = methodInfo?.desc ?? "";
-          const badges = methodInfo?.badges ?? [];
+          const badges: string[] = methodInfo?.badges ?? [];
 
           return (
             <div
@@ -218,7 +222,7 @@ export function PaymentSelector({
 
                   {badges.length > 0 && (
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {badges.map((badge, i) => (
+                      {badges.map((badge: string, i: number) => (
                         <span
                           key={i}
                           className={cn(

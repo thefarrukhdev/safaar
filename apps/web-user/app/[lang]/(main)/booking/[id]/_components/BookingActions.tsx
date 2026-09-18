@@ -9,7 +9,7 @@ import { trackBookingCompleted } from "@/lib/services/analytics/tracker";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import { useRouter } from "next/navigation";
-import type { BookingDict } from "@/i18n/dictionaries";
+
 
 export function BookingActions({
   locale,
@@ -29,8 +29,28 @@ export function BookingActions({
   dict: {
     voucher?: string;
     backHome?: string;
-    actions?: BookingDict["actions"];
-    cancelModal?: BookingDict["cancelModal"];
+    actions?: {
+      printVoucher?: string;
+      cancelBooking?: string;
+      myBookings?: string;
+      backHome?: string;
+      error?: string;
+      userCancelledReason?: string;
+    };
+    cancelModal?: {
+      title?: string;
+      calculating?: string;
+      rulesIntro?: string;
+      paidAmount?: string;
+      refundAmount?: string;
+      penalty?: string;
+      penaltyAmount?: string;
+      policyLabel?: string;
+      cancelling?: string;
+      confirm?: string;
+      confirmCancel?: string;
+      cancel?: string;
+    };
   };
 }) {
   const router = useRouter();

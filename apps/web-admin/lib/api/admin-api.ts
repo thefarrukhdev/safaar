@@ -1714,9 +1714,79 @@ export const AdminApi = {
     const { data } = await apiClient.get('/admin/cms/news');
     return unknownItems(data).map((row) => toCmsArticle(asRecord(row), 'news'));
   },
+  createCmsNews: async (news: Omit<CmsArticle, 'id'>): Promise<CmsArticle> => {
+    const payload = {
+      slug: news.slug,
+      status: news.status,
+      title: { uz: news.title, ru: news.title, en: news.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: news.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/news', payload);
+    return toCmsArticle(asRecord(data), 'news');
+  },
+  updateCmsNews: async (
+    id: string,
+    news: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (news.slug !== undefined) payload.slug = news.slug;
+    if (news.status !== undefined) payload.status = news.status;
+    if (news.title !== undefined) payload.title = { uz: news.title, ru: news.title, en: news.title };
+    if (news.metadata !== undefined) payload.metadata = news.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/news/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'news');
+  },
+  deleteCmsNews: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/news/${id}`);
+  },
+  setCmsNewsStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/news/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'news');
+  },
   getCmsPages: async (): Promise<CmsArticle[]> => {
     const { data } = await apiClient.get('/admin/cms/pages');
     return unknownItems(data).map((row) => toCmsArticle(asRecord(row), 'page'));
+  },
+  createCmsPage: async (pageItem: Omit<CmsArticle, 'id'>): Promise<CmsArticle> => {
+    const payload = {
+      slug: pageItem.slug,
+      status: pageItem.status,
+      title: { uz: pageItem.title, ru: pageItem.title, en: pageItem.title },
+      body: { uz: '', ru: '', en: '' },
+      metadata: pageItem.metadata,
+    };
+    const { data } = await apiClient.post('/admin/cms/pages', payload);
+    return toCmsArticle(asRecord(data), 'page');
+  },
+  updateCmsPage: async (
+    id: string,
+    pageItem: Partial<CmsArticle>,
+  ): Promise<CmsArticle> => {
+    const payload: any = {};
+    if (pageItem.slug !== undefined) payload.slug = pageItem.slug;
+    if (pageItem.status !== undefined) payload.status = pageItem.status;
+    if (pageItem.title !== undefined) payload.title = { uz: pageItem.title, ru: pageItem.title, en: pageItem.title };
+    if (pageItem.metadata !== undefined) payload.metadata = pageItem.metadata;
+
+    const { data } = await apiClient.patch(`/admin/cms/pages/${id}`, payload);
+    return toCmsArticle(asRecord(data), 'page');
+  },
+  deleteCmsPage: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/cms/pages/${id}`);
+  },
+  setCmsPageStatus: async (
+    id: string,
+    status: 'published' | 'draft',
+  ): Promise<CmsArticle> => {
+    const action = status === 'published' ? 'publish' : 'unpublish';
+    const { data } = await apiClient.post(`/admin/cms/pages/${id}/${action}`);
+    return toCmsArticle(asRecord(data), 'page');
   },
   getCmsOffers: async (): Promise<CmsArticle[]> => {
     const { data } = await apiClient.get('/admin/cms/offers');

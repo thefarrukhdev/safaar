@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Eye, Edit2, Plus, Send, FileText, Trash2 } from "lucide-react";
+import { Edit2, Plus, Send, Trash2 } from "lucide-react";
 import type { CmsArticle } from "@/types/admin";
+import { AdminApi } from "@/lib/api/admin-api";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
@@ -12,9 +14,6 @@ import Modal from "@/components/ui/Modal";
 import { formatDate } from "@/lib/utils";
 
 type CmsArticleKind = CmsArticle["type"];
-type ManagedArticle = CmsArticle & {
-  body?: string;
-};
 
 interface CmsArticleManagerProps {
   type: CmsArticleKind;
@@ -24,10 +23,36 @@ interface CmsArticleManagerProps {
   loadItems: () => Promise<CmsArticle[]>;
 }
 
-const TYPE_PREFIX: Record<CmsArticleKind, string> = {
-  news: "N",
-  offer: "O",
-  page: "P",
+// Har bir resurs uchun generic CMS (`/admin/cms/:resource`) orqali ishlaydigan
+// real create/update/delete/status funksiyalari — offers/destinations bilan
+// bir xil naqsh (admin-api.ts).
+const API_BY_TYPE: Record<
+  CmsArticleKind,
+  {
+    create: (item: Omit<CmsArticle, "id">) => Promise<CmsArticle>;
+    update: (id: string, item: Partial<CmsArticle>) => Promise<CmsArticle>;
+    remove: (id: string) => Promise<void>;
+    setStatus: (id: string, status: "published" | "draft") => Promise<CmsArticle>;
+  }
+> = {
+  news: {
+    create: AdminApi.createCmsNews,
+    update: AdminApi.updateCmsNews,
+    remove: AdminApi.deleteCmsNews,
+    setStatus: AdminApi.setCmsNewsStatus,
+  },
+  page: {
+    create: AdminApi.createCmsPage,
+    update: AdminApi.updateCmsPage,
+    remove: AdminApi.deleteCmsPage,
+    setStatus: AdminApi.setCmsPageStatus,
+  },
+  offer: {
+    create: AdminApi.createCmsOffer,
+    update: AdminApi.updateCmsOffer,
+    remove: AdminApi.deleteCmsOffer,
+    setStatus: AdminApi.setCmsOfferStatus,
+  },
 };
 
 function slugify(value: string) {
@@ -41,28 +66,6 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-function defaultBody(item: CmsArticle) {
-  if (item.type === "page") {
-    return `${item.title} sahifasi uchun matn. Bu joyda foydalanuvchilarga ko'rinadigan asosiy kontent yoziladi.`;
-  }
-  if (item.type === "offer") {
-    return `${item.title} bo'yicha maxsus taklif tafsilotlari. Aksiya shartlari, muddatlari va foydalanuvchi uchun foydasi shu yerda yoziladi.`;
-  }
-  return `${item.title} haqida yangilik matni. Platformadagi o'zgarishlar va foydalanuvchilar uchun muhim ma'lumotlar shu yerda yoziladi.`;
-}
-
-function makeDraft(type: CmsArticleKind): ManagedArticle {
-  return {
-    id: `${TYPE_PREFIX[type]}-${Date.now().toString().slice(-6)}`,
-    title: "",
-    type,
-    slug: "",
-    status: "draft",
-    publishedAt: "",
-    body: "",
-  };
-}
-
 export function CmsArticleManager({
   type,
   title,
@@ -70,30 +73,28 @@ export function CmsArticleManager({
   emptyMessage,
   loadItems,
 }: CmsArticleManagerProps) {
-  const [items, setItems] = useState<ManagedArticle[]>([]);
+  const [items, setItems] = useState<CmsArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingItem, setEditingItem] = useState<ManagedArticle | null>(null);
-  const [previewItem, setPreviewItem] = useState<ManagedArticle | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState<Partial<CmsArticle> | null>(null);
+
+  const api = API_BY_TYPE[type];
+
+  const refresh = async () => {
+    try {
+      const result = await loadItems();
+      setItems(result.filter((item) => item.type === type));
+    } catch {
+      toast.error("Kontentni yuklashda xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let mounted = true;
-    loadItems()
-      .then((result) => {
-        if (!mounted) return;
-        setItems(
-          result
-            .filter((item) => item.type === type)
-            .map((item) => ({ ...item, body: defaultBody(item) })),
-        );
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [loadItems, type]);
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   const sortedItems = useMemo(
     () =>
@@ -103,75 +104,73 @@ export function CmsArticleManager({
     [items],
   );
 
-  const openCreate = () => setEditingItem(makeDraft(type));
-  const openEdit = (item: ManagedArticle) => setEditingItem({ ...item });
-  const openPreview = (item: ManagedArticle) => setPreviewItem(item);
+  const openCreate = () => setEditingItem({ type, status: "draft" });
+  const openEdit = (item: CmsArticle) => setEditingItem({ ...item });
 
-  const saveItem = () => {
+  const saveItem = async () => {
     if (!editingItem) return;
 
-    const titleValue = editingItem.title.trim();
-    const bodyValue = editingItem.body?.trim() ?? "";
-    const slugValue = slugify(editingItem.slug || titleValue);
+    const titleValue = editingItem.title?.trim();
+    const slugValue = slugify(editingItem.slug || titleValue || "");
 
-    if (!titleValue || !slugValue || !bodyValue) {
-      toast.error("Sarlavha, slug va kontent matnini to'ldiring");
+    if (!titleValue || !slugValue) {
+      toast.error("Sarlavha va slug'ni to'ldiring");
       return;
     }
 
-    const next: ManagedArticle = {
-      ...editingItem,
-      title: titleValue,
-      slug: slugValue,
-      body: bodyValue,
-      publishedAt:
-        editingItem.status === "published"
-          ? editingItem.publishedAt || new Date().toISOString()
-          : "",
-    };
-
-    setItems((current) => {
-      const exists = current.some((item) => item.id === next.id);
-      return exists
-        ? current.map((item) => (item.id === next.id ? next : item))
-        : [next, ...current];
-    });
-
-    setEditingItem(null);
-    toast.success("Kontent saqlandi");
+    setSaving(true);
+    try {
+      if (editingItem.id) {
+        await api.update(editingItem.id, {
+          title: titleValue,
+          slug: slugValue,
+          status: editingItem.status,
+        });
+        toast.success("Kontent saqlandi");
+      } else {
+        await api.create({
+          title: titleValue,
+          slug: slugValue,
+          type,
+          status: (editingItem.status as CmsArticle["status"]) ?? "draft",
+          publishedAt: "",
+        });
+        toast.success("Yangi kontent yaratildi");
+      }
+      setEditingItem(null);
+      await refresh();
+    } catch {
+      toast.error("Saqlashda xatolik yuz berdi");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleStatus = (item: ManagedArticle) => {
+  const toggleStatus = async (item: CmsArticle) => {
     const nextStatus = item.status === "published" ? "draft" : "published";
-    setItems((current) =>
-      current.map((entry) =>
-        entry.id === item.id
-          ? {
-              ...entry,
-              status: nextStatus,
-              publishedAt:
-                nextStatus === "published" ? new Date().toISOString() : "",
-            }
-          : entry,
-      ),
-    );
-    toast.success(
-      nextStatus === "published" ? "Kontent chop etildi" : "Kontent qoralamaga o'tkazildi",
-    );
+    try {
+      await api.setStatus(item.id, nextStatus);
+      toast.success(
+        nextStatus === "published" ? "Kontent chop etildi" : "Kontent qoralamaga o'tkazildi",
+      );
+      await refresh();
+    } catch {
+      toast.error("Holatni o'zgartirishda xatolik yuz berdi");
+    }
   };
 
-  const deleteItem = (item: ManagedArticle) => {
+  const deleteItem = async (item: CmsArticle) => {
     if (!confirm(`"${item.title}" o'chirilsinmi?`)) return;
-    setItems((current) => current.filter((entry) => entry.id !== item.id));
-    toast.success("Kontent o'chirildi");
+    try {
+      await api.remove(item.id);
+      toast.success("Kontent o'chirildi");
+      await refresh();
+    } catch {
+      toast.error("O'chirishda xatolik yuz berdi");
+    }
   };
 
-  const columns: Column<ManagedArticle>[] = [
-    {
-      key: "id",
-      label: "ID",
-      render: (row) => <span className="text-xs font-mono">{row.id}</span>,
-    },
+  const columns: Column<CmsArticle>[] = [
     {
       key: "title",
       label: "Sarlavha",
@@ -215,14 +214,6 @@ export function CmsArticleManager({
       label: "",
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => openPreview(row)}
-            title="Ko'rish"
-            className="w-8 h-8 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
-          >
-            <Eye size={14} />
-          </button>
           <button
             type="button"
             onClick={() => openEdit(row)}
@@ -273,54 +264,17 @@ export function CmsArticleManager({
       </div>
 
       <Modal
-        open={!!previewItem}
-        onClose={() => setPreviewItem(null)}
-        title={previewItem?.title ?? "Kontent"}
-        size="lg"
-        footer={
-          <>
-            {previewItem ? (
-              <Button variant="secondary" onClick={() => {
-                setEditingItem({ ...previewItem });
-                setPreviewItem(null);
-              }}>
-                Tahrirlash
-              </Button>
-            ) : null}
-            <Button onClick={() => setPreviewItem(null)}>Yopish</Button>
-          </>
-        }
-      >
-        {previewItem ? (
-          <div className="flex flex-col gap-4">
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-tertiary)] p-4">
-              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-                <FileText size={16} />
-                /{previewItem.slug}
-              </div>
-              <h3 className="mt-3 text-xl font-bold text-[var(--text-primary)]">
-                {previewItem.title}
-              </h3>
-            </div>
-            <p className="whitespace-pre-line text-sm leading-6 text-[var(--text-secondary)]">
-              {previewItem.body || defaultBody(previewItem)}
-            </p>
-          </div>
-        ) : null}
-      </Modal>
-
-      <Modal
         open={!!editingItem}
         onClose={() => setEditingItem(null)}
-        title={editingItem?.title ? "Kontentni tahrirlash" : "Yangi kontent"}
+        title={editingItem?.id ? "Kontentni tahrirlash" : "Yangi kontent"}
         size="lg"
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditingItem(null)}>
               Bekor qilish
             </Button>
-            <Button icon={<Send size={14} />} onClick={saveItem}>
-              Saqlash
+            <Button icon={<Send size={14} />} onClick={saveItem} disabled={saving}>
+              {saving ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
           </>
         }
@@ -329,7 +283,7 @@ export function CmsArticleManager({
           <div className="flex flex-col gap-4">
             <Input
               label="Sarlavha"
-              value={editingItem.title}
+              value={editingItem.title ?? ""}
               onChange={(event) => {
                 const nextTitle = event.target.value;
                 setEditingItem({
@@ -341,7 +295,7 @@ export function CmsArticleManager({
             />
             <Input
               label="Slug"
-              value={editingItem.slug}
+              value={editingItem.slug ?? ""}
               onChange={(event) =>
                 setEditingItem({ ...editingItem, slug: slugify(event.target.value) })
               }
@@ -352,7 +306,7 @@ export function CmsArticleManager({
                   Holat
                 </span>
                 <select
-                  value={editingItem.status}
+                  value={editingItem.status ?? "draft"}
                   onChange={(event) =>
                     setEditingItem({
                       ...editingItem,
@@ -367,24 +321,19 @@ export function CmsArticleManager({
               </label>
               <Input
                 label="URL preview"
-                value={`/${editingItem.slug || slugify(editingItem.title)}`}
+                value={`/${editingItem.slug || slugify(editingItem.title ?? "")}`}
                 readOnly
               />
             </div>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-[var(--text-secondary)]">
-                Kontent matni
-              </span>
-              <textarea
-                value={editingItem.body ?? ""}
-                onChange={(event) =>
-                  setEditingItem({ ...editingItem, body: event.target.value })
-                }
-                rows={8}
-                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
-                placeholder="Matnni kiriting..."
-              />
-            </label>
+            {editingItem.id && (
+              <p className="text-xs text-[var(--text-muted)]">
+                Kontent matnini (til bo'yicha) tahrirlash uchun{" "}
+                <Link href="/cms/translations" className="font-medium text-[var(--primary)] hover:underline">
+                  Tarjimalar
+                </Link>{" "}
+                bo'limidan foydalaning.
+              </p>
+            )}
           </div>
         ) : null}
       </Modal>

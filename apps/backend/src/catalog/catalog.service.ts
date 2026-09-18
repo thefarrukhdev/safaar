@@ -609,7 +609,11 @@ export class CatalogService {
     return {
       id: String(res.id),
       name: String(res.name ?? ''),
-      cityName: String(res.city_name ?? ''),
+      // `cities.name` JSONB'dagi lokalizatsiya obyekti ({uz,ru,en}) —
+      // `transports()` (ro'yxat) ham buni xom holida qaytaradi;
+      // api-client'dagi `pickLocale()` shu shaklni kutadi. Avval bu yerda
+      // `String(...)` chaqirilgani "[object Object]" satrini qaytarardi.
+      cityName: res.city_name ?? '',
       categoryKey: 'transfer',
       categoryDefault: 'Transport',
       seats: Number(res.seats) || 0,

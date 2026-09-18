@@ -42,6 +42,6 @@ test.describe('Transport card -> detail -> booking routing', () => {
     await firstCard.click();
     await page.waitForURL(/\/uz\/transport\/.+/, { timeout: 15_000 });
 
-    await expect(page.getByText('Mashinani band qilish')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Mashinani band qilish' })).toBeVisible({ timeout: 15_000 });
   });
 });

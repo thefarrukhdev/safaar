@@ -25,7 +25,7 @@ test('Banners production E2E — admin create -> real image upload -> visible on
   await page.waitForURL(/\/dashboard/, { timeout: 20000 });
 
   await page.goto(`${ADMIN_URL}/cms/banners`, { waitUntil: 'networkidle', timeout: 30000 });
-  await expect(page.getByRole('heading', { name: 'Bannerlar' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Bannerlar' })).toBeVisible();
 
   const title = `E2E Prod Banner ${Date.now()}`;
   await page.getByRole('button', { name: "Yangi banner qo'shish" }).click();

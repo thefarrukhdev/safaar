@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminApi } from "@/lib/api/admin-api";
@@ -11,12 +11,10 @@ import { ArrowLeft, Save } from "lucide-react";
 
 export default function EditListingPage() {
   const { id } = useParams();
-  const router = useRouter();
   const listingId = Array.isArray(id) ? id[0] : id;
 
   const [listing, setListing] = useState<AdminListing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   // Form states
   const [hotelName, setHotelName] = useState("");
@@ -37,25 +35,16 @@ export default function EditListingPage() {
       .finally(() => setLoading(false));
   }, [listingId]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  // Backend'da e'lon tafsilotlarini (nomi/shahar/manzil/yulduz) yangilaydigan
+  // umumiy route hali yo'q (faqat publish/reject/visibility mavjud — audit
+  // bilan tasdiqlangan). Shu sabab bu yerda soxta "saqlandi" ko'rsatib,
+  // hamkor e'loniga hech narsa yozilmagani haqida foydalanuvchini
+  // chalg'itmaymiz — aniq va rostgo'y cheklov xabari ko'rsatamiz.
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!listing) return;
-
-    setSaving(true);
-    try {
-      await AdminApi.updateListing(listing.id, {
-        hotelName,
-        city,
-        address,
-        stars,
-      });
-      toast.success("E'lon ma'lumotlari yangilandi");
-      router.push(`/partners/listings/${listing.id}`);
-    } catch (error) {
-      toast.error("Saqlashda xatolik yuz berdi");
-    } finally {
-      setSaving(false);
-    }
+    toast.error(
+      "Bu bo'lim hali backend'ga ulanmagan — o'zgarishlar saqlanmaydi. Ishlab chiquvchilar jamoasiga xabar bering.",
+    );
   };
 
   if (loading) {
@@ -95,7 +84,7 @@ export default function EditListingPage() {
 
       <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] shadow-sm p-6">
         <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-lg p-4 mb-6 text-sm">
-          <strong>Diqqat:</strong> Bu yerda qilingan o'zgarishlar bevosita hamkorning e'loniga ta'sir qiladi. Hozirgi kunda bu tizim Backend'ga ulanmagan (Mock rejimi).
+          <strong>Diqqat:</strong> Bu bo'lim hali backend'ga ulanmagan. Quyidagi maydonlarni o'zgartirib "Saqlash"ni bossangiz ham, hech narsa hamkorning haqiqiy e'loniga yozilmaydi.
         </div>
 
         <form onSubmit={handleSave} className="space-y-5">
@@ -149,8 +138,8 @@ export default function EditListingPage() {
             <Link href={`/partners/listings/${listing.id}`}>
               <Button type="button" variant="secondary">Bekor qilish</Button>
             </Link>
-            <Button type="submit" disabled={saving} icon={<Save size={16} />}>
-              {saving ? "Saqlanmoqda..." : "Saqlash"}
+            <Button type="submit" icon={<Save size={16} />}>
+              Saqlash
             </Button>
           </div>
         </form>

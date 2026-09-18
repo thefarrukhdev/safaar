@@ -2211,12 +2211,6 @@ export const AdminApi = {
   // the real, backend-connected getReviews/publishReview/hideReview and
   // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
   // (verified live against the QA backend this session).
-  updateListing: async (id: string, payload: Partial<AdminListing>): Promise<AdminListing> => {
-    // Mock
-    console.log(`Mock: Updated listing ${id}`, payload);
-    return Promise.resolve({ id, ...payload } as AdminListing);
-  },
-
   toggleListingFeatured: async (id: string, featured: boolean) => {
     console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
     return Promise.resolve({ success: true, featured });

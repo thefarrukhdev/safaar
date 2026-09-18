@@ -64,6 +64,11 @@ export class CatalogController {
   ) {
     return this.catalogService.transports(checkIn, checkOut);
   }
+
+  @Get('transports/:id')
+  transport(@Param('id') id: string) {
+    return this.catalogService.transport(id);
+  }
 }
 
 @Controller('attractions')

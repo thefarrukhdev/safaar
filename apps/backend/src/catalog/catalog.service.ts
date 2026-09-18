@@ -557,6 +557,80 @@ export class CatalogService {
     }
     return this.cache.getOrSet('catalog:transports', 3600, query);
   }
+
+  /** `transports()` bilan bir xil `vehicles`/`bus_companies` manbasidan, bitta transport uchun. */
+  async transport(id: string) {
+    const rows = await this.postgres.query<DbRow>(
+      `
+        SELECT
+          v.id::text,
+          v.name,
+          v.plate_number,
+          v.seats_count AS seats,
+          v.fuel_type,
+          v.has_ac,
+          v.luggage_capacity_bags,
+          v.photos,
+          v.price_per_day::float8 AS price_per_day,
+          c.name AS city_name,
+          bc.name AS company_name,
+          bc.rating_average::float8 AS rating,
+          bc.reviews_count,
+          po.phone,
+          COALESCE(po.logo_url, '') AS image_url
+        FROM vehicles v
+        JOIN bus_companies bc ON bc.id = v.company_id
+        JOIN partner_organizations po ON po.id = bc.partner_organization_id
+        LEFT JOIN cities c ON c.id = po.city_id
+        WHERE v.id::text = $1
+          AND v.status = 'active'
+          AND bc.status = 'active'
+          AND po.status = 'approved'
+      `,
+      [id],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'VEHICLE_NOT_FOUND',
+        message: 'Transport topilmadi',
+      });
+    }
+
+    const res = rows[0];
+    const imageUrl = String(res.image_url ?? '');
+    const photos = Array.isArray(res.photos)
+      ? (res.photos as unknown[]).filter(
+          (p): p is string => typeof p === 'string',
+        )
+      : [];
+    const images = photos.length > 0 ? photos : [imageUrl].filter(Boolean);
+
+    return {
+      id: String(res.id),
+      name: String(res.name ?? ''),
+      cityName: String(res.city_name ?? ''),
+      categoryKey: 'transfer',
+      categoryDefault: 'Transport',
+      seats: Number(res.seats) || 0,
+      hasDriver: true,
+      fuelType: String(res.fuel_type ?? ''),
+      transmission: '',
+      hasAc: Boolean(res.has_ac),
+      luggageCapacityBags:
+        res.luggage_capacity_bags == null
+          ? null
+          : Number(res.luggage_capacity_bags),
+      plateNumber: res.plate_number == null ? null : String(res.plate_number),
+      pricePerDay: Number(res.price_per_day) || 0,
+      companyName: String(res.company_name ?? ''),
+      rating: Number(res.rating) || 0,
+      reviewsCount: Number(res.reviews_count) || 0,
+      phone: String(res.phone ?? ''),
+      imageUrl,
+      images,
+    };
+  }
 }
 
 function boundsConditions(

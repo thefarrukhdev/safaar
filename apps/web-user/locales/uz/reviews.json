@@ -1,5 +1,12 @@
 {
   "title": "Sharhlar",
   "empty": "Hozircha sharhlar yo'q. Birinchi bo'lib fikr bildiring!",
-  "anonymous": "Foydalanuvchi"
+  "anonymous": "Foydalanuvchi",
+  "writeReview": "Sharh qoldirish",
+  "categories": {
+    "cleanliness": "Tozalik",
+    "staff": "Xizmat",
+    "location": "Joylashuv",
+    "valueForMoney": "Narx/sifat"
+  }
 }

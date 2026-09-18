@@ -84,7 +84,7 @@ export function ReviewsList({
       setFiles([]);
     } catch (err) {
       console.error(err);
-      alert("Sharh qoldirishda xatolik yuz berdi");
+      alert(dict.submitError ?? "Sharh qoldirishda xatolik yuz berdi");
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +134,7 @@ export function ReviewsList({
               {avgOverall}
             </span>
             <div className="flex flex-col pb-1.5">
-              <span className="text-sm font-semibold text-slate-900">Exceptional</span>
+              <span className="text-sm font-semibold text-slate-900">{dict.exceptional ?? "Exceptional"}</span>
               <span className="text-sm text-slate-500">{totalCount} {dict.title}</span>
             </div>
           </div>
@@ -164,40 +164,44 @@ export function ReviewsList({
 
         {authed && hotelId && !isFormOpen && (
           <Button onClick={() => setIsFormOpen(true)} variant="secondary" className="border-slate-200 text-slate-900">
-            Write a review
+            {dict.writeReview ?? "Write a review"}
           </Button>
         )}
       </div>
 
       {isFormOpen && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900">Write a Review</h3>
+          <h3 className="font-bold text-slate-900">{dict.writeReview ?? "Write a Review"}</h3>
           
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-900">Rating (1-5)</label>
+            <label className="text-sm font-medium text-slate-900">{dict.ratingLabel ?? "Rating (1-5)"}</label>
             <select 
               value={rating} 
               onChange={(e) => setRating(Number(e.target.value))}
               className="rounded-xl border border-slate-200 bg-white p-2.5 text-sm outline-none focus:border-slate-400"
             >
-              {[5,4,3,2,1].map(num => <option key={num} value={num}>{num} Stars</option>)}
+              {[5,4,3,2,1].map(num => (
+                <option key={num} value={num}>
+                  {(dict.starsLabel ?? "{num} Stars").replace("{num}", String(num))}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-900">Review Text</label>
+            <label className="text-sm font-medium text-slate-900">{dict.reviewTextLabel ?? "Review Text"}</label>
             <textarea 
               required
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={4}
               className="rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-slate-400"
-              placeholder="Tell us about your experience..."
+              placeholder={dict.reviewTextPlaceholder ?? "Tell us about your experience..."}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-900">Photos (optional)</label>
+            <label className="text-sm font-medium text-slate-900">{dict.photosOptional ?? "Photos (optional)"}</label>
             <input 
               type="file" 
               multiple 
@@ -216,7 +220,7 @@ export function ReviewsList({
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Review"}
+              {isSubmitting ? (dict.submitting ?? "Submitting...") : (dict.submitReview ?? "Submit Review")}
             </Button>
           </div>
         </form>
@@ -242,15 +246,15 @@ export function ReviewsList({
                 <div className="flex items-center gap-4">
                   <Avatar
                     src={review.avatarUrl}
-                    alt={review.authorName || "Guest"}
-                    fallback={review.authorName?.charAt(0) || "G"}
+                    alt={review.authorName || (dict.anonymousGuest ?? "Guest")}
+                    fallback={review.authorName?.charAt(0) || (dict.anonymousGuest?.charAt(0) ?? "G")}
                     size="md"
                   />
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-bold text-slate-900">
-                        {review.authorName || "Guest"}
+                        {review.authorName || (dict.anonymousGuest ?? "Guest")}
                       </span>
                       {review.isVerifiedGuest && (
                         <ShieldCheck className="h-4 w-4 text-emerald-600" />

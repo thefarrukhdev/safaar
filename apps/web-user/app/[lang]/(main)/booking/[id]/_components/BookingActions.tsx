@@ -9,6 +9,7 @@ import { trackBookingCompleted } from "@/lib/services/analytics/tracker";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import { useRouter } from "next/navigation";
+import type { BookingDict } from "@/i18n/dictionaries";
 
 export function BookingActions({
   locale,
@@ -28,6 +29,8 @@ export function BookingActions({
   dict: {
     voucher?: string;
     backHome?: string;
+    actions?: BookingDict["actions"];
+    cancelModal?: BookingDict["cancelModal"];
   };
 }) {
   const router = useRouter();
@@ -74,7 +77,7 @@ export function BookingActions({
       const data = await api.bookings.cancelPreview(bookingId, { token });
       setPreviewData(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
     } finally {
       setLoadingPreview(false);
     }
@@ -85,11 +88,15 @@ export function BookingActions({
     setCancelling(true);
     setError(null);
     try {
-      await api.bookings.cancelBooking(bookingId, "Foydalanuvchi bekor qildi", { token });
+      await api.bookings.cancelBooking(
+        bookingId,
+        dict.actions?.userCancelledReason ?? "Foydalanuvchi bekor qildi",
+        { token }
+      );
       setCancelModalOpen(false);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
     } finally {
       setCancelling(false);
     }
@@ -107,7 +114,7 @@ export function BookingActions({
             className="gap-2 font-bold"
           >
             <Printer className="h-4 w-4" />
-            {dict.voucher || "Vaucherni chop etish"}
+            {dict.actions?.printVoucher ?? dict.voucher ?? "Vaucherni chop etish"}
           </Button>
         )}
 
@@ -120,20 +127,20 @@ export function BookingActions({
             className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500"
           >
             <XCircle className="h-4 w-4" />
-            Bekor qilish
+            {dict.actions?.cancelBooking ?? "Bekor qilish"}
           </Button>
         )}
 
         <Link href={`/${locale}/account/bookings`}>
           <Button variant="secondary" size="lg" className="font-bold">
-            Mening bronlarim
+            {dict.actions?.myBookings ?? "Mening bronlarim"}
           </Button>
         </Link>
 
         <Link href={`/${locale}`}>
           <Button variant="ghost" size="lg" className="gap-2 font-semibold">
             <ArrowLeft className="h-4 w-4" />
-            {dict.backHome || "Bosh sahifaga"}
+            {dict.actions?.backHome ?? dict.backHome ?? "Bosh sahifaga"}
           </Button>
         </Link>
       </div>
@@ -141,33 +148,43 @@ export function BookingActions({
       <Modal
         isOpen={cancelModalOpen}
         onClose={() => !cancelling && setCancelModalOpen(false)}
-        title="Bronni bekor qilish"
+        title={dict.cancelModal?.title ?? "Bronni bekor qilish"}
       >
         <div className="space-y-4">
           {loadingPreview ? (
-            <p className="text-sm text-slate-500">Hisoblanmoqda...</p>
+            <p className="text-sm text-slate-500">
+              {dict.cancelModal?.calculating ?? "Hisoblanmoqda..."}
+            </p>
           ) : error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : previewData ? (
             <div className="space-y-3 rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
-              <p className="text-sm text-slate-700 dark:text-slate-300">
-                Agar siz ushbu bronni bekor qilsangiz, quyidagi qoidalar qo'llaniladi:
-              </p>
+              {dict.cancelModal?.rulesIntro && (
+                <p className="text-sm text-slate-700 dark:text-slate-300">
+                  {dict.cancelModal.rulesIntro}
+                </p>
+              )}
               <ul className="text-sm space-y-2">
                 <li className="flex justify-between">
-                  <span className="text-slate-500">To'langan summa:</span>
+                  <span className="text-slate-500">
+                    {dict.cancelModal?.paidAmount ?? "To'langan summa:"}
+                  </span>
                   <span className="font-medium">
                     {formatMoney((previewData.paid_amount ?? previewData.paidAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
                   </span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-slate-500">Qaytariladigan summa:</span>
+                  <span className="text-slate-500">
+                    {dict.cancelModal?.refundAmount ?? "Qaytariladigan summa:"}
+                  </span>
                   <span className="font-medium text-emerald-600">
                     {formatMoney((previewData.refund_amount ?? previewData.refundAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
                   </span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-slate-500">Jarima:</span>
+                  <span className="text-slate-500">
+                    {dict.cancelModal?.penaltyAmount ?? "Jarima:"}
+                  </span>
                   <span className="font-medium text-red-600">
                     {formatMoney((previewData.penalty_amount ?? previewData.penaltyAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
                   </span>
@@ -175,7 +192,7 @@ export function BookingActions({
               </ul>
               {previewData.policy && (
                 <div className="mt-4 text-xs text-slate-500">
-                  <strong>Qoida:</strong> {previewData.policy}
+                  <strong>{dict.cancelModal?.policyLabel ?? "Qoida:"}</strong> {previewData.policy}
                 </div>
               )}
             </div>
@@ -195,7 +212,9 @@ export function BookingActions({
               className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
               disabled={loadingPreview || cancelling || !!error}
             >
-              {cancelling ? "Bekor qilinmoqda..." : "Tasdiqlash"}
+              {cancelling
+                ? (dict.cancelModal?.cancelling ?? "Bekor qilinmoqda...")
+                : (dict.cancelModal?.confirm ?? "Tasdiqlash")}
             </Button>
           </div>
         </div>

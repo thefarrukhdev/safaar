@@ -8,6 +8,7 @@
   "popularCities": {
     "title": "Popular destinations",
     "subtitle": "The cities travellers choose most",
+    "empty": "Data is loading or the list is currently empty.",
     "hotels": "hotels"
   },
   "trust": {
@@ -34,6 +35,7 @@
   "deals": {
     "title": "Hot Deals",
     "subtitle": "Special prices on selected stays",
+    "empty": "No deals available yet, coming soon",
     "badge": "Deal",
     "oldPrice": "from",
     "perNight": "/ night",
@@ -74,5 +76,13 @@
   },
   "error": {
     "loadFailed": "Failed to load data. Check that the backend is running."
+  },
+  "promos": {
+    "title": "Promo Codes",
+    "subtitle": "Use these codes during booking to get a discount",
+    "clickToCopy": "Click to copy",
+    "copied": "Copied!",
+    "copySuccess": "Promo code copied!",
+    "copyError": "Failed to copy."
   }
 }

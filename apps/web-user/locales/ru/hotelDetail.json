@@ -2,10 +2,16 @@
   "error": "Не удалось загрузить данные. Проверьте, запущен ли backend.",
   "about": "Описание",
   "address": "Адрес",
-  "amenities": "Удобства",
+  "amenities": {
+    "title": "Удобства",
+    "showAll": "Показать все {count} удобств"
+  },
   "checkIn": "Заезд",
   "checkOut": "Выезд",
-  "rooms": "Номера",
+  "rooms": {
+    "title": "Номера",
+    "noRoomsFound": "Других номеров не найдено."
+  },
   "perNight": "ночь",
   "capacity": "Вместимость",
   "guests": "гостей",
@@ -17,5 +23,42 @@
   "ratingSummary": "На основе {count} отзывов",
   "from": "от",
   "selectRoom": "Выбрать номер",
-  "bookingBox": "Бронирование"
+  "bookingBox": "Бронирование",
+  "locationTitle": "Расположение",
+  "highlights": {
+    "centralLocationTitle": "Центральное расположение",
+    "centralLocationDesc": "Высоко оценено недавними гостями",
+    "freeCancellationTitle": "Бесплатная отмена",
+    "freeCancellationDesc": "Отмена в любое время до заезда",
+    "superbRatingTitle": "Превосходный рейтинг",
+    "superbRatingDesc": "Гости высоко оценили чистоту"
+  },
+  "nav": {
+    "photos": "Фото",
+    "amenities": "Удобства",
+    "rooms": "Номера",
+    "reviews": "Отзывы",
+    "location": "Расположение"
+  },
+  "booking": {
+    "checkIn": "Заезд",
+    "checkOut": "Выезд",
+    "addDate": "Добавить дату",
+    "guests": "Гости",
+    "oneGuest": "1 гость",
+    "checkAvailability": "Проверить наличие",
+    "noChargeNotice": "Списание пока не производится",
+    "nightsCount": "{count} ночей",
+    "serviceFee": "Сервисный сбор",
+    "total": "Итого"
+  },
+  "location": {
+    "noCoordinates": "Точные координаты расположения отсутствуют",
+    "openInMaps": "Открыть в Google Maps"
+  },
+  "gallery": {
+    "mainViewAlt": "Основной вид",
+    "photoCountSuffix": "фото",
+    "allPhotos": "Все фотографии"
+  }
 }

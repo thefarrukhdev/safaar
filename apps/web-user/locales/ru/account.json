@@ -4,7 +4,8 @@
     "profile": "Профиль",
     "bookings": "Мои брони",
     "favorites": "Избранное",
-    "bonuses": "Бонусы"
+    "bonuses": "Бонусы",
+    "ariaLabel": "Разделы кабинета"
   },
   "profile": {
     "title": "Данные профиля",
@@ -51,6 +52,31 @@
     "title": "Бонусы",
     "balance": "Бонусный баланс",
     "empty": "История бонусов пока пуста.",
-    "history": "История"
+    "history": "История",
+    "disclaimer": "*Ваши бонусные баллы, накопленные за поездки и бронирования."
+  },
+  "settings": {
+    "title": "Настройки",
+    "notificationPreferences": "Настройки уведомлений",
+    "emailAlerts": "Email-уведомления",
+    "smsAlerts": "SMS-уведомления",
+    "savePreferences": "Сохранить настройки",
+    "dataManagement": "Управление данными",
+    "requestExport": "Запросить экспорт данных",
+    "requestDeletion": "Запросить удаление аккаунта",
+    "confirmDelete": "Вы уверены, что хотите запросить удаление аккаунта?",
+    "preferencesUpdated": "Настройки обновлены!",
+    "updateFailed": "Ошибка при обновлении",
+    "exportRequested": "Экспорт данных запрошен!",
+    "exportFailed": "Ошибка при запросе экспорта",
+    "deleteRequested": "Удаление аккаунта запрошено!",
+    "deleteFailed": "Ошибка при запросе удаления"
+  },
+  "avatar": {
+    "upload": "Загрузить",
+    "delete": "Удалить",
+    "confirmDelete": "Вы уверены, что хотите удалить фото профиля?",
+    "uploadFailed": "Ошибка при загрузке фото",
+    "deleteFailed": "Ошибка при удалении фото"
   }
 }

@@ -49,8 +49,8 @@ export default async function AccountFavoritesPage({
       <EmptyState
         icon={<HeartOff className="h-10 w-10 text-slate-400 dark:text-slate-500" />}
         title={dict.favorites.empty}
-        description="Siz hali hech qanday mehmonxonani saralanganlarga qo'shmadingiz. Yoqtirgan ob'ektlaringizdagi yurakcha belgisini bosing!"
-        actionLabel="Mehmonxonalarni kashf eting"
+        description={favDict.emptyDescription}
+        actionLabel={favDict.discoverAction}
         actionHref={`/${locale}/hotels`}
       />
     );
@@ -164,7 +164,7 @@ export default async function AccountFavoritesPage({
                     <span className="text-sm font-bold text-primary-700 dark:text-primary-400">
                       {formatSum(hotel.minPriceSum)}
                     </span>
-                    <span className="text-[10px] text-slate-400"> / {(favDict as any).perNight || "kecha"}</span>
+                    <span className="text-[10px] text-slate-400"> / {favDict.perNight || "kecha"}</span>
                   </div>
                 </div>
               </article>

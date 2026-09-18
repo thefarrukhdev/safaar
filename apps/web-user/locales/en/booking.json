@@ -24,5 +24,45 @@
     "paid": "Paid",
     "failed": "Failed",
     "refunded": "Refunded"
+  },
+  "confirmedTitle": "Your booking is successfully confirmed!",
+  "confirmedSubtitle": "Details and voucher information are saved in your account.",
+  "failedTitle": "Payment transaction failed",
+  "failedSubtitle": "The transaction was cancelled or an error occurred. You can choose a payment method below and try again.",
+  "awaitingCashTitle": "Pay at property selected",
+  "awaitingCashSubtitle": "Your booking is reserved. Payment will be collected at the front desk upon arrival.",
+  "receiptSummary": "Receipt summary",
+  "createdAt": "Creation date",
+  "selectPaymentMethod": "Select payment method",
+  "selectPaymentMethodDesc": "Complete payment via Payme, Click, Uzcard/Humo or choose pay on arrival.",
+  "chat": {
+    "title": "Chat with hotel",
+    "loading": "Loading messages...",
+    "empty": "No messages yet. Feel free to ask questions to the hotel.",
+    "placeholder": "Type your message...",
+    "send": "Send"
+  },
+  "actions": {
+    "error": "An error occurred",
+    "userCancelledReason": "Cancelled by user",
+    "printVoucher": "Print voucher",
+    "cancelBooking": "Cancel booking",
+    "myBookings": "My bookings",
+    "backHome": "Back to home"
+  },
+  "cancelModal": {
+    "title": "Cancel booking",
+    "calculating": "Calculating...",
+    "rulesIntro": "If you cancel this booking, the following rules will apply:",
+    "paidAmount": "Paid amount:",
+    "refundAmount": "Refund amount:",
+    "penaltyAmount": "Penalty:",
+    "policyLabel": "Policy:",
+    "cancelling": "Cancelling...",
+    "confirm": "Confirm"
+  },
+  "retryPayment": {
+    "error": "An error occurred while processing payment. Please try again.",
+    "submit": "Retry payment (Proceed to pay)"
   }
 }

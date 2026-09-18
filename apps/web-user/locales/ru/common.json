@@ -19,18 +19,28 @@
     "search": "Поиск",
     "favorites": "Избранное",
     "bookings": "Мои брони",
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "mobileNavAria": "Мобильная навигация",
+    "menu": "Меню",
+    "language": "Язык"
   },
   "actions": {
     "login": "Войти",
     "register": "Регистрация",
     "logout": "Выйти",
     "search": "Поиск",
-    "account": "Кабинет"
+    "account": "Кабинет",
+    "details": "Подробнее",
+    "close": "Закрыть",
+    "back": "Назад",
+    "previous": "Предыдущий",
+    "next": "Следующий",
+    "clearAll": "Очистить все",
+    "favorite": "В избранное",
+    "cancel": "Отмена"
   },
   "language": "Язык",
   "propertyTypes": {
-
     "hotel": "Отель",
     "dacha": "Дача",
     "sanatorium": "Санаторий",
@@ -43,16 +53,53 @@
     "checkIn": "Заезд",
     "checkOut": "Выезд",
     "guests": "Гости",
-    "submit": "Поиск"
+    "submit": "Поиск",
+    "guestsSuffix": "гостей",
+    "selectDate": "Выберите дату",
+    "checkInCheckOut": "Заезд — Отъезд",
+    "decreaseGuests": "Уменьшить количество гостей",
+    "increaseGuests": "Увеличить количество гостей"
+  },
+  "chat": {
+    "supportAria": "Служба поддержки Safaar",
+    "loginRequired": "Войдите в аккаунт для отправки сообщений.",
+    "loginNeeded": "Требуется вход",
+    "newTicket": "Новое обращение",
+    "refreshAria": "Обновить",
+    "closeAria": "Закрыть",
+    "loadingTickets": "Загрузка тикетов...",
+    "emptyTicketPrompt": "Напишите ваш вопрос для создания нового обращения.",
+    "loginBtn": "Войти",
+    "inputPlaceholder": "Напишите сообщение...",
+    "sendAria": "Отправить",
+    "sendError": "Произошла ошибка при отправке сообщения."
+  },
+  "pwa": {
+    "installTitle": "Установите приложение Safaar",
+    "installSubtitle": "Быстрый доступ и автономный режим",
+    "installButton": "Установить",
+    "retryConnection": "Повторить подключение",
+    "connectionRestored": "Интернет-соединение восстановлено"
   },
   "footer": {
     "tagline": "Бронирование отелей и зон отдыха по всему Узбекистану.",
     "rights": "Все права защищены.",
     "phone": "+998 90 449 08 93",
     "email": "info@safaar.uz",
+    "address": "г. Самарканд",
     "supportLabel": "(Поддержка)",
     "secureBooking": "Безопасное и гарантированное бронирование",
     "securePayments": "Безопасные способы оплаты",
-    "partner": "Партнёры"
+    "partner": "Партнёры",
+    "sections": {
+      "platform": "Платформа",
+      "company": "Компания",
+      "partners": "Партнёрство",
+      "contact": "Контакты"
+    }
+  },
+  "currency": "сум",
+  "card": {
+    "noImage": "Нет фото"
   }
 }

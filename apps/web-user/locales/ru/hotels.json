@@ -6,10 +6,12 @@
   "clearFilters": "Сбросить фильтры",
   "error": "Не удалось загрузить данные. Проверьте, запущен ли backend.",
   "retry": "Повторить",
-  "perNight": "ночь",
+  "perNight": "/ ночь",
   "reviews": "отзыв",
   "viewDetails": "Подробнее",
   "removeFilter": "Убрать фильтр",
+  "bannerTitle": "Поиск отелей, дач, санаториев и зон отдыха",
+  "bannerSubtitle": "Откройте для себя подходящее и комфортное жилье по всему Узбекистану по доступным ценам.",
   "filters": {
     "title": "Фильтры",
     "toggle": "Фильтры",
@@ -22,7 +24,34 @@
     "priceMax": "Цена до",
     "currency": "сум",
     "apply": "Применить",
-    "reset": "Сбросить"
+    "reset": "Сбросить",
+    "pricePerNight": "Цена (1 ночь)",
+    "propertyType": "Тип жилья",
+    "amenities": "Удобства",
+    "paymentType": "Тип оплаты"
+  },
+  "starOptions": {
+    "five": "5 звёзд",
+    "fourPlus": "4 и выше",
+    "threePlus": "3 и выше"
+  },
+  "types": {
+    "hotels": "Отели",
+    "dachas": "Дачи",
+    "sanatoriums": "Санатории",
+    "resorts": "Зоны отдыха"
+  },
+  "amenityOptions": {
+    "wifi": "Wi-Fi",
+    "pool": "Бассейн",
+    "sauna": "Сауна",
+    "breakfast": "Завтрак",
+    "parking": "Парковка",
+    "gym": "Фитнес-зал"
+  },
+  "paymentOptions": {
+    "online": "Онлайн-оплата (Карта)",
+    "atProperty": "Оплата на месте (Наличные)"
   },
   "sort": {
     "label": "Сортировка",

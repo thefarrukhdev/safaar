@@ -4,7 +4,8 @@
     "profile": "Profile",
     "bookings": "My bookings",
     "favorites": "Favorites",
-    "bonuses": "Bonuses"
+    "bonuses": "Bonuses",
+    "ariaLabel": "Account sections"
   },
   "profile": {
     "title": "Profile details",
@@ -51,6 +52,31 @@
     "title": "Bonuses",
     "balance": "Bonus balance",
     "empty": "No bonus history yet.",
-    "history": "History"
+    "history": "History",
+    "disclaimer": "*Your bonus points earned for trips and bookings."
+  },
+  "settings": {
+    "title": "Settings",
+    "notificationPreferences": "Notification Preferences",
+    "emailAlerts": "Email Alerts",
+    "smsAlerts": "SMS Alerts",
+    "savePreferences": "Save Preferences",
+    "dataManagement": "Data Management",
+    "requestExport": "Request Data Export",
+    "requestDeletion": "Request Account Deletion",
+    "confirmDelete": "Are you sure you want to request account deletion?",
+    "preferencesUpdated": "Preferences updated!",
+    "updateFailed": "Update failed",
+    "exportRequested": "Data export requested!",
+    "exportFailed": "Export request failed",
+    "deleteRequested": "Account deletion requested!",
+    "deleteFailed": "Deletion request failed"
+  },
+  "avatar": {
+    "upload": "Upload",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete your profile photo?",
+    "uploadFailed": "Failed to upload photo",
+    "deleteFailed": "Failed to delete photo"
   }
 }

@@ -19,18 +19,28 @@
     "search": "Search",
     "favorites": "Favorites",
     "bookings": "Bookings",
-    "profile": "Profile"
+    "profile": "Profile",
+    "mobileNavAria": "Mobile navigation",
+    "menu": "Menu",
+    "language": "Language"
   },
   "actions": {
     "login": "Sign in",
     "register": "Register",
     "logout": "Sign out",
     "search": "Search",
-    "account": "Account"
+    "account": "Account",
+    "details": "Details",
+    "close": "Close",
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "clearAll": "Clear all",
+    "favorite": "Add to favorites",
+    "cancel": "Cancel"
   },
   "language": "Language",
   "propertyTypes": {
-
     "hotel": "Hotel",
     "dacha": "Dacha",
     "sanatorium": "Sanatorium",
@@ -43,16 +53,53 @@
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "guests": "Guests",
-    "submit": "Search"
+    "submit": "Search",
+    "guestsSuffix": "guests",
+    "selectDate": "Select date",
+    "checkInCheckOut": "Check-in — Check-out",
+    "decreaseGuests": "Decrease guests",
+    "increaseGuests": "Increase guests"
+  },
+  "chat": {
+    "supportAria": "Safaar Support",
+    "loginRequired": "Please log in to send a message.",
+    "loginNeeded": "Login required",
+    "newTicket": "New ticket",
+    "refreshAria": "Refresh",
+    "closeAria": "Close",
+    "loadingTickets": "Loading tickets...",
+    "emptyTicketPrompt": "Type your message to start a new support request.",
+    "loginBtn": "Login",
+    "inputPlaceholder": "Type your message...",
+    "sendAria": "Send",
+    "sendError": "Failed to send message."
+  },
+  "pwa": {
+    "installTitle": "Install Safaar App",
+    "installSubtitle": "Fast access and offline mode",
+    "installButton": "Install",
+    "retryConnection": "Retry connection",
+    "connectionRestored": "Internet connection restored"
   },
   "footer": {
     "tagline": "Book hotels and resort stays across Uzbekistan.",
     "rights": "All rights reserved.",
     "phone": "+998 90 449 08 93",
     "email": "info@safaar.uz",
+    "address": "Samarkand",
     "supportLabel": "(Support)",
     "secureBooking": "Secure and guaranteed booking",
     "securePayments": "Secure payment methods",
-    "partner": "Partners"
+    "partner": "Partners",
+    "sections": {
+      "platform": "Platform",
+      "company": "Company",
+      "partners": "Partnership",
+      "contact": "Contact"
+    }
+  },
+  "currency": "UZS",
+  "card": {
+    "noImage": "No image"
   }
 }

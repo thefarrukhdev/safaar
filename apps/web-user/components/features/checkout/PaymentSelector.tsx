@@ -4,14 +4,13 @@ import { useState } from "react";
 import { CheckCircle2, ShieldCheck, Zap, Banknote, CreditCard, Smartphone } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { trackPaymentMethodSelected } from "@/lib/services/analytics/tracker";
+import type { CheckoutDict } from "@/i18n/dictionaries";
 
 export type PaymentMethodId = "click" | "payme" | "uzcard" | "humo" | "cash";
 
-export interface PaymentOption {
+export interface PaymentMethodConfig {
   id: PaymentMethodId;
-  name: string;
-  subtitle: string;
-  badges: string[];
+  dictKey: "click" | "payme" | "card" | "cash";
   type: "online" | "card" | "cash";
   colorTheme: {
     badgeBg: string;
@@ -22,12 +21,10 @@ export interface PaymentOption {
   };
 }
 
-const PAYMENT_OPTIONS: PaymentOption[] = [
+export const PAYMENT_METHODS: readonly PaymentMethodConfig[] = [
   {
     id: "click",
-    name: "Click Pass / Evolution",
-    subtitle: "Click Evolution ilovasi yoki *880# USSD orqali zudlik bilan to'lash",
-    badges: ["1-click to'lov", "Instant confirmation"],
+    dictKey: "click",
     type: "online",
     colorTheme: {
       badgeBg: "bg-primary-50 dark:bg-primary-950/60 border-primary-200 dark:border-primary-800",
@@ -39,9 +36,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   },
   {
     id: "payme",
-    name: "Payme",
-    subtitle: "Payme ilovasi yoki rasmiy sayti orqali xavfsiz va tezkor to'lov",
-    badges: ["0% komissiya", "Zudlik bilan tasdiqlash"],
+    dictKey: "payme",
     type: "online",
     colorTheme: {
       badgeBg: "bg-cyan-50 dark:bg-cyan-950/60 border-cyan-200 dark:border-cyan-800",
@@ -53,9 +48,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   },
   {
     id: "uzcard",
-    name: "Uzcard / Humo (Plastik karta)",
-    subtitle: "Barcha milliy Uzcard va Humo plastik kartalari orqali to'g'ridan-to'g'ri to'lov",
-    badges: ["3D-Secure xavfsizlik", "Milliy karta"],
+    dictKey: "card",
     type: "card",
     colorTheme: {
       badgeBg: "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800",
@@ -67,9 +60,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   },
   {
     id: "cash",
-    name: "Joyida to'lash (Naqd / Terminal)",
-    subtitle: "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
-    badges: ["Oldindan to'lovsiz", "Moslashuvchan bekor qilish"],
+    dictKey: "cash",
     type: "cash",
     colorTheme: {
       badgeBg: "bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800",
@@ -79,13 +70,13 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
       iconBg: "bg-amber-500 text-white",
     },
   },
-];
+] as const;
 
 export interface PaymentSelectorProps {
   defaultValue?: PaymentMethodId;
   name?: string;
   onChange?: (value: PaymentMethodId) => void;
-  dict?: Record<string, string>;
+  dict?: CheckoutDict["paymentMethods"];
   className?: string;
 }
 
@@ -93,6 +84,7 @@ export function PaymentSelector({
   defaultValue = "click",
   name = "paymentMethod",
   onChange,
+  dict,
   className,
 }: PaymentSelectorProps) {
   const [selected, setSelected] = useState<PaymentMethodId>(defaultValue);
@@ -108,8 +100,13 @@ export function PaymentSelector({
       <input type="hidden" name={name} value={selected} />
 
       <div className="grid grid-cols-1 gap-3">
-        {PAYMENT_OPTIONS.map((option) => {
+        {PAYMENT_METHODS.map((option) => {
           const isSelected = selected === option.id;
+          const methodInfo = dict?.[option.dictKey];
+          const nameText = methodInfo?.title ?? option.dictKey;
+          const subtitleText = methodInfo?.desc ?? "";
+          const badges = methodInfo?.badges ?? [];
+
           return (
             <div
               key={option.id}
@@ -147,28 +144,32 @@ export function PaymentSelector({
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {option.name}
+                      {nameText}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {option.subtitle}
-                  </p>
+                  {subtitleText && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {subtitleText}
+                    </p>
+                  )}
 
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {option.badges.map((badge, i) => (
-                      <span
-                        key={i}
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
-                          option.colorTheme.badgeBg,
-                          option.colorTheme.badgeText
-                        )}
-                      >
-                        <ShieldCheck className="h-3 w-3" />
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
+                  {badges.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {badges.map((badge, i) => (
+                        <span
+                          key={i}
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+                            option.colorTheme.badgeBg,
+                            option.colorTheme.badgeText
+                          )}
+                        >
+                          <ShieldCheck className="h-3 w-3" />
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

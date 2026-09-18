@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { HotelDetailDict } from "@/i18n/dictionaries";
 
-export function HotelStickyNav() {
+export function HotelStickyNav({
+  dict,
+}: {
+  dict?: HotelDetailDict["nav"];
+}) {
   const [activeSection, setActiveSection] = useState("photos");
 
-  const navItems = [
-    { id: "photos", label: "Photos" },
-    { id: "amenities", label: "Amenities" },
-    { id: "rooms", label: "Rooms" },
-    { id: "reviews", label: "Reviews" },
-    { id: "location", label: "Location" },
-  ];
+  const navItems = useMemo(
+    () => [
+      { id: "photos", label: dict?.photos ?? "Photos" },
+      { id: "amenities", label: dict?.amenities ?? "Amenities" },
+      { id: "rooms", label: dict?.rooms ?? "Rooms" },
+      { id: "reviews", label: dict?.reviews ?? "Reviews" },
+      { id: "location", label: dict?.location ?? "Location" },
+    ],
+    [dict],
+  );
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
@@ -31,7 +39,7 @@ export function HotelStickyNav() {
 
   useEffect(() => {
     const handleScroll = () => {
-      let currentSection = activeSection;
+      let currentSection = "photos";
       let minDistance = Infinity;
 
       for (const item of navItems) {
@@ -52,7 +60,7 @@ export function HotelStickyNav() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [activeSection, navItems]);
+  }, [navItems]);
 
   return (
     <nav className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 hidden md:block">

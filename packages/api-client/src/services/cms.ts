@@ -38,6 +38,7 @@ interface RawBanner {
   imageUrl?: string;
   link?: string;
   order?: number;
+  status?: string;
 }
 
 export interface DealView {
@@ -136,14 +137,6 @@ function toCmsPageView(raw: RawCmsPage, locale: Locale): CmsPageView {
     seoDescription:
       raw.seoDescription || raw.metadata?.seoDescription || raw.metadata?.excerpt || "",
   };
-}
-
-export interface BannerView {
-  id: string;
-  title: string;
-  imageUrl: string;
-  link: string;
-  buttonText: string;
 }
 
 export const cmsService = {

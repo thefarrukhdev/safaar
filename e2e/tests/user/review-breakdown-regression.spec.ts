@@ -21,11 +21,15 @@ test.describe('Hotel review category breakdown', () => {
     const slug = items[0].slug ?? items[0].id;
     await page.goto(`/uz/hotels/${slug}`, { waitUntil: 'networkidle' });
 
-    const legacyMockLabelCount =
-      (await page.getByText('Cleanliness', { exact: true }).count()) +
-      (await page.getByText('Location', { exact: true }).count()) +
-      (await page.getByText('Service', { exact: true }).count());
+    // Eski mock aynan shu uchta qiymatni BIR VAQTDA, bitta breakdown blokida
+    // ko'rsatardi — bu individual so'zlarni (masalan "Service fee" narx
+    // qatoridagi "Service" yoki sharh xulosasidagi "cleanliness" so'zi)
+    // tekshirishdan ko'ra ancha aniq va yolg'on-pozitivga chidamli signal.
+    const legacyMockBlock = page.locator('div', {
+      has: page.getByText('4.9', { exact: true }),
+      hasText: /5\.0/,
+    }).filter({ hasText: '4.8' });
 
-    expect(legacyMockLabelCount).toBe(0);
+    await expect(legacyMockBlock).toHaveCount(0);
   });
 });

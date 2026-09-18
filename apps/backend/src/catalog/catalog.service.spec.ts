@@ -221,3 +221,111 @@ describe('CatalogService.destinations', () => {
     expect(result[0].link).toBeNull();
   });
 });
+
+describe('CatalogService.transport', () => {
+  let service: CatalogService;
+  let cache: AppCacheService;
+  let postgres: jest.Mocked<PostgresService>;
+
+  beforeEach(() => {
+    cache = {
+      getOrSet: jest
+        .fn()
+        .mockImplementation(
+          (_key: string, _ttl: number, fn: () => Promise<unknown>) => fn(),
+        ),
+    } as unknown as AppCacheService;
+
+    postgres = {
+      query: jest.fn(),
+    } as unknown as jest.Mocked<PostgresService>;
+
+    service = new CatalogService(cache, postgres);
+  });
+
+  it('mavjud, faol vehicle uchun to‘liq transport tafsilotini qaytarishi kerak', async () => {
+    postgres.query.mockResolvedValueOnce([
+      {
+        id: 'vehicle-1',
+        name: 'Chevrolet Cobalt',
+        plate_number: '01A123BC',
+        seats: 4,
+        fuel_type: 'benzin',
+        has_ac: true,
+        luggage_capacity_bags: 2,
+        photos: [
+          'https://example.com/car1.jpg',
+          'https://example.com/car2.jpg',
+        ],
+        price_per_day: 350000,
+        city_name: 'Toshkent',
+        company_name: 'Silk Road Transfer',
+        rating: 4.7,
+        reviews_count: 12,
+        phone: '+998901234567',
+        image_url: 'https://example.com/logo.jpg',
+      },
+    ]);
+
+    const result = await service.transport('vehicle-1');
+
+    expect(postgres.query.mock.calls[0]?.[1]).toEqual(['vehicle-1']);
+    expect(result).toEqual({
+      id: 'vehicle-1',
+      name: 'Chevrolet Cobalt',
+      cityName: 'Toshkent',
+      categoryKey: 'transfer',
+      categoryDefault: 'Transport',
+      seats: 4,
+      hasDriver: true,
+      fuelType: 'benzin',
+      transmission: '',
+      hasAc: true,
+      luggageCapacityBags: 2,
+      plateNumber: '01A123BC',
+      pricePerDay: 350000,
+      companyName: 'Silk Road Transfer',
+      rating: 4.7,
+      reviewsCount: 12,
+      phone: '+998901234567',
+      imageUrl: 'https://example.com/logo.jpg',
+      images: ['https://example.com/car1.jpg', 'https://example.com/car2.jpg'],
+    });
+  });
+
+  it('topilmasa 404 (VEHICLE_NOT_FOUND) tashlashi kerak', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await expect(service.transport('missing-id')).rejects.toMatchObject({
+      response: { code: 'VEHICLE_NOT_FOUND' },
+    });
+  });
+
+  it('photos bo‘sh bo‘lsa logo/image_url’ga qaytishi kerak', async () => {
+    postgres.query.mockResolvedValueOnce([
+      {
+        id: 'vehicle-2',
+        name: 'Malibu',
+        plate_number: null,
+        seats: 4,
+        fuel_type: '',
+        has_ac: false,
+        luggage_capacity_bags: null,
+        photos: [],
+        price_per_day: 400000,
+        city_name: 'Samarqand',
+        company_name: 'Reg Travel',
+        rating: 0,
+        reviews_count: 0,
+        phone: '',
+        image_url: 'https://example.com/logo2.jpg',
+      },
+    ]);
+
+    const result = await service.transport('vehicle-2');
+
+    expect(result.images).toEqual(['https://example.com/logo2.jpg']);
+    expect(result.luggageCapacityBags).toBeNull();
+    expect(result.plateNumber).toBeNull();
+  });
+});

@@ -19,7 +19,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "all", 
       href: `/${locale}/hotels?all=true`, 
-      label: "Barchasi", 
+      label: dict.all ?? "Barchasi", 
       icon: LayoutGrid, 
       color: "text-blue-600",
       isActive: pathname === `/${locale}/hotels` && isAll

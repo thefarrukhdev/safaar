@@ -11,7 +11,13 @@ import "react-day-picker/dist/style.css"; // Default styles for quick setup
 
 const locales: Record<string, any> = { uz, ru, en: enUS };
 
-export function SearchDatePicker({ locale = "uz" }: { locale?: string }) {
+export function SearchDatePicker({
+  locale = "uz",
+  dict,
+}: {
+  locale?: string;
+  dict?: { selectDate?: string; checkInCheckOut?: string };
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -56,7 +62,7 @@ export function SearchDatePicker({ locale = "uz" }: { locale?: string }) {
   }, [open]);
 
   // UI matni
-  let displayValue = "Sanani tanlang";
+  let displayValue = dict?.selectDate ?? "Sanani tanlang";
   if (selectedRange.from && selectedRange.to) {
     displayValue = `${format(selectedRange.from, "d-MMM", { locale: locales[locale] })} — ${format(
       selectedRange.to,
@@ -76,7 +82,7 @@ export function SearchDatePicker({ locale = "uz" }: { locale?: string }) {
       >
         <CalendarIcon className="h-5 w-5 text-primary-600" />
         <span className="flex flex-col">
-          <span className="text-xs font-bold text-slate-500">Kirish - Chiqish</span>
+          <span className="text-xs font-bold text-slate-500">{dict?.checkInCheckOut ?? "Kirish - Chiqish"}</span>
           <span className="text-sm font-bold text-slate-900 dark:text-white">
             {displayValue}
           </span>
@@ -86,7 +92,7 @@ export function SearchDatePicker({ locale = "uz" }: { locale?: string }) {
       {open && (
         <div className="absolute left-0 top-full z-50 mt-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
           <div className="flex justify-between items-center mb-2 md:hidden">
-             <span className="font-bold text-sm">Sanani tanlang</span>
+             <span className="font-bold text-sm">{dict?.selectDate ?? "Sanani tanlang"}</span>
              <button onClick={() => setOpen(false)}><X className="h-5 w-5"/></button>
           </div>
           

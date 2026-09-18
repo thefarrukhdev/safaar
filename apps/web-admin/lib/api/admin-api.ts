@@ -1547,6 +1547,19 @@ export const AdminApi = {
     );
   },
 
+  // Uploads — real backend media store (Cloudflare R2 / local fallback,
+  // apps/backend/src/uploads/), the same endpoint web-partner already
+  // uses (see app/_lib/api/endpoints/partners.ts uploadImage). Content-Type
+  // is unset so the browser fills in the multipart boundary itself.
+  uploadImage: async (file: File): Promise<{ id: string; url: string }> => {
+    const formData = new FormData();
+    formData.set('file', file);
+    const { data } = await apiClient.post('/uploads/images', formData, {
+      headers: { 'Content-Type': undefined },
+    });
+    return { id: asString(data.id), url: asString(data.url) };
+  },
+
   // CMS
   getCmsBanners: async (): Promise<CmsBanner[]> => {
     const { data } = await apiClient.get('/admin/cms/banners');
@@ -1884,144 +1897,6 @@ export const AdminApi = {
     return data;
   },
 
-  // ── Availability (2026-09-14 gap closure) ───────────────────────────
-  // Backend: GET/POST/DELETE /admin/rooms/:id/... (admin.controller.ts,
-  // roomAvailabilityCalendar/Block/Unblock in admin.service.ts) — reuses
-  // the existing `room_inventory` table, no mock.
-  getRoomAvailability: async (
-    roomId: string,
-    from: string,
-    to: string,
-  ): Promise<RoomAvailability> => {
-    const { data } = await apiClient.get(`/admin/rooms/${roomId}/availability`, {
-      params: { from, to },
-    });
-    const row = asRecord(data);
-    const rawDays = Array.isArray(row.days) ? row.days : [];
-    return {
-      roomId: asString(row.room_id, roomId),
-      hotelId: asString(row.hotel_id),
-      totalInventory: asNumber(row.total_inventory),
-      days: rawDays.map((rawDay): AvailabilityDay => {
-        const day = asRecord(rawDay);
-        const status = asString(day.status, 'available');
-        return {
-          date: asString(day.date),
-          totalCount: asNumber(day.total_count),
-          bookedCount: asNumber(day.booked_count),
-          blocked: Boolean(day.blocked),
-          status: (['available', 'booked', 'blocked', 'partially_occupied'].includes(
-            status,
-          )
-            ? status
-            : 'available') as AvailabilityDayStatus,
-          sellableCount: asNumber(day.sellable_count),
-        };
-      }),
-    };
-  },
-
-  blockRoomAvailability: async (
-    roomId: string,
-    startDate: string,
-    endDate: string,
-    reason: string,
-  ) => {
-    const { data } = await apiClient.post(`/admin/rooms/${roomId}/block`, {
-      start_date: startDate,
-      end_date: endDate,
-      reason,
-    });
-    return data;
-  },
-
-  unblockRoomAvailability: async (
-    roomId: string,
-    startDate: string,
-    endDate: string,
-  ) => {
-    const { data } = await apiClient.delete(`/admin/rooms/${roomId}/block`, {
-      data: { start_date: startDate, end_date: endDate },
-    });
-    return data;
-  },
-
-  // ── Reviews (2026-09-14 gap closure) ────────────────────────────────
-  getReviews: async (filters?: {
-    status?: AdminReviewStatus | '';
-    targetType?: string;
-    minRating?: number;
-  }): Promise<AdminReview[]> => {
-    const { data } = await apiClient.get('/admin/reviews', {
-      params: {
-        status: filters?.status || undefined,
-        target_type: filters?.targetType || undefined,
-        min_rating: filters?.minRating || undefined,
-      },
-    });
-    return unknownItems(data).map((row) => toReview(asRecord(row)));
-  },
-
-  // Backend returns only {id, status, updated_at} (not a full review row) —
-  // typed narrowly here so callers don't mistake this for the complete
-  // AdminReview shape and accidentally overwrite good fields with defaults.
-  publishReview: async (
-    id: string,
-  ): Promise<{ id: string; status: AdminReviewStatus }> => {
-    const { data } = await apiClient.post(`/admin/reviews/${id}/publish`);
-    const row = asRecord(data);
-    return { id: asString(row.id, id), status: 'published' };
-  },
-
-  hideReview: async (
-    id: string,
-  ): Promise<{ id: string; status: AdminReviewStatus }> => {
-    const { data } = await apiClient.post(`/admin/reviews/${id}/hide`);
-    const row = asRecord(data);
-    return { id: asString(row.id, id), status: 'hidden' };
-  },
-
-  // ── Generic CMS entries (2026-09-14 gap closure — Translations/SEO) ──
-  // Reuses the EXISTING generic /admin/cms/:resource[/:id] backend
-  // (title/body Json + metadata Json, cmsList/cmsOne/cmsUpdate) — same
-  // data the resource-specific banners/news/pages/offers pages already
-  // read, just kept in its full {uz,ru,en} shape instead of flattened.
-  getCmsEntries: async (resource: string): Promise<CmsEntry[]> => {
-    const { data } = await apiClient.get(`/admin/cms/${resource}`);
-    return unknownItems(data).map((row) => toCmsEntry(asRecord(row)));
-  },
-
-  updateCmsEntryTranslations: async (
-    resource: string,
-    id: string,
-    title: Record<string, string>,
-    body: Record<string, string>,
-  ): Promise<CmsEntry> => {
-    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
-      title,
-      body,
-    });
-    return toCmsEntry(asRecord(data));
-  },
-
-  updateCmsEntrySeo: async (
-    resource: string,
-    id: string,
-    seo: CmsEntrySeo,
-  ): Promise<CmsEntry> => {
-    const { data } = await apiClient.patch(`/admin/cms/${resource}/${id}`, {
-      metadata: { seo },
-    });
-    return toCmsEntry(asRecord(data));
-  },
-
-  // develop (ce07fc27) independently added mocked getReviews/updateReviewStatus/
-  // deleteReview, getTranslations/createTranslation/updateTranslation/
-  // deleteTranslation and getSeoSettings/updateSeoSetting — all explicitly
-  // labeled "MOCKED - BACKEND ENDPOINT YETISHMAYDI". Dropped in favor of
-  // the real, backend-connected getReviews/publishReview/hideReview and
-  // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
-  // (verified live against the QA backend this session).
   toggleListingFeatured: async (id: string, featured: boolean) => {
     const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
     return data;

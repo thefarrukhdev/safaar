@@ -38,7 +38,6 @@ import {
   AdminReviewStatus,
   CmsEntry,
   CmsEntrySeo,
-  AdminBanner,
   CmsDestination,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
@@ -2151,43 +2150,5 @@ export const AdminApi = {
   toggleListingFeatured: async (id: string, featured: boolean) => {
     console.log(`Mock: Toggled featured for listing ${id} to ${featured}`);
     return Promise.resolve({ success: true, featured });
-  },
-
-  // ────────────────────────────────────────────────────────────────────────
-  // BANNERS (MOCKED - BACKEND ENDPOINT YETISHMAYDI)
-  // ────────────────────────────────────────────────────────────────────────
-
-  getBanners: async (): Promise<AdminBanner[]> => {
-    return [
-      {
-        id: 'banner-1',
-        title: 'Asosiy sahifa - Registon maydoni',
-        imageUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=2952&auto=format&fit=crop',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'banner-2',
-        title: 'Qishki takliflar - Amirsoy',
-        imageUrl: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=2940&auto=format&fit=crop',
-        isActive: false,
-        createdAt: new Date().toISOString()
-      }
-    ];
-  },
-
-  createBanner: async (payload: Omit<AdminBanner, 'id' | 'createdAt'>): Promise<AdminBanner> => {
-    // Mock
-    return Promise.resolve({ id: `banner-${Date.now()}`, ...payload, createdAt: new Date().toISOString() });
-  },
-
-  updateBanner: async (id: string, payload: Partial<AdminBanner>): Promise<AdminBanner> => {
-    // Mock
-    return Promise.resolve({ id, title: 'mock', imageUrl: 'mock', isActive: true, createdAt: new Date().toISOString(), ...payload });
-  },
-
-  deleteBanner: async (id: string): Promise<void> => {
-    // Mock
-    return Promise.resolve();
   },
 };

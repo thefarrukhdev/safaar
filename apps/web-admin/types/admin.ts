@@ -645,14 +645,6 @@ export type TicketStatus = 'open' | 'in_progress' | 'closed';
 // actual /admin/reviews and /admin/cms/:resource routes verified live
 // against the QA backend this session.
 
-export interface AdminBanner {
-  id: string;
-  title: string;
-  imageUrl: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
 export interface TicketMessage {
   id: string;
   ticketId: string;

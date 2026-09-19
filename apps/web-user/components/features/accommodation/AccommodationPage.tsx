@@ -8,7 +8,7 @@ import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
 import { ActiveFilters } from "@/components/hotels/ActiveFilters";
 import { HotelsPagination } from "@/components/hotels/HotelsPagination";
-import { HotelCard } from "@/components/hotels/HotelCard";
+import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
 import { Button } from "@/components/ui/Button";
 import type { HotelListItem } from "@/types/view";
 
@@ -143,7 +143,7 @@ export async function AccommodationPage({
             <>
               <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                 {items.map((hotel) => (
-                  <HotelCard
+                  <AccommodationCard
                     key={hotel.id}
                     hotel={hotel}
                     locale={locale}

@@ -7,41 +7,48 @@ export type Rounded = "full" | "2xl" | "xl" | "lg" | "md" | "sm";
 export const variantClasses: Record<Variant, string> = {
   // ── Safaar Blue (Primary CTA) ─────────────────────────────
   primary:
-    "bg-primary-600 text-white font-bold " +
-    "shadow-sm hover:shadow-md " +
-    "hover:bg-primary-700 hover:-translate-y-[1px] " +
-    "active:translate-y-0 active:shadow-sm " +
-    "transition-all duration-200 ease-out " +
-    "disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:translate-y-0",
+    "bg-gradient-to-b from-primary-500 to-primary-600 text-white font-medium " +
+    "border border-primary-700/80 " +
+    "shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_2px_4px_rgba(0,0,0,0.1)] " +
+    "hover:from-primary-600 hover:to-primary-700 " +
+    "active:scale-[0.97] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] active:from-primary-700 active:to-primary-700 " +
+    "transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] " +
+    "disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:border-transparent disabled:shadow-none disabled:active:scale-100",
 
   // ── Safaar Amber (Secondary CTA — Premium, Deals) ─────────────────────────────
   accent:
-    "bg-accent-500 text-accent-950 font-extrabold " +
-    "shadow-sm hover:shadow-md " +
-    "hover:bg-accent-600 hover:-translate-y-[1px] text-white " +
-    "active:translate-y-0 active:shadow-sm " +
-    "transition-all duration-200 ease-out " +
-    "disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:translate-y-0",
+    "bg-gradient-to-b from-accent-400 to-accent-500 text-white font-medium " +
+    "border border-accent-600/80 " +
+    "shadow-[inset_0_1px_1px_rgba(255,255,255,0.35),0_2px_4px_rgba(0,0,0,0.1)] " +
+    "hover:from-accent-500 hover:to-accent-600 " +
+    "active:scale-[0.97] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] active:from-accent-600 active:to-accent-600 " +
+    "transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] " +
+    "disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:border-transparent disabled:shadow-none disabled:active:scale-100",
 
-  // ── White Outlined (Secondary) ────────────────────────────────────
+  // ── Fluid Design System: Secondary (Alpha Overlay with Brand Tint) ────────────────────────────────────
   secondary:
-    "bg-white text-slate-800 border border-slate-200 " +
-    "shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-[1px] hover:shadow-md " +
-    "active:translate-y-0 active:shadow-sm " +
-    "dark:bg-slate-900 dark:text-white dark:border-slate-700 " +
-    "dark:hover:bg-slate-800 transition-all duration-200 ease-out " +
-    "disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none disabled:border-slate-100 disabled:translate-y-0",
+    "bg-primary-900/[0.03] text-primary-900 border border-primary-900/[0.08] " +
+    "hover:bg-primary-900/[0.06] hover:border-primary-900/[0.16] " +
+    "active:bg-primary-900/[0.12] active:scale-[0.97] " +
+    "dark:bg-primary-50/[0.08] dark:text-primary-50 dark:border-primary-50/[0.08] " +
+    "dark:hover:bg-primary-50/[0.15] dark:hover:border-primary-50/[0.16] " +
+    "dark:active:bg-primary-50/[0.20] " +
+    "font-medium transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] " +
+    "disabled:opacity-50 disabled:active:scale-100",
 
+  // ── Fluid Design Ghost (No border, just surface alpha) ────────────────────────────────────
   ghost:
-    "text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] " +
-    "dark:text-slate-300 dark:hover:bg-slate-800 " +
-    "transition-all duration-150 disabled:bg-transparent disabled:text-slate-300",
+    "bg-transparent text-primary-900 " +
+    "hover:bg-primary-900/[0.06] active:bg-primary-900/[0.12] active:scale-[0.97] " +
+    "dark:text-primary-50 dark:hover:bg-primary-50/[0.10] dark:active:bg-primary-50/[0.15] " +
+    "font-medium transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] " +
+    "disabled:opacity-50 disabled:active:scale-100",
 };
 
 export const sizeClasses: Record<Size, string> = {
-  sm: "min-h-[40px] h-10 px-3.5 text-xs font-bold",
-  md: "min-h-[44px] h-11 px-4.5 text-sm font-bold",
-  lg: "min-h-[48px] h-12 px-6 text-base font-extrabold",
+  sm: "h-9 px-4 text-xs",
+  md: "h-10 px-4 text-sm",
+  lg: "h-11 px-5 text-base",
 };
 
 export const roundedClasses: Record<Rounded, string> = {
@@ -54,7 +61,7 @@ export const roundedClasses: Record<Rounded, string> = {
 };
 
 export const baseButtonClasses = 
-  "inline-flex items-center justify-center gap-2 font-bold transition-all focus-visible:outline-none disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 transition-all focus-visible:outline-none disabled:pointer-events-none";
 
 export function buttonVariants({
   variant = "primary",

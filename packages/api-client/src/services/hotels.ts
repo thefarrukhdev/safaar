@@ -23,6 +23,7 @@ export interface HotelListParams {
    * umumiy "Mehmonxonalar" katalogi qaytadi.
    */
   type?: string;
+  paymentType?: "online_payment" | "pay_at_property";
 }
 
 export interface HotelListResult {
@@ -53,6 +54,7 @@ export const hotelsService = {
         search: params.search,
         stars: params.stars,
         type: params.type,
+        payment_type: params.paymentType,
         page: params.page,
         limit: params.limit,
         featured: params.featured ? "true" : undefined,

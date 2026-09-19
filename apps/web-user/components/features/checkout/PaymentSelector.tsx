@@ -10,8 +10,6 @@ import type { CheckoutDict } from "@/i18n/dictionaries";
 // orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
 // belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
 export type PaymentMethodId =
-  | "click"
-  | "payme"
   | "uzcard"
   | "humo"
   | "visa"
@@ -20,7 +18,7 @@ export type PaymentMethodId =
 
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
-  dictKey?: "click" | "payme" | "card" | "cash";
+  dictKey?: "card" | "cash";
   type: "online" | "card" | "cash";
   name?: string;
   subtitle?: string;
@@ -56,30 +54,6 @@ const INTL_CARD_THEME = {
 // qachon shu qiymatdan frontendda HISOBLANMAYDI, backend qaytargan
 // haqiqiy `fee_amount`/`amount` ishlatiladi (checkout sahifasida).
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
-  {
-    id: "click",
-    dictKey: "click",
-    type: "online",
-    colorTheme: {
-      badgeBg: "bg-primary-50 dark:bg-primary-950/60 border-primary-200 dark:border-primary-800",
-      badgeText: "text-primary-700 dark:text-primary-300",
-      borderSelected: "border-primary-500 ring-2 ring-primary-500/20",
-      bgSelected: "bg-primary-50/40 dark:bg-primary-950/20",
-      iconBg: "bg-primary-600 text-white",
-    },
-  },
-  {
-    id: "payme",
-    dictKey: "payme",
-    type: "online",
-    colorTheme: {
-      badgeBg: "bg-cyan-50 dark:bg-cyan-950/60 border-cyan-200 dark:border-cyan-800",
-      badgeText: "text-cyan-700 dark:text-cyan-300",
-      borderSelected: "border-cyan-500 ring-2 ring-cyan-500/20",
-      bgSelected: "bg-cyan-50/40 dark:bg-cyan-950/20",
-      iconBg: "bg-cyan-500 text-white",
-    },
-  },
   {
     id: "uzcard",
     name: "Uzcard",
@@ -138,7 +112,7 @@ export interface PaymentSelectorProps {
 }
 
 export function PaymentSelector({
-  defaultValue = "click",
+  defaultValue = "uzcard",
   name = "paymentMethod",
   onChange,
   dict,
@@ -167,9 +141,9 @@ export function PaymentSelector({
           const isSelected = selected === option.id;
           const methodInfo: CheckoutDict["paymentMethods"][keyof CheckoutDict["paymentMethods"]] | undefined =
             option.dictKey ? dict?.[option.dictKey] : undefined;
-          const nameText = methodInfo?.title ?? option.dictKey ?? option.id;
-          const subtitleText = methodInfo?.desc ?? "";
-          const badges: string[] = methodInfo?.badges ?? [];
+          const nameText = methodInfo?.title ?? option.name ?? option.dictKey ?? option.id;
+          const subtitleText = methodInfo?.desc ?? option.subtitle ?? "";
+          const badges: string[] = methodInfo?.badges ?? option.badges ?? [];
 
           return (
             <div
@@ -196,15 +170,14 @@ export function PaymentSelector({
                 {/* Method Icon / Logo Badge */}
                 <div
                   className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold shadow-xs transition-transform duration-200 group-hover:scale-105",
-                    option.colorTheme.iconBg
+                    "flex h-10 w-10 shrink-0 overflow-hidden items-center justify-center rounded-xl font-bold shadow-xs transition-transform duration-200 group-hover:scale-105",
+                    option.type === "card" ? "bg-white border border-slate-200 dark:border-slate-800" : option.colorTheme.iconBg
                   )}
                 >
-                  {option.id === "click" && <Smartphone className="h-5 w-5 stroke-[2.2]" />}
-                  {option.id === "payme" && <Zap className="h-5 w-5 stroke-[2.2]" />}
-                  {(option.id === "uzcard" || option.id === "humo" || option.id === "visa" || option.id === "mastercard") && (
-                    <CreditCard className="h-5 w-5 stroke-[2.2]" />
-                  )}
+                  {option.id === "uzcard" && <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1" />}
+                  {option.id === "humo" && <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1" />}
+                  {option.id === "visa" && <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1" />}
+                  {option.id === "mastercard" && <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1" />}
                   {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
                 </div>
 

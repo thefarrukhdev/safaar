@@ -25,6 +25,7 @@ export function AccountNav({
     { href: `${base}/bookings`, label: dict.bookings },
     { href: `${base}/favorites`, label: dict.favorites },
     { href: `${base}/bonuses`, label: dict.bonuses },
+    { href: `${base}/refunds`, label: (dict as any).refunds || "Refunds" },
   ];
 
   function isActive(href: string): boolean {

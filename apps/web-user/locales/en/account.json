@@ -5,6 +5,7 @@
     "bookings": "My bookings",
     "favorites": "Favorites",
     "bonuses": "Bonuses",
+    "refunds": "Refunds",
     "ariaLabel": "Account sections"
   },
   "profile": {
@@ -78,5 +79,11 @@
     "confirmDelete": "Are you sure you want to delete your profile photo?",
     "uploadFailed": "Failed to upload photo",
     "deleteFailed": "Failed to delete photo"
+  },
+  "refunds": {
+    "title": "My Refunds",
+    "empty": "No refunds yet.",
+    "reason": "Reason",
+    "status": "Status"
   }
 }

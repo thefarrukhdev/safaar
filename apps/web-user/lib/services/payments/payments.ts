@@ -6,8 +6,6 @@ import { config } from "@/lib/config";
 // karta turi FEE stavkasini belgilaydi (1.5% / 3.5%). Qarang
 // docs/frontend-payment-integration.md, 4-bo'lim.
 export type PaymentProvider =
-  | "click"
-  | "payme"
   | "uzcard"
   | "humo"
   | "visa"

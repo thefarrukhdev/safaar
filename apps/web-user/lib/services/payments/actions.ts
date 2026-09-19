@@ -66,7 +66,7 @@ export async function createPaymentSessionAction(
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const bookingId = String(formData.get("bookingId") ?? "").trim();
-  const provider = (String(formData.get("paymentMethod") ?? "click")) as PaymentProvider;
+  const provider = (String(formData.get("paymentMethod") ?? "uzcard")) as PaymentProvider;
   const guestToken = String(formData.get("guestToken") ?? "").trim() || undefined;
   const guestTokenParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
 

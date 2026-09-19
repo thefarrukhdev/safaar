@@ -5,7 +5,7 @@ import { LayoutGrid, Map } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { HotelsDict } from "@/i18n/dictionaries";
 import { formatSum } from "@/lib/money";
-import { HotelCard } from "@/components/hotels/HotelCard";
+import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
 import { HotelsPagination } from "@/components/hotels/HotelsPagination";
 import { InteractiveMapView, type MapMarkerItem } from "@/components/features/map/InteractiveMapView";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -147,7 +147,7 @@ export function AccommodationListWithMap({
                     selectedHotelId === hotel.id ? "ring-2 ring-primary-500 shadow-lg" : ""
                   }`}
                 >
-                  <HotelCard
+                  <AccommodationCard
                     hotel={hotel}
                     locale={locale}
                     labels={{ perNight: dict.perNight, reviews: dict.reviews }}
@@ -182,7 +182,7 @@ export function AccommodationListWithMap({
         <>
           <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-3">
             {items.map((hotel) => (
-              <HotelCard
+              <AccommodationCard
                 key={hotel.id}
                 hotel={hotel}
                 locale={locale}

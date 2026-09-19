@@ -7,7 +7,7 @@ import { UniversalCard } from "@/components/ui/UniversalCard";
 
 // labels ixtiyoriy (optional) — bosh sahifa karuseli uchun
 // uzatilmasa, til bo'yicha default qiymat ishlatiladi
-export interface HotelCardLabels {
+export interface AccommodationCardLabels {
   perNight?: string;
   reviews?: string;
 }
@@ -18,14 +18,14 @@ const DEFAULT_PER_NIGHT: Record<string, string> = {
   en: "night",
 };
 
-export function HotelCard({
+export function AccommodationCard({
   hotel,
   locale,
   labels = {},
 }: {
   hotel: HotelListItem;
   locale: Locale;
-  labels?: HotelCardLabels;
+  labels?: AccommodationCardLabels;
 }) {
   const imageUrl = resolveImage(hotel.imageUrl);
 

@@ -1,4 +1,3 @@
-export * from "../features/hotels/HotelCard";
 export * from "../features/hotels/HotelFilters";
 export * from "../features/hotels/HotelGallery";
 export * from "../features/hotels/RoomList";

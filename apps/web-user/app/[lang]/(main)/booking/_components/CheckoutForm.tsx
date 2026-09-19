@@ -177,7 +177,7 @@ export function CheckoutForm({
 
         <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
-          <PaymentSelector defaultValue="click" name="paymentMethod" dict={dict.paymentMethods} />
+          <PaymentSelector defaultValue="uzcard" name="paymentMethod" dict={dict.paymentMethods} />
         </section>
       </div>
 

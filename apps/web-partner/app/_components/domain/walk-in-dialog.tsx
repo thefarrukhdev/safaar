@@ -18,8 +18,10 @@ import { useRooms } from "../../_hooks/use-rooms";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import {
   useCreateWalkInReservation,
+  useCreateWalkInVehicleReservation,
   useReservations,
 } from "../../_hooks/use-reservations";
+import { useVehicles } from "../../_hooks/use-vehicles";
 import { getPartnerLabels, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
 import { DEFAULT_SLOT_DURATION_MINUTES, buildTimeSlots, toMinutes } from "../../_lib/utils/time-slots";
 import {
@@ -63,6 +65,8 @@ export interface WalkInInitial {
   bedId?: string;
   /** Faqat restoran: kalendardan oldindan tanlangan vaqt-slot ("HH:MM"). */
   slotTime?: string;
+  /** Faqat Rent Car (isBus): oldindan tanlangan avtomobil. */
+  vehicleId?: string;
 }
 
 interface WalkInDialogProps {
@@ -88,6 +92,8 @@ export function WalkInDialog({
   const dacha = isDacha(partnerType);
   const restaurant = isRestaurant(partnerType);
   const isBus = hasBuses(partnerType);
+  const { data: vehicles } = useVehicles();
+  const createVehicleReservation = useCreateWalkInVehicleReservation();
 
   let timeSlots = restaurant
     ? buildTimeSlots(listing.checkInTime, listing.checkOutTime)
@@ -107,7 +113,7 @@ export function WalkInDialog({
       fullName: "",
       phone: "+998 ",
       roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
-      roomNumber: initialValues?.roomNumber ?? "",
+      roomNumber: initialValues?.roomNumber ?? initialValues?.vehicleId ?? "",
       checkIn: defaultCheckIn,
       checkOut: defaultCheckOut,
       slotTime: initialValues?.slotTime ?? timeSlots[0],
@@ -124,7 +130,7 @@ export function WalkInDialog({
         fullName: "",
         phone: "+998 ",
         roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
-        roomNumber: initialValues?.roomNumber ?? "",
+        roomNumber: initialValues?.roomNumber ?? initialValues?.vehicleId ?? "",
         checkIn: ci,
         checkOut: restaurant ? ci : (initialValues?.checkOut ?? addDaysIso(ci, 1)),
         slotTime: initialValues?.slotTime ?? timeSlots[0],
@@ -140,6 +146,31 @@ export function WalkInDialog({
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
+      if (isBus) {
+        if (!values.roomNumber) {
+          toast.error("Avtomobilni tanlang");
+          return;
+        }
+        if (new Date(values.checkOut).getTime() <= new Date(values.checkIn).getTime()) {
+          toast.error(`${labels.checkOutLabel} ${labels.checkInLabel.toLowerCase()}dan keyin bo'lishi kerak`);
+          return;
+        }
+
+        const created = await createVehicleReservation.mutateAsync({
+          fullName: values.fullName,
+          phone: normalizePhone(values.phone),
+          vehicleId: values.roomNumber,
+          checkIn: values.checkIn,
+          checkOut: values.checkOut,
+          adults: values.adults,
+          children: values.children,
+        });
+        toast.success(`Bron yaratildi: ${created.id}`);
+        form.reset();
+        onClose();
+        return;
+      }
+
       const effectiveRoomTypeId = dacha
         ? (dachaRoom?.roomTypeId ?? values.roomTypeId)
         : values.roomTypeId;
@@ -268,7 +299,7 @@ export function WalkInDialog({
           )}
         </div>
 
-        {!dacha && (
+        {!dacha && !isBus && (
           <div className="flex flex-col gap-1.5 md:col-span-2">
             <Label htmlFor="roomTypeId">{labels.unitTypeLabel}</Label>
             <select
@@ -291,13 +322,31 @@ export function WalkInDialog({
           </div>
         )}
 
-        {initialValues?.roomNumber ? (
+        {isBus && (
+          <div className="flex flex-col gap-1.5 md:col-span-2">
+            <Label htmlFor="roomNumber">{labels.unitSingular}</Label>
+            <select
+              id="roomNumber"
+              className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+              {...form.register("roomNumber")}
+            >
+              <option value="">{`Mashinani tanlang`}</option>
+              {vehicles.filter(v => v.status === 'active').map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.plateNumber}) — {v.pricePerDay.toLocaleString("uz-UZ")} so'm
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {initialValues?.roomNumber || initialValues?.vehicleId ? (
           <div className="rounded-card border border-brand-200 bg-brand-50/60 px-3 py-2 text-sm text-brand-900 dark:border-brand-900/50 dark:bg-brand-950/25 dark:text-brand-100 md:col-span-2">
             <span className="font-semibold">Kalendar {labels.unitSingular}si:</span>{" "}
-            {initialValues.roomNumber}
+            {initialValues.roomNumber || vehicles?.find(v => v.id === initialValues?.vehicleId)?.name || initialValues.vehicleId}
           </div>
         ) : (
-          !dacha && (
+          !dacha && !isBus && (
             <div className="flex flex-col gap-1.5 md:col-span-2">
               <Label htmlFor="roomNumber">{unitCap}</Label>
               <select
@@ -368,13 +417,13 @@ export function WalkInDialog({
         )}
 
         <div className="md:col-span-2 flex justify-end gap-2 border-t border-[var(--border)] pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
             Bekor qilish
           </Button>
           <Button
             type="submit"
-            disabled={createReservation.isPending}
-            loading={createReservation.isPending}
+            disabled={createReservation.isPending || createVehicleReservation.isPending}
+            loading={createReservation.isPending || createVehicleReservation.isPending}
           >
             Bron yaratish
           </Button>

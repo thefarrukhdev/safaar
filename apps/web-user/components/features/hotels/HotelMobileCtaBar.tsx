@@ -57,7 +57,7 @@ export function HotelMobileCtaBar({
         </div>
 
         <Button
-          variant="accent"
+          variant="primary"
           size="lg"
           rounded="xl"
           onClick={handleAction}

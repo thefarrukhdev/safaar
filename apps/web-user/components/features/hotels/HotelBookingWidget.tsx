@@ -43,7 +43,7 @@ export function HotelBookingWidget({
 
       <a href="#rooms" id="hotel-original-cta" className="w-full">
         <Button
-          variant="accent"
+          variant="primary"
           size="lg"
           className="w-full font-extrabold"
         >

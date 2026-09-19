@@ -91,7 +91,7 @@ export function RoomList({
                 <span className="text-xs font-semibold text-slate-400">{dict.soldOut}</span>
               ) : (
                 <Link href={bookingHref(room.id)}>
-                  <Button variant="accent" size="md">
+                  <Button variant="primary" size="md">
                     {dict.book}
                   </Button>
                 </Link>

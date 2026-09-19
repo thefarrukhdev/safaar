@@ -70,14 +70,14 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <Link
             key={i}
             href={item.link}
-            className="relative flex-none w-[72vw] max-w-[280px] snap-center rounded-xl overflow-hidden shadow-card aspect-[3/4] block"
+            className="group relative flex-none w-[72vw] max-w-[280px] snap-center rounded-xl overflow-hidden shadow-card border border-slate-900/[0.08] aspect-[3/4] block"
           >
             <Image
               src={item.image}
               alt={item.alt}
               fill
               sizes="280px"
-              className="object-cover transition-transform duration-500 hover:scale-105"
+              className="object-cover duration-300 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none group-hover:scale-[1.02]"
               priority={i === 0}
             />
             {/* Gradient overlay */}
@@ -118,7 +118,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <button
             onClick={() => goTo(activeIndex - 1)}
             disabled={activeIndex === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-emboss-alpha text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300"
             aria-label="Oldingi"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <button
             onClick={() => goTo(activeIndex + 1)}
             disabled={activeIndex === items.length - 1}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-emboss-alpha text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300"
             aria-label="Keyingi"
           >
             <ChevronRight className="h-4 w-4" />

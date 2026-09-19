@@ -41,8 +41,10 @@ export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], ch
 
       {/* Render SearchBar and CityPills exactly here inside the hero background */}
       {children && (
-        <div className="relative z-20 w-full animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-          {children}
+        <div className="relative z-20 mx-auto w-full max-w-5xl px-4 sm:px-6 animate-in fade-in slide-in-from-bottom-4 duration-300 ease-[cubic-bezier(0.2,0,0,1)] delay-300">
+          <div className="rounded-xl border border-slate-900/[0.08] bg-white/60 p-4 backdrop-blur-xl shadow-float sm:p-6">
+            {children}
+          </div>
         </div>
       )}
     </section>

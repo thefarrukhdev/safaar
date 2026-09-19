@@ -45,7 +45,7 @@ function TrustStats({ dict, publicStats }: { dict: any; publicStats: any }) {
   ];
 
   return (
-    <section className="bg-white border-y border-slate-200 py-10 sm:py-14 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "300ms" }}>
+    <section className="bg-white border-y border-slate-900/[0.08] py-10 sm:py-14 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "300ms" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:gap-8">
           {stats.map((stat, i) => (
@@ -54,7 +54,7 @@ function TrustStats({ dict, publicStats }: { dict: any; publicStats: any }) {
               <div className="text-2xl sm:text-3xl font-black text-slate-900">
                 {stat.value}
               </div>
-              <div className="text-sm text-slate-500 font-medium">
+              <div className="text-sm text-slate-900/70 font-medium">
                 {stat.label}
               </div>
             </div>
@@ -75,13 +75,13 @@ function Testimonials({ dict }: { dict: any }) {
       {/* Mobile: horizontal scroll */}
       <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 scrollbar-none sm:hidden pb-4">
         {reviews.map((r: any, i: number) => (
-          <div key={i} className="w-[85vw] max-w-[320px] shrink-0 bg-white rounded-xl border border-slate-200 p-5 snap-center">
+          <div key={i} className="w-[85vw] max-w-[320px] shrink-0 bg-white rounded-xl border border-slate-900/[0.08] p-5 snap-center">
             <div className="flex gap-1 mb-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-accent-500 text-accent-500" />
+                <Star key={i} className="h-4 w-4 fill-amber-500 text-amber-500" />
               ))}
             </div>
-            <p className="text-sm text-slate-600 italic mb-4">"{r.text}"</p>
+            <p className="text-sm text-slate-900/70 italic mb-4">"{r.text}"</p>
             <div className="font-bold text-slate-900">{r.name}</div>
           </div>
         ))}
@@ -90,14 +90,14 @@ function Testimonials({ dict }: { dict: any }) {
       {/* Desktop: grid */}
       <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {reviews.map((r: any, i: number) => (
-          <div key={i} className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+          <div key={i} className="bg-white rounded-xl border border-slate-900/[0.08] p-6 flex flex-col justify-between">
             <div>
               <div className="flex gap-1 mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-accent-500 text-accent-500" />
+                  <Star key={i} className="h-4 w-4 fill-amber-500 text-amber-500" />
                 ))}
               </div>
-              <p className="text-sm text-slate-600 italic mb-4">"{r.text}"</p>
+              <p className="text-sm text-slate-900/70 italic mb-4">"{r.text}"</p>
             </div>
             <div className="font-bold text-slate-900">{r.name}</div>
           </div>
@@ -159,13 +159,8 @@ export default async function HomePage({
       <div className="flex min-h-svh flex-col justify-between">
         <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
           <Hero dict={dict.hero} bannerUrl={bannerUrl}>
-            <div className="w-full">
-              <section id="search-section" className="bg-transparent pb-4 sm:pb-6">
-                <div className="mx-auto max-w-5xl px-4 sm:px-6">
-                  <SearchBar locale={locale} dict={common.search} cities={cities} />
-                </div>
-              </section>
-
+            <div className="w-full space-y-4">
+              <SearchBar locale={locale} dict={common.search} cities={cities} />
               {cities.length > 0 && (
                 <CityPills cities={cities} locale={locale} />
               )}

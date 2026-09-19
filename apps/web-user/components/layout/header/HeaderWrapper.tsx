@@ -42,7 +42,7 @@ export function HeaderWrapper(props: HeaderProps) {
           "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 group/header",
           isTransparent
             ? "bg-transparent border-transparent"
-            : "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800",
+            : "bg-white/95 backdrop-blur-md border-b border-slate-900/[0.08] dark:bg-slate-950/95 dark:border-slate-800",
           hidden ? "-translate-y-full" : "translate-y-0"
         )}
       >

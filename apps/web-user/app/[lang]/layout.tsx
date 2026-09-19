@@ -16,7 +16,7 @@ import NextTopLoader from "nextjs-toploader";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { Toaster } from "sonner";
 import { config } from "@/lib/config";
-import { ClickSpark } from "@/components/ui/ClickSpark";
+
 
 
 const inter = Inter({
@@ -100,7 +100,7 @@ export default async function LangLayout({
         <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
         <AnalyticsProvider>
           <NuqsAdapter>
-            <ClickSpark global />
+
             <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
               {children}
               <Toaster position="top-right" richColors />

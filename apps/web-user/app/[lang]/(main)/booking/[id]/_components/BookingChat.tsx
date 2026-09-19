@@ -87,7 +87,7 @@ export function BookingChat({
   }
 
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden h-[400px]">
+    <div className="flex flex-col rounded-xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden h-[400px]">
       <div className="border-b border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
         <h3 className="font-bold text-slate-900 dark:text-white">{dict.title}</h3>
       </div>
@@ -105,7 +105,7 @@ export function BookingChat({
             return (
               <div key={msg.id || idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
+                  className={`max-w-[75%] rounded-xl px-4 py-2 text-sm ${
                     isUser
                       ? "bg-primary-600 text-white rounded-br-none"
                       : "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 rounded-bl-none"

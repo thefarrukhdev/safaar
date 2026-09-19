@@ -48,7 +48,7 @@ export function Carousel({
   if (!images || images.length === 0) return null;
 
   return (
-    <div className={`relative group overflow-hidden rounded-2xl ${className}`}>
+    <div className={`relative group overflow-hidden rounded-xl ${className}`}>
       {/* Scrollable Container */}
       <div
         ref={containerRef}

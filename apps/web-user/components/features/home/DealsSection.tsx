@@ -33,7 +33,7 @@ function DealCard({
     : 0;
 
   const discountBadge = (
-    <span className="rounded-full bg-rose-600 px-2.5 py-1 text-xs font-black text-white shadow-md">
+    <span className="inline-flex h-6 items-center gap-1 rounded-full bg-amber-500 px-2.5 text-xs font-semibold text-slate-900">
       -{deal.discountPercent}%
     </span>
   );

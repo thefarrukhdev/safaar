@@ -89,10 +89,10 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
           />
           <nav
             aria-label="Mobil navigatsiya"
-            className="fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-4 duration-200 dark:border-slate-800 dark:bg-slate-900"
+            className="fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-900/[0.08] bg-white p-4 shadow-float animate-in fade-in slide-in-from-top-4 duration-200 dark:border-slate-800 dark:bg-slate-900"
           >
             {/* Header */}
-            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-900/[0.08] pb-2 dark:border-slate-800">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 {MENU_LABEL[currentLocale] ?? "Menyu"}
               </span>
@@ -111,8 +111,8 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
                     className={cn(
                       "group flex h-12 items-center justify-between w-full rounded-xl px-3 text-[15px] font-bold transition-all duration-150 active:scale-[0.98]",
                       active
-                        ? "bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400"
-                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:hover:text-white"
+                        ? "bg-slate-900/[0.05] text-slate-900 dark:bg-primary-950/40 dark:text-primary-400"
+                        : "text-slate-700 hover:bg-slate-900/[0.03] hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:hover:text-white"
                     )}
                   >
                     <div className="flex items-center gap-3">

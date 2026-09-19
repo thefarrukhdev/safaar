@@ -243,22 +243,20 @@ export function ListingOverview() {
       },
     ];
 
-    if (!isBus) {
-      base.push({
-        id: 'rules',
-        title: 'Uy qoidalari',
-        subtitle: `${labels.checkInLabel}, ${labels.checkOutLabel.toLowerCase()} va bekor qilish shartlari`,
-        action: 'Qoidalarni sozlash',
-        complete: rulesComplete,
-        summary: `${listing.checkInTime || '--:--'} dan kirish · ${
-          listing.checkOutTime || '--:--'
-        } gacha chiqish`,
-        icon: <Baby className="h-4 w-4" aria-hidden />,
-        missing: !rulesComplete
-          ? `${labels.checkInLabel} va ${labels.checkOutLabel.toLowerCase()} vaqtlarini kiriting.`
-          : undefined,
-      });
-    }
+    base.push({
+      id: 'rules',
+      title: isBus ? 'Ijara qoidalari' : 'Uy qoidalari',
+      subtitle: `${labels.checkInLabel}, ${labels.checkOutLabel.toLowerCase()} va bekor qilish shartlari`,
+      action: 'Qoidalarni sozlash',
+      complete: rulesComplete,
+      summary: `${listing.checkInTime || '--:--'} dan ${isBus ? 'olib ketish' : 'kirish'} · ${
+        listing.checkOutTime || '--:--'
+      } gacha ${isBus ? 'qaytarish' : 'chiqish'}`,
+      icon: <Baby className="h-4 w-4" aria-hidden />,
+      missing: !rulesComplete
+        ? `${labels.checkInLabel} va ${labels.checkOutLabel.toLowerCase()} vaqtlarini kiriting.`
+        : undefined,
+    });
 
     if (dacha) {
       return [
@@ -302,15 +300,14 @@ export function ListingOverview() {
 
     if (isBus) {
       return [
-        base[0],
-        base[3],
+        ...base,
         {
           id: 'rooms',
           title: 'Avtomobillar',
           subtitle: `Mijoz bron qilishi mumkin bo'lgan avtomobillar`,
           action: `Avto qo'shish`,
           complete: vehicles.some(v => v.status === 'active'),
-          summary: vehicles.length > 0
+          summary: vehicles.some(v => v.status === 'active')
             ? `${vehicles.filter(v => v.status === 'active').length} ta avto sotuvda`
             : `Hali avtomobillar qo'shilmagan`,
           icon: <CarFront className="h-4 w-4" aria-hidden />,
@@ -663,34 +660,30 @@ export function ListingOverview() {
         <Card>
           <CardBody className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">Mijozga ko'rinadiganlar</h2>
-            {!isBus && (
-              <>
-                <ChecklistItem done={Boolean(listing.name)} label="E'lon nomi" />
-                <ChecklistItem
-                  done={listing.photos.length >= 3}
-                  label="Kamida 3 ta rasm"
-                />
-                <ChecklistItem
-                  done={listing.amenities.length >= 3}
-                  label="Asosiy qulayliklar"
-                />
-                <ChecklistItem
-                  done={Boolean(listing.address)}
-                  label="Aniq manzil"
-                />
-                <ChecklistItem
-                  done={
-                    typeof listing.latitude === 'number' &&
-                    typeof listing.longitude === 'number'
-                  }
-                  label="Xaritadagi nuqta"
-                />
-                <ChecklistItem
-                  done={Boolean(listing.checkInTime && listing.checkOutTime)}
-                  label={`${labels.checkInLabel}/${labels.checkOutLabel.toLowerCase()} va qoidalar`}
-                />
-              </>
-            )}
+            <ChecklistItem done={Boolean(listing.name)} label="E'lon nomi" />
+            <ChecklistItem
+              done={listing.photos.length >= 3}
+              label="Kamida 3 ta rasm"
+            />
+            <ChecklistItem
+              done={listing.amenities.length >= 3}
+              label="Asosiy qulayliklar"
+            />
+            <ChecklistItem
+              done={Boolean(listing.address)}
+              label="Aniq manzil"
+            />
+            <ChecklistItem
+              done={
+                typeof listing.latitude === 'number' &&
+                typeof listing.longitude === 'number'
+              }
+              label="Xaritadagi nuqta"
+            />
+            <ChecklistItem
+              done={Boolean(listing.checkInTime && listing.checkOutTime)}
+              label={`${labels.checkInLabel}/${labels.checkOutLabel.toLowerCase()} va qoidalar`}
+            />
             <ChecklistItem
               done={isBus ? vehicles.some(v => v.status === 'active') : restaurant ? listedRooms.length > 0 : roomAds.length > 0 && listedRooms.length > 0}
               label={isBus ? 'Avtomobillar' : restaurant ? 'Stollar' : labels.unitTypesTitle}
@@ -698,36 +691,34 @@ export function ListingOverview() {
           </CardBody>
         </Card>
 
-        {!isBus && (
-          <Card>
-            <CardBody className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold">Qoidalar qisqacha</h2>
-              <div className="grid gap-2 text-sm">
-                <RuleChip
-                  on={listing.childrenAllowed}
-                  icon={<Baby />}
-                  label="Bolalar"
-                />
-                <RuleChip
-                  on={listing.petsAllowed}
-                  icon={<Dog />}
-                  label="Uy hayvonlari"
-                />
-                <RuleChip
-                  on={listing.smokingAllowed}
-                  icon={<Cigarette />}
-                  label="Chekish"
-                />
-              </div>
-              <div className="rounded-md bg-[var(--surface-muted)] p-3 text-xs leading-5 text-[var(--muted-foreground)]">
-                Bekor qilish:{' '}
-                <span className="font-semibold text-[var(--foreground)]">
-                  {CANCELLATION_POLICY_INFO[listing.cancellationPolicy].label}
-                </span>
-              </div>
-            </CardBody>
-          </Card>
-        )}
+        <Card>
+          <CardBody className="flex flex-col gap-3">
+            <h2 className="text-sm font-semibold">Qoidalar qisqacha</h2>
+            <div className="grid gap-2 text-sm">
+              <RuleChip
+                on={listing.childrenAllowed}
+                icon={<Baby />}
+                label="Bolalar"
+              />
+              <RuleChip
+                on={listing.petsAllowed}
+                icon={<Dog />}
+                label="Uy hayvonlari"
+              />
+              <RuleChip
+                on={listing.smokingAllowed}
+                icon={<Cigarette />}
+                label="Chekish"
+              />
+            </div>
+            <div className="rounded-md bg-[var(--surface-muted)] p-3 text-xs leading-5 text-[var(--muted-foreground)]">
+              Bekor qilish:{' '}
+              <span className="font-semibold text-[var(--foreground)]">
+                {CANCELLATION_POLICY_INFO[listing.cancellationPolicy].label}
+              </span>
+            </div>
+          </CardBody>
+        </Card>
       </aside>
 
       <GeneralEditor
@@ -822,7 +813,7 @@ function RoomListingsPanel({
           await updateRoomType.mutateAsync({
             id: roomType.id,
             values: { 
-              name: `DELETED_${Date.now()}_${roomType.name}`,
+              name: `DELETED_${roomType.id}`,
               capacity: roomType.capacity,
               basePrice: roomType.basePrice || 0,
               amenities: roomType.amenities as string[] || [],

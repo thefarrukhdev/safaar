@@ -7,7 +7,7 @@ export default function HotelDetailLoading() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-8">
       {/* Galereya */}
-      <Skeleton className="h-72 rounded-2xl" />
+      <Skeleton className="h-72 rounded-xl" />
 
       {/* Sarlavha */}
       <div className="flex flex-col gap-2">

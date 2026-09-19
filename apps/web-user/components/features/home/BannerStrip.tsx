@@ -17,7 +17,7 @@ export function BannerStrip({
       <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-none pb-2">
         {banners.map((banner) => {
           const content = (
-            <div className="relative h-40 w-[85vw] max-w-[640px] shrink-0 snap-center overflow-hidden rounded-2xl bg-slate-100 sm:h-52 sm:w-full dark:bg-slate-800">
+            <div className="relative h-40 w-[85vw] max-w-[640px] shrink-0 snap-center overflow-hidden rounded-xl bg-slate-900/[0.05] sm:h-52 sm:w-full">
               {banner.imageUrl ? (
                 <Image
                   src={banner.imageUrl}

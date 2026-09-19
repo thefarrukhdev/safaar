@@ -29,12 +29,12 @@ function AuthButtons({
       <div className={`flex gap-2 ${isCol ? "flex-col" : "items-center"}`}>
         <Link
           href={`${base}/account`}
-          className={buttonVariants({ variant: "ghost", rounded: "lg", className: cn(sizeClass, "font-bold text-slate-700 dark:text-white hover:bg-slate-100 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10") })}
+          className={buttonVariants({ variant: "ghost",  className: cn(sizeClass, "font-bold text-slate-700 dark:text-white hover:bg-slate-100 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10") })}
         >
           {dict.actions.account}
         </Link>
         <form action={logoutAction.bind(null, locale)} className={isCol ? "w-full flex" : ""}>
-          <Button size="md" variant="secondary" rounded="lg" type="submit" className={cn(isCol ? "w-full flex-1" : "", "group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20")}>
+          <Button size="md" variant="secondary"  type="submit" className={cn(isCol ? "w-full flex-1" : "", "group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20")}>
             {dict.actions.logout}
           </Button>
         </form>
@@ -44,13 +44,13 @@ function AuthButtons({
 
   const loginClasses = buttonVariants({ 
     variant: "secondary", 
-    rounded: "lg", 
+     
     className: cn(sizeClass, "!h-10 px-4 text-[14px] font-bold group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20") 
   });
   
   const registerClasses = buttonVariants({ 
     variant: "primary", 
-    rounded: "lg", 
+     
     className: cn(sizeClass, "!h-10 px-4 text-[14px] font-bold") 
   });
 

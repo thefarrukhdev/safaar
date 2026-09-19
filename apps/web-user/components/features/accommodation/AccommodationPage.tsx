@@ -7,8 +7,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
 import { ActiveFilters } from "@/components/hotels/ActiveFilters";
-import { HotelsPagination } from "@/components/hotels/HotelsPagination";
-import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
+import { AccommodationListWithMap } from "@/components/features/accommodation/AccommodationListWithMap";
 import { Button } from "@/components/ui/Button";
 import type { HotelListItem } from "@/types/view";
 
@@ -106,62 +105,40 @@ export async function AccommodationPage({
         defaults={{ cityId, checkIn, checkOut, guests }}
       />
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <AccommodationListWithMap
+        items={items}
+        locale={locale}
+        dict={dict}
+        basePath={basePath}
+        safePage={safePage}
+        totalPages={totalPages}
+        currentParams={currentParams}
+        headerTitle={
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl dark:text-white">{title}</h1>
-            <p aria-live="polite" className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl text-slate-900">{title}</h1>
+            <p aria-live="polite" className="text-xs sm:text-sm text-slate-900/70 mt-1">
               {dict.resultsCount.replace("{count}", String(total))}
             </p>
           </div>
-          {total > 0 && (
+        }
+        headerSort={
+          total > 0 ? (
             <Suspense fallback={null}>
               <HotelSortSelect dict={dict.sort} />
             </Suspense>
-          )}
-        </div>
-        <Suspense fallback={null}>
-          <ActiveFilters dict={dict} />
-        </Suspense>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <Suspense fallback={null}>
-          <HotelFilters dict={{ filters: dict.filters, types: dict.types, starOptions: dict.starOptions, amenityOptions: dict.amenityOptions, paymentOptions: dict.paymentOptions }} />
-        </Suspense>
-
-        <section aria-label={dict.title}>
-          {items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <p className="font-medium text-slate-700 dark:text-slate-200">{dict.empty}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{dict.emptyHint}</p>
-              <Link href={clearedHref}>
-                <Button variant="secondary">{dict.clearFilters}</Button>
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-                {items.map((hotel) => (
-                  <AccommodationCard
-                    key={hotel.id}
-                    hotel={hotel}
-                    locale={locale}
-                    labels={{ perNight: dict.perNight, reviews: dict.reviews }}
-                  />
-                ))}
-              </div>
-              <HotelsPagination
-                basePath={basePath}
-                params={currentParams}
-                page={safePage}
-                totalPages={totalPages}
-                dict={dict.pagination}
-              />
-            </>
-          )}
-        </section>
-      </div>
+          ) : null
+        }
+        activeFilters={
+          <Suspense fallback={null}>
+            <ActiveFilters dict={dict} />
+          </Suspense>
+        }
+        filters={
+          <Suspense fallback={null}>
+            <HotelFilters dict={{ filters: dict.filters, types: dict.types, starOptions: dict.starOptions, amenityOptions: dict.amenityOptions, paymentOptions: dict.paymentOptions }} />
+          </Suspense>
+        }
+      />
     </main>
   );
 }

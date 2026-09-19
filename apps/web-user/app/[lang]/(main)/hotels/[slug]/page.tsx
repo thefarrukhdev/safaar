@@ -113,7 +113,7 @@ export default async function Page({
   if (!hotel) {
     return (
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16">
-        <p className="rounded-2xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800 shadow-sm">
+        <p className="rounded-xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800 shadow-sm">
           {dict.error}
         </p>
       </main>

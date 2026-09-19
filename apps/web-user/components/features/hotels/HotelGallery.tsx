@@ -23,11 +23,11 @@ export function HotelGallery({
   if (shots.length === 0) {
     return (
       <div
-        className="flex aspect-[21/9] w-full items-center justify-center rounded-2xl bg-slate-100 text-slate-400"
+        className="flex aspect-[21/9] w-full items-center justify-center rounded-xl bg-slate-900/[0.05] text-slate-900/40"
         role="img"
         aria-label={alt}
       >
-        <ImageIcon className="h-12 w-12 opacity-50" />
+        <ImageIcon className="h-12 w-12" />
       </div>
     );
   }
@@ -38,60 +38,68 @@ export function HotelGallery({
   return (
     <>
       {/* Desktop/Mobile Gallery Grid */}
-      <div
-        className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md"
-        onClick={() => setIsOpen(true)}
-      >
-        <div className="grid grid-cols-1 gap-1.5 sm:h-[400px] sm:grid-cols-4 sm:grid-rows-2">
-          {/* Large Main Featured Photo */}
-          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 sm:col-span-2 sm:row-span-2 sm:aspect-auto">
-            <Image
-              src={mainPhoto}
-              alt={`${alt} — Asosiy ko'rinish`}
-              priority
-              fill
-              sizes="(max-width: 640px) 100vw, 50vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              quality={85}
-            />
-          </div>
-
-          {/* 4 Smaller Grid Side Photos */}
-          {sidePhotos.map((src, i) => (
-            <div
-              key={`${src}-${i}`}
-              className={cn(
-                'relative hidden overflow-hidden bg-slate-100 sm:block',
-                i === 0 && 'sm:col-span-1 sm:row-span-1',
-                i === 1 && 'sm:col-span-1 sm:row-span-1',
-                i === 2 && 'sm:col-span-1 sm:row-span-1',
-                i === 3 && 'sm:col-span-1 sm:row-span-1',
-              )}
-            >
+      <div className="relative">
+        <img
+          src={mainPhoto}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 size-full scale-110 rounded-xl object-cover opacity-30 blur-3xl saturate-150"
+        />
+        <div
+          className="group relative cursor-pointer overflow-hidden rounded-xl"
+          onClick={() => setIsOpen(true)}
+        >
+          <div className="grid grid-cols-1 gap-1.5 sm:h-[400px] sm:grid-cols-4 sm:grid-rows-2">
+            {/* Large Main Featured Photo */}
+            <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-900/[0.05] sm:col-span-2 sm:row-span-2 sm:aspect-auto">
               <Image
-                src={src}
-                alt={`${alt} — ${i + 2}`}
+                src={mainPhoto}
+                alt={`${alt} — Asosiy ko'rinish`}
+                priority
                 fill
-                sizes="25vw"
-                className="object-cover transition-transform duration-300 hover:scale-105"
+                sizes="(max-width: 640px) 100vw, 50vw"
+                className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.02] motion-reduce:transition-none"
+                quality={85}
               />
             </div>
-          ))}
-        </div>
 
-        {/* Floating Photo Count Button */}
-        {shots.length > 1 && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(true);
-            }}
-            className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:scale-105 hover:bg-slate-50 active:scale-95"
-          >
-            <Camera className="h-4 w-4 text-slate-800" />
-            <span>{shots.length} ta rasm</span>
-          </button>
-        )}
+            {/* 4 Smaller Grid Side Photos */}
+            {sidePhotos.map((src, i) => (
+              <div
+                key={`${src}-${i}`}
+                className={cn(
+                  'relative hidden overflow-hidden bg-slate-900/[0.05] sm:block',
+                  i === 0 && 'sm:col-span-1 sm:row-span-1',
+                  i === 1 && 'sm:col-span-1 sm:row-span-1',
+                  i === 2 && 'sm:col-span-1 sm:row-span-1',
+                  i === 3 && 'sm:col-span-1 sm:row-span-1',
+                )}
+              >
+                <Image
+                  src={src}
+                  alt={`${alt} — ${i + 2}`}
+                  fill
+                  sizes="25vw"
+                  className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.02] motion-reduce:transition-none"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Floating Photo Count Button */}
+          {shots.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(true);
+              }}
+              className="absolute bottom-4 right-4 z-10 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+            >
+              <Camera className="size-5" aria-hidden="true" />
+              <span>{shots.length} ta rasm</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Fullscreen Gallery Modal */}

@@ -67,7 +67,7 @@ export function PhotoLightbox({
       )}
 
       {/* Image container */}
-      <div className="relative max-h-[85vh] max-w-[90vw] aspect-4/3 overflow-hidden rounded-2xl">
+      <div className="relative max-h-[85vh] max-w-[90vw] aspect-4/3 overflow-hidden rounded-xl">
         <Image
           src={currentPhoto}
           alt={`Photo ${currentIndex + 1}`}

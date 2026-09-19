@@ -46,56 +46,40 @@ export function CityPills({ cities, locale }: CityPillsProps) {
 
   return (
     <div className="relative mx-auto mt-2 w-full max-w-6xl sm:mt-4">
-      {/* Left fade + arrow */}
-      <div
-        className={`pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center transition-opacity duration-200 ${
-          canScrollLeft ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="h-full w-12 bg-gradient-to-r from-white via-white/50 to-transparent" />
-      </div>
       <button
         onClick={() => scroll("left")}
-        className={`absolute left-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-600 transition-all hover:border-slate-300 hover:bg-white ${
+        className={`absolute left-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="Chapga"
       >
-        <ChevronLeft className="h-3.5 w-3.5" />
+        <ChevronLeft className="size-5" />
       </button>
 
       {/* Pills track */}
       <div
         ref={trackRef}
-        className="flex items-center gap-2 overflow-x-auto px-4 py-2 scrollbar-none sm:justify-center"
+        className="flex items-center gap-2 overflow-x-auto px-12 py-2 scrollbar-none sm:justify-center"
       >
         {displayCities.map((city) => (
           <Link
             key={city.id}
             href={`/${locale}/hotels?city_id=${encodeURIComponent(city.id)}`}
-            className="shrink-0 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm sm:text-[15px] font-bold text-slate-800 shadow-sm transition-all duration-300 hover:border-slate-300 hover:bg-white hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97]"
+            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm sm:text-[15px] font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <span className="capitalize">{city.name}</span>
           </Link>
         ))}
       </div>
 
-      {/* Right fade + arrow */}
-      <div
-        className={`pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center transition-opacity duration-200 ${
-          canScrollRight ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="h-full w-12 bg-gradient-to-l from-white via-white/50 to-transparent" />
-      </div>
       <button
         onClick={() => scroll("right")}
-        className={`absolute right-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-600 transition-all hover:border-slate-300 hover:bg-white ${
+        className={`absolute right-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="O'ngga"
       >
-        <ChevronRight className="h-3.5 w-3.5" />
+        <ChevronRight className="size-5" />
       </button>
     </div>
   );

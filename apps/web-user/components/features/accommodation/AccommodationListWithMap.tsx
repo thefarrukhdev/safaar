@@ -80,37 +80,31 @@ export function AccommodationListWithMap({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* View Toggle Bar & Header (Spans full width) */}
+      {/* View Toggle Bar & Header */}
       {headerTitle || headerSort ? (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-900/[0.08] pb-4">
             <div>{headerTitle}</div>
             <div className="flex items-center gap-3">
               {headerSort}
-              <div className="inline-flex rounded-xl border border-slate-200/80 bg-white p-1 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  aria-pressed={viewMode === "grid"}
                   onClick={() => setViewMode("grid")}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-extrabold transition-all cursor-pointer ${
-                    viewMode === "grid"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
+                  className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 aria-pressed:bg-slate-900 aria-pressed:text-white aria-pressed:hover:bg-slate-900/90 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
-                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <LayoutGrid className="size-5" />
                   <span className="hidden sm:inline">Grid</span>
                 </button>
 
                 <button
                   type="button"
+                  aria-pressed={viewMode === "map"}
                   onClick={() => setViewMode("map")}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-extrabold transition-all cursor-pointer ${
-                    viewMode === "map"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  }`}
+                  className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 aria-pressed:bg-slate-900 aria-pressed:text-white aria-pressed:hover:bg-slate-900/90 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
-                  <Map className="h-3.5 w-3.5" />
+                  <Map className="size-5" />
                   <span className="hidden sm:inline">Xarita</span>
                 </button>
               </div>
@@ -143,8 +137,8 @@ export function AccommodationListWithMap({
                   key={hotel.id}
                   onMouseEnter={() => setHoveredHotelId(hotel.id)}
                   onMouseLeave={() => setHoveredHotelId(null)}
-                  className={`transition-all duration-200 rounded-2xl ${
-                    selectedHotelId === hotel.id ? "ring-2 ring-primary-500 shadow-lg" : ""
+                  className={`transition-all duration-200 rounded-xl ${
+                    selectedHotelId === hotel.id ? "ring-2 ring-blue-600 ring-offset-4" : ""
                   }`}
                 >
                   <AccommodationCard
@@ -173,7 +167,7 @@ export function AccommodationListWithMap({
               selectedItemId={selectedHotelId}
               onSelectItem={(item) => setSelectedHotelId(item.id)}
               onBoundsChange={handleBoundsChange}
-              className="h-[450px] w-full lg:h-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800"
+              className="h-[450px] w-full lg:h-full rounded-xl overflow-hidden border border-slate-900/[0.08]"
             />
           </div>
         </div>

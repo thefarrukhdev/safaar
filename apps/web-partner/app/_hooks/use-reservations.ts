@@ -68,6 +68,40 @@ export function useCreateWalkInReservation() {
   });
 }
 
+export function useCreateWalkInVehicleReservation() {
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (draft: any) => {
+      const names = (draft.fullName || 'Mehmon').trim().split(' ');
+      const firstName = names[0];
+      const lastName = names.slice(1).join(' ') || 'Mehmon';
+
+      return toReservation(
+        await partners.createVehicleBooking(
+          {
+            vehicle_id: draft.vehicleId,
+            check_in: draft.checkIn,
+            check_out: draft.checkOut,
+            adults: draft.adults ?? 1,
+            children: draft.children ?? 0,
+            guestInfo: {
+              firstName,
+              lastName,
+              phone: draft.phone,
+              email: null,
+            },
+          },
+          accessToken,
+        ),
+      );
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+    },
+  });
+}
+
 /** Bitta bron tafsiloti. */
 export function useReservation(id: string) {
   const reservations = useReservations();

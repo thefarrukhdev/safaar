@@ -75,7 +75,7 @@ export function CheckoutForm({
       <input type="hidden" name="roomId" value={room.id} />
 
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5">
           <h2 className="text-lg font-semibold">{dict.guestDetails}</h2>
           
           {isGuest ? (
@@ -170,18 +170,18 @@ export function CheckoutForm({
               name="specialRequests"
               rows={3}
               placeholder={dict.specialRequestsPlaceholder}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
             />
           </label>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
           <PaymentSelector defaultValue="uzcard" name="paymentMethod" dict={dict.paymentMethods} />
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-3 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm lg:sticky lg:top-24">
+      <aside className="flex h-fit flex-col gap-3 rounded-xl border border-slate-900/[0.08] bg-card p-5 lg:sticky lg:top-24 shadow-float">
         <h2 className="text-lg font-semibold">{dict.summary}</h2>
         <div>
           <p className="font-medium">{hotelName}</p>
@@ -194,7 +194,7 @@ export function CheckoutForm({
           <span>{formatSum(total)}</span>
         </div>
 
-        <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+        <div className="border-t border-slate-900/[0.08] pt-3 dark:border-slate-800">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-500">{dict.promoCode}</span>
             <div className="flex gap-2">
@@ -203,12 +203,12 @@ export function CheckoutForm({
                 placeholder="PROMO2025"
                 className="text-sm"
               />
-              <Button type="button" variant="secondary" className="px-3">{dict.applyPromo}</Button>
+              <Button type="button" variant="secondary" className="px-3 rounded-full active:scale-[0.97]">{dict.applyPromo}</Button>
             </div>
           </label>
         </div>
 
-        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold dark:border-slate-800">
+        <div className="flex justify-between border-t border-slate-900/[0.08] pt-3 font-semibold dark:border-slate-800">
           <span>{dict.total}</span>
           <span>{formatSum(total)}</span>
         </div>
@@ -245,7 +245,7 @@ export function CheckoutForm({
             type="submit"
             variant="accent"
             size="lg"
-            className="w-full"
+            className="w-full rounded-full active:scale-[0.97]"
             loading={pending}
             disabled={nights < 1}
           >

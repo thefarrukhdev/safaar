@@ -299,6 +299,17 @@ export function createBooking(
   });
 }
 
+export function createVehicleBooking(
+  body: Record<string, unknown>,
+  token?: string | null,
+) {
+  return request<BackendBooking>('/bookings/vehicle', {
+    method: 'POST',
+    body,
+    token,
+  });
+}
+
 export function confirmBooking(id: string, token?: string | null) {
   return request<BackendBooking>(
     `/partners/bookings/${encodeURIComponent(id)}/confirm`,

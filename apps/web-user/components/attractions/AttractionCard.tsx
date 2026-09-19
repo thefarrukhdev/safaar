@@ -134,7 +134,7 @@ export function AttractionCard({ item, categoryLabel, index }: AttractionCardPro
       ref={cardRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group flex flex-col overflow-hidden rounded-3xl bg-white
+      className="group flex flex-col overflow-hidden rounded-xl bg-white
         shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_12px_rgba(0,0,0,0.07),0_1px_3px_rgba(0,0,0,0.04)]
         ring-1 ring-slate-200/80 transition-shadow duration-300
         dark:bg-slate-900 dark:ring-slate-700/60
@@ -145,7 +145,7 @@ export function AttractionCard({ item, categoryLabel, index }: AttractionCardPro
         {/* Main image — left 2/3 */}
         <div
           ref={imgMainRef}
-          className="relative col-span-2 overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700"
+          className="relative col-span-2 overflow-hidden rounded-xl bg-slate-200 dark:bg-slate-700"
         >
           {item.imageUrl ? (
             <Image
@@ -165,12 +165,12 @@ export function AttractionCard({ item, categoryLabel, index }: AttractionCardPro
 
         {/* Small images — right col, stacked */}
         <div className="col-span-1 flex flex-col gap-1.5">
-          <div ref={imgARef} className="relative flex-1 overflow-hidden rounded-2xl bg-amber-50 dark:bg-slate-700">
+          <div ref={imgARef} className="relative flex-1 overflow-hidden rounded-xl bg-amber-50 dark:bg-slate-700">
             {item.imageUrl && (
               <Image src={item.imageUrl} alt="" fill sizes="20vw" unoptimized className="object-cover brightness-[0.88] saturate-[1.1]" quality={70} />
             )}
           </div>
-          <div ref={imgBRef} className="relative flex-1 overflow-hidden rounded-2xl bg-sky-50 dark:bg-slate-700">
+          <div ref={imgBRef} className="relative flex-1 overflow-hidden rounded-xl bg-sky-50 dark:bg-slate-700">
             {item.imageUrl && (
               <Image src={item.imageUrl} alt="" fill sizes="20vw" unoptimized className="object-cover brightness-75 saturate-[1.15]" quality={65} />
             )}
@@ -226,7 +226,7 @@ export function AttractionCard({ item, categoryLabel, index }: AttractionCardPro
             onMouseLeave={handleBtnLeave}
             onMouseDown={handleBtnDown}
             onMouseUp={handleBtnUp}
-            className="w-full rounded-2xl bg-primary-600 py-2.5 text-xs font-bold tracking-wide text-white
+            className="w-full rounded-xl bg-primary-600 py-2.5 text-xs font-bold tracking-wide text-white
               shadow-sm
               transition-shadow duration-150
               hover:bg-primary-500

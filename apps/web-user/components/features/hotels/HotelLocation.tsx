@@ -32,7 +32,7 @@ export function HotelLocation({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-start gap-3 rounded-xl border border-slate-900/[0.08] bg-white p-4">
         <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-slate-900">{address}</span>
@@ -48,9 +48,9 @@ export function HotelLocation({
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-50"
+        className="inline-flex h-10 max-md:h-11 w-fit items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
       >
-        <ExternalLink className="h-4 w-4 text-slate-400" />
+        <ExternalLink className="h-4 w-4 text-slate-900/70" />
         {dict?.openInMaps ?? "Google Maps'da ochish"}
       </a>
     </div>

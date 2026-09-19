@@ -54,28 +54,28 @@ export function Modal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       {/* Qoramtir Fon (Backdrop) */}
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/50 transition-opacity dark:bg-black/60"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Asosiy Dialog Oynasi */}
       <div
-        className={`relative flex w-full flex-col ${maxWidth} transform rounded-2xl bg-white shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95 dark:bg-slate-900`}
+        className={`relative flex w-full flex-col ${maxWidth} transform rounded-xl border border-slate-900/[0.08] bg-white shadow-float transition-all duration-200 animate-in fade-in zoom-in-95 dark:border-white/[0.10] dark:bg-slate-900`}
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Sarlavhasi (Header) */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-900/[0.08] px-6 py-4 dark:border-white/[0.10]">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+              className="inline-flex size-9 items-center justify-center rounded-full text-slate-900/70 transition-colors hover:bg-slate-900/[0.08] hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:text-white/70 dark:hover:bg-white/[0.12] dark:hover:text-white"
               aria-label="Oynani yopish"
             >
-              <X className="h-5 w-5" />
+              <X className="size-5" aria-hidden="true" />
             </button>
           </div>
 

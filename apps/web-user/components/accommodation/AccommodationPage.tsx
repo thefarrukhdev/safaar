@@ -112,7 +112,7 @@ export async function AccommodationPage({
     <main className="relative mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col px-3 sm:px-4 md:px-8 pb-8 pt-3 sm:pt-6">
       
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-4 sm:mb-6 flex h-[160px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-[20px] sm:rounded-[24px] bg-gradient-to-r from-[#f0f7ff] to-[#e6f2ff] px-5 sm:px-8 md:px-12 dark:from-slate-900 dark:to-slate-800">
+      <div className="relative mb-4 sm:mb-6 flex h-[160px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-[20px] sm:rounded-xl bg-gradient-to-r from-[#f0f7ff] to-[#e6f2ff] px-5 sm:px-8 md:px-12 dark:from-slate-900 dark:to-slate-800">
         <div className="relative z-10 w-full sm:max-w-[65%] lg:max-w-[52%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-[#0f172a] dark:text-white leading-tight">
             Mehmonxona, Dacha, Sanatoriya va Oromgohlar qidirish xizmati
@@ -342,7 +342,7 @@ export async function AccommodationPage({
             <HotelFilters dict={{ filters: dict.filters, types: dict.types, starOptions: dict.starOptions, amenityOptions: dict.amenityOptions, paymentOptions: dict.paymentOptions }} sortSelect={null} />
           </Suspense>
           <section aria-label={dict.title}>
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <p className="font-medium text-slate-700 dark:text-slate-200">{dict.empty}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">{dict.emptyHint}</p>
               <Link href={clearedHref}>

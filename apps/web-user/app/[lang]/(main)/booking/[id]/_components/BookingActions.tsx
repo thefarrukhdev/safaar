@@ -157,7 +157,7 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={handlePrint}
-            className="gap-2 font-bold"
+            className="gap-2 font-bold rounded-full active:scale-[0.97]"
           >
             <Printer className="h-4 w-4" />
             {dict.actions?.printVoucher ?? dict.voucher ?? "Vaucherni chop etish"}
@@ -176,7 +176,7 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={handleCancelClick}
-            className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500"
+            className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500 rounded-full active:scale-[0.97]"
           >
             <XCircle className="h-4 w-4" />
             {dict.actions?.cancelBooking ?? "Bekor qilish"}
@@ -189,7 +189,7 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={() => setRefundModalOpen(true)}
-            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500"
+            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500 rounded-full active:scale-[0.97]"
           >
             <RotateCcw className="h-4 w-4" />
             {(dict as any).actions?.requestRefund ?? "Qaytarish so'rash"}
@@ -197,13 +197,13 @@ export function BookingActions({
         )}
 
         <Link href={`/${locale}/account/bookings`}>
-          <Button variant="secondary" size="lg" className="font-bold">
+          <Button variant="secondary" size="lg" className="font-bold rounded-full active:scale-[0.97]">
             {dict.actions?.myBookings ?? "Mening bronlarim"}
           </Button>
         </Link>
 
         <Link href={`/${locale}`}>
-          <Button variant="ghost" size="lg" className="gap-2 font-semibold">
+          <Button variant="ghost" size="lg" className="gap-2 font-semibold rounded-full active:scale-[0.97]">
             <ArrowLeft className="h-4 w-4" />
             {dict.actions?.backHome ?? dict.backHome ?? "Bosh sahifaga"}
           </Button>
@@ -223,7 +223,7 @@ export function BookingActions({
           ) : error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : previewData ? (
-            <div className="space-y-3 rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+            <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 dark:bg-slate-800">
               {dict.cancelModal?.rulesIntro && (
                 <p className="text-sm text-slate-700 dark:text-slate-300">
                   {dict.cancelModal.rulesIntro}
@@ -263,18 +263,19 @@ export function BookingActions({
             </div>
           ) : null}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
             <Button
               variant="ghost"
               onClick={() => setCancelModalOpen(false)}
               disabled={cancelling}
+              className="rounded-full active:scale-[0.97]"
             >
               Yopish
             </Button>
             <Button
               variant="secondary"
               onClick={confirmCancel}
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full active:scale-[0.97]"
               disabled={loadingPreview || cancelling || !!error}
             >
               {cancelling
@@ -296,7 +297,7 @@ export function BookingActions({
               {dict.refundModal?.reasonLabel ?? "Sababni kiriting:"}
             </label>
             <textarea
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               rows={4}
               placeholder={dict.refundModal?.reasonPlaceholder ?? "Qaytarish sababini batafsil yozing..."}
               value={refundReason}
@@ -304,13 +305,14 @@ export function BookingActions({
               disabled={refunding}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding}>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
+            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding} className="rounded-full active:scale-[0.97]">
               Yopish
             </Button>
             <Button
               onClick={handleRefundSubmit}
               disabled={refunding || !refundReason.trim()}
+              className="rounded-full active:scale-[0.97]"
             >
               {refunding ? (dict.refundModal?.requesting ?? "Yuborilmoqda...") : (dict.refundModal?.confirm ?? "Yuborish")}
             </Button>

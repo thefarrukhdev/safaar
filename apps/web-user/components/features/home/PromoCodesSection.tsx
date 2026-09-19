@@ -7,10 +7,10 @@ export function PromoCodesSection({ promos }: { promos: PromoView[] }) {
   return (
     <section className="mx-auto w-full md:w-[96%] max-w-[1536px] px-3 sm:px-4 md:px-8 py-10 sm:py-14">
       <div className="mb-4 sm:mb-5">
-        <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-white">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">
           Promo-kodlar
         </h2>
-        <p className="mt-0.5 text-xs font-semibold text-slate-600 sm:text-sm dark:text-slate-400">
+        <p className="mt-0.5 text-xs font-medium text-slate-900/70 sm:text-sm">
           Bron qilishda ushbu kodlardan foydalanib chegirma oling
         </p>
       </div>

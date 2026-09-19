@@ -78,7 +78,7 @@ const themes: ThemeConfig[] = [
 function ThemeCard({ theme }: { theme: ThemeConfig }) {
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-2xl border shadow-sm"
+      className="flex flex-col overflow-hidden rounded-xl border shadow-sm"
       style={{ backgroundColor: theme.bg }}
     >
       {/* Mini navbar */}

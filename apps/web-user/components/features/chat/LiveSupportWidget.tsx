@@ -137,7 +137,7 @@ export function LiveSupportWidget() {
         <div
           role="dialog"
           aria-label="Safaar qo'llab-quvvatlash"
-          className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-200 dark:border-slate-800 dark:bg-slate-900/95 sm:right-6 sm:w-[380px]"
+          className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-200 dark:border-slate-800 dark:bg-slate-900/95 sm:right-6 sm:w-[380px]"
         >
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3.5 dark:border-slate-800 dark:bg-slate-800/80">
             <div className="flex items-center gap-3">
@@ -181,11 +181,11 @@ export function LiveSupportWidget() {
 
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
             {loading && messages.length === 0 ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
                 Ticketlar yuklanmoqda...
               </p>
             ) : messages.length === 0 ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
                 Yangi murojaat uchun savolingizni yozing.
               </p>
             ) : (
@@ -206,7 +206,7 @@ export function LiveSupportWidget() {
                     )}
 
                     <div
-                      className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-xs ${
+                      className={`max-w-[78%] rounded-xl px-4 py-2.5 text-xs leading-relaxed shadow-xs ${
                         isUser
                           ? "rounded-br-xs bg-primary-500 font-medium text-white"
                           : "rounded-bl-xs border border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200"
@@ -235,7 +235,7 @@ export function LiveSupportWidget() {
             )}
 
             {error && (
-              <p className="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                 {error}
               </p>
             )}

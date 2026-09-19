@@ -160,7 +160,7 @@ export function PaymentSelector({
                 }
               }}
               className={cn(
-                "group relative flex cursor-pointer items-start justify-between rounded-2xl border p-4 transition-all duration-200 hover:shadow-md",
+                "group relative flex cursor-pointer items-start justify-between rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
                 isSelected
                   ? cn(option.colorTheme.borderSelected, option.colorTheme.bgSelected)
                   : "border-slate-200 bg-card hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-slate-700"

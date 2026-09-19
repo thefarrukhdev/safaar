@@ -119,7 +119,7 @@ export function RegisterForm({
             disabled={otpState.ok && !otpState.error}
             formAction={requestAction}
             formNoValidate
-            className="rounded-xl border border-slate-300 bg-slate-100 font-bold text-slate-900 shadow-2xs hover:bg-slate-200 hover:border-slate-400"
+            className="rounded-full bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] active:scale-[0.97]"
           >
             {otpState.ok ? dict.codeSent : dict.sendCode}
           </Button>
@@ -261,7 +261,7 @@ export function RegisterForm({
           </span>
         </label>
 
-        <Button type="submit" size="lg" loading={loading} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
+        <Button type="submit" size="lg" loading={loading} className="rounded-full bg-primary-600 font-bold text-white hover:bg-primary-700 active:scale-[0.97]">
           {dict.verifyAndRegister}
         </Button>
 

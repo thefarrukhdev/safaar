@@ -61,7 +61,7 @@ export default async function TransportDetailPage({
         <BackButton />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="relative aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800">
           {transport.imageUrl ? (
             <Image

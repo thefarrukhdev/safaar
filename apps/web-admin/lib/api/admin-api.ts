@@ -1507,8 +1507,8 @@ export const AdminApi = {
     const { data } = await apiClient.get('/admin/finance/overview');
     const r = asRecord(data);
     return {
-      totalRevenue: asNumber(r.total_revenue ?? r.totalRevenue),
-      totalCommission: asNumber(r.total_commission ?? r.totalCommission),
+      totalRevenue: asNumber(r.gross_amount ?? r.total_revenue ?? r.totalRevenue),
+      totalCommission: asNumber(r.paid_amount ?? r.total_commission ?? r.totalCommission),
       pendingWithdrawals: asNumber(r.pending_withdrawals ?? r.pendingWithdrawals),
       paidWithdrawals: asNumber(r.paid_withdrawals ?? r.paidWithdrawals),
       totalRefunds: asNumber(r.total_refunds ?? r.totalRefunds),
@@ -1516,31 +1516,56 @@ export const AdminApi = {
   },
 
   getFinanceRevenueChart: async (): Promise<RevenueData[]> => {
-    const { data } = await apiClient.get('/admin/finance/revenue-chart');
-    return unknownItems(data).map((row) => {
-      const r = asRecord(row);
-      return {
-        month: asString(r.month ?? r.date),
-        commission: asNumber(r.commission ?? r.commission_amount),
-        partnerPayment: asNumber(r.partner_payment ?? r.partnerPayment ?? r.partner_amount),
-      } satisfies RevenueData;
-    });
+    // Backendning chart('finance-revenue') soxta qiymat qaytaradi.
+    // O'rniga partners-report dan jami daromadlarni hisoblab bitta joriy oylik chart tuzamiz.
+    const { data } = await apiClient.get('/admin/finance/partners-report');
+    const reports = unknownItems(data).map(r => asRecord(r));
+    
+    const totalRev = reports.reduce((acc, r) => acc + asNumber(r.total_revenue), 0);
+    const totalCom = reports.reduce((acc, r) => acc + asNumber(r.total_commission), 0);
+    
+    return [
+      {
+        month: new Date().toISOString().slice(0, 7),
+        commission: totalCom,
+        partnerPayment: totalRev - totalCom,
+      }
+    ] satisfies RevenueData[];
   },
 
   getProviderReconciliation: async (): Promise<ProviderReconciliation[]> => {
-    const { data } = await apiClient.get('/admin/finance/provider-reconciliation');
-    return unknownItems(data).map((row) => {
-      const r = asRecord(row);
-      const rawStatus = asString(r.status);
-      return {
-        provider: asString(r.provider),
-        expectedAmount: asNumber(r.expected_amount ?? r.expectedAmount),
-        actualAmount: asNumber(r.actual_amount ?? r.actualAmount),
-        difference: asNumber(r.difference),
-        status: rawStatus === 'mismatched' ? 'mismatched' : 'matched',
-        lastSyncedAt: asString(r.last_synced_at ?? r.lastSyncedAt, new Date().toISOString()),
-      } satisfies ProviderReconciliation;
-    });
+    // Backend hozirgacha providerReconciliation uchun guruhlangan emas, tranzaksiyalar qaytaradi.
+    // Shuning uchun biz to'g'ridan-to'g'ri /admin/payments dan olib, frontendda guruhlaymiz (robust approach).
+    const { data } = await apiClient.get('/admin/payments');
+    
+    const providerMap: Record<string, { expected: number, actual: number, lastSync: string }> = {};
+    
+    for (const r of unknownItems(data)) {
+       const p = asRecord(r);
+       const provider = asString(p.provider) || 'noma\'lum';
+       const amount = asNumber(p.amount);
+       const status = asString(p.status);
+       
+       if (!providerMap[provider]) {
+         providerMap[provider] = { expected: 0, actual: 0, lastSync: asString(p.created_at ?? p.createdAt, new Date().toISOString()) };
+       }
+       
+       if (status === 'paid' || status === 'success') {
+         providerMap[provider].actual += amount;
+         providerMap[provider].expected += amount;
+       } else if (status === 'pending') {
+         providerMap[provider].expected += amount;
+       }
+    }
+    
+    return Object.entries(providerMap).map(([provider, amounts]) => ({
+      provider,
+      expectedAmount: amounts.expected,
+      actualAmount: amounts.actual,
+      difference: amounts.expected - amounts.actual,
+      status: amounts.expected === amounts.actual ? 'matched' : 'mismatched',
+      lastSyncedAt: amounts.lastSync,
+    }));
   },
 
   exportFinance: async (filters?: Record<string, unknown>): Promise<{ url: string }> => {

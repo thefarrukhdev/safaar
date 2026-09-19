@@ -1554,22 +1554,31 @@ export const AdminApi = {
        }
        
        // PaymentStatus (schema.prisma): pending | awaiting_cash | processing |
-       // paid | failed | refunded | reversed. `pending`/`awaiting_cash`/
-       // `processing` are all pre-collection states (payments.service.ts:
-       // created as pending/awaiting_cash, prepare -> processing, then ->
-       // paid) — same "expected, not yet actual" bucket as `pending` was
-       // already handling; `awaiting_cash`/`processing` were previously
-       // silently excluded from both totals instead.
+       // paid | failed | refunded | reversed.
        //
-       // `failed` stays excluded from both (that specific payment attempt
-       // never collected anything).
+       // Business rule (2026-09-19, product-confirmed): this table is
+       // PROVIDER-PROCESSED GROSS TRANSACTION VOLUME, not SAFAAR's current
+       // net cash position. `expected` = provider lifecycle volume that
+       // should exist; `actual` = what the provider really processed.
+       // Refunds/reversals are separate financial events (tracked in
+       // getFinanceOverview().totalRefunds) that do NOT edit this table's
+       // history of what was processed.
        //
-       // `refunded`/`reversed` (money was collected then reversed) are
-       // PRODUCT-DECISION REQUIRED — whether reconciliation should show
-       // them net, as a separate adjustment, or excluded is a business
-       // call, not inferred here. Still excluded from both for now,
-       // same as before this fix (not silently changed).
-       if (status === 'paid') {
+       // `pending`/`awaiting_cash`/`processing` — not yet collected, still
+       // expected (pre-collection states: payments.service.ts creates as
+       // pending/awaiting_cash, `prepare` event -> processing, then -> paid).
+       //
+       // `paid`/`refunded`/`reversed` — the underlying provider transaction
+       // WAS processed (refunded/reversed both require a prior real
+       // paid/processing state — see admin.service.ts refundApprove() and
+       // payments.service.ts uzumReverse()), so it counts as both expected
+       // and actual using the original payments.amount (gross) — never
+       // refunds.approved_amount (that's a separate, possibly-partial
+       // event, intentionally not looked up here).
+       //
+       // `failed` — that specific attempt never collected anything —
+       // excluded from both.
+       if (status === 'paid' || status === 'refunded' || status === 'reversed') {
          providerMap[provider].actual += amount;
          providerMap[provider].expected += amount;
        } else if (status === 'pending' || status === 'awaiting_cash' || status === 'processing') {

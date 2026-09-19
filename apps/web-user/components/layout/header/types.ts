@@ -12,6 +12,7 @@ export interface HeaderProps {
   items: NavItem[];
   brand: string;
   brandHref: string;
+  locale?: string;
   actions?: ReactNode;
   localeSwitcher?: ReactNode;
   authActions?: ReactNode;

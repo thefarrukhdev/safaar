@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Printer, ArrowLeft, XCircle } from "lucide-react";
+import { Printer, ArrowLeft, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { trackBookingCompleted } from "@/lib/services/analytics/tracker";
@@ -51,10 +51,20 @@ export function BookingActions({
       confirmCancel?: string;
       cancel?: string;
     };
+    refundModal?: {
+      title?: string;
+      reasonLabel?: string;
+      reasonPlaceholder?: string;
+      confirm?: string;
+      requesting?: string;
+    };
   };
 }) {
   const router = useRouter();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
   
   interface PreviewData {
     paid_amount?: number;
@@ -122,6 +132,22 @@ export function BookingActions({
     }
   };
 
+  const handleRefundSubmit = async () => {
+    if (!bookingId || !refundReason.trim()) return;
+    setRefunding(true);
+    setError(null);
+    try {
+      await api.refunds.createRefund({ booking_id: bookingId, reason: refundReason }, { token });
+      setRefundModalOpen(false);
+      setRefundReason("");
+      router.push(`/${locale}/account/refunds`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+    } finally {
+      setRefunding(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -154,6 +180,19 @@ export function BookingActions({
           >
             <XCircle className="h-4 w-4" />
             {dict.actions?.cancelBooking ?? "Bekor qilish"}
+          </Button>
+        )}
+
+        {isConfirmed && bookingId && token && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            onClick={() => setRefundModalOpen(true)}
+            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500"
+          >
+            <RotateCcw className="h-4 w-4" />
+            {(dict as any).actions?.requestRefund ?? "Qaytarish so'rash"}
           </Button>
         )}
 
@@ -241,6 +280,39 @@ export function BookingActions({
               {cancelling
                 ? (dict.cancelModal?.cancelling ?? "Bekor qilinmoqda...")
                 : (dict.cancelModal?.confirm ?? "Tasdiqlash")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        isOpen={refundModalOpen}
+        onClose={() => !refunding && setRefundModalOpen(false)}
+        title={dict.refundModal?.title ?? "Pulni qaytarishni so'rash"}
+      >
+        <div className="space-y-4">
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {dict.refundModal?.reasonLabel ?? "Sababni kiriting:"}
+            </label>
+            <textarea
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              rows={4}
+              placeholder={dict.refundModal?.reasonPlaceholder ?? "Qaytarish sababini batafsil yozing..."}
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              disabled={refunding}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding}>
+              Yopish
+            </Button>
+            <Button
+              onClick={handleRefundSubmit}
+              disabled={refunding || !refundReason.trim()}
+            >
+              {refunding ? (dict.refundModal?.requesting ?? "Yuborilmoqda...") : (dict.refundModal?.confirm ?? "Yuborish")}
             </Button>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { Eye } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import Link from "next/link";
 import { AdminApi } from "@/lib/api/admin-api";
+import { extractApiErrorMessage } from "@/lib/utils";
 
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   under_review: { label: "Ko'rib chiqilmoqda", color: "#F39C12", bg: "rgba(243,156,18,0.12)" },
@@ -23,6 +24,7 @@ export default function PartnerListingsPage() {
   const setListings = useAdminStore((s) => s.setListings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchListings = () => {
     setLoading(true);
@@ -81,25 +83,34 @@ export default function PartnerListingsPage() {
       label: "Mashhur",
       render: (row) => (
         <button
+          disabled={togglingId === row.id}
           onClick={async () => {
+            setTogglingId(row.id);
             try {
-              await AdminApi.toggleListingFeatured(row.id, !row.featured);
-              const updatedListings = listings.map(l => 
-                l.id === row.id ? { ...l, featured: !l.featured } : l
+              const result = await AdminApi.toggleListingFeatured(row.id, !row.featured);
+              // Optimistik taxmin emas — serverdan qaytgan HAQIQIY holat
+              // bilan yangilanadi (u source of truth).
+              setListings(
+                listings.map((l) =>
+                  l.id === row.id ? { ...l, featured: result.featured } : l,
+                ),
               );
-              setListings(updatedListings);
-              toast.success(!row.featured ? "Mashhur takliflarga qo'shildi" : "Mashhur takliflardan olib tashlandi");
+              toast.success(
+                result.featured ? "Mashhur takliflarga qo'shildi" : "Mashhur takliflardan olib tashlandi",
+              );
             } catch (error) {
-              toast.error("Xatolik yuz berdi");
+              toast.error(extractApiErrorMessage(error, "Xatolik yuz berdi"));
+            } finally {
+              setTogglingId(null);
             }
           }}
-          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          className={`px-2 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-wait ${
             row.featured
               ? "bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)]/20"
               : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:bg-[var(--border)]"
           }`}
         >
-          {row.featured ? "Mashhur" : "Odatiy"}
+          {togglingId === row.id ? "..." : row.featured ? "Mashhur" : "Odatiy"}
         </button>
       ),
     },

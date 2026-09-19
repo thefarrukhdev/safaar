@@ -115,7 +115,7 @@ export function RestaurantBookingSection({
         guestPhone,
         guestEmail,
         source: "web-user",
-        paymentMethod: paymentMethod === "card" ? "click" : "cash",
+        paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
         agreeTerms,
       });
 

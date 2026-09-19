@@ -342,6 +342,15 @@ export class AdminController {
     );
   }
 
+  @Patch('hotels/:id/featured')
+  @Permissions(Permission.PartnersWrite)
+  hotelFeatured(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.setHotelFeatured(id, body.featured === true);
+  }
+
   @Post('hotels/featured/reorder')
   @Permissions(Permission.PartnersWrite)
   hotelsFeaturedReorder(@Body() body: Record<string, unknown>) {

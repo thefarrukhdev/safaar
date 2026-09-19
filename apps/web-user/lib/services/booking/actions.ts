@@ -37,9 +37,7 @@ export async function createBookingAction(
 
   const session = await getSession();
 
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as
-    | "click"
-    | "payme"
+  const paymentMethod = (String(formData.get("paymentMethod") ?? "uzcard")) as
     | "uzcard"
     | "humo"
     | "visa"
@@ -125,9 +123,7 @@ export async function createBusBookingAction(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "click")) as
-    | "click"
-    | "payme"
+  const paymentMethod = (String(formData.get("paymentMethod") ?? "uzcard")) as
     | "uzcard"
     | "humo"
     | "visa"

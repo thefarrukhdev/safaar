@@ -1508,7 +1508,10 @@ export const AdminApi = {
     const r = asRecord(data);
     return {
       totalRevenue: asNumber(r.gross_amount ?? r.total_revenue ?? r.totalRevenue),
-      totalCommission: asNumber(r.paid_amount ?? r.total_commission ?? r.totalCommission),
+      // `paid_amount` is total collected payments, NOT commission — was
+      // mismapped here (2026-09-19 audit). Real commission source:
+      // bookings.commission_amount (same field partnersReport() uses).
+      totalCommission: asNumber(r.total_commission ?? r.totalCommission),
       pendingWithdrawals: asNumber(r.pending_withdrawals ?? r.pendingWithdrawals),
       paidWithdrawals: asNumber(r.paid_withdrawals ?? r.paidWithdrawals),
       totalRefunds: asNumber(r.total_refunds ?? r.totalRefunds),
@@ -1550,10 +1553,26 @@ export const AdminApi = {
          providerMap[provider] = { expected: 0, actual: 0, lastSync: asString(p.created_at ?? p.createdAt, new Date().toISOString()) };
        }
        
-       if (status === 'paid' || status === 'success') {
+       // PaymentStatus (schema.prisma): pending | awaiting_cash | processing |
+       // paid | failed | refunded | reversed. `pending`/`awaiting_cash`/
+       // `processing` are all pre-collection states (payments.service.ts:
+       // created as pending/awaiting_cash, prepare -> processing, then ->
+       // paid) — same "expected, not yet actual" bucket as `pending` was
+       // already handling; `awaiting_cash`/`processing` were previously
+       // silently excluded from both totals instead.
+       //
+       // `failed` stays excluded from both (that specific payment attempt
+       // never collected anything).
+       //
+       // `refunded`/`reversed` (money was collected then reversed) are
+       // PRODUCT-DECISION REQUIRED — whether reconciliation should show
+       // them net, as a separate adjustment, or excluded is a business
+       // call, not inferred here. Still excluded from both for now,
+       // same as before this fix (not silently changed).
+       if (status === 'paid') {
          providerMap[provider].actual += amount;
          providerMap[provider].expected += amount;
-       } else if (status === 'pending') {
+       } else if (status === 'pending' || status === 'awaiting_cash' || status === 'processing') {
          providerMap[provider].expected += amount;
        }
     }

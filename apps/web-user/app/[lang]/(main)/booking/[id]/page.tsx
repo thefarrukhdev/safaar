@@ -259,7 +259,7 @@ export default async function BookingDetailPage({
           <RetryPaymentForm
             bookingId={booking.id}
             locale={locale}
-            initialProvider={(providerQuery as PaymentProvider) ?? (payment?.provider as PaymentProvider) ?? "click"}
+            initialProvider={(providerQuery as PaymentProvider) ?? (payment?.provider as PaymentProvider) ?? "uzcard"}
             guestToken={guestTokenQuery}
             bookingAmount={booking.totalSum}
           />

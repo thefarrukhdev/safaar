@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HotelCard } from "@/components/features/hotels/HotelCard";
+import { AccommodationCard } from "@/components/features/accommodation/AccommodationCard";
 import { FeaturedHotelsMobileCarousel } from "./FeaturedHotelsMobileCarousel";
 import type { HotelListItem } from "@/types/view";
 import type { Locale } from "@/i18n/config";
@@ -55,7 +55,7 @@ export function FeaturedHotelsCarousel({
                 key={hotel.id}
                 className="w-[85vw] max-w-[320px] sm:w-[calc(50%-0.375rem)] shrink-0 snap-start"
               >
-                <HotelCard hotel={hotel} locale={locale} />
+                <AccommodationCard hotel={hotel} locale={locale} />
               </div>
             ))}
           </FeaturedHotelsMobileCarousel>
@@ -63,7 +63,7 @@ export function FeaturedHotelsCarousel({
           {/* Desktop: 4 cards grid */}
           <div className="hidden gap-4 md:grid md:grid-cols-4 mt-6">
             {cards.map((hotel) => (
-              <HotelCard key={hotel.id} hotel={hotel} locale={locale} />
+              <AccommodationCard key={hotel.id} hotel={hotel} locale={locale} />
             ))}
           </div>
         </>

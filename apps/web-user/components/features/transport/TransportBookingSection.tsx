@@ -116,7 +116,7 @@ export function TransportBookingSection({
         guestName,
         guestPhone,
         guestEmail,
-        paymentMethod: paymentMethod === "card" ? "click" : "cash",
+        paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
       });
 
       const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";

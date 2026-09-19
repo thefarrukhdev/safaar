@@ -15,11 +15,9 @@ import type { PaymentResult } from "@/lib/services/payments/payments";
 // YARATISHNING o'zida (`confirmCashBookingIfNeeded()`) ishlaydi — shu
 // sabab bu (retry/tanlash) bosqichida "cash"ni taklif qilish bron holatini
 // hech qachon to'g'ri yakunlamaydigan chalkash holatga olib kelardi.
-const ONLINE_METHODS: PaymentMethodId[] = ["click", "payme", "uzcard", "humo", "visa", "mastercard"];
+const ONLINE_METHODS: PaymentMethodId[] = ["uzcard", "humo", "visa", "mastercard"];
 
 const METHOD_LABELS: Record<string, string> = {
-  click: "Click",
-  payme: "Payme",
   uzcard: "Uzcard",
   humo: "Humo",
   visa: "Visa",
@@ -45,7 +43,7 @@ function errorMessage(code?: string): string {
 export function RetryPaymentForm({
   bookingId,
   locale,
-  initialProvider = "click",
+  initialProvider = "uzcard",
   guestToken,
   bookingAmount,
 }: {
@@ -56,7 +54,7 @@ export function RetryPaymentForm({
   bookingAmount: number;
 }) {
   const [selected, setSelected] = useState<PaymentMethodId>(
-    ONLINE_METHODS.includes(initialProvider) ? initialProvider : "click",
+    ONLINE_METHODS.includes(initialProvider) ? initialProvider : "uzcard",
   );
   const [preview, setPreview] = useState<PaymentResult | null>(null);
   const [previewError, setPreviewError] = useState<string | undefined>();

@@ -5,6 +5,7 @@
     "bookings": "Bronlarim",
     "favorites": "Sevimlilar",
     "bonuses": "Bonuslar",
+    "refunds": "Qaytarishlar",
     "ariaLabel": "Kabinet bo'limlari"
   },
   "profile": {
@@ -78,5 +79,11 @@
     "confirmDelete": "Profil rasmini o'chirishni xohlaysizmi?",
     "uploadFailed": "Rasmni yuklashda xatolik",
     "deleteFailed": "Rasmni o'chirishda xatolik"
+  },
+  "refunds": {
+    "title": "Mening qaytarishlarim",
+    "empty": "Hozircha qaytarishlar yo'q.",
+    "reason": "Sabab",
+    "status": "Holat"
   }
 }

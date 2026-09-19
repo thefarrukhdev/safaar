@@ -122,6 +122,7 @@ export function SiteHeader({
       items={desktopItems}
       brand={dict.brand}
       brandHref={base}
+      locale={locale}
       actions={actions}
       localeSwitcher={<LocaleSwitcher current={locale} />}
       authActions={authActionsMobile}

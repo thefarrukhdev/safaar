@@ -816,6 +816,72 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 
+  describe('financeOverview (regression: totalCommission was mismapped to paid_amount — total collected payments, not SAFAAR commission; pending/paid withdrawals and total_refunds were never computed at all)', () => {
+    it('returns real commission (bookings.commission_amount), not paid_amount, plus withdrawal and refund totals', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          gross_amount: 1850000,
+          paid_amount: 400000,
+          total_commission: 198000,
+          pending_withdrawals: 50000,
+          paid_withdrawals: 120000,
+          total_refunds: 30000,
+        },
+      ]);
+
+      const result = await service.financeOverview();
+
+      expect(result).toEqual({
+        gross_amount: 1850000,
+        paid_amount: 400000,
+        total_commission: 198000,
+        pending_withdrawals: 50000,
+        paid_withdrawals: 120000,
+        total_refunds: 30000,
+        currency: 'UZS',
+      });
+      // The query must source commission from bookings.commission_amount,
+      // never from payments.amount (that's paid_amount, a different
+      // concept entirely — collected money, not SAFAAR's cut).
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('sum(commission_amount) from bookings');
+      expect(sql).toContain(
+        "sum(amount) from withdrawal_requests where status in ('requested', 'approved')",
+      );
+      expect(sql).toContain(
+        "sum(amount) from withdrawal_requests where status = 'paid'",
+      );
+      expect(sql).toContain(
+        "sum(approved_amount) from refunds where status = 'approved'",
+      );
+    });
+
+    it('defaults every field to 0 when there is no data yet (empty tables)', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          gross_amount: 0,
+          paid_amount: 0,
+          total_commission: 0,
+          pending_withdrawals: 0,
+          paid_withdrawals: 0,
+          total_refunds: 0,
+        },
+      ]);
+
+      const result = await service.financeOverview();
+
+      expect(result).toEqual({
+        gross_amount: 0,
+        paid_amount: 0,
+        total_commission: 0,
+        pending_withdrawals: 0,
+        paid_withdrawals: 0,
+        total_refunds: 0,
+        currency: 'UZS',
+      });
+    });
+  });
+
   describe('invalidateCmsCache (regression: destinations admin write left the public /catalog/destinations cache stale for up to 5 minutes)', () => {
     const destinationRow = {
       id: '00000000-0000-7006-0000-000000000001',

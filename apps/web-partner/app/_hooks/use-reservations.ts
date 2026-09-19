@@ -77,20 +77,22 @@ export function useCreateWalkInVehicleReservation() {
       const firstName = names[0];
       const lastName = names.slice(1).join(' ') || 'Mehmon';
 
+      // `CreateVehicleRentalDto` (backend) has no `adults`/`children`/
+      // `guestInfo` fields — vehicle rentals don't track passenger count,
+      // and guest identity is flat (firstName/lastName/phone), not
+      // nested. The global ValidationPipe runs with
+      // `forbidNonWhitelisted: true`, so sending any of those three
+      // makes the WHOLE request 400 (confirmed via a direct
+      // plainToInstance+validate() run against the real DTO class).
       return toReservation(
         await partners.createVehicleBooking(
           {
             vehicle_id: draft.vehicleId,
             check_in: draft.checkIn,
             check_out: draft.checkOut,
-            adults: draft.adults ?? 1,
-            children: draft.children ?? 0,
-            guestInfo: {
-              firstName,
-              lastName,
-              phone: draft.phone,
-              email: null,
-            },
+            firstName,
+            lastName,
+            phone: draft.phone,
           },
           accessToken,
         ),

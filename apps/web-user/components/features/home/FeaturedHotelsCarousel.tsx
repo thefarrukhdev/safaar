@@ -28,7 +28,7 @@ export function FeaturedHotelsCarousel({
         action={
           <Link
             href={`/${locale}/hotels`}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-900/[0.08] bg-slate-900/[0.05] px-4 text-xs font-medium text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:h-10 sm:text-sm sm:px-5 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-900/[0.08] bg-slate-900/[0.05] px-4 text-xs font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:h-10 sm:text-sm sm:px-5 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {dict.all}
             <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden>

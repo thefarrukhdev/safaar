@@ -6,13 +6,13 @@ export type Rounded = "full";
 
 export const variantClasses: Record<Variant, string> = {
   primary:
-    "border border-blue-700/50 bg-blue-600 text-white shadow-emboss-primary hover:bg-blue-700 active:shadow-emboss-pressed",
+    "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
   accent:
-    "border border-amber-600/50 bg-amber-500 text-slate-900 shadow-emboss-accent hover:bg-amber-600 active:shadow-emboss-pressed",
+    "bg-amber-500 text-slate-900 hover:bg-amber-600 active:bg-amber-700",
   secondary:
-    "border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900 shadow-emboss-alpha hover:bg-slate-900/[0.08] active:bg-slate-900/[0.12] active:shadow-emboss-pressed",
+    "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] active:bg-slate-900/[0.12]",
   ghost:
-    "border border-transparent bg-transparent text-slate-900 shadow-none hover:bg-slate-900/[0.05] active:bg-slate-900/[0.08]",
+    "bg-transparent text-slate-900 hover:bg-slate-900/[0.05] active:bg-slate-900/[0.08]",
 };
 
 export const sizeClasses: Record<Size, string> = {

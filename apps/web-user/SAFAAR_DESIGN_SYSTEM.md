@@ -140,10 +140,6 @@ module.exports = {
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --shadow-emboss-primary: inset 0 1px 0 0 rgb(255 255 255 / 0.25), inset 0 -1px 0 0 rgb(15 23 42 / 0.18), 0 1px 2px 0 rgb(15 23 42 / 0.10);
-  --shadow-emboss-alpha: inset 0 1px 0 0 rgb(255 255 255 / 0.70), inset 0 -1px 0 0 rgb(15 23 42 / 0.06), 0 1px 1px 0 rgb(15 23 42 / 0.04);
-  --shadow-emboss-accent: inset 0 1px 0 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 0 rgb(180 83 9 / 0.30), 0 1px 2px 0 rgb(15 23 42 / 0.10);
-  --shadow-emboss-pressed: inset 0 1px 2px 0 rgb(15 23 42 / 0.20);
   --shadow-float: 0 8px 24px -4px rgb(15 23 42 / 0.12), 0 2px 6px -2px rgb(15 23 42 / 0.08);
 }
 ```
@@ -256,10 +252,8 @@ Blue, embossed pill. One per view region.
   class="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full
          border border-blue-700/50 bg-blue-600 px-5
          text-sm font-medium text-white
-         shadow-emboss-primary
          transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)]
          hover:bg-blue-700
-         active:scale-[0.97] active:shadow-emboss-pressed
          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
          disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none
          motion-reduce:transition-none motion-reduce:active:scale-100"
@@ -282,7 +276,6 @@ Blue, embossed pill. One per view region.
 
 | Variant | Swap in |
 |---|---|
-| Accent (Amber) | `border-amber-600/50 bg-amber-500 text-slate-900 shadow-emboss-accent hover:bg-amber-600`. Promotional urgency only ("Grab the deal"), max one per viewport |
 | Ghost | `bg-transparent text-slate-900 shadow-none border-transparent hover:bg-slate-900/[0.05] active:bg-slate-900/[0.08]` |
 | Icon (circle) | `size-10 max-md:size-11 p-0 rounded-full` + Ghost fills |
 | Loading | Replace the label with `<svg class="size-4 animate-spin">`, keep width fixed, add `aria-busy="true"` and `disabled` |
@@ -297,10 +290,8 @@ The YouTube "Share" button: a translucent ink fill with a whisper of emboss. Use
   class="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full
          border border-slate-900/[0.06] bg-slate-900/[0.05] px-5
          text-sm font-medium text-slate-900
-         shadow-emboss-alpha
          transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)]
          hover:bg-slate-900/[0.08]
-         active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed
          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
          disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none
          motion-reduce:transition-none motion-reduce:active:scale-100"
@@ -366,10 +357,8 @@ Media-first, no wrapper chrome. The 12px rounded image *is* the card.
     aria-label="Save to wishlist"
     aria-pressed="false"
     class="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full
-           bg-white/90 text-slate-900/70 shadow-emboss-alpha backdrop-blur
            transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)]
            hover:bg-white hover:text-slate-900
-           active:scale-[0.97] active:shadow-emboss-pressed
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
            motion-reduce:transition-none motion-reduce:active:scale-100"
   >
@@ -436,7 +425,6 @@ Horizontal scroller under the header. Flat pills (no emboss) so they read as fil
 <form
   role="search"
   class="flex h-12 items-center gap-2 rounded-full border border-slate-900/[0.12] bg-white pl-5 pr-1.5
-         shadow-emboss-alpha
          transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]
          focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600
          motion-reduce:transition-none"
@@ -536,7 +524,6 @@ The glow is a blurred copy of the same image. It carries no information and stay
 |---|---|
 | **Radius** | `rounded-sm` `rounded-md` `rounded-lg` `rounded-2xl` `rounded-3xl` `rounded-[…]` (except checkbox `4px`) |
 | **Neutral colors** | `gray-*` `zinc-*` `neutral-*` `stone-*` `bg-black` `text-black`, any `slate-50…slate-800`, any hex/rgb literal in class names |
-| **Shadows** | `shadow-sm` `shadow` `shadow-md` `shadow-lg` `shadow-xl` `shadow-2xl`, and any `hover:shadow-*`. Only `shadow-emboss-*` and `shadow-float` |
 | **Motion** | `animate-bounce` `animate-ping` `ease-in` `ease-out` `ease-in-out` `ease-linear` `transition-all` `duration-500+` `hover:-translate-y-*` `hover:scale-105+` |
 | **Surfaces** | Gradients (other than image scrims and §7), `border-2`+ on containers, `font-bold`, ALL-CAPS labels |
 | **Brand** | Amber as text on white, more than one Primary Button per region, blue used decoratively |

@@ -25,7 +25,7 @@ export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
         value={current}
         onChange={(e) => onChange(e.target.value)}
         aria-label={dict.label}
-        className="appearance-none inline-flex h-10 max-md:h-11 w-full sm:w-auto min-w-[200px] items-center justify-between gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] pl-5 pr-10 text-sm font-medium text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+        className="appearance-none inline-flex h-10 max-md:h-11 w-full sm:w-auto min-w-[200px] items-center justify-between gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] pl-5 pr-10 text-sm font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
       >
         <option value="">{dict.default}</option>
         <option value="price_asc">{dict.priceAsc}</option>

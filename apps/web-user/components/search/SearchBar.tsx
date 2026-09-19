@@ -135,7 +135,7 @@ export function SearchBar({
     <div className="mx-auto w-full relative z-50">
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col rounded-xl border border-slate-900/[0.12] bg-white p-2 shadow-emboss-alpha transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full sm:p-2"
+        className="relative flex flex-col rounded-xl border border-slate-900/[0.12] bg-white p-2  transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full sm:p-2"
       >
         {/* 1. Shahar / Destinatsiya */}
         <div 
@@ -234,7 +234,7 @@ export function SearchBar({
         <div className="shrink-0 md:pl-2">
           <Button
             type="submit"
-            className="w-full md:w-auto h-12 md:h-12 px-8 uppercase tracking-wide rounded-full shadow-emboss-primary bg-blue-600 text-white font-medium transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] active:shadow-emboss-pressed"
+            className="w-full md:w-auto h-12 md:h-12 px-8 uppercase tracking-wide rounded-full  bg-blue-600 text-white font-medium transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] "
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
             <span>{dict.submit}</span>

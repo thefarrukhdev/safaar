@@ -76,7 +76,7 @@ export function FilterSidebar({
           <button
             type="button"
             onClick={onApply}
-            className="w-full rounded-full bg-blue-600 h-12 px-6 flex items-center justify-center text-base font-medium text-white shadow-emboss-alpha transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none cursor-pointer"
+            className="w-full rounded-full bg-blue-600 h-12 px-6 flex items-center justify-center text-base font-medium text-white  transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none cursor-pointer"
           >
             {applyLabel}
           </button>
@@ -136,7 +136,7 @@ export function FilterSidebar({
                   onApply();
                   onClose();
                 }}
-                className="w-full rounded-full bg-blue-600 h-12 px-6 flex items-center justify-center text-base font-medium text-white shadow-emboss-alpha transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none cursor-pointer"
+                className="w-full rounded-full bg-blue-600 h-12 px-6 flex items-center justify-center text-base font-medium text-white  transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none cursor-pointer"
               >
                 {applyLabel}
               </button>

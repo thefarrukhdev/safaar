@@ -43,7 +43,7 @@ export function HotelBookingWidget({
       <a href="#rooms" id="hotel-original-cta" className="w-full">
         <button
           type="button"
-          className="inline-flex h-12 max-md:h-11 w-full items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-6 text-base font-medium text-white shadow-emboss-primary transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
+          className="inline-flex h-12 max-md:h-11 w-full items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-6 text-base font-medium text-white  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           {dict.selectRoom || dict.booking.checkAvailability}
         </button>

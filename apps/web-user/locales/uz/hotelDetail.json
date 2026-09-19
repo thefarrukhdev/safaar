@@ -2,10 +2,16 @@
   "error": "Ma'lumotni yuklab bo'lmadi. Backend ishga tushganini tekshiring.",
   "about": "Tavsif",
   "address": "Manzil",
-  "amenities": "Qulayliklar",
+  "amenities": {
+    "title": "Qulayliklar",
+    "showAll": "Barcha {count} ta qulaylikni ko'rsatish"
+  },
   "checkIn": "Kirish vaqti",
   "checkOut": "Chiqish vaqti",
-  "rooms": "Xonalar",
+  "rooms": {
+    "title": "Xonalar",
+    "noRoomsFound": "Boshqa xonalar topilmadi."
+  },
   "perNight": "kecha",
   "capacity": "Sig'imi",
   "guests": "mehmon",
@@ -17,5 +23,42 @@
   "ratingSummary": "{count} ta sharh asosida",
   "from": "dan boshlab",
   "selectRoom": "Xonani tanlash",
-  "bookingBox": "Bron qilish"
+  "bookingBox": "Bron qilish",
+  "locationTitle": "Joylashuv",
+  "highlights": {
+    "centralLocationTitle": "Markaziy joylashuv",
+    "centralLocationDesc": "Yaqinda tashrif buyurgan mehmonlar tomonidan yuqori baholangan",
+    "freeCancellationTitle": "Bepul bekor qilish",
+    "freeCancellationDesc": "Kirishdan oldin istalgan vaqtda bekor qilish mumkin",
+    "superbRatingTitle": "A'lo darajadagi reyting",
+    "superbRatingDesc": "Mehmonlarga tozalik juda yoqdi"
+  },
+  "nav": {
+    "photos": "Rasmlar",
+    "amenities": "Qulayliklar",
+    "rooms": "Xonalar",
+    "reviews": "Sharhlar",
+    "location": "Joylashuv"
+  },
+  "booking": {
+    "checkIn": "Kirish",
+    "checkOut": "Chiqish",
+    "addDate": "Sana qo'shish",
+    "guests": "Mehmonlar",
+    "oneGuest": "1 mehmon",
+    "checkAvailability": "Mavjudligini tekshirish",
+    "noChargeNotice": "Sizdan hali mablag' yechilmaydi",
+    "nightsCount": "{count} kecha",
+    "serviceFee": "Xizmat haqi",
+    "total": "Jami"
+  },
+  "location": {
+    "noCoordinates": "Aniq joylashuv koordinatalari mavjud emas",
+    "openInMaps": "Google Maps'da ochish"
+  },
+  "gallery": {
+    "mainViewAlt": "Asosiy ko'rinish",
+    "photoCountSuffix": "ta rasm",
+    "allPhotos": "Barcha rasmlar"
+  }
 }

@@ -5,7 +5,6 @@ import { isLocale, type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/dictionaries';
 import { api, ApiRequestError } from '@/lib/api';
 import { getSession } from '@/lib/auth/session';
-import { formatSum } from '@/lib/money';
 import { HotelGallery } from '@/components/hotels/HotelGallery';
 import { RoomList } from '@/components/hotels/RoomList';
 import { HotelMobileCtaBar } from '@/components/hotels/HotelMobileCtaBar';
@@ -17,15 +16,10 @@ import { HotelStickyNav } from '@/components/features/hotels/HotelStickyNav';
 import { HotelLocation } from '@/components/features/hotels/HotelLocation';
 import { BackButton } from '@/components/ui/BackButton';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import {
-  Car,
   MapPin,
   ShieldCheck,
   Star,
-  Utensils,
-  Waves,
-  Wifi,
 } from 'lucide-react';
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -39,14 +33,6 @@ function num(value: string | undefined): number | undefined {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
-
-const AMENITY_ICONS: Record<string, typeof Wifi> = {
-  wifi: Wifi,
-  pool: Waves,
-  parking: Car,
-  restaurant: Utensils,
-  security: ShieldCheck,
-};
 
 const getCachedHotel = cache(async (locale: Locale, slug: string) => {
   try {
@@ -109,12 +95,13 @@ export default async function Page({
   const locale = isLocale(lang) ? lang : "uz";
   const sp = await searchParams;
 
-  const [hotel, dict, favDict, reviewsDict, session, amenitiesRes] =
+  const [hotel, dict, favDict, reviewsDict, commonDict, session, amenitiesRes] =
     await Promise.all([
       getCachedHotel(locale, slug),
       getDictionary(locale, 'hotelDetail'),
       getDictionary(locale, 'favorites'),
       getDictionary(locale, 'reviews'),
+      getDictionary(locale, 'common'),
       getSession(),
       api.catalog.getAmenities(locale),
     ]);
@@ -208,7 +195,7 @@ export default async function Page({
         </div>
       </header>
 
-      <HotelStickyNav />
+      <HotelStickyNav dict={dict.nav} />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-0">
@@ -218,22 +205,22 @@ export default async function Page({
               <li className="flex items-center gap-4 text-base text-slate-900">
                 <MapPin className="h-6 w-6 text-slate-700" strokeWidth={1.5} />
                 <div className="flex flex-col">
-                  <span className="font-semibold">Central Location</span>
-                  <span className="text-sm text-slate-500">Highly rated by recent guests</span>
+                  <span className="font-semibold">{dict.highlights.centralLocationTitle}</span>
+                  <span className="text-sm text-slate-500">{dict.highlights.centralLocationDesc}</span>
                 </div>
               </li>
               <li className="flex items-center gap-4 text-base text-slate-900">
                 <ShieldCheck className="h-6 w-6 text-slate-700" strokeWidth={1.5} />
                 <div className="flex flex-col">
-                  <span className="font-semibold">Free Cancellation</span>
-                  <span className="text-sm text-slate-500">Cancel anytime before check-in</span>
+                  <span className="font-semibold">{dict.highlights.freeCancellationTitle}</span>
+                  <span className="text-sm text-slate-500">{dict.highlights.freeCancellationDesc}</span>
                 </div>
               </li>
               <li className="flex items-center gap-4 text-base text-slate-900">
                 <Star className="h-6 w-6 text-slate-700" strokeWidth={1.5} />
                 <div className="flex flex-col">
-                  <span className="font-semibold">Superb Rating</span>
-                  <span className="text-sm text-slate-500">Guests loved the cleanliness</span>
+                  <span className="font-semibold">{dict.highlights.superbRatingTitle}</span>
+                  <span className="text-sm text-slate-500">{dict.highlights.superbRatingDesc}</span>
                 </div>
               </li>
             </ul>
@@ -262,7 +249,7 @@ export default async function Page({
 
           <section id="rooms" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <h2 className="text-2xl font-bold text-slate-900">
-              {dict.rooms}
+              {dict.rooms.title}
             </h2>
             <RoomList
               rooms={hotel.rooms}
@@ -284,6 +271,7 @@ export default async function Page({
             <ReviewsList 
               reviews={reviews} 
               dict={reviewsDict} 
+
               locale={locale} 
               hotelId={hotel.id}
               authed={!!session}
@@ -292,8 +280,8 @@ export default async function Page({
           </section>
 
           <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
-            <h2 className="text-2xl font-bold text-slate-900">Location</h2>
-            <HotelLocation address={hotel.address} latitude={hotel.latitude} longitude={hotel.longitude} />
+            <h2 className="text-2xl font-bold text-slate-900">{dict.locationTitle}</h2>
+            <HotelLocation address={hotel.address} latitude={hotel.latitude} longitude={hotel.longitude} dict={dict.location} />
           </section>
         </div>
 

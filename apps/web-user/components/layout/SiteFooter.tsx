@@ -43,9 +43,6 @@ export function SiteFooter({
           {/* Col 1: Brand & Intro */}
           <div className="flex flex-col gap-5">
             <BrandLogo href={base} brand={dict.brand} variant="dark" />
-            <p className="text-sm leading-relaxed text-slate-300 pr-4">
-              {dict.footer.tagline}
-            </p>
           </div>
 
           {/* Col 2: Platform */}

@@ -71,8 +71,9 @@ export default async function BookingDetailPage({
   const providerQuery = one(sp.provider);
   const guestTokenQuery = one(sp.guestToken);
 
-  const [dict, session] = await Promise.all([
+  const [dict, checkoutDict, session] = await Promise.all([
     getDictionary(locale, "booking"),
+    getDictionary(locale, "checkout"),
     getSession(),
   ]);
 
@@ -132,11 +133,11 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-7 w-7 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-emerald-950 dark:text-emerald-100 sm:text-2xl">
-              Broningiz muvaffaqiyatli tasdiqlandi!
+              {dict.confirmedTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-            Tafsilotlar va vaucher ma'lumotlari shaxsiy kabinetingizda saqlanadi.
+            {dict.confirmedSubtitle}
           </p>
         </div>
       ) : isFailed ? (
@@ -144,12 +145,11 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-7 w-7 shrink-0 text-red-600 dark:text-red-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-red-950 dark:text-red-100 sm:text-2xl">
-              To'lov tranzaksiyasi amalga oshmadi
+              {dict.failedTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-red-800 dark:text-red-300">
-            Tranzaksiya bekor qilindi yoki xatolik yuz berdi. Quyida to'lov
-            usulini qayta tanlab urinib ko'rishingiz mumkin.
+            {dict.failedSubtitle}
           </p>
         </div>
       ) : isAwaitingCash ? (
@@ -157,12 +157,11 @@ export default async function BookingDetailPage({
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 shrink-0 text-amber-600 dark:text-amber-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-amber-950 dark:text-amber-100 sm:text-2xl">
-              Joyida to'lash usuli tanlandi
+              {dict.awaitingCashTitle}
             </h1>
           </div>
           <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-            Joyingiz band qilindi. To'lov mehmonxonaga kelganda qabulxonada
-            amalga oshiriladi.
+            {dict.awaitingCashSubtitle}
           </p>
         </div>
       ) : isRefunded ? (
@@ -199,12 +198,12 @@ export default async function BookingDetailPage({
       )}
 
       <section
-        aria-label="Receipt Summary"
+        aria-label={dict.receiptSummary}
         className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Kvitansiya xulosasi
+            {dict.receiptSummary}
           </span>
           <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-bold text-primary-800 dark:bg-primary-950 dark:text-primary-300">
             {statusLabel}
@@ -214,7 +213,7 @@ export default async function BookingDetailPage({
         <Row label={dict.number} value={booking.bookingNumber || id} />
 
         {booking.createdAt && (
-          <Row label="Yaratilgan sana">
+          <Row label={dict.createdAt}>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               {new Date(booking.createdAt).toLocaleString(locale)}
             </span>
@@ -277,11 +276,18 @@ export default async function BookingDetailPage({
         dict={{
           voucher: dict.voucher,
           backHome: dict.backHome,
+          actions: dict.actions,
+          cancelModal: dict.cancelModal,
         }}
       />
 
       <section className="mt-8">
-        <BookingChat bookingId={booking.id} token={session?.accessToken} />
+        <BookingChat
+          bookingId={booking.id}
+          token={session?.accessToken}
+          dict={dict.chat}
+          locale={locale}
+        />
       </section>
     </main>
   );

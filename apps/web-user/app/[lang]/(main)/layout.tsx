@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth/session";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { PromoBarLive } from "@/components/layout/PromoBarLive";
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { getPromoBarConfig } from "@/lib/promo";
 import { RealtimeProvider } from "@/lib/services/realtime/socket-provider";
 import nextDynamic from "next/dynamic";
@@ -39,8 +38,7 @@ export default async function MainLayout({
     <RealtimeProvider accessToken={session?.accessToken ?? null}>
       <PromoBarLive initialConfig={promoConfig} locale={locale} />
       <SiteHeader locale={locale} dict={common} authed={!!session} />
-      <div className="flex flex-1 flex-col bg-slate-100/60 dark:bg-slate-950 pb-20 md:pb-0">{children}</div>
-      <BottomNav locale={locale} dict={common} />
+      <div className="flex flex-1 flex-col bg-slate-100/60 dark:bg-slate-950">{children}</div>
       <SiteFooter locale={locale} dict={common} />
       <LiveSupportWidget />
     </RealtimeProvider>

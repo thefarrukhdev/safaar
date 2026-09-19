@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { Car, ShieldCheck, Utensils, Waves, Wifi } from 'lucide-react';
+import { Car, ShieldCheck, Utensils, Waves, Wifi, type LucideIcon } from 'lucide-react';
+import type { HotelDetailDict } from '@/i18n/dictionaries';
 
-const AMENITY_ICONS: Record<string, any> = {
+const AMENITY_ICONS: Record<string, LucideIcon> = {
   wifi: Wifi,
   pool: Waves,
   parking: Car,
@@ -20,7 +21,7 @@ export function HotelAmenities({
 }: {
   amenities: string[];
   amenityName: Record<string, string>;
-  dict: any;
+  dict: HotelDetailDict;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const visibleAmenities = amenities.slice(0, 6);
@@ -29,7 +30,7 @@ export function HotelAmenities({
 
   return (
     <section className="flex flex-col gap-6 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
-      <h2 className="text-2xl font-bold text-slate-900">{dict.amenities || 'What this place offers'}</h2>
+      <h2 className="text-2xl font-bold text-slate-900">{typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}</h2>
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {visibleAmenities.map((id) => {
           const Icon = AMENITY_ICONS[id];
@@ -52,7 +53,7 @@ export function HotelAmenities({
             className="border-slate-900 text-slate-900 bg-white hover:bg-slate-50 border font-semibold px-6"
             onClick={() => setIsOpen(true)}
           >
-            Show all {amenities.length} amenities
+            {(dict.amenities.showAll ?? "Show all {count} amenities").replace("{count}", String(amenities.length))}
           </Button>
         </div>
       )}
@@ -60,7 +61,7 @@ export function HotelAmenities({
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title={dict.amenities || 'What this place offers'}
+        title={typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}
       >
         <div className="flex flex-col gap-6">
           <ul className="flex flex-col gap-6">

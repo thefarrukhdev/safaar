@@ -3,6 +3,7 @@
   "promo": "🔥 Yozgi chegirma! Birinchi bron uchun 20% — SAFAAR20 promokodi bilan",
   "nav": {
     "home": "Bosh",
+    "all": "Barchasi",
     "hotels": "Mehmonxonalar",
     "dachas": "Dachalar",
     "sanatoriums": "Sanatoriylar",
@@ -19,18 +20,28 @@
     "search": "Qidirish",
     "favorites": "Saqlanganlar",
     "bookings": "Bronlarim",
-    "profile": "Profil"
+    "profile": "Profil",
+    "mobileNavAria": "Mobil navigatsiya",
+    "menu": "Menyu",
+    "language": "Til"
   },
   "actions": {
     "login": "Kirish",
     "register": "Ro'yxatdan o'tish",
     "logout": "Chiqish",
     "search": "Qidirish",
-    "account": "Kabinet"
+    "account": "Kabinet",
+    "details": "Batafsil",
+    "close": "Yopish",
+    "back": "Orqaga",
+    "previous": "Oldingi",
+    "next": "Keyingi",
+    "clearAll": "Barchasini tozalash",
+    "favorite": "Sevimlilarga qo'shish",
+    "cancel": "Bekor qilish"
   },
   "language": "Til",
   "propertyTypes": {
-
     "hotel": "Mehmonxona",
     "dacha": "Dacha",
     "sanatorium": "Sanatoriy",
@@ -43,13 +54,40 @@
     "checkIn": "Kirish sanasi",
     "checkOut": "Chiqish sanasi",
     "guests": "Mehmonlar",
-    "submit": "Qidirish"
+    "submit": "Qidirish",
+    "guestsSuffix": "mehmon",
+    "selectDate": "Sanani tanlang",
+    "checkInCheckOut": "Kirish — Chiqish",
+    "decreaseGuests": "Mehmonlar sonini kamaytirish",
+    "increaseGuests": "Mehmonlar sonini oshirish"
+  },
+  "chat": {
+    "supportAria": "Safaar qo'llab-quvvatlash",
+    "loginRequired": "Xabar yuborish uchun akkauntga kiring.",
+    "loginNeeded": "Kirish kerak",
+    "newTicket": "Yangi murojaat",
+    "refreshAria": "Yangilash",
+    "closeAria": "Yopish",
+    "loadingTickets": "Ticketlar yuklanmoqda...",
+    "emptyTicketPrompt": "Yangi murojaat uchun savolingizni yozing.",
+    "loginBtn": "Kirish",
+    "inputPlaceholder": "Xabaringizni yozing...",
+    "sendAria": "Yuborish",
+    "sendError": "Xabar yuborishda xatolik yuz berdi."
+  },
+  "pwa": {
+    "installTitle": "Safaar ilovasini o'rnating",
+    "installSubtitle": "Tezkor kirish va offlayn rejim",
+    "installButton": "O'rnatish",
+    "retryConnection": "Aloqani qayta tekshirish",
+    "connectionRestored": "Internet aloqasi tiklandi"
   },
   "footer": {
     "tagline": "O'zbekiston bo'ylab mehmonxona va dam olish joylarini bron qilish.",
     "rights": "Barcha huquqlar himoyalangan.",
     "phone": "+998 90 449 08 93",
     "email": "info@safaar.uz",
+    "address": "Samarqand shahri",
     "supportLabel": "(Qo'llab-quvvatlash)",
     "secureBooking": "Xavfsiz va kafolatlangan bron qilish",
     "securePayments": "Xavfsiz to'lov usullari",
@@ -60,5 +98,9 @@
       "partners": "Hamkorlik",
       "contact": "Aloqa"
     }
+  },
+  "currency": "so'm",
+  "card": {
+    "noImage": "Rasm yo'q"
   }
 }

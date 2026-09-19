@@ -8,6 +8,43 @@
   "voucher": "Download voucher",
   "backHome": "Back home",
   "error": "Failed to load booking details.",
+  "confirmedTitle": "Booking Confirmed!",
+  "confirmedSubtitle": "Congratulations! Your booking has been successfully confirmed.",
+  "failedTitle": "Payment Failed",
+  "failedSubtitle": "An error occurred during payment. Please try again.",
+  "awaitingCashTitle": "Awaiting Cash Payment",
+  "awaitingCashSubtitle": "Please pay in cash upon arrival.",
+  "receiptSummary": "Receipt Summary",
+  "createdAt": "Booking Date",
+  "actions": {
+    "printVoucher": "Print Voucher",
+    "cancelBooking": "Cancel Booking",
+    "myBookings": "My Bookings",
+    "backHome": "Back Home",
+    "error": "An error occurred",
+    "userCancelledReason": "Cancelled by user"
+  },
+  "cancelModal": {
+    "title": "Cancel Booking",
+    "calculating": "Calculating...",
+    "rulesIntro": "Cancellation terms:",
+    "paidAmount": "Paid amount:",
+    "refundAmount": "Refund amount:",
+    "penalty": "Penalty:",
+    "penaltyAmount": "Penalty amount:",
+    "policyLabel": "Policy:",
+    "cancelling": "Cancelling...",
+    "confirm": "Confirm",
+    "confirmCancel": "Confirm Cancellation",
+    "cancel": "Go Back"
+  },
+  "chat": {
+    "title": "Chat with Hotel",
+    "empty": "No messages yet...",
+    "placeholder": "Write a message...",
+    "loading": "Loading messages...",
+    "send": "Send"
+  },
   "statuses": {
     "PENDING": "Pending",
     "AWAITING_PAYMENT": "Awaiting payment",

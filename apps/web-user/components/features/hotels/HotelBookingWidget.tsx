@@ -1,5 +1,6 @@
 import { formatSum } from '@/lib/money';
 import { Button } from '@/components/ui/Button';
+import type { HotelDetailDict } from '@/i18n/dictionaries';
 
 export function HotelBookingWidget({
   minPriceSum,
@@ -10,7 +11,7 @@ export function HotelBookingWidget({
   minPriceSum: number;
   checkInTime?: string | null;
   checkOutTime?: string | null;
-  dict: any;
+  dict: HotelDetailDict;
 }) {
   return (
     <aside className="flex h-fit flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl lg:sticky lg:top-24">
@@ -26,17 +27,17 @@ export function HotelBookingWidget({
       <div className="flex flex-col rounded-xl border border-slate-300">
         <div className="flex border-b border-slate-300">
           <div className="flex flex-1 flex-col border-r border-slate-300 p-3">
-            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.checkIn || 'CHECK-IN'}</span>
-            <span className="text-sm text-slate-500">{checkInTime || 'Add date'}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkIn}</span>
+            <span className="text-sm text-slate-500">{checkInTime || dict.booking.addDate}</span>
           </div>
           <div className="flex flex-1 flex-col p-3">
-            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.checkOut || 'CHECKOUT'}</span>
-            <span className="text-sm text-slate-500">{checkOutTime || 'Add date'}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkOut}</span>
+            <span className="text-sm text-slate-500">{checkOutTime || dict.booking.addDate}</span>
           </div>
         </div>
         <div className="flex flex-col p-3">
-          <span className="text-[10px] font-bold uppercase text-slate-900">Guests</span>
-          <span className="text-sm text-slate-500">1 guest</span>
+          <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.guests}</span>
+          <span className="text-sm text-slate-500">{dict.booking.oneGuest}</span>
         </div>
       </div>
 
@@ -46,27 +47,27 @@ export function HotelBookingWidget({
           size="lg"
           className="w-full font-extrabold"
         >
-          {dict.selectRoom || 'Check availability'}
+          {dict.selectRoom || dict.booking.checkAvailability}
         </Button>
       </a>
 
       <div className="flex justify-center">
-        <span className="text-sm text-slate-500">You won't be charged yet</span>
+        <span className="text-sm text-slate-500">{dict.booking.noChargeNotice}</span>
       </div>
 
       <div className="flex flex-col gap-3 pt-4 border-t border-slate-200">
         <div className="flex justify-between text-base text-slate-600 underline">
-          <span>{formatSum(minPriceSum)} x 5 nights</span>
+          <span>{formatSum(minPriceSum)} x {dict.booking.nightsCount.replace("{count}", "5")}</span>
           <span>{formatSum(minPriceSum * 5)}</span>
         </div>
         <div className="flex justify-between text-base text-slate-600 underline">
-          <span>Service fee</span>
+          <span>{dict.booking.serviceFee}</span>
           <span>{formatSum(10000)}</span>
         </div>
       </div>
 
       <div className="flex justify-between border-t border-slate-200 pt-4 text-lg font-bold text-slate-900">
-        <span>Total</span>
+        <span>{dict.booking.total}</span>
         <span>{formatSum(minPriceSum * 5 + 10000)}</span>
       </div>
     </aside>

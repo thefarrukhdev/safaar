@@ -25,6 +25,48 @@
   "confirm": "Confirm booking",
   "needDates": "Select check-in and check-out dates to continue.",
   "error": "Booking failed. Please try again.",
+  "specialRequests": "Special requests (optional)",
+  "specialRequestsPlaceholder": "Write any special requests or preferences for the hotel...",
+  "promoCode": "Promo code (if any)",
+  "applyPromo": "Apply",
+  "agreeTermsPrefix": "I agree to the ",
+  "termsLink": "Public Offer",
+  "agreeTermsSuffix": " terms.",
+  "payButton": "Pay",
+  "paymentMethods": {
+    "click": {
+      "title": "Click Pass / Evolution",
+      "desc": "Instant payment via Click Evolution app or USSD *880#",
+      "badges": [
+        "1-click payment",
+        "Instant confirmation"
+      ]
+    },
+    "payme": {
+      "title": "Payme",
+      "desc": "Secure and fast payment via Payme app or website",
+      "badges": [
+        "0% commission",
+        "Instant confirmation"
+      ]
+    },
+    "card": {
+      "title": "Uzcard / Humo (Bank card)",
+      "desc": "Direct payment via all national Uzcard and Humo cards",
+      "badges": [
+        "3D-Secure protection",
+        "National card"
+      ]
+    },
+    "cash": {
+      "title": "Pay at Property (Cash / Terminal)",
+      "desc": "No prepayment required. Pay at the front desk upon arrival",
+      "badges": [
+        "No prepayment",
+        "Flexible cancellation"
+      ]
+    }
+  },
   "errors": {
     "ROOM_ALREADY_BOOKED": "The selected room is already booked for these dates.",
     "VEHICLE_ALREADY_BOOKED": "The selected vehicle is already booked for these dates.",

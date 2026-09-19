@@ -6,10 +6,12 @@
   "clearFilters": "Clear filters",
   "error": "Failed to load data. Check that the backend is running.",
   "retry": "Try again",
-  "perNight": "night",
+  "perNight": "/ night",
   "reviews": "review",
   "viewDetails": "View details",
   "removeFilter": "Remove filter",
+  "bannerTitle": "Search for Hotels, Dachas, Sanatoriums and Resorts",
+  "bannerSubtitle": "Discover comfortable accommodations across Uzbekistan at affordable prices.",
   "filters": {
     "title": "Filters",
     "toggle": "Filters",
@@ -22,7 +24,34 @@
     "priceMax": "Max price",
     "currency": "UZS",
     "apply": "Apply",
-    "reset": "Reset"
+    "reset": "Reset",
+    "pricePerNight": "Price (1 night)",
+    "propertyType": "Property type",
+    "amenities": "Amenities",
+    "paymentType": "Payment type"
+  },
+  "starOptions": {
+    "five": "5 stars",
+    "fourPlus": "4 and above",
+    "threePlus": "3 and above"
+  },
+  "types": {
+    "hotels": "Hotels",
+    "dachas": "Dachas",
+    "sanatoriums": "Sanatoriums",
+    "resorts": "Resorts"
+  },
+  "amenityOptions": {
+    "wifi": "Wi-Fi",
+    "pool": "Pool",
+    "sauna": "Sauna",
+    "breakfast": "Breakfast",
+    "parking": "Parking",
+    "gym": "Gym"
+  },
+  "paymentOptions": {
+    "online": "Online payment (Card)",
+    "atProperty": "Pay at property (Cash)"
   },
   "sort": {
     "label": "Sort",

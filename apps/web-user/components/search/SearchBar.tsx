@@ -189,7 +189,7 @@ export function SearchBar({
                       <span className="font-semibold text-sm text-slate-800">{search.cityName}</span>
                       {(search.checkIn || search.checkOut) && (
                         <span className="text-xs text-slate-500">
-                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} mehmon
+                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix ?? "mehmon"}
                         </span>
                       )}
                     </div>
@@ -219,7 +219,7 @@ export function SearchBar({
 
         {/* 2. Sanalar (Kirish - Chiqish) */}
         <div className="min-w-0 flex-1 px-2 md:px-0">
-          <SearchDatePicker locale={locale} />
+          <SearchDatePicker locale={locale} dict={dict} />
         </div>
 
         <div className="hidden h-10 w-px shrink-0 bg-slate-200 md:block" aria-hidden />

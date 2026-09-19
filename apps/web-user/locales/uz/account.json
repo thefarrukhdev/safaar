@@ -4,7 +4,8 @@
     "profile": "Profil",
     "bookings": "Bronlarim",
     "favorites": "Sevimlilar",
-    "bonuses": "Bonuslar"
+    "bonuses": "Bonuslar",
+    "ariaLabel": "Kabinet bo'limlari"
   },
   "profile": {
     "title": "Profil ma'lumotlari",
@@ -51,6 +52,31 @@
     "title": "Bonuslar",
     "balance": "Bonus balansi",
     "empty": "Bonus tarixi hozircha bo'sh.",
-    "history": "Tarix"
+    "history": "Tarix",
+    "disclaimer": "*Safarlar va bron qilishlar uchun to'plangan bonus balingiz."
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "notificationPreferences": "Xabarnoma sozlamalari",
+    "emailAlerts": "Email xabarnomalari",
+    "smsAlerts": "SMS xabarnomalari",
+    "savePreferences": "Sozlamalarni saqlash",
+    "dataManagement": "Ma'lumotlarni boshqarish",
+    "requestExport": "Ma'lumotlarni eksport qilish",
+    "requestDeletion": "Akkauntni o'chirishni so'rash",
+    "confirmDelete": "Haqiqatan ham akkauntni o'chirishni so'ramoqchimisiz?",
+    "preferencesUpdated": "Sozlamalar yangilandi!",
+    "updateFailed": "Yangilashda xatolik yuz berdi",
+    "exportRequested": "Ma'lumotlar eksporti so'raldi!",
+    "exportFailed": "Eksport so'rovida xatolik yuz berdi",
+    "deleteRequested": "Akkauntni o'chirish so'raldi!",
+    "deleteFailed": "O'chirish so'rovida xatolik yuz berdi"
+  },
+  "avatar": {
+    "upload": "Yuklash",
+    "delete": "O'chirish",
+    "confirmDelete": "Profil rasmini o'chirishni xohlaysizmi?",
+    "uploadFailed": "Rasmni yuklashda xatolik",
+    "deleteFailed": "Rasmni o'chirishda xatolik"
   }
 }

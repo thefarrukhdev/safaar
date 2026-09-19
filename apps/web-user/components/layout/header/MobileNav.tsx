@@ -89,7 +89,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
           />
           <nav
             aria-label="Mobil navigatsiya"
-            className="fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-4 duration-200 dark:border-slate-800 dark:bg-slate-900"
+            className="fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-4 duration-200 dark:border-slate-800 dark:bg-slate-900"
           >
             {/* Header */}
             <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">

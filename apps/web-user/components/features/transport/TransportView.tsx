@@ -157,7 +157,7 @@ export function TransportView({
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
 
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-5 sm:mb-8 flex h-[150px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-[24px] sm:rounded-[32px] bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 px-5 sm:px-8 md:px-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+      <div className="relative mb-5 sm:mb-8 flex h-[150px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-xl sm:rounded-[32px] bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 px-5 sm:px-8 md:px-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div className="relative z-10 w-full sm:max-w-[65%]">
           <h1 className="mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight" style={{ fontFamily: "var(--font-manrope, sans-serif)", letterSpacing: "-0.02em" }}>
             {dict.title}
@@ -178,7 +178,7 @@ export function TransportView({
       </div>
 
       {/* ═══ Search Panel ═══ */}
-      <div className="relative z-20 mb-6 sm:mb-10 rounded-[24px] bg-white p-3 sm:p-4 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_8px_32px_rgba(0,0,0,0.06),0_2px_4px_rgba(0,0,0,0.04)] dark:bg-slate-900 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-slate-200/50">
+      <div className="relative z-20 mb-6 sm:mb-10 rounded-xl bg-white p-3 sm:p-4 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_8px_32px_rgba(0,0,0,0.06),0_2px_4px_rgba(0,0,0,0.04)] dark:bg-slate-900 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-slate-200/50">
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4">
 
           <div className="relative sm:col-span-2 md:col-span-1">
@@ -326,10 +326,10 @@ export function TransportView({
       )}
 
       {/* Features Footer — Silk Road Accents */}
-      <div className="mt-16 grid grid-cols-1 gap-5 rounded-[24px] bg-white p-8 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_4px_12px_rgba(0,0,0,0.04)] border border-slate-200/80 dark:border-slate-800 dark:bg-slate-900/50 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-16 grid grid-cols-1 gap-5 rounded-xl bg-white p-8 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_4px_12px_rgba(0,0,0,0.04)] border border-slate-200/80 dark:border-slate-800 dark:bg-slate-900/50 sm:grid-cols-2 lg:grid-cols-4">
 
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-900/30">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/30">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div className="pt-1">
@@ -341,7 +341,7 @@ export function TransportView({
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-600/10 text-primary-600 dark:bg-primary-600/20">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-600/10 text-primary-600 dark:bg-primary-600/20">
             <Clock className="h-6 w-6" />
           </div>
           <div className="pt-1">
@@ -353,7 +353,7 @@ export function TransportView({
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/30">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/30">
             <CreditCard className="h-6 w-6" />
           </div>
           <div className="pt-1">
@@ -365,7 +365,7 @@ export function TransportView({
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30">
             <Calendar className="h-6 w-6" />
           </div>
           <div className="pt-1">

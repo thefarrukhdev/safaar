@@ -44,7 +44,7 @@ export default async function HelpPage({
         {help.faqs.map((faq, index) => (
           <details
             key={index}
-            className="group rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            className="group rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-900"
           >
             <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:text-white">
               <span>{faq.q}</span>

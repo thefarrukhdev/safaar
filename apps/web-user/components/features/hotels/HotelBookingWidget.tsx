@@ -14,7 +14,7 @@ export function HotelBookingWidget({
   dict: HotelDetailDict;
 }) {
   return (
-    <aside className="flex h-fit flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl lg:sticky lg:top-24">
+    <aside className="flex h-fit flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6 shadow-xl lg:sticky lg:top-24">
       <div>
         <p className="flex items-end gap-1.5 text-3xl font-black tracking-tight text-slate-900">
           {formatSum(minPriceSum)}

@@ -18,7 +18,7 @@ export default function GlobalError({
         style={{ margin: 0 }}
         className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-20 text-center dark:bg-slate-950"
       >
-        <div className="flex max-w-md flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex max-w-md flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
             <AlertOctagon className="h-10 w-10 text-red-600 dark:text-red-500" />
           </div>

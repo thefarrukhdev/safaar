@@ -143,7 +143,7 @@ export function AccommodationListWithMap({
                   key={hotel.id}
                   onMouseEnter={() => setHoveredHotelId(hotel.id)}
                   onMouseLeave={() => setHoveredHotelId(null)}
-                  className={`transition-all duration-200 rounded-2xl ${
+                  className={`transition-all duration-200 rounded-xl ${
                     selectedHotelId === hotel.id ? "ring-2 ring-primary-500 shadow-lg" : ""
                   }`}
                 >
@@ -173,7 +173,7 @@ export function AccommodationListWithMap({
               selectedItemId={selectedHotelId}
               onSelectItem={(item) => setSelectedHotelId(item.id)}
               onBoundsChange={handleBoundsChange}
-              className="h-[450px] w-full lg:h-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800"
+              className="h-[450px] w-full lg:h-full rounded-xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800"
             />
           </div>
         </div>

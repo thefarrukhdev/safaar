@@ -10,8 +10,8 @@ export default async function NotFound() {
 
   return (
     <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
-      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white p-8 shadow-xl sm:p-12 dark:border-slate-800 dark:bg-slate-900/50">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-100 dark:bg-slate-800">
+      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-slate-200/80 bg-white p-8 shadow-xl sm:p-12 dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
           <MapPinOff className="h-12 w-12 text-slate-400 dark:text-slate-500" />
         </div>
         

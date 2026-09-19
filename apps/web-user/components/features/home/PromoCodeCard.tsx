@@ -30,7 +30,7 @@ export function PromoCodeCard({ promo }: { promo: PromoView }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="group flex min-h-[44px] flex-col gap-1.5 rounded-2xl border border-dashed border-primary-300 bg-primary-50/60 p-4 text-left transition-colors hover:bg-primary-50 dark:border-primary-800 dark:bg-primary-950/20 dark:hover:bg-primary-950/30"
+      className="group flex min-h-[44px] flex-col gap-1.5 rounded-xl border border-dashed border-primary-300 bg-primary-50/60 p-4 text-left transition-colors hover:bg-primary-50 dark:border-primary-800 dark:bg-primary-950/20 dark:hover:bg-primary-950/30"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 text-sm font-black tracking-widest text-primary-700 dark:text-primary-300">

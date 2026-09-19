@@ -132,7 +132,7 @@ export function TransportBookingSection({
 
   if (successBookingId) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
         <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">
           To'lov bajarildi va mashina band qilindi!
@@ -161,7 +161,7 @@ export function TransportBookingSection({
     <>
       <div
         id="booking-section"
-        className="scroll-mt-24 rounded-2xl border border-slate-200 bg-card p-6 shadow-md dark:border-slate-800 dark:bg-slate-900"
+        className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-6 shadow-md dark:border-slate-800 dark:bg-slate-900"
       >
         <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
           <Car className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -271,7 +271,7 @@ export function TransportBookingSection({
 
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}

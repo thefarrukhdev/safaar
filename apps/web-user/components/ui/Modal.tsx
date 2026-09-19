@@ -61,7 +61,7 @@ export function Modal({
 
       {/* Asosiy Dialog Oynasi */}
       <div
-        className={`relative flex w-full flex-col ${maxWidth} transform rounded-2xl bg-white shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95 dark:bg-slate-900`}
+        className={`relative flex w-full flex-col ${maxWidth} transform rounded-xl bg-white shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95 dark:bg-slate-900`}
         role="dialog"
         aria-modal="true"
       >

@@ -32,7 +32,7 @@ export function HotelLocation({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-slate-900">{address}</span>

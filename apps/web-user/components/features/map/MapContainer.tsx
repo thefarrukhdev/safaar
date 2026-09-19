@@ -221,7 +221,7 @@ export function MapContainer({
   onBoundsChange,
   center = [41.2995, 69.2401],
   zoom = 12,
-  className = "h-[550px] w-full rounded-3xl overflow-hidden border border-slate-200/80 bg-card shadow-xl dark:border-slate-800 dark:bg-slate-900",
+  className = "h-[550px] w-full rounded-xl overflow-hidden border border-slate-200/80 bg-card shadow-xl dark:border-slate-800 dark:bg-slate-900",
 }: MapContainerProps) {
   const firstCoords = items.map(resolveItemCoords).find(c => c) ?? center;
   

@@ -78,7 +78,7 @@ export function SearchDatePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-w-[220px] items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left transition-all hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800"
+        className="flex w-full min-w-[220px] items-center gap-3 rounded-xl bg-white px-4 py-3 text-left transition-all hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800"
       >
         <CalendarIcon className="h-5 w-5 text-primary-600" />
         <span className="flex flex-col">
@@ -90,7 +90,7 @@ export function SearchDatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
+        <div className="absolute left-0 top-full z-50 mt-2 rounded-xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
           <div className="flex justify-between items-center mb-2 md:hidden">
              <span className="font-bold text-sm">{dict?.selectDate ?? "Sanani tanlang"}</span>
              <button onClick={() => setOpen(false)}><X className="h-5 w-5"/></button>

@@ -75,7 +75,7 @@ export function CheckoutForm({
       <input type="hidden" name="roomId" value={room.id} />
 
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
           <h2 className="text-lg font-semibold">{dict.guestDetails}</h2>
           
           {isGuest ? (
@@ -175,13 +175,13 @@ export function CheckoutForm({
           </label>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
           <PaymentSelector defaultValue="uzcard" name="paymentMethod" dict={dict.paymentMethods} />
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-3 rounded-2xl border border-slate-200 bg-card p-5 shadow-sm lg:sticky lg:top-24">
+      <aside className="flex h-fit flex-col gap-3 rounded-xl border border-slate-200 bg-card p-5 shadow-sm lg:sticky lg:top-24">
         <h2 className="text-lg font-semibold">{dict.summary}</h2>
         <div>
           <p className="font-medium">{hotelName}</p>

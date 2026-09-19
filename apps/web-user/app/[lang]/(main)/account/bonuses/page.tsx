@@ -52,7 +52,7 @@ export default async function AccountBonusesPage({
   return (
     <div className="flex flex-col gap-6">
       {/* Ambient Glow Balance Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-primary-900 via-primary-800 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-xl bg-linear-to-r from-primary-900 via-primary-800 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10 flex flex-col gap-2">
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-300">
             <Coins className="h-4 w-4" /> {dict.bonuses.balance}

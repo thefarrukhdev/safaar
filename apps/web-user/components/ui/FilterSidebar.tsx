@@ -50,7 +50,7 @@ export function FilterSidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden w-full flex-col gap-5 rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/90 lg:flex lg:sticky lg:top-24 lg:h-fit">
+      <aside className="hidden w-full flex-col gap-5 rounded-xl border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900/90 lg:flex lg:sticky lg:top-24 lg:h-fit">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800">
           <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export function FilterSidebar({
           <button
             type="button"
             onClick={onApply}
-            className="w-full rounded-2xl bg-blue-600 py-3.5 px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:bg-blue-700 active:scale-[0.99] cursor-pointer"
+            className="w-full rounded-xl bg-blue-600 py-3.5 px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:bg-blue-700 active:scale-[0.99] cursor-pointer"
           >
             {applyLabel}
           </button>
@@ -136,7 +136,7 @@ export function FilterSidebar({
                   onApply();
                   onClose();
                 }}
-                className="w-full rounded-2xl bg-blue-600 py-3.5 px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 cursor-pointer"
+                className="w-full rounded-xl bg-blue-600 py-3.5 px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 cursor-pointer"
               >
                 {applyLabel}
               </button>

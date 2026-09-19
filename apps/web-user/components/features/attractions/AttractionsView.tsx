@@ -12,7 +12,7 @@ import type { CatalogDict } from "@/i18n/dictionaries";
 // ─── SHIMMER SKELETON (Design System: Sweep, not Pulse) ──────────────────────
 function ShimmerCard() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <div className="aspect-[4/3] w-full animate-shimmer bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 bg-[length:200%_100%]" />
       <div className="p-4 space-y-2">
         <div className="h-4 w-3/4 rounded-full animate-shimmer bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 bg-[length:200%_100%]" />
@@ -110,9 +110,9 @@ function FilterHeader({
 // ─── MAP PLACEHOLDER (Warm Neutral tints from design system) ─────────────────
 function MapPlaceholder({ dict }: { dict: CatalogDict["attractions"] }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 m-4 rounded-3xl border-2 border-dashed border-slate-200/80 bg-[#F8FAF9] dark:border-slate-700/60 dark:bg-slate-900/40">
+    <div className="flex h-full flex-col items-center justify-center gap-4 m-4 rounded-xl border-2 border-dashed border-slate-200/80 bg-[#F8FAF9] dark:border-slate-700/60 dark:bg-slate-900/40">
       {/* Jade soft glow behind icon */}
-      <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-primary-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_12px_rgba(5,150,105,0.12)] dark:bg-primary-900/20">
+      <div className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-primary-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_12px_rgba(5,150,105,0.12)] dark:bg-primary-900/20">
         <Map className="h-9 w-9 text-primary-600 dark:text-primary-400" />
       </div>
       <div className="text-center">
@@ -321,8 +321,8 @@ export function AttractionsView({
 
       {/* ── MOBILE BOTTOM SHEET: Map ──────────────────────────── */}
       <BottomSheet open={mapOpen} onClose={() => setMapOpen(false)} title={(dict as any).map?.title || "Xarita"}>
-        <div className="flex h-[42vh] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-[#F8FAF9]">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+        <div className="flex h-[42vh] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-[#F8FAF9]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-50">
             <Map className="h-7 w-7 text-primary-600" />
           </div>
           <p className="text-sm font-bold text-slate-600">{(dict as any).map?.soon || "Xarita tez orada ulanadi"}</p>

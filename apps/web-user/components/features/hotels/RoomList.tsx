@@ -35,7 +35,7 @@ export function RoomList({
 
   if (rooms.length === 0) {
     return (
-      <div className="py-8 text-center text-slate-500 rounded-2xl border border-dashed border-slate-200">
+      <div className="py-8 text-center text-slate-500 rounded-xl border border-dashed border-slate-200">
         Boshqa xonalar topilmadi.
       </div>
     );
@@ -49,7 +49,7 @@ export function RoomList({
           <li
             key={room.id}
             data-testid="room-card"
-            className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-card p-5 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
+            className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-card p-5 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="flex flex-col gap-2">
               <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">

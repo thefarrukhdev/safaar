@@ -254,7 +254,7 @@ export function UniversalCard({
 
   const content = (
     <article
-      className={`group/card flex h-full flex-col overflow-hidden rounded-2xl sm:rounded-[24px] border border-slate-200/80 bg-white shadow-xs sm:shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/90 ${className}`}
+      className={`group/card flex h-full flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs sm:shadow-md transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:scale-[1.02] hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 ${className}`}
     >
       {variant === "overlay" ? (
         /* Overlay variant (e.g. City Card / Special Showcase) */
@@ -302,7 +302,7 @@ export function UniversalCard({
         /* Default variant (standard card) */
         <>
           {/* Top Media Section */}
-          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden rounded-t-2xl sm:rounded-t-[24px] bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden rounded-t-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             {renderImages()}
 
             {topLeft && <div className="absolute left-3 top-3 z-10">{topLeft}</div>}
@@ -361,7 +361,7 @@ export function UniversalCard({
     return (
       <Link
         href={href}
-        className="group block h-full rounded-2xl sm:rounded-[24px] focus-visible:outline-none"
+        className="group block h-full rounded-xl focus-visible:outline-none"
       >
         {content}
       </Link>

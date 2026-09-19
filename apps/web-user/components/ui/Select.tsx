@@ -75,7 +75,7 @@ export function Select({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-full min-w-44 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 top-full z-50 mt-2 w-full min-w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-100">
           {options.length === 0 && (
             <span className="block px-3 py-2 text-sm text-slate-500">—</span>
           )}

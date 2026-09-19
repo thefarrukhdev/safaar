@@ -38,7 +38,7 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
           const Icon = tab.icon;
 
           const className = cn(
-            "group relative flex shrink-0 cursor-pointer snap-center items-center justify-center gap-2.5 rounded-2xl px-5 py-3 text-sm font-extrabold transition-all duration-200 select-none",
+            "group relative flex shrink-0 cursor-pointer snap-center items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-extrabold transition-all duration-200 select-none",
             isTabActive
               ? "bg-white text-slate-900 shadow-md ring-2 ring-blue-600 dark:bg-slate-900 dark:text-white dark:ring-blue-500"
               : "bg-white/90 text-slate-700 border border-slate-200/90 shadow-xs hover:bg-white hover:text-slate-900 hover:shadow-md hover:border-slate-300 dark:bg-slate-900/80 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-900 dark:hover:text-white"

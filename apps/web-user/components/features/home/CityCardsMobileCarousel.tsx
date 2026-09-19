@@ -70,7 +70,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <Link
             key={i}
             href={item.link}
-            className="relative flex-none w-[72vw] max-w-[280px] snap-center rounded-2xl overflow-hidden shadow-card aspect-[3/4] block"
+            className="relative flex-none w-[72vw] max-w-[280px] snap-center rounded-xl overflow-hidden shadow-card aspect-[3/4] block"
           >
             <Image
               src={item.image}

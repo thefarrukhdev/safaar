@@ -54,7 +54,7 @@ export function CityPicker({ cities, value, onChange, placeholder }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-[240px] max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-card p-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="absolute left-0 top-full z-50 mt-2 min-w-[240px] max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-card p-1.5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
           {cities.length === 0 && (
             <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
           )}

@@ -127,9 +127,9 @@ export default async function AccountFavoritesPage({
             <Link
               key={item.favId}
               href={`/${locale}/hotels/${hotel.slug}`}
-              className="group block overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
                 <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
                   {imageUrl ? (
                     <Image
@@ -179,9 +179,9 @@ export default async function AccountFavoritesPage({
             <Link
               key={item.favId}
               href={linked.href}
-              className="group block overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
                 <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
                   {imageUrl ? (
                     <Image

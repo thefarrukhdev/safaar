@@ -170,7 +170,7 @@ export function ReviewsList({
       </div>
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="font-bold text-slate-900">{dict.writeReview ?? "Write a Review"}</h3>
           
           <div className="flex flex-col gap-2">
@@ -240,7 +240,7 @@ export function ReviewsList({
             return (
               <div
                 key={review.id}
-                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:shadow-sm"
+                className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:shadow-sm"
               >
                 {/* Author Info Header */}
                 <div className="flex items-center gap-4">

@@ -60,7 +60,7 @@ export default async function TermsPage({
         </a>
       </div>
 
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16 dark:bg-slate-900 dark:border-slate-800">
+      <div className="bg-white rounded-xl sm:rounded-xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16 dark:bg-slate-900 dark:border-slate-800">
         {/* Content generated from DOCX with manual resets */}
         <div 
           className="

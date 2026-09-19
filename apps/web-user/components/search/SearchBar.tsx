@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 rounded-[24px] bg-white border border-slate-200 px-4 py-3 transition-all duration-300 hover:border-slate-300 md:rounded-[32px] md:border-transparent md:bg-transparent md:px-5 md:py-3 md:hover:border-slate-200 cursor-pointer";
+const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-white border border-slate-200 px-4 py-3 transition-all duration-300 hover:border-slate-300 md:rounded-[32px] md:border-transparent md:bg-transparent md:px-5 md:py-3 md:hover:border-slate-200 cursor-pointer";
 
 export function SearchBar({
   locale,
@@ -161,7 +161,7 @@ export function SearchBar({
           </div>
           
           {showRecent && recentSearches.length > 0 && !cityId && (
-            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white shadow-2xl p-3">
+            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-2xl p-3">
               {recentSearches.map((search) => (
                 <div
                   key={search.timestamp}

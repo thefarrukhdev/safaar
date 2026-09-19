@@ -53,7 +53,7 @@ export function AuthSplitLayout({ children, locale, dict }: AuthSplitLayoutProps
           <BackButton />
           <LocaleSwitcher current={locale} light />
         </div>
-        <div className="w-full max-w-[420px] space-y-6 bg-card border border-slate-100 shadow-card rounded-3xl p-6 sm:p-8 transition-all duration-300 hover:shadow-card-hover">
+        <div className="w-full max-w-[420px] space-y-6 bg-card border border-slate-100 shadow-card rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-card-hover">
           {children}
         </div>
       </div>

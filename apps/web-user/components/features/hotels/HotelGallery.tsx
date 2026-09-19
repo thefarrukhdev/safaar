@@ -23,7 +23,7 @@ export function HotelGallery({
   if (shots.length === 0) {
     return (
       <div
-        className="flex aspect-[21/9] w-full items-center justify-center rounded-2xl bg-slate-100 text-slate-400"
+        className="flex aspect-[21/9] w-full items-center justify-center rounded-xl bg-slate-100 text-slate-400"
         role="img"
         aria-label={alt}
       >
@@ -39,7 +39,7 @@ export function HotelGallery({
     <>
       {/* Desktop/Mobile Gallery Grid */}
       <div
-        className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md"
+        className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md"
         onClick={() => setIsOpen(true)}
       >
         <div className="grid grid-cols-1 gap-1.5 sm:h-[400px] sm:grid-cols-4 sm:grid-rows-2">

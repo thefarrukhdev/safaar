@@ -75,7 +75,7 @@ function Testimonials({ dict }: { dict: any }) {
       {/* Mobile: horizontal scroll */}
       <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 scrollbar-none sm:hidden pb-4">
         {reviews.map((r: any, i: number) => (
-          <div key={i} className="w-[85vw] max-w-[320px] shrink-0 bg-white rounded-2xl border border-slate-200 p-5 snap-center">
+          <div key={i} className="w-[85vw] max-w-[320px] shrink-0 bg-white rounded-xl border border-slate-200 p-5 snap-center">
             <div className="flex gap-1 mb-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} className="h-4 w-4 fill-accent-500 text-accent-500" />
@@ -90,7 +90,7 @@ function Testimonials({ dict }: { dict: any }) {
       {/* Desktop: grid */}
       <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {reviews.map((r: any, i: number) => (
-          <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
             <div>
               <div className="flex gap-1 mb-4">
                 {Array.from({ length: 5 }).map((_, i) => (

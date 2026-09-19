@@ -8,7 +8,7 @@ export const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-slate-200/80 bg-card text-slate-950 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:text-slate-50",
+      "rounded-xl border border-slate-900/[0.08] bg-white text-slate-900 dark:border-white/[0.10] dark:bg-slate-900 dark:text-white",
       className,
     )}
     {...props}
@@ -23,5 +23,5 @@ export function CardBody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-4", className)} {...props} />;
+  return <div className={cn(className)} {...props} />;
 }

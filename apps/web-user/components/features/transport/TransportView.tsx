@@ -240,7 +240,7 @@ export function TransportView({
             <Button
               variant="primary"
               size="lg"
-              rounded="xl"
+              
               onClick={handleSearch}
               className="w-full h-[60px] sm:h-[68px] uppercase tracking-wider font-extrabold"
             >

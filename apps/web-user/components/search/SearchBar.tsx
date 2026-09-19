@@ -240,7 +240,7 @@ export function SearchBar({
             type="submit"
             variant="primary"
             size="lg"
-            rounded="2xl"
+            
             className="w-full md:w-auto uppercase tracking-wide px-8 h-12 md:h-15"
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />

@@ -70,7 +70,7 @@ export function LocaleSwitcher({
         aria-label="Tilni tanlash"
         className={buttonVariants({
           variant: "secondary",
-          rounded: "lg",
+          
           className: cn("!h-10 min-h-[40px] px-3.5 text-[14px] font-bold gap-1.5 cursor-pointer group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20", isPending && "opacity-70 cursor-not-allowed"),
         })}
       >

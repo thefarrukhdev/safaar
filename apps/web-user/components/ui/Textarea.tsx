@@ -13,10 +13,17 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         className={cn(
-          "flex min-h-[80px] w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500",
-          error && "border-red-500 focus-visible:ring-red-500/20",
+          "flex min-h-[80px] w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900",
+          "placeholder:text-slate-900/60",
+          "transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
+          "hover:border-slate-900/70",
+          "focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600",
+          "aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600",
+          "disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+          error && "border-red-600 focus:ring-red-600",
           className
         )}
+        aria-invalid={error ? "true" : undefined}
         ref={ref}
         {...props}
       />

@@ -24,9 +24,9 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
   return (
     <div className="relative mb-6 w-full">
       {/* Fade gradient left */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-950 md:hidden" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-white to-transparent dark:from-slate-950 md:hidden" />
 
-      <div className="scrollbar-none relative z-0 flex w-full gap-3 overflow-x-auto pb-2 pt-1 snap-x snap-mandatory px-1 md:justify-center">
+      <div className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden relative z-0 flex w-full gap-3 overflow-x-auto pb-2 pt-1 px-4 sm:px-6 lg:px-10">
         {tabs.map((tab) => {
           const isTabActive =
             tab.isActive !== undefined
@@ -38,23 +38,23 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
           const Icon = tab.icon;
 
           const className = cn(
-            "group relative flex shrink-0 cursor-pointer snap-center items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-extrabold transition-all duration-200 select-none",
+            "group relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full px-4 h-9 text-sm font-medium transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100",
             isTabActive
-              ? "bg-white text-slate-900 shadow-md ring-2 ring-blue-600 dark:bg-slate-900 dark:text-white dark:ring-blue-500"
-              : "bg-white/90 text-slate-700 border border-slate-200/90 shadow-xs hover:bg-white hover:text-slate-900 hover:shadow-md hover:border-slate-300 dark:bg-slate-900/80 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-900 dark:hover:text-white"
+              ? "bg-slate-900 text-white hover:bg-slate-900/90 dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
+              : "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.12]"
           );
 
-          const iconColor = tab.color ?? (isTabActive ? "text-blue-600" : "text-slate-500 group-hover:text-slate-800");
+          const iconColor = tab.color ?? (isTabActive ? "text-white dark:text-slate-900" : "text-slate-900/70 dark:text-white/70 group-hover:text-slate-900 dark:group-hover:text-white");
 
           const content = (
             <>
               {Icon && (
                 <Icon
                   className={cn(
-                    "h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110",
+                    "size-5 shrink-0 transition-transform duration-200",
                     iconColor
                   )}
-                  strokeWidth={isTabActive ? 2.5 : 2}
+                  aria-hidden="true"
                 />
               )}
               <span>{tab.label}</span>
@@ -62,11 +62,11 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
           );
 
           return tab.href ? (
-            <Link key={tab.key} href={tab.href} className={className} onClick={tab.onClick}>
+            <Link key={tab.key} href={tab.href} className={className} onClick={tab.onClick} aria-pressed={isTabActive}>
               {content}
             </Link>
           ) : (
-            <button key={tab.key} type="button" onClick={tab.onClick} className={className}>
+            <button key={tab.key} type="button" onClick={tab.onClick} className={className} aria-pressed={isTabActive}>
               {content}
             </button>
           );
@@ -74,7 +74,7 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
       </div>
 
       {/* Fade gradient right */}
-      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-slate-50 to-transparent dark:from-slate-950 md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-white to-transparent dark:from-slate-950 md:hidden" />
     </div>
   );
 }

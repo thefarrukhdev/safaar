@@ -56,7 +56,7 @@ export function CheckoutMobileCtaBar({
           type="submit"
           variant="accent"
           size="lg"
-          rounded="xl"
+          
           loading={pending}
           disabled={disabled}
           className="shrink-0 font-extrabold"

@@ -43,7 +43,7 @@ export function BookingsListLive({
 
   if (bookings.length === 0) {
     return (
-      <div className="py-12 text-center text-slate-500 rounded-xl border border-dashed border-slate-200">
+      <div className="py-12 text-center text-slate-500 rounded-xl border border-dashed border-slate-900/[0.08]">
         Sizda hali bronlar yo'q
       </div>
     );
@@ -80,7 +80,7 @@ export function BookingsListLive({
                   </div>
                 </div>
                 <Link href={`/${locale}/booking/${booking.id}`} className="shrink-0">
-                  <Button variant="secondary">{viewLabel}</Button>
+                  <Button variant="secondary" className="rounded-full active:scale-[0.97]">{viewLabel}</Button>
                 </Link>
               </CardBody>
             </Card>

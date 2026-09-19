@@ -35,7 +35,7 @@ export function CheckoutMobileCtaBar({
     <div
       aria-hidden={!isHidden}
       className={cn(
-        "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-200 px-4 py-3 dark:bg-slate-900 dark:border-slate-800 transition-all duration-300 ease-in-out",
+        "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-900/[0.08] shadow-float px-4 py-3 dark:bg-slate-900 dark:border-slate-800 transition-all duration-300 ease-in-out",
         isHidden
           ? "translate-y-0 opacity-100"
           : "translate-y-full opacity-0 pointer-events-none",
@@ -54,12 +54,11 @@ export function CheckoutMobileCtaBar({
 
         <Button
           type="submit"
-          variant="accent"
           size="lg"
           
           loading={pending}
           disabled={disabled}
-          className="shrink-0 font-extrabold"
+          className="shrink-0 font-extrabold bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-full active:scale-[0.97]"
         >
           {resolvedButtonText}
         </Button>

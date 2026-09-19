@@ -21,7 +21,7 @@ export function AuthSplitLayout({ children, locale, dict }: AuthSplitLayoutProps
   return (
     <div className="flex flex-1 flex-col lg:flex-row w-full bg-card">
       {/* Left panel: Safaar branding (Desktop only) */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center text-center p-16 bg-primary-600 text-white relative select-none rounded-r-[2.5rem] border-r-8 border-black shadow-lg">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center text-center p-16 bg-primary-600 text-white relative select-none rounded-r-xl border-r border-slate-900/[0.08]">
         {/* Brand & Hero Slogan Grouped (Vertically Centered) */}
         <div className="my-auto max-w-md space-y-8 relative z-10">
           {/* Brand indicator */}
@@ -53,7 +53,7 @@ export function AuthSplitLayout({ children, locale, dict }: AuthSplitLayoutProps
           <BackButton />
           <LocaleSwitcher current={locale} light />
         </div>
-        <div className="w-full max-w-[420px] space-y-6 bg-card border border-slate-100 shadow-card rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-card-hover">
+        <div className="w-full max-w-[420px] space-y-6 bg-card border border-slate-900/[0.08] rounded-xl p-6 sm:p-8">
           {children}
         </div>
       </div>

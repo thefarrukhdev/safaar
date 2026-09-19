@@ -2223,7 +2223,15 @@ export const AdminApi = {
   // the real, backend-connected getReviews/publishReview/hideReview and
   // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
   // (verified live against the QA backend this session).
-  toggleListingFeatured: async (id: string, featured: boolean) => {
+  //
+  // 2026-09-19: was a frontend-only mock (no backend route at all) —
+  // AdminService.setHotelFeatured now backs this for real. Server decides
+  // `featured_order` (appends to the end of the existing order on ON,
+  // clears it on OFF); it's never accepted from the client.
+  toggleListingFeatured: async (
+    id: string,
+    featured: boolean,
+  ): Promise<{ id: string; featured: boolean; featured_order: number | null }> => {
     const { data } = await apiClient.patch(`/admin/hotels/${id}/featured`, { featured });
     return data;
   },

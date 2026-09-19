@@ -675,6 +675,147 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 
+  describe('setHotelFeatured (admin "Mashhur qilish/chiqarish" toggle — was a frontend-only mock with no backend route)', () => {
+    const hotelId = '00000000-0000-9203-0000-000000000009';
+
+    it('ON: appends the hotel to the end of the existing order (MAX+1), never disturbing other hotels', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: false, featured_order: null },
+      ]); // locked current row
+      pgMock.query.mockResolvedValueOnce([]); // pg_advisory_xact_lock
+      pgMock.query.mockResolvedValueOnce([{ next_order: 3 }]); // MAX(featured_order)+1
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: true, featured_order: 3 },
+      ]); // update ... returning
+
+      const result = await service.setHotelFeatured(hotelId, true);
+
+      expect(result).toEqual({
+        id: hotelId,
+        featured: true,
+        featured_order: 3,
+      });
+      expect(pgMock.query).toHaveBeenCalledWith(
+        expect.stringContaining('pg_advisory_xact_lock'),
+      );
+      expect(pgMock.query).toHaveBeenLastCalledWith(
+        expect.stringContaining('set featured = $2, featured_order = $3'),
+        [hotelId, true, 3],
+      );
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('hotels:list:*');
+    });
+
+    it('ON, no other featured hotels yet: starts at 0', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: false, featured_order: null },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([{ next_order: 0 }]); // coalesce(max(...), -1) + 1 with no rows
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: true, featured_order: 0 },
+      ]);
+
+      const result = await service.setHotelFeatured(hotelId, true);
+
+      expect(result.featured_order).toBe(0);
+    });
+
+    it('OFF: clears featured_order to NULL and does not touch any other hotel row', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: true, featured_order: 2 },
+      ]); // locked current row
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: false, featured_order: null },
+      ]); // update ... returning
+
+      const result = await service.setHotelFeatured(hotelId, false);
+
+      expect(result).toEqual({
+        id: hotelId,
+        featured: false,
+        featured_order: null,
+      });
+      // No advisory lock / MAX query on the OFF path — only 2 queries total.
+      expect(pgMock.query).toHaveBeenCalledTimes(2);
+      expect(pgMock.query).toHaveBeenLastCalledWith(
+        expect.stringContaining('set featured = $2, featured_order = $3'),
+        [hotelId, false, null],
+      );
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('hotels:list:*');
+    });
+
+    it('already featured + ON again: idempotent no-op, no write query issued', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: true, featured_order: 1 },
+      ]);
+
+      const result = await service.setHotelFeatured(hotelId, true);
+
+      expect(result).toEqual({
+        id: hotelId,
+        featured: true,
+        featured_order: 1,
+      });
+      expect(pgMock.query).toHaveBeenCalledTimes(1); // only the lookup, no update
+    });
+
+    it('already non-featured + OFF again: idempotent no-op, no write query issued', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: false, featured_order: null },
+      ]);
+
+      const result = await service.setHotelFeatured(hotelId, false);
+
+      expect(result).toEqual({
+        id: hotelId,
+        featured: false,
+        featured_order: null,
+      });
+      expect(pgMock.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('non-existent hotel: 404, never falls through to a write', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // no row locked
+
+      await expect(
+        service.setHotelFeatured(hotelId, true),
+      ).rejects.toMatchObject({
+        response: { code: 'HOTEL_NOT_FOUND' },
+      });
+      expect(pgMock.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a non-UUID id before touching the database', async () => {
+      await expect(
+        service.setHotelFeatured('not-a-uuid', true),
+      ).rejects.toMatchObject({
+        response: { code: 'INVALID_HOTEL_ID' },
+      });
+      expect(pgMock.query).not.toHaveBeenCalled();
+      expect(pgMock.transaction).not.toHaveBeenCalled();
+    });
+
+    it('locks the target row (FOR UPDATE) inside a transaction — concurrent toggles on the same hotel serialize instead of racing', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: false, featured_order: null },
+      ]);
+      pgMock.query.mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([{ next_order: 0 }]);
+      pgMock.query.mockResolvedValueOnce([
+        { id: hotelId, featured: true, featured_order: 0 },
+      ]);
+
+      await service.setHotelFeatured(hotelId, true);
+
+      expect(pgMock.transaction).toHaveBeenCalledTimes(1);
+      expect(pgMock.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('for update'),
+        [hotelId],
+      );
+    });
+  });
+
   describe('invalidateCmsCache (regression: destinations admin write left the public /catalog/destinations cache stale for up to 5 minutes)', () => {
     const destinationRow = {
       id: '00000000-0000-7006-0000-000000000001',
@@ -1859,7 +2000,11 @@ describe('AdminService frontend action endpoints', () => {
           },
         ])
         .mockResolvedValueOnce([
-          { id: 'payment-click-1', provider: 'click', provider_reference: null },
+          {
+            id: 'payment-click-1',
+            provider: 'click',
+            provider_reference: null,
+          },
         ])
         .mockResolvedValueOnce([{ id: 'payment-click-1' }])
         .mockResolvedValueOnce([])

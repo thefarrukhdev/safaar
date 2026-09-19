@@ -3161,6 +3161,102 @@ export class AdminService {
     return { updated: ids.length };
   }
 
+  /**
+   * Featured ON/OFF (2026-09-19). `featured` (a'zolik) va `featuredOrder`
+   * (tartib, yuqoridagi `reorderFeaturedHotels`) o'rtasidagi bog'liqlik:
+   * - ON qilinganda (false -> true): hotel MAVJUD tartibning OXIRIGA
+   *   qo'shiladi (`MAX(featured_order) + 1`) — boshqa hech qaysi hotelning
+   *   tartibi o'zgarmaydi.
+   * - OFF qilinganda (true -> false): `featured_order` NULL qilinadi (endi
+   *   ma'nosiz — faqat featured=true qatorlar orasida ishlatiladi).
+   *   Qolgan hotellarning qiymatlari qo'zg'atilmaydi — orada bo'shliq
+   *   qolishi (masalan 0,1,3) `ORDER BY featured_order ASC` natijasiga
+   *   ta'sir qilmaydi, shu sabab qayta-normalizatsiya shart emas; admin
+   *   keyingi safar `reorderFeaturedHotels`ni chaqirsa, bo'shliq tabiiy
+   *   ravishda yo'qoladi (u butun ro'yxatni 0..N-1 qilib qayta yozadi).
+   * - Allaqachon so'ralgan holatda (ON so'ralganda ON, OFF so'ralganda
+   *   OFF): idempotent no-op — hech narsa yozilmaydi, joriy holat qaytadi.
+   */
+  async setHotelFeatured(id: string, featured: boolean) {
+    if (!isUuid(id)) {
+      throw new BadRequestException({
+        code: 'INVALID_HOTEL_ID',
+        message: "Hotel ID noto'g'ri",
+      });
+    }
+
+    const result = await this.postgres.transaction(async (transaction) => {
+      const rows = await transaction.query<DbRow>(
+        `select id::text, featured, featured_order
+         from hotels
+         where id = $1::uuid and deleted_at is null
+         for update`,
+        [id],
+      );
+      const current = rows[0];
+      if (!current) {
+        throw new NotFoundException({
+          code: 'HOTEL_NOT_FOUND',
+          message: 'Hotel topilmadi',
+        });
+      }
+
+      const wasFeatured = current['featured'] === true;
+      if (wasFeatured === featured) {
+        return {
+          id,
+          featured: wasFeatured,
+          featured_order:
+            current['featured_order'] === null ||
+            current['featured_order'] === undefined
+              ? null
+              : Number(current['featured_order']),
+        };
+      }
+
+      let nextOrder: number | null = null;
+      if (featured) {
+        // Advisory lock (transaction-scoped, auto-released on commit/
+        // rollback) — ikkita ALOHIDA hotelni bir vaqtda ON qilish
+        // MAX(featured_order)ni bir xil eski qiymat bilan o'qib, bir xil
+        // tartib raqamini olishining oldini oladi. Faqat shu operatsiya
+        // uchun ishlatiladi (butun `hotels` jadvalini yoki boshqa
+        // qatorlarni bloklamaydi).
+        await transaction.query(
+          `select pg_advisory_xact_lock(hashtext('hotels_featured_order'))`,
+        );
+        const maxRows = await transaction.query<DbRow>(
+          `select coalesce(max(featured_order), -1) + 1 as next_order
+           from hotels
+           where featured = true and deleted_at is null`,
+        );
+        nextOrder = Number(maxRows[0]?.['next_order'] ?? 0);
+      }
+
+      const updated = await transaction.query<DbRow>(
+        `update hotels
+         set featured = $2, featured_order = $3, updated_at = now()
+         where id = $1::uuid
+         returning id::text, featured, featured_order`,
+        [id, featured, nextOrder],
+      );
+
+      return {
+        id,
+        featured: updated[0]['featured'] === true,
+        featured_order:
+          updated[0]['featured_order'] === null ||
+          updated[0]['featured_order'] === undefined
+            ? null
+            : Number(updated[0]['featured_order']),
+      };
+    });
+
+    this.invalidateAdminCache();
+    this.invalidatePublicHotelCache();
+    return result;
+  }
+
   private async prepareNextHotelDraft(
     transaction: PostgresTransaction,
     source: DbRow,

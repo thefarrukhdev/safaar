@@ -48,7 +48,7 @@ export function CityPills({ cities, locale }: CityPillsProps) {
     <div className="relative mx-auto mt-2 w-full max-w-6xl sm:mt-4">
       <button
         onClick={() => scroll("left")}
-        className={`absolute left-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white/20 active:scale-[0.97] active:bg-white/30 active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
+        className={`absolute left-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="Chapga"
@@ -65,7 +65,7 @@ export function CityPills({ cities, locale }: CityPillsProps) {
           <Link
             key={city.id}
             href={`/${locale}/hotels?city_id=${encodeURIComponent(city.id)}`}
-            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-sm sm:text-[15px] font-medium text-white shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white/20 active:scale-[0.97] active:bg-white/30 active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm sm:text-[15px] font-medium text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <span className="capitalize">{city.name}</span>
           </Link>
@@ -74,7 +74,7 @@ export function CityPills({ cities, locale }: CityPillsProps) {
 
       <button
         onClick={() => scroll("right")}
-        className={`absolute right-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white/20 active:scale-[0.97] active:bg-white/30 active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
+        className={`absolute right-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="O'ngga"

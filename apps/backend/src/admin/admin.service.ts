@@ -2383,11 +2383,11 @@ export class AdminService {
         select
           r.id::text,
           r.user_id::text,
-          coalesce(nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''), u.phone, 'Mijoz') as user_name,
+          coalesce(nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''), u.phone, nullif(trim(coalesce(r.guest_name, '')), ''), 'Mijoz') as user_name,
           r.booking_id::text,
           r.target_type,
           r.target_id::text,
-          coalesce(ht.name, '—') as target_name,
+          coalesce(ht.name, bc.name, '—') as target_name,
           r.rating::float8,
           r.cleanliness::float8,
           r.staff::float8,
@@ -2402,6 +2402,7 @@ export class AdminService {
         left join users u on u.id = r.user_id
         left join hotels h on r.target_type = 'hotel' and h.id = r.target_id
         left join hotel_translations ht on ht.hotel_id = h.id and ht.language = 'uz'
+        left join bus_companies bc on r.target_type = 'bus_company' and bc.id = r.target_id
         ${whereSql}
         order by r.created_at desc
         ${this.limitClause(query)}

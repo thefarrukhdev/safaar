@@ -17,6 +17,7 @@ import {
   resolveAccommodationCommissionRate,
 } from '../common/finance';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
+import { isSlotWithinOperatingHours } from '../common/operating-hours';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
@@ -30,6 +31,7 @@ import {
 } from '../promos/promos.service';
 import { EventsService } from '../realtime/events.service';
 import { PaymentsService } from '../payments/payments.service';
+import { isCardScheme } from '../payments/providers/card-scheme-fee';
 
 /**
  * DB-level booking status constants (lowercase, matching pg enum values).
@@ -441,9 +443,15 @@ export class BookingsService {
           message: 'Sana va vaqtni tanlang',
         });
       }
+      // Yarim tundan keyin yopiladigan restoran (masalan 07:01 -> 01:53)
+      // uchun eski bir kunlik solishtiruv HAR QANDAY vaqtni rad etardi —
+      // `common/operating-hours.ts` ga qarang.
       if (
-        (hotel.check_in_time && slotTime < hotel.check_in_time) ||
-        (hotel.check_out_time && slotTime >= hotel.check_out_time)
+        !isSlotWithinOperatingHours(
+          slotTime,
+          hotel.check_in_time,
+          hotel.check_out_time,
+        )
       ) {
         throw new BadRequestException({
           code: 'SLOT_OUTSIDE_HOURS',
@@ -644,10 +652,7 @@ export class BookingsService {
         },
       });
 
-      const payment = await this.createPayment(tx, booking);
-      const cashOutcome = await this.confirmCashBookingIfNeeded(tx, booking);
-      booking.status = cashOutcome.status;
-      booking.confirmed_at = cashOutcome.confirmed_at;
+      const payment = await this.settleNewBooking(tx, booking);
       return { booking, payment };
     });
 
@@ -832,10 +837,7 @@ export class BookingsService {
         },
       });
 
-      const payment = await this.createPayment(tx, booking);
-      const cashOutcome = await this.confirmCashBookingIfNeeded(tx, booking);
-      booking.status = cashOutcome.status;
-      booking.confirmed_at = cashOutcome.confirmed_at;
+      const payment = await this.settleNewBooking(tx, booking);
       return { booking, payment };
     });
 
@@ -1014,10 +1016,7 @@ export class BookingsService {
         );
       }
 
-      const payment = await this.createPayment(tx, booking);
-      const cashOutcome = await this.confirmCashBookingIfNeeded(tx, booking);
-      booking.status = cashOutcome.status;
-      booking.confirmed_at = cashOutcome.confirmed_at;
+      const payment = await this.settleNewBooking(tx, booking);
       return { booking, payment };
     });
 
@@ -1037,7 +1036,28 @@ export class BookingsService {
       'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
       [id],
     );
-    return { ...booking, payment: payment ?? null };
+    return {
+      ...booking,
+      payment: payment ? this.shapePaymentRow(payment) : null,
+    };
+  }
+
+  /**
+   * To'lov qatorini frontendga qaytariladigan shaklga keltiradi —
+   * `payments.service.ts::shapePaymentResponse()` bilan AYNAN bir xil
+   * konvensiya: `card_scheme` to'ldirilgan bo'lsa (humo/uzcard/visa/
+   * mastercard) `provider` maydonida AYNAN SHU karta turi qaytadi, ichki
+   * transport qiymati (`provider = 'uzum_checkout'`) YASHIRILADI.
+   *
+   * Buni sinxron saqlash MAJBURIY: `GET /bookings/:id` javobidagi
+   * `payment.provider` frontend'da to'lov sahifasida qayta urinish
+   * formasining boshlang'ich usulini tanlaydi — u yerga 'uzum_checkout'
+   * tushsa, foydalanuvchi tanlagan karta turi (va unga bog'liq fee)
+   * yo'qolardi.
+   */
+  private shapePaymentRow<T extends Record<string, unknown>>(row: T): T {
+    const cardScheme = row.card_scheme;
+    return cardScheme ? { ...row, provider: cardScheme } : row;
   }
 
   /**
@@ -1075,10 +1095,31 @@ export class BookingsService {
       });
     }
 
-    const [payment] = await this.pg.query(
-      'SELECT status, provider, amount, currency FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
+    // `card_scheme` — javobda QAYTARILMAYDI, faqat `provider`ni
+    // foydalanuvchi tanlagan karta turiga (`shapePaymentRow`) keltirish
+    // uchun o'qiladi.
+    const [paymentRow] = await this.pg.query<{
+      status: string;
+      provider: string;
+      card_scheme: string | null;
+      amount: string | number;
+      currency: string;
+    }>(
+      'SELECT status, provider, card_scheme, amount, currency FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
       [booking.id],
     );
+    // Javob maydonlari ANIQ sanab o'tiladi (avvalgi shakl bilan bir xil:
+    // status/provider/amount/currency) — `card_scheme` ichki ustun bo'lib
+    // qoladi va guest javobiga CHIQMAYDI.
+    const shapedPayment = paymentRow ? this.shapePaymentRow(paymentRow) : null;
+    const payment = shapedPayment
+      ? {
+          status: shapedPayment.status,
+          provider: shapedPayment.provider,
+          amount: shapedPayment.amount,
+          currency: shapedPayment.currency,
+        }
+      : null;
 
     // Ichki moliyaviy maydonlar (commission_amount, partner_payable) va
     // to'liq guest kontakt ma'lumotlari qaytarilmaydi — email orqali
@@ -1592,6 +1633,83 @@ export class BookingsService {
   }
 
   /**
+   * 0 UZS (BEPUL) bron — masalan restoran rezervatsiyasi (mahsulot qarori,
+   * 2026-09-20: restoran joy band qilish BEPUL, bu xato emas, ataylab
+   * shunday).
+   *
+   * Bunday bron uchun to'lanadigan summa YO'Q, demak hech qachon hech
+   * qanday to'lov webhook'i kelmaydi. Ilgari u `pending` + `expires_at =
+   * now+15min` bilan yaratilar, so'ng `expireStaleBookings()` croni uni
+   * jim `expired` qilib qo'yardi — ya'ni mijoz ham, hamkor ham ko'rgan
+   * "band qilindi" bron 15 daqiqadan keyin YO'QOLARDI.
+   *
+   * Yechim — naqd pul (`confirmCashBookingIfNeeded`) presedenti bilan
+   * AYNAN bir xil holat o'tishi: darhol tasdiqlanadi va `expires_at`
+   * tozalanadi. Faqat `booking_status_history.action` ALOHIDA
+   * (`free_booking_confirmed`) — bu naqd pul broni EMAS, `cash_booking_
+   * confirmed` deb yozish tarixni yolg'on qilar edi.
+   *
+   * ⚠️ ATAYLAB QILINMAYDIGAN ishlar (mahsulot qarori bilan tasdiqlangan):
+   *   - `payments` qatori YARATILMAYDI (qarang `createPayment()`) —
+   *     `GET /payments/:bookingId` bunday bron uchun 404 qaytaradi, bu
+   *     KUTILGAN holat;
+   *   - `partner_ledger_entries` yozuvi YO'Q — 0 so'mdan hamkorga
+   *     to'lanadigan hech narsa yo'q (naqd-tasdiq presedenti ham
+   *     yozmaydi);
+   *   - komissiya/`partner_payable` hisobi TEGILMAYDI (`finance.ts`).
+   */
+  private async confirmZeroAmountBooking(
+    tx: PostgresTransaction,
+    booking: { id: string; confirmation_mode: string },
+  ): Promise<{ status: string; confirmed_at: string | null }> {
+    const now = new Date().toISOString();
+    const nextStatus =
+      booking.confirmation_mode === 'request_confirmation'
+        ? BS.AWAITING_PARTNER_CONFIRMATION
+        : BS.CONFIRMED;
+    await tx.query(
+      `UPDATE bookings SET status = $1, confirmed_at = $2, expires_at = NULL, updated_at = $2 WHERE id = $3`,
+      [nextStatus, now, booking.id],
+    );
+    await this.addStatusHistory(
+      tx,
+      { id: booking.id, status: nextStatus },
+      'free_booking_confirmed',
+    );
+    return { status: nextStatus, confirmed_at: now };
+  }
+
+  /**
+   * Bron yaratilgandan keyingi YAKUNIY bosqich — uchala yaratish oqimi
+   * (mehmonxona/restoran, avto ijara, avtobus) uchun bir xil, shuning
+   * uchun bitta joyda. Bron yaratish tranzaksiyasining ICHIDA chaqiriladi:
+   * to'lov qatori (kerak bo'lsa) va holat o'tishi bron bilan BIR ATOMAR
+   * amalda yoziladi — qisman muvaffaqiyatsizlikda hammasi birga qaytariladi.
+   */
+  private async settleNewBooking(
+    tx: PostgresTransaction,
+    booking: {
+      id: string;
+      total_amount: number | string;
+      currency: string;
+      payment_method: string;
+      confirmation_mode: string;
+      status: string;
+      confirmed_at: string | null;
+    },
+  ) {
+    // 0 UZS bronda bu `null` qaytaradi (qator umuman yaratilmaydi).
+    const payment = await this.createPayment(tx, booking);
+    const outcome =
+      Number(booking.total_amount) <= 0
+        ? await this.confirmZeroAmountBooking(tx, booking)
+        : await this.confirmCashBookingIfNeeded(tx, booking);
+    booking.status = outcome.status;
+    booking.confirmed_at = outcome.confirmed_at;
+    return payment;
+  }
+
+  /**
    * Bron yaratilgach tasdiqlash xabari yuboriladi — guest (login qilmagan)
    * mijoz uchun bu bron raqamini bilishning YAGONA yo'li, chunki `GET
    * /bookings/:id` endi auth talab qiladi. Xatolik bron yaratishni
@@ -1703,6 +1821,22 @@ export class BookingsService {
       payment_method: string;
     },
   ) {
+    // 0 UZS (BEPUL) bron uchun `payments` qatori UMUMAN YARATILMAYDI
+    // (mahsulot qarori, 2026-09-20): to'lanadigan summa yo'q va hech bir
+    // provayder 0 so'mlik sessiyani ro'yxatga ola olmaydi. Ilgari bu yerda
+    // 0 so'mlik "pending" qoralama yozilardi — u hech qachon `paid`
+    // bo'lmasdi, natijada bron `expireStaleBookings()` croni tomonidan
+    // jim `expired` qilinardi.
+    //
+    // Natija (kutilgan, xato emas): `GET /payments/:bookingId` bunday bron
+    // uchun 404 `PAYMENT_PROVIDER_ERROR` qaytaradi, `lookupBooking()` va
+    // `findOne()` esa `payment: null` beradi — ikkalasi ham buni
+    // allaqachon qo'llab-quvvatlaydi. Bron o'zi `confirmZeroAmountBooking()`
+    // orqali darhol tasdiqlanadi (`expires_at = NULL`).
+    if (Number(booking.total_amount) <= 0) {
+      return null;
+    }
+
     // Shu bron uchun hali natijasi chiqmagan (pending/processing) payment
     // bo'lsa — yangisini yaratmasdan o'shani qaytaramiz (masalan
     // `retryPayment()` xuddi shu urinishning o'zini ochib qoladigan
@@ -1714,6 +1848,7 @@ export class BookingsService {
       id: string;
       booking_id: string;
       provider: string;
+      card_scheme: string | null;
       status: string;
       amount: number | string;
       currency: string;
@@ -1728,7 +1863,10 @@ export class BookingsService {
       [booking.id],
     );
     if (existing) {
-      return existing;
+      // Javobda (frontendga) `provider` — foydalanuvchi TANLAGAN usul
+      // (`card_scheme` bo'lsa o'sha), ichki transport (`uzum_checkout`)
+      // EMAS — javob shakli o'zgarmasligi uchun.
+      return this.shapePaymentRow(existing);
     }
 
     const id = randomUUID();
@@ -1748,10 +1886,25 @@ export class BookingsService {
     } catch {
       paymentUrl = null;
     }
+    // Karta sxemalari (humo/uzcard/visa/mastercard) UCHUN `provider` ustuni
+    // DOIM 'uzum_checkout' (texnik transport/rail), tanlangan karta turi esa
+    // `card_scheme` ustunida — bu sxema konvensiyasi (schema.prisma
+    // `Payment.cardScheme`, migratsiya 20260916150100) va
+    // `payments.service.ts::createUzumCheckoutPayment()` yozadigan KANONIK
+    // qator bilan bir xil. Ilgari bu yerga xom `provider='uzcard'` yozilardi
+    // — natijada `payments.service.ts::createPayment()`dagi idempotentlik
+    // tekshiruvi (`card_scheme ?? provider`) bu O'LIK qoralamani so'ralgan
+    // usul bilan bir xil deb topib, uni HECH QACHON `checkout.register()`ga
+    // yubormasdan qaytarardi (karta to'lovi umuman provayderga yetib
+    // bormasdi).
+    const cardScheme = isCardScheme(booking.payment_method)
+      ? booking.payment_method
+      : null;
     const payment = {
       id,
       booking_id: booking.id,
-      provider: booking.payment_method,
+      provider: cardScheme ? 'uzum_checkout' : booking.payment_method,
+      card_scheme: cardScheme,
       // "Joyida to'lash" tanlangan bron uchun to'lov hech qachon onlayn
       // webhook orqali "paid" bo'lmaydi — pul mehmonxonada qo'lda
       // olinadi. Avval bu ham 'pending' deb yozilardi, ya'ni frontend
@@ -1766,13 +1919,21 @@ export class BookingsService {
       updated_at: now,
     };
 
+    // ESLATMA — `base_amount`/`fee_rate`/`fee_amount` ATAYLAB to'ldirilmaydi
+    // (NULL, avvalgidek): bu qator faqat QORALAMA/placeholder (hali hech
+    // qanday tashqi sessiya yo'q, `payment_url` ham `null`). Karta fee'si
+    // (`card-scheme-fee.ts`) YAGONA joyda — `payments.service.ts::
+    // createUzumCheckoutPayment()`da, HAQIQIY `/payment/register` summasi
+    // bilan birga hisoblanadi; bu yerda uni takrorlash ikkita mustaqil fee
+    // manbai (va `amount` bilan ziddiyat) xavfini tug'dirar edi.
     await db.query(
-      `INSERT INTO payments (id, booking_id, provider, status, amount, currency, payment_url, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO payments (id, booking_id, provider, card_scheme, status, amount, currency, payment_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         payment.id,
         payment.booking_id,
         payment.provider,
+        payment.card_scheme,
         payment.status,
         payment.amount,
         payment.currency,
@@ -1782,7 +1943,10 @@ export class BookingsService {
       ],
     );
 
-    return payment;
+    // Javob shakli O'ZGARMAYDI (orqaga moslik): frontend avvalgidek
+    // `provider` maydonida AYNAN tanlangan usulni (`uzcard`/`humo`/...)
+    // ko'radi; `uzum_checkout` faqat DB ichidagi transport qiymati.
+    return this.shapePaymentRow(payment);
   }
 
   private async assertBooking(

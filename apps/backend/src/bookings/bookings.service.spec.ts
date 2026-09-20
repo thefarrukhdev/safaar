@@ -218,7 +218,10 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     expect(result.booking.status).toBe('confirmed');
     expect(result.booking.confirmed_at).not.toBeNull();
-    expect(result.payment.status).toBe('awaiting_cash');
+    // `payment` endi `null` bo'lishi ham mumkin (0 UZS bron), lekin bu
+    // testda summa 0 EMAS — qator yaratilishi SHART.
+    expect(result.payment).not.toBeNull();
+    expect(result.payment?.status).toBe('awaiting_cash');
   });
 
   it("SAFAAR Excel komissiya jadvali (hudud+tur+yulduz) partner_organizations.default_commission_rate'dan USTUN — 2026-09-13 biznes tomonidan tasdiqlangan qaror (regression: bu hotel/hostel/guesthouse turlari uchun org'ning qo'lda sozlangan stavkasini e'tiborsiz qoldirishi SHART)", async () => {
@@ -790,6 +793,101 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
         slot_time: '19:00',
       }),
     ).rejects.toMatchObject({ status: 409 });
+  });
+
+  // ---------------------------------------------------------------
+  // Ish vaqti (opening hours) regressiyasi.
+  // Eski kod faqat BIR KUNLIK oraliqni bilardi:
+  //   slot < check_in_time || slot >= check_out_time  -> rad etish
+  // Yarim tundan keyin yopiladigan restoran uchun (close < open) bu
+  // shart tavtologiyaga aylanib, HAR QANDAY vaqtni rad etardi.
+  // Quyidagi testlar HAQIQIY service yo'lini (helper'ni emas)
+  // tekshiradi.
+  // ---------------------------------------------------------------
+  const mockSlotBookingFlow = (hotelRow: Record<string, unknown>) => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'table-1',
+          hotel_id: 'hotel-r1',
+          base_price: '150000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }]) // slot ziddiyati yo'q
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT booking_status_history
+      .mockResolvedValueOnce([]) // mavjud pending to'lov tekshiruvi
+      .mockResolvedValueOnce([]); // INSERT payments
+  };
+
+  const createSlotBooking = (slotTime: string) =>
+    service.createHotel(undefined, {
+      hotel_id: 'hotel-r1',
+      agree_terms: true,
+      room_id: 'table-1',
+      check_in: '2026-08-10',
+      slot_time: slotTime,
+      guest_name: 'Laziz',
+    });
+
+  describe("yarim tundan o'tuvchi ish vaqti 07:01 -> 01:53 (production: Osh markazi)", () => {
+    const overnightHotelRow = {
+      ...restaurantHotelRow,
+      check_in_time: '07:01',
+      check_out_time: '01:53',
+    };
+
+    it.each(['07:01', '10:00', '23:00', '23:59', '00:00', '00:30', '01:52'])(
+      'ish vaqti ICHIDAGI %s slotini qabul qiladi va saqlaydi',
+      async (slotTime) => {
+        mockSlotBookingFlow(overnightHotelRow);
+
+        const result = await createSlotBooking(slotTime);
+
+        expect(result.booking.type).toBe('restaurant');
+        expect(result.booking.slot_time).toBe(slotTime);
+      },
+    );
+
+    it.each(['01:53', '01:54', '02:00', '06:00', '07:00'])(
+      'ish vaqtidan TASHQARIDAGI %s slotini SLOT_OUTSIDE_HOURS bilan rad etadi',
+      async (slotTime) => {
+        pg.query.mockResolvedValueOnce([overnightHotelRow]);
+
+        await expect(createSlotBooking(slotTime)).rejects.toMatchObject({
+          status: 400,
+          response: { code: 'SLOT_OUTSIDE_HOURS' },
+        });
+      },
+    );
+  });
+
+  describe('bir kunlik ish vaqti 09:00 -> 23:00 (eski xulq-atvor saqlanadi)', () => {
+    it.each(['09:00', '12:00', '22:59'])(
+      'ish vaqti ICHIDAGI %s slotini qabul qiladi',
+      async (slotTime) => {
+        mockSlotBookingFlow(restaurantHotelRow);
+
+        const result = await createSlotBooking(slotTime);
+
+        expect(result.booking.slot_time).toBe(slotTime);
+      },
+    );
+
+    it.each(['08:59', '23:00', '23:01', '00:30'])(
+      'ish vaqtidan TASHQARIDAGI %s slotini SLOT_OUTSIDE_HOURS bilan rad etadi',
+      async (slotTime) => {
+        pg.query.mockResolvedValueOnce([restaurantHotelRow]);
+
+        await expect(createSlotBooking(slotTime)).rejects.toMatchObject({
+          status: 400,
+          response: { code: 'SLOT_OUTSIDE_HOURS' },
+        });
+      },
+    );
   });
 });
 

@@ -664,6 +664,144 @@ describe('PartnersService frontend action endpoints', () => {
         service.createBooking(actor, { ...walkInBody, slotTime: '23:30' }),
       ).rejects.toThrow('Tanlangan vaqt ish vaqtidan tashqarida');
     });
+
+    // -------------------------------------------------------------
+    // Ish vaqti (opening hours) regressiyasi — hamkor walk-in yo'li.
+    // Eski kod faqat BIR KUNLIK oraliqni bilardi:
+    //   slot < check_in_time || slot >= check_out_time -> rad etish
+    // Yarim tundan keyin yopiladigan restoran uchun (close < open) bu
+    // shart tavtologiyaga aylanib, HAR QANDAY vaqtni rad etardi.
+    // Quyidagi testlar HAQIQIY service yo'lini tekshiradi.
+    // -------------------------------------------------------------
+    const mockWalkInFlow = (hotelRow: Record<string, unknown>) => {
+      pgMock.query
+        .mockResolvedValueOnce([hotelRow]) // hotel + partner_organizations JOIN
+        .mockResolvedValueOnce([
+          { id: roomTypeId, name: { uz: 'Stol' }, base_price: 0, capacity: 4 },
+        ]) // room_types
+        .mockResolvedValueOnce([
+          { id: roomId, room_type_id: roomTypeId, code: 'T1', base_price: 0 },
+        ]) // hotel_rooms
+        .mockResolvedValueOnce([{ id: roomId }]) // FOR UPDATE qulf
+        .mockResolvedValueOnce([]) // ziddiyat yo'q
+        .mockResolvedValueOnce([{ blocked_count: 0 }]) // room_inventory bloklanmagan
+        .mockResolvedValueOnce([]) // INSERT bookings
+        .mockResolvedValueOnce([]) // INSERT payments
+        .mockResolvedValueOnce([]) // INSERT partner_ledger_entries
+        .mockResolvedValueOnce([
+          { id: 'booking-1', partner_organization_id: actor.organizationId },
+        ]); // this.booking()
+    };
+
+    const insertedSlotTime = () => {
+      const insertCall = pgMock.query.mock.calls.find(
+        ([sql]) =>
+          typeof sql === 'string' && sql.includes('INSERT INTO bookings'),
+      );
+      expect(insertCall).toBeDefined();
+      return (insertCall?.[1] as unknown[])[21];
+    };
+
+    describe("yarim tundan o'tuvchi ish vaqti 07:01 -> 01:53 (production: Osh markazi)", () => {
+      const overnightHotelRow = {
+        ...restaurantHotelRow,
+        check_in_time: '07:01',
+        check_out_time: '01:53',
+      };
+
+      it.each(['07:01', '10:00', '23:00', '23:59', '00:00', '00:30', '01:52'])(
+        'ish vaqti ICHIDAGI %s slotini qabul qiladi va slot_time ustuniga yozadi',
+        async (slotTime) => {
+          mockWalkInFlow(overnightHotelRow);
+
+          await service.createBooking(actor, { ...walkInBody, slotTime });
+
+          expect(insertedSlotTime()).toBe(slotTime);
+        },
+      );
+
+      it.each(['01:53', '01:54', '02:00', '06:00', '07:00'])(
+        'ish vaqtidan TASHQARIDAGI %s slotini SLOT_OUTSIDE_HOURS bilan rad etadi',
+        async (slotTime) => {
+          pgMock.query
+            .mockResolvedValueOnce([overnightHotelRow])
+            .mockResolvedValueOnce([
+              {
+                id: roomTypeId,
+                name: { uz: 'Stol' },
+                base_price: 0,
+                capacity: 4,
+              },
+            ])
+            .mockResolvedValueOnce([
+              {
+                id: roomId,
+                room_type_id: roomTypeId,
+                code: 'T1',
+                base_price: 0,
+              },
+            ]);
+
+          await expect(
+            service.createBooking(actor, { ...walkInBody, slotTime }),
+          ).rejects.toMatchObject({
+            status: 400,
+            response: { code: 'SLOT_OUTSIDE_HOURS' },
+          });
+
+          expect(
+            pgMock.query.mock.calls.some(
+              ([sql]) =>
+                typeof sql === 'string' && sql.includes('INSERT INTO bookings'),
+            ),
+          ).toBe(false);
+        },
+      );
+    });
+
+    describe('bir kunlik ish vaqti 10:00 -> 23:00 (eski xulq-atvor saqlanadi)', () => {
+      it.each(['10:00', '12:00', '22:59'])(
+        'ish vaqti ICHIDAGI %s slotini qabul qiladi',
+        async (slotTime) => {
+          mockWalkInFlow(restaurantHotelRow);
+
+          await service.createBooking(actor, { ...walkInBody, slotTime });
+
+          expect(insertedSlotTime()).toBe(slotTime);
+        },
+      );
+
+      it.each(['09:59', '23:00', '23:01', '00:30'])(
+        'ish vaqtidan TASHQARIDAGI %s slotini SLOT_OUTSIDE_HOURS bilan rad etadi',
+        async (slotTime) => {
+          pgMock.query
+            .mockResolvedValueOnce([restaurantHotelRow])
+            .mockResolvedValueOnce([
+              {
+                id: roomTypeId,
+                name: { uz: 'Stol' },
+                base_price: 0,
+                capacity: 4,
+              },
+            ])
+            .mockResolvedValueOnce([
+              {
+                id: roomId,
+                room_type_id: roomTypeId,
+                code: 'T1',
+                base_price: 0,
+              },
+            ]);
+
+          await expect(
+            service.createBooking(actor, { ...walkInBody, slotTime }),
+          ).rejects.toMatchObject({
+            status: 400,
+            response: { code: 'SLOT_OUTSIDE_HOURS' },
+          });
+        },
+      );
+    });
   });
 });
 

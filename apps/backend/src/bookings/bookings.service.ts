@@ -17,6 +17,7 @@ import {
   resolveAccommodationCommissionRate,
 } from '../common/finance';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
+import { isSlotWithinOperatingHours } from '../common/operating-hours';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
@@ -441,9 +442,15 @@ export class BookingsService {
           message: 'Sana va vaqtni tanlang',
         });
       }
+      // Yarim tundan keyin yopiladigan restoran (masalan 07:01 -> 01:53)
+      // uchun eski bir kunlik solishtiruv HAR QANDAY vaqtni rad etardi —
+      // `common/operating-hours.ts` ga qarang.
       if (
-        (hotel.check_in_time && slotTime < hotel.check_in_time) ||
-        (hotel.check_out_time && slotTime >= hotel.check_out_time)
+        !isSlotWithinOperatingHours(
+          slotTime,
+          hotel.check_in_time,
+          hotel.check_out_time,
+        )
       ) {
         throw new BadRequestException({
           code: 'SLOT_OUTSIDE_HOURS',

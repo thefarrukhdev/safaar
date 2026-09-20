@@ -119,6 +119,32 @@ export function SearchDatePicker({
              }}><X className="h-5 w-5"/></button>
           </div>
           
+                              <style dangerouslySetInnerHTML={{__html: `
+            .custom-calendar-styles {
+              --rdp-accent-color: #2563eb; /* blue-600 */
+              --rdp-accent-background-color: #eff6ff; /* blue-50 */
+              --rdp-range_middle-background-color: #eff6ff;
+              --rdp-range_middle-color: #1e3a8a; /* blue-900 */
+              --rdp-range_start-color: white;
+              --rdp-range_start-date-background-color: #2563eb;
+              --rdp-range_end-color: white;
+              --rdp-range_end-date-background-color: #2563eb;
+            }
+            .dark .custom-calendar-styles {
+              --rdp-accent-color: #3b82f6; /* blue-500 */
+              --rdp-accent-background-color: rgba(37, 99, 235, 0.2);
+              --rdp-range_middle-background-color: rgba(37, 99, 235, 0.2);
+              --rdp-range_middle-color: #dbeafe; /* blue-100 */
+              --rdp-range_start-color: white;
+              --rdp-range_start-date-background-color: #3b82f6;
+              --rdp-range_end-color: white;
+              --rdp-range_end-date-background-color: #3b82f6;
+            }
+            /* Explicitly fix any selected text color that might bleed */
+            .custom-calendar-styles .rdp-range_middle .rdp-day_button {
+               color: var(--rdp-range_middle-color) !important;
+            }
+          `}} />
           <DayPicker
             mode="range"
             selected={internalRange}
@@ -129,7 +155,6 @@ export function SearchDatePicker({
             className="custom-calendar-styles"
             classNames={{
               months: "flex flex-col sm:flex-row gap-4 sm:gap-6",
-              selected: "bg-primary-600 text-white hover:bg-primary-600 focus:bg-primary-600",
               today: "font-bold text-primary-600",
             }}
           />

@@ -9,6 +9,7 @@ import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import { Plus, Edit2, Trash2, Save, Image as ImageIcon } from "lucide-react";
 
 export default function DealsPage() {
@@ -28,6 +29,7 @@ export default function DealsPage() {
   const [newPrice, setNewPrice] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
   const [endsAt, setEndsAt] = useState("");
+  const [listingType, setListingType] = useState("hotels");
   const [isActive, setIsActive] = useState(true);
 
   const fetchDeals = async () => {
@@ -47,14 +49,15 @@ export default function DealsPage() {
 
   const handleEdit = (item: CmsArticle) => {
     setEditingItem(item);
-    setTitle(item.title || "");
-    setSlug(item.slug || "");
+    setTitle(item.title);
+    setSlug(item.slug);
     setCityName(item.metadata?.cityName?.uz || item.metadata?.cityName || "");
-    setImageUrl(item.metadata?.imageUrl || "");
-    setOldPrice(item.metadata?.oldPrice || "");
-    setNewPrice(item.metadata?.newPrice || "");
+    setOldPrice(item.metadata?.oldPriceSum || "");
+    setNewPrice(item.metadata?.newPriceSum || "");
     setDiscountPercent(item.metadata?.discountPercent || "");
     setEndsAt(item.metadata?.endsAt || "");
+    setImageUrl(item.metadata?.imageUrl || "");
+    setListingType(item.metadata?.listingType || "hotels");
     setIsActive(item.status === "published");
     setIsModalOpen(true);
   };
@@ -69,6 +72,7 @@ export default function DealsPage() {
     setNewPrice("");
     setDiscountPercent("");
     setEndsAt("");
+    setListingType("hotels");
     setIsActive(true);
     setIsModalOpen(true);
   };
@@ -84,21 +88,43 @@ export default function DealsPage() {
     }
   };
 
+  const handleApprove = async (item: CmsArticle) => {
+    try {
+      await AdminApi.setCmsOfferStatus(item.id, 'published');
+      setItems(items.map((t) => (t.id === item.id ? { ...t, status: 'published' } : t)));
+      toast.success("Taklif tasdiqlandi va e'longa chiqdi");
+    } catch (error) {
+      toast.error("Tasdiqlashda xatolik yuz berdi");
+    }
+  };
+
+  const handleReject = async (item: CmsArticle) => {
+    if (!confirm("Haqiqatan ham bu taklifni rad etasizmi?")) return;
+    try {
+      await AdminApi.setCmsOfferStatus(item.id, 'draft');
+      setItems(items.map((t) => (t.id === item.id ? { ...t, status: 'draft' } : t)));
+      toast.success("Taklif rad etildi");
+    } catch (error) {
+      toast.error("Xatolik yuz berdi");
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
       const payload: Partial<CmsArticle> = {
         title,
-        slug: slug || `deal-${Date.now()}`,
+        slug,
         status: isActive ? "published" : "draft",
         metadata: {
           cityName: { uz: cityName, ru: cityName, en: cityName },
           imageUrl,
-          oldPrice: oldPrice ? Number(oldPrice) : null,
-          newPrice: newPrice ? Number(newPrice) : null,
+          oldPriceSum: oldPrice ? Number(oldPrice) : null,
+          newPriceSum: newPrice ? Number(newPrice) : null,
           discountPercent: discountPercent ? Number(discountPercent) : null,
           endsAt: endsAt || null,
+          listingType,
         }
       };
 
@@ -160,8 +186,8 @@ export default function DealsPage() {
       label: "Narxi",
       render: (row) => (
         <div>
-           {row.metadata?.newPrice && <span className="font-medium text-[var(--foreground)]">{row.metadata.newPrice} UZS</span>}
-           {row.metadata?.oldPrice && <span className="text-xs text-[var(--text-muted)] line-through ml-2">{row.metadata.oldPrice}</span>}
+           {row.metadata?.newPriceSum && <span className="font-medium text-[var(--foreground)]">{row.metadata.newPriceSum} UZS</span>}
+           {row.metadata?.oldPriceSum && <span className="text-xs text-[var(--text-muted)] line-through ml-2">{row.metadata.oldPriceSum}</span>}
         </div>
       )
     },
@@ -169,6 +195,13 @@ export default function DealsPage() {
       key: "status",
       label: "Holat",
       render: (row) => {
+        if (row.status === 'pending_review') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+              Kutmoqda
+            </span>
+          );
+        }
         const isActive = row.status === 'published';
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -182,6 +215,16 @@ export default function DealsPage() {
       label: "",
       render: (row) => (
         <div className="flex justify-end gap-2">
+          {row.status === 'pending_review' && (
+            <>
+              <Button size="sm" variant="secondary" className="text-green-600 bg-green-50 border-green-200 hover:bg-green-100" onClick={() => handleApprove(row)} title="Tasdiqlash">
+                Tasdiqlash
+              </Button>
+              <Button size="sm" variant="secondary" className="text-red-500 bg-red-50 border-red-200 hover:bg-red-100" onClick={() => handleReject(row)} title="Rad etish">
+                Rad etish
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="secondary" onClick={() => handleEdit(row)} title="Tahrirlash">
             <Edit2 size={16} />
           </Button>
@@ -246,6 +289,28 @@ export default function DealsPage() {
             />
 
             <Input
+              label="E'lon slugi"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="Masalan: hyatt-regency"
+              required
+            />
+
+            <Select
+              label="E'lon turi"
+              value={listingType}
+              onChange={(e) => setListingType(e.target.value)}
+              options={[
+                { value: "hotels", label: "Mehmonxona" },
+                { value: "dachas", label: "Dacha" },
+                { value: "restaurants", label: "Restoran" },
+                { value: "sanatoriums", label: "Sanatoriy" },
+                { value: "resorts", label: "Oromgoh" },
+                { value: "transport", label: "Transport" },
+              ]}
+            />
+
+            <Input
               label="Eski narxi (UZS)"
               type="number"
               value={oldPrice}
@@ -282,14 +347,20 @@ export default function DealsPage() {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setImageUrl(URL.createObjectURL(file));
+                  try {
+                    const toastId = toast.loading("Rasm yuklanmoqda...");
+                    const res = await AdminApi.uploadImage(file);
+                    setImageUrl(res.url);
+                    toast.success("Rasm yuklandi", { id: toastId });
+                  } catch (error) {
+                    toast.error("Rasm yuklashda xatolik");
+                  }
                 }
               }}
               className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
-              required={!imageUrl}
             />
             {imageUrl && (
               <div className="mt-2 relative w-full h-40 rounded border border-[var(--border)] overflow-hidden">

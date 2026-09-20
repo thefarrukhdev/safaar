@@ -76,12 +76,6 @@ export function SiteFooter({
                 {dict.nav.hotels}
               </Link>
               <Link
-                href={`${base}/dachas`}
-                className="transition-colors hover:text-white hover:underline"
-              >
-                {dict.nav.dachas}
-              </Link>
-              <Link
                 href={`${base}/transport`}
                 className="transition-colors hover:text-white hover:underline"
               >

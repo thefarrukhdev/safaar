@@ -218,7 +218,10 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     expect(result.booking.status).toBe('confirmed');
     expect(result.booking.confirmed_at).not.toBeNull();
-    expect(result.payment.status).toBe('awaiting_cash');
+    // `payment` endi `null` bo'lishi ham mumkin (0 UZS bron), lekin bu
+    // testda summa 0 EMAS — qator yaratilishi SHART.
+    expect(result.payment).not.toBeNull();
+    expect(result.payment?.status).toBe('awaiting_cash');
   });
 
   it("SAFAAR Excel komissiya jadvali (hudud+tur+yulduz) partner_organizations.default_commission_rate'dan USTUN — 2026-09-13 biznes tomonidan tasdiqlangan qaror (regression: bu hotel/hostel/guesthouse turlari uchun org'ning qo'lda sozlangan stavkasini e'tiborsiz qoldirishi SHART)", async () => {

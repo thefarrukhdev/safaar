@@ -2,21 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Calendar,
   Clock,
   CheckCircle2,
   Utensils,
   CreditCard,
-  Banknote,
   X,
-  Lock,
   ShieldCheck,
 } from "lucide-react";
 import { formatSum } from "@/lib/money";
 import type { RestaurantDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import {
+  PaymentSelector,
+  type PaymentMethodId,
+} from "@/components/features/checkout/PaymentSelector";
 
 export function RestaurantBookingSection({
   restaurant,
@@ -24,6 +26,7 @@ export function RestaurantBookingSection({
   restaurant: RestaurantDetailView;
 }) {
   const params = useParams<{ lang?: string }>();
+  const router = useRouter();
   const locale = params?.lang || "uz";
   const [selectedTableId, setSelectedTableId] = useState<string>(
     restaurant.tables[0]?.id ?? ""
@@ -42,9 +45,9 @@ export function RestaurantBookingSection({
 
   // Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
-  const [cardNumber, setCardNumber] = useState<string>("");
-  const [cardExpire, setCardExpire] = useState<string>("");
+  // Karta turi (uzcard/humo/visa/mastercard) yoki "cash" — xom karta
+  // raqami/CVV BU YERDA HECH QACHON so'ralmaydi (pastga qarang).
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
 
   const [loading, setLoading] = useState<boolean>(false);
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
@@ -52,23 +55,6 @@ export function RestaurantBookingSection({
 
   const selectedTable = restaurant.tables.find((t) => t.id === selectedTableId);
   const totalAmount = selectedTable?.basePriceSum ?? 0;
-
-  // Format card number with spaces (e.g. 8600 1234 5678 9012)
-  const handleCardNumberChange = (val: string) => {
-    const digits = val.replace(/\D/g, "").slice(0, 16);
-    const formatted = digits.replace(/(.{4})/g, "$1 ").trim();
-    setCardNumber(formatted);
-  };
-
-  // Format card expire (e.g. 12/28)
-  const handleCardExpireChange = (val: string) => {
-    const digits = val.replace(/\D/g, "").slice(0, 4);
-    if (digits.length >= 3) {
-      setCardExpire(`${digits.slice(0, 2)}/${digits.slice(2)}`);
-    } else {
-      setCardExpire(digits);
-    }
-  };
 
   const handleOpenModal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,17 +68,6 @@ export function RestaurantBookingSection({
 
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentMethod === "card") {
-      const rawCard = cardNumber.replace(/\s/g, "");
-      if (rawCard.length < 16) {
-        setErrorMsg("Karta raqamini to'liq kiriting (16 xona)");
-        return;
-      }
-      if (cardExpire.length < 5) {
-        setErrorMsg("Karta amal qilish muddatini kiriting (MM/YY)");
-        return;
-      }
-    }
     if (!agreeTerms) {
       setErrorMsg("Davom etish uchun Ommaviy Oferta shartlariga rozilik bering");
       return;
@@ -103,6 +78,11 @@ export function RestaurantBookingSection({
 
     try {
       const { api } = await import("@/lib/api");
+      // MUHIM: xom karta raqami/CVV/amal qilish muddati bu yerda HECH
+      // QACHON yig'ilmaydi va backendga yuborilmaydi. Karta to'lovi
+      // (uzcard/humo/visa/mastercard) — Uzum Checkout'ning HAQIQIY hosted
+      // (redirect) sahifasida amalga oshiriladi, xuddi mehmonxona bron
+      // oqimidagi kabi (`lib/services/booking/actions.ts`).
       const booking = await api.bookings.createHotelBooking({
         hotelId: restaurant.id,
         roomId: selectedTableId || restaurant.id,
@@ -115,14 +95,34 @@ export function RestaurantBookingSection({
         guestPhone,
         guestEmail,
         source: "web-user",
-        paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
+        paymentMethod,
         agreeTerms,
       });
 
-      const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
+      if (paymentMethod === "cash") {
+        // Naqd pul — backend booking'ni booking yaratishning bir qismi
+        // sifatida DARHOL tasdiqlaydi (`confirmCashBookingIfNeeded()`).
+        // To'lovning o'zi hali qilingani YO'Q (joyida olinadi) — shu
+        // sabab pastdagi ekran "to'lov qilindi" emas, "bron tasdiqlandi"
+        // deb ko'rsatadi.
+        setSuccessBookingId(booking.bookingNumber || booking.id);
+        setShowPaymentModal(false);
+        return;
+      }
 
-      setSuccessBookingId(bookingId);
-      setShowPaymentModal(false);
+      // Karta (uzcard/humo/visa/mastercard) — bu yerda HECH QACHON
+      // muvaffaqiyat ko'rsatilmaydi: haqiqiy to'lov hali sodir bo'lgani
+      // yo'q. Bron detail sahifasiga o'tkazamiz — u yerda RetryPaymentForm
+      // haqiqiy fee/summani ko'rsatib, `POST /payments/:bookingId/create`
+      // orqali HAQIQIY Uzum Checkout redirect URL'ini oladi (yoki backend
+      // 503 `PAYMENT_PROVIDER_NOT_CONFIGURED` qaytarsa — aniq xato holati
+      // ko'rsatiladi, muvaffaqiyat sifatida yashirilmaydi).
+      const guestTokenParam = booking.guestAccessToken
+        ? `&guestToken=${encodeURIComponent(booking.guestAccessToken)}`
+        : "";
+      router.push(
+        `/${locale}/booking/${booking.id}?payment=pending&provider=${paymentMethod}${guestTokenParam}`,
+      );
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Xatolik yuz berdi");
     } finally {
@@ -135,7 +135,7 @@ export function RestaurantBookingSection({
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
         <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">
-          To'lov bajarildi va stol band qilindi!
+          Bron tasdiqlandi!
         </h3>
         <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
           Bron ID: <span className="font-mono font-bold">{successBookingId}</span>
@@ -145,7 +145,7 @@ export function RestaurantBookingSection({
           <p><strong>Stol:</strong> {selectedTable?.name ?? "Tanlangan stol"}</p>
           <p><strong>Sana va vaqt:</strong> {date} ({slotTime})</p>
           <p><strong>Mijoz:</strong> {guestName} ({guestPhone})</p>
-          <p><strong>To'lov usuli:</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
+          <p><strong>To'lov usuli:</strong> Naqd pul — joyga kelganingizda to&apos;lanadi</p>
         </div>
         <Button
           onClick={() => setSuccessBookingId(null)}
@@ -357,79 +357,37 @@ export function RestaurantBookingSection({
             </div>
 
             <form onSubmit={handleProcessPayment} className="mt-4 space-y-4">
-              {/* Payment Method Selector */}
+              {/* Payment Method Selector — checkout formasi (mehmonxona
+                  bron oqimi) bilan BIR XIL, qayta ishlatiladigan komponent.
+                  Karta turi (uzcard/humo/visa/mastercard) faqat FEE
+                  stavkasini belgilaydi — hammasi Uzum Checkout orqali
+                  (hosted/redirect sahifa). */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                   To'lov usuli
                 </label>
-                <div className="mt-1.5 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("card")}
-                    className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all ${
-                      paymentMethod === "card"
-                        ? "border-primary-600 bg-primary-50 text-primary-900 ring-2 ring-primary-500 dark:border-primary-500 dark:bg-primary-950/50 dark:text-white"
-                        : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                    Bank kartasi
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("cash")}
-                    className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all ${
-                      paymentMethod === "cash"
-                        ? "border-primary-600 bg-primary-50 text-primary-900 ring-2 ring-primary-500 dark:border-primary-500 dark:bg-primary-950/50 dark:text-white"
-                        : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    Naqd (Joyida)
-                  </button>
+                <div className="mt-1.5">
+                  <PaymentSelector
+                    defaultValue={paymentMethod}
+                    name="paymentMethod"
+                    onChange={setPaymentMethod}
+                  />
                 </div>
               </div>
 
-              {/* Card Inputs if Payment Method === 'card' */}
-              {paymentMethod === "card" && (
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Karta raqami (Uzcard / Humo / Visa)
-                    </label>
-                    <div className="relative mt-1">
-                      <input
-                        type="text"
-                        placeholder="8600 0000 0000 0000"
-                        maxLength={19}
-                        value={cardNumber}
-                        onChange={(e) => handleCardNumberChange(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono tracking-wider text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Amal qilish muddati (MM/YY)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="12/28"
-                      maxLength={5}
-                      value={cardExpire}
-                      onChange={(e) => handleCardExpireChange(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                    <Lock className="h-3 w-3 text-emerald-500" />
-                    256-bit xavfsiz to'lov shifrlanishi
-                  </div>
+              {/* Karta tanlansa — xom karta raqami/CVV BU YERDA umuman
+                  so'ralmaydi. Haqiqiy to'lov keyingi qadamda (bron detail
+                  sahifasida) to'lov provayderining HAQIQIY xavfsiz
+                  sahifasiga redirect orqali amalga oshiriladi. */}
+              {paymentMethod !== "cash" && (
+                <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-[11px] text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  <span>
+                    Karta ma&apos;lumotlarini keyingi qadamda to&apos;lov
+                    provayderining (Uzum Checkout) o&apos;z xavfsiz
+                    sahifasida kiritasiz — SAFAAR karta raqamingizni
+                    so&apos;ramaydi va saqlamaydi.
+                  </span>
                 </div>
               )}
 
@@ -467,10 +425,12 @@ export function RestaurantBookingSection({
                 className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
               >
                 {loading
-                  ? "To'lov amalga oshirilmoqda..."
-                  : paymentMethod === "card"
-                  ? `${totalAmount > 0 ? formatSum(totalAmount) : "To'lovni tasdiqlash"}`
-                  : "Bronni tasdiqlash (Naqd)"}
+                  ? paymentMethod === "cash"
+                    ? "Bron tasdiqlanmoqda..."
+                    : "To'lov sahifasiga o'tilmoqda..."
+                  : paymentMethod === "cash"
+                  ? "Bronni tasdiqlash (Naqd)"
+                  : `${totalAmount > 0 ? formatSum(totalAmount) : "To'lovni tasdiqlash"}`}
               </Button>
             </form>
           </div>

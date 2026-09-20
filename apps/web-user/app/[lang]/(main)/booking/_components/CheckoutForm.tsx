@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
-import { createBookingAction, type CheckoutState } from "@/lib/booking/actions";
+import { createBookingAction, validatePromoAction, type CheckoutState } from "@/lib/booking/actions";
 import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -42,18 +42,47 @@ export function CheckoutForm({
   const [checkIn, setCheckIn] = useState(defaults.checkIn);
   const [checkOut, setCheckOut] = useState(defaults.checkOut);
   const [guests, setGuests] = useState(Math.min(room.capacity, Math.max(1, defaults.guests)));
+  const [promoCode, setPromoCode] = useState("");
+  const [promoDiscount, setPromoDiscount] = useState<{ type: string; value: number } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
     createBookingAction,
     {},
   );
 
   const nights = nightsBetween(checkIn, checkOut);
-  const total = room.priceSum * Math.max(nights, 0);
+  let total = room.priceSum * Math.max(nights, 0);
+  let discountAmount = 0;
+  if (promoDiscount && total > 0) {
+    if (promoDiscount.type.startsWith("percent")) {
+      discountAmount = (total * promoDiscount.value) / 100;
+    } else {
+      discountAmount = promoDiscount.value;
+    }
+    if (discountAmount > total) discountAmount = total;
+    total -= discountAmount;
+  }
 
   const getErrorMessage = (error: string) => {
     if (error === "ERROR") return dict.error;
     const errorsDict = dict.errors as Record<string, string> | undefined;
     return errorsDict?.[error] ?? error;
+  };
+
+  
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError("");
+    const res = await validatePromoAction(promoCode.trim());
+    if (res.success && res.data) {
+      setPromoDiscount({ type: res.data.discount_type, value: Number(res.data.discount_value) });
+    } else {
+      setPromoDiscount(null);
+      setPromoError(res.error || "Promo kod noto'g'ri yoki muddati tugagan");
+    }
+    setPromoLoading(false);
   };
 
   const handleSubmitForm = (formData: FormData) => {
@@ -191,8 +220,14 @@ export function CheckoutForm({
           <span className="text-slate-500">
             {formatSum(room.priceSum)} × {nights} {dict.nights}
           </span>
-          <span>{formatSum(total)}</span>
+          <span>{formatSum(room.priceSum * nights)}</span>
         </div>
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-sm text-green-600 font-medium">
+            <span>Chegirma ({promoCode})</span>
+            <span>-{formatSum(discountAmount)}</span>
+          </div>
+        )}
 
         <div className="border-t border-slate-900/[0.08] pt-3 dark:border-slate-800">
           <label className="flex flex-col gap-1">
@@ -200,11 +235,15 @@ export function CheckoutForm({
             <div className="flex gap-2">
               <Input
                 name="promoCode"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
                 placeholder="PROMO2025"
                 className="text-sm"
               />
-              <Button type="button" variant="secondary" className="px-3 rounded-full active:scale-[0.97]">{dict.applyPromo}</Button>
+              <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-3 rounded-full active:scale-[0.97]">{dict.applyPromo}</Button>
             </div>
+            {promoError && <span className="text-xs text-red-500 mt-1">{promoError}</span>}
+            {promoDiscount && <span className="text-xs text-green-600 mt-1">Chegirma qo'llanildi: {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
           </label>
         </div>
 

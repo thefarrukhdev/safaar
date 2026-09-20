@@ -158,3 +158,15 @@ export async function createBusBookingAction(
   // ko'rsatilib, foydalanuvchi tasdiqlagach checkoutga o'tadi).
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
 }
+
+export async function validatePromoAction(code: string) {
+  try {
+    const res = await api.promos.validate(code);
+    return { success: true, data: res as any };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiRequestError ? (error.message || error.code || "Xato yuz berdi") : "Tizim xatosi",
+    };
+  }
+}

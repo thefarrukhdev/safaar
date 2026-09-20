@@ -19,7 +19,7 @@ export type PaymentMethodId =
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
   dictKey?: "card" | "cash";
-  type: "online" | "card" | "cash";
+  type: "online" | "card" | "local_card" | "intl_card" | "cash";
   name?: string;
   subtitle?: string;
   badges?: string[];
@@ -56,11 +56,19 @@ const INTL_CARD_THEME = {
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
-    name: "Karta orqali to'lash",
-    subtitle: "Uzum Checkout orqali xavfsiz to'lov",
+    name: "Milliy kartalar orqali to'lash",
+    subtitle: "Uzum Checkout orqali (Uzcard, Humo)",
     badges: ["3D-Secure xavfsizlik"],
-    type: "card",
+    type: "local_card",
     colorTheme: CARD_THEME,
+  },
+  {
+    id: "visa",
+    name: "Xalqaro kartalar orqali to'lash",
+    subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
+    badges: ["3D-Secure xavfsizlik"],
+    type: "intl_card",
+    colorTheme: INTL_CARD_THEME,
   },
   {
     id: "cash",
@@ -147,12 +155,12 @@ export function PaymentSelector({
                 <div
                   className={cn(
                     "flex shrink-0 overflow-hidden items-center justify-center font-bold transition-transform duration-200 group-hover:scale-105",
-                    option.type === "card" 
-                      ? "gap-1 flex-wrap w-[88px]" // Make it wide enough to show multiple card icons
+                    option.type === "local_card" || option.type === "intl_card"
+                      ? "gap-1 flex-wrap w-fit max-w-[88px]" // Ensure it fits the images
                       : cn("h-10 w-10 rounded-xl shadow-xs", option.colorTheme.iconBg)
                   )}
                 >
-                  {option.type === "card" && (
+                  {option.type === "local_card" && (
                     <>
                       <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
                         <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-0.5" />
@@ -160,6 +168,10 @@ export function PaymentSelector({
                       <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
                         <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-0.5" />
                       </div>
+                    </>
+                  )}
+                  {option.type === "intl_card" && (
+                    <>
                       <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
                         <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-0.5" />
                       </div>

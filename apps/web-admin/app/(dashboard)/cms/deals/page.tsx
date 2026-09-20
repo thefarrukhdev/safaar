@@ -18,6 +18,7 @@ export default function DealsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CmsArticle | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -50,7 +51,9 @@ export default function DealsPage() {
     setTitle(item.title || "");
     setSlug(item.slug || "");
     setCityName(item.metadata?.cityName?.uz || item.metadata?.cityName || "");
-    setImageUrl(item.metadata?.imageUrl || "");
+    // Legacy records from the pre-fix bug stored dead blob: URLs — treat those as "no image"
+    const storedImageUrl = item.metadata?.imageUrl || "";
+    setImageUrl(storedImageUrl.startsWith("blob:") ? "" : storedImageUrl);
     setOldPrice(item.metadata?.oldPrice || "");
     setNewPrice(item.metadata?.newPrice || "");
     setDiscountPercent(item.metadata?.discountPercent || "");
@@ -84,8 +87,30 @@ export default function DealsPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const uploaded = await AdminApi.uploadImage(file);
+      setImageUrl(uploaded.url);
+    } catch (error) {
+      toast.error("Rasm yuklashda xatolik yuz berdi");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!imageUrl) {
+      toast.error("Rasm yuklanishini kuting yoki Iltimos rasm yuklang");
+      return;
+    }
+    if (uploading) {
+      toast.error("Rasm yuklanishini kuting");
+      return;
+    }
     setSaving(true);
     try {
       const payload: Partial<CmsArticle> = {
@@ -282,16 +307,15 @@ export default function DealsPage() {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setImageUrl(URL.createObjectURL(file));
-                }
-              }}
+              onChange={handleFileChange}
+              disabled={uploading}
               className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)]/10 file:text-[var(--primary)] hover:file:bg-[var(--primary)]/20 cursor-pointer"
               required={!imageUrl}
             />
-            {imageUrl && (
+            {uploading && (
+              <p className="text-xs text-[var(--muted-foreground)]">Yuklanmoqda...</p>
+            )}
+            {imageUrl && !uploading && (
               <div className="mt-2 relative w-full h-40 rounded border border-[var(--border)] overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageUrl} alt="Preview" className="object-cover w-full h-full" />
@@ -316,7 +340,7 @@ export default function DealsPage() {
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
               Bekor qilish
             </Button>
-            <Button type="submit" disabled={saving} icon={<Save size={16} />}>
+            <Button type="submit" disabled={saving || uploading} icon={<Save size={16} />}>
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
           </div>

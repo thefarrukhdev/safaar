@@ -9,7 +9,8 @@
     "title": "Popular destinations",
     "subtitle": "The cities travellers choose most",
     "empty": "Data is loading or the list is currently empty.",
-    "hotels": "hotels"
+    "hotels": "hotels",
+    "emptyDesc": "The list of popular cities is currently being formed."
   },
   "trust": {
     "hotels": "12,000+",
@@ -30,7 +31,8 @@
     "reviews": "review",
     "excellent": "Excellent",
     "good": "Good",
-    "all": "View all"
+    "all": "View all",
+    "emptyDesc": "There are no recommended places at the moment. Will be updated soon."
   },
   "deals": {
     "title": "Hot Deals",
@@ -41,22 +43,42 @@
     "perNight": "/ night",
     "book": "Book now",
     "endsIn": "Ends in",
-    "days": "days"
+    "days": "days",
+    "emptyDesc": "Useful discounts will appear on this page soon."
   },
   "reviews": {
     "title": "Customer Reviews",
     "items": [
-      { "name": "Shakhnoza Rakhimova", "city": "Tashkent", "rating": 5, "text": "Booked for the first time through Safaar. Very convenient and fast! The hotel was wonderful." },
-      { "name": "Jasurbek Aliyev", "city": "Samarkand", "rating": 5, "text": "Planned my trip to Samarkand through Safaar. Prices were cheaper than other sites." },
-      { "name": "Malika Karimova", "city": "Bukhara", "rating": 4, "text": "Booked a resort in Chimgan. The photos matched reality perfectly. Great organization." },
-      { "name": "Bobur Khamidov", "city": "Fergana", "rating": 5, "text": "Also booked my dacha here. Everything in one place — so convenient. I recommend it to everyone!" }
+      {
+        "name": "Shakhnoza Rakhimova",
+        "city": "Tashkent",
+        "rating": 5,
+        "text": "Booked for the first time through Safaar. Very convenient and fast! The hotel was wonderful."
+      },
+      {
+        "name": "Jasurbek Aliyev",
+        "city": "Samarkand",
+        "rating": 5,
+        "text": "Planned my trip to Samarkand through Safaar. Prices were cheaper than other sites."
+      },
+      {
+        "name": "Malika Karimova",
+        "city": "Bukhara",
+        "rating": 4,
+        "text": "Booked a resort in Chimgan. The photos matched reality perfectly. Great organization."
+      },
+      {
+        "name": "Bobur Khamidov",
+        "city": "Fergana",
+        "rating": 5,
+        "text": "Also booked my dacha here. Everything in one place — so convenient. I recommend it to everyone!"
+      }
     ]
   },
   "partners": {
     "title": "Trusted Partners",
     "subtitle": "Working with 500+ hotels and resorts"
   },
-
   "why": {
     "title": "Why Safaar?",
     "items": {

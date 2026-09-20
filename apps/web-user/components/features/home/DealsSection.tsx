@@ -88,7 +88,7 @@ export function DealsSection({
           <EmptyState 
             icon={<Tag className="h-10 w-10 text-slate-400" />}
           title={(dict as any).empty || "Hozircha bo'sh"} 
-          description="Ushbu sahifada tez orada foydali chegirmalar paydo bo'ladi." 
+          description={(dict as any).emptyDesc || "Ushbu sahifada tez orada foydali chegirmalar paydo bo'ladi."} 
           className="mt-6"
         />
       ) : (

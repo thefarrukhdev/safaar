@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { trackPaymentMethodSelected } from "@/lib/services/analytics/tracker";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
-// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi Uzum Checkout
+// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
 // orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
 // belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
 export type PaymentMethodId =
@@ -57,7 +57,7 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
     name: "Milliy kartalar orqali to'lash",
-    subtitle: "Uzum Checkout orqali (Uzcard, Humo)",
+    subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
     badges: ["3D-Secure xavfsizlik"],
     type: "local_card",
     colorTheme: CARD_THEME,

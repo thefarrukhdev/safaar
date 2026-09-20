@@ -98,7 +98,7 @@ export function RetryPaymentForm({
 
   // Backend boshqa (yangi so'ralgan) usulga o'ta olmasligi mumkin — agar
   // eski to'lov allaqachon haqiqiy tashqi sessiyaga ega bo'lsa (masalan
-  // Uzum'da ro'yxatdan o'tgan buyurtma). Bu holda javobdagi `provider`
+  // To'lov tizimida ro'yxatdan o'tgan buyurtma). Bu holda javobdagi `provider`
   // foydalanuvchi tanlagan bilan mos kelmaydi — buni aniq ko'rsatamiz,
   // xato deb yashirmaymiz (docs 3-bo'lim).
   const providerMismatch = Boolean(preview && preview.provider !== selected);

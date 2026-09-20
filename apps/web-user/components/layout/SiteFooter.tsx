@@ -13,7 +13,6 @@ interface PaymentMethod {
 const PAYMENT_METHODS: PaymentMethod[] = [
   { name: "Click" },
   { name: "Payme" },
-  { name: "Uzum" },
   { name: "Humo" },
   { name: "UzCard" },
 ];

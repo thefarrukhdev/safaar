@@ -91,7 +91,7 @@ export async function createBookingAction(
     redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestAccessTokenParam}`);
   }
 
-  // MUHIM: bu yerdan endi Uzum/Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI
+  // MUHIM: bu yerdan endi Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI
   // o'tilmaydi — booking allaqachon o'zining "qoralama" to'lov qatoriga
   // ega (backend, booking yaratishning bir qismi sifatida). Foydalanuvchi
   // booking detail sahifasiga o'tkaziladi — u yerda to'lov usuli/fee/

@@ -50,7 +50,7 @@ function DealCard({
       title={deal.name}
       location={deal.cityName}
       tags={tags}
-      href={`/${locale}/hotels/${deal.slug}`}
+      href={`/${locale}/${deal.slug.includes("/") ? deal.slug : "hotels/" + deal.slug}`}
       price={{
         amount: deal.newPriceSum,
         oldAmount: deal.oldPriceSum,

@@ -90,7 +90,7 @@ export function SearchDatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 rounded-xl border border-slate-900/[0.08] bg-white p-4 shadow-float dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
+        <div className="absolute left-0 sm:-left-4 top-full z-50 mt-2 w-max max-w-[calc(100vw-2rem)] sm:max-w-none rounded-xl border border-slate-900/[0.08] bg-white p-4 shadow-float dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
           <div className="flex justify-between items-center mb-2 md:hidden">
              <span className="font-bold text-sm">{dict?.selectDate ?? "Sanani tanlang"}</span>
              <button onClick={() => setOpen(false)}><X className="h-5 w-5"/></button>
@@ -106,6 +106,7 @@ export function SearchDatePicker({
             disabled={{ before: new Date() }} // O'tib ketgan sanalarni bloklash
             className="custom-calendar-styles"
             classNames={{
+              months: "flex flex-col sm:flex-row gap-4 sm:gap-6",
               selected: "bg-primary-600 text-white hover:bg-primary-600 focus:bg-primary-600",
               today: "font-bold text-primary-600",
             }}

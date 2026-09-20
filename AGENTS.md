@@ -8,27 +8,6 @@ quyidagi tuzilma va chegaralarga **qat'iy** rioya qilsin.
 
 ---
 
-## Loyiha haqida
-
-**Safaar** — O'zbekiston bo'ylab mehmonxonalarni bron qilish platformasi
-(Agoda'ga o'xshash). Bitta npm workspace monorepo: 3 ta mustaqil frontend +
-1 ta backend API + umumiy turlar paketi.
-
-```
-apps/
-├── backend/      @safaar/backend      NestJS API        → :4000
-├── web-user/     @safaar/web-user     safaar.uz         → :3000   (mijozlar)
-├── web-partner/  @safaar/web-partner  partner.safaar.uz → :3001   (hamkorlar)
-└── web-admin/    @safaar/web-admin    admin.safaar.uz   → :3002   (super admin)
-packages/
-└── types/        @safaar/types        API shartnomasi (umumiy TS turlari)
-```
-
-Uchala sayt ham **bitta backend API**'ga ulanadi; ruxsatlar rol asosida (RBAC):
-`USER`, `PARTNER`, `ADMIN`, `SUPER_ADMIN`.
-
----
-
 ## ⛔ ENG MUHIM CHEGARA QOIDASI
 
 Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
@@ -62,23 +41,8 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
 
 ---
 
-## Umumiy buyruqlar (root'dan)
-
-```bash
-npm install            # barcha workspace'larni o'rnatish
-npm run build:types    # @safaar/types ni birinchi build qilish (MAJBURIY birinchi)
-npm run dev:user       # web-user    → :3000
-npm run dev:partner    # web-partner → :3001
-npm run dev:admin      # web-admin   → :3002
-npm run dev:backend    # backend     → :4000
-npm run build          # types + barcha applar
-npm run test           # barcha testlar
-```
-
 ## Konvensiyalar (butun monorepo)
 
-- TypeScript **strict** rejimida. `any` dan qoching.
-- Format: Prettier (`.prettierrc`). Lint: har app'da ESLint.
 - O'zgartirishdan keyin **build va testni ishga tushiring**, yashil bo'lsin.
 - Commit'lar aniq va kichik bo'lsin. Kundalik ish **`develop`** branch'ida bo'ladi
   (hamma shu yerda, faqat o'z papkasida). Push'dan oldin doim

@@ -18,25 +18,6 @@ yozma**. Faqat o'qi.
 
 ---
 
-## Bu paket nima
-
-```
-src/
-├── auth.ts      Role (RBAC enum), JwtPayload, AuthTokens
-├── user.ts      User, RegisterUserDto, VerifyOtpDto
-├── hotel.ts     Hotel, RoomType, HotelSearchQuery
-├── booking.ts   Booking, BookingStatus, CreateBookingDto
-├── common.ts    Paginated<T>, ApiError
-└── index.ts     barrel — hammasini re-export qiladi
-```
-
-Import qilish:
-```ts
-import { Hotel, Booking, Role } from "@safaar/types";
-```
-
----
-
 ## ⚠️ O'zgartirish qoidalari (breaking change'dan saqlaning)
 
 1. **Faqat tur (interface/enum/type).** Bu yerga biznes-mantiq, funksiya yoki
@@ -54,14 +35,6 @@ import { Hotel, Booking, Role } from "@safaar/types";
    Buni qilmasang, iste'molchilar eski turlarni ko'radi.
 
 ---
-
-## Buyruqlar
-
-```bash
-npm run build    # tsc -p tsconfig.json → dist/
-npm run dev      # watch rejimi
-npm run clean    # dist/ ni o'chirish
-```
 
 ## Senior dev sifatida ish tartibi
 

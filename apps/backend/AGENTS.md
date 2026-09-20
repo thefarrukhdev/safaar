@@ -66,25 +66,6 @@ Bu paket frontend va backend o'rtasidagi **yagona haqiqat manbai**. Qoidalar:
 
 ---
 
-## Texnik stack
-
-- **NestJS 11**, **TypeScript**, Express platformasi
-- Test: **Jest** (`*.spec.ts`)
-- Global: `/api` prefiks, CORS yoqilgan, `ValidationPipe` (whitelist)
-
-## Buyruqlar (shu papkadan)
-
-```bash
-npm run start:dev   # watch rejimida → localhost:4000
-npm run build       # nest build
-npm run test        # jest
-npm run lint        # ESLint (--fix)
-```
-
-Health-check: `GET http://localhost:4000/api/health`
-
----
-
 ## Senior dev sifatida ish tartibi
 
 1. **Avval o'qi, keyin yoz** — mavjud modul tuzilmasi va konvensiyalarni ko'r.

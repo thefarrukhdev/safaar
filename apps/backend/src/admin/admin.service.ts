@@ -3938,12 +3938,42 @@ export class AdminService {
       select
         coalesce((select sum(total_amount) from bookings), 0)::float8 as gross_amount,
         coalesce((select sum(amount) from payments where status = 'paid'), 0)::float8 as paid_amount,
+        -- SAFAAR komissiyasi -- partnersReport() bilan bir xil manba
+        -- (bookings.commission_amount). paid_amount (yuqorida) BILAN
+        -- ARALASHTIRILMASIN: u foydalanuvchi to'lagan/provayder ushlagan
+        -- summa, komissiya emas (2026-09-19 auditda topilgan: frontend
+        -- buni "Sof Komissiya" sifatida ko'rsatib, aslida paid_amount'ni
+        -- o'qib turgan edi).
+        coalesce((select sum(commission_amount) from bookings), 0)::float8 as total_commission,
+        -- Withdrawal holat mashinasi (withdrawalStatus(), shu fayl):
+        -- requested -> approved -> paid (yoki -> rejected). "Kutilayotgan"
+        -- = hali to'lanmagan, hali rad etilmagan.
+        coalesce(
+          (select sum(amount) from withdrawal_requests where status in ('requested', 'approved')),
+          0
+        )::float8 as pending_withdrawals,
+        coalesce(
+          (select sum(amount) from withdrawal_requests where status = 'paid'),
+          0
+        )::float8 as paid_withdrawals,
+        -- Refund holat mashinasi (refundApprove(), shu fayl): 'approved' —
+        -- pul HAQIQATAN qaytarilgan yakuniy holat (RefundStatus'dagi
+        -- 'paid' qiymati kod bo'yicha hech qachon yozilmaydi — o'lik
+        -- holat, shu sabab ishlatilmadi).
+        coalesce(
+          (select sum(approved_amount) from refunds where status = 'approved'),
+          0
+        )::float8 as total_refunds,
         'UZS' as currency
     `);
 
     return {
       gross_amount: numberValue(row?.['gross_amount'] ?? 0),
       paid_amount: numberValue(row?.['paid_amount'] ?? 0),
+      total_commission: numberValue(row?.['total_commission'] ?? 0),
+      pending_withdrawals: numberValue(row?.['pending_withdrawals'] ?? 0),
+      paid_withdrawals: numberValue(row?.['paid_withdrawals'] ?? 0),
+      total_refunds: numberValue(row?.['total_refunds'] ?? 0),
       currency: 'UZS',
     };
   }

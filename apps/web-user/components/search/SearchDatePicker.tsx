@@ -150,7 +150,7 @@ export function SearchDatePicker({
             selected={internalRange}
             onSelect={handleSelect}
             locale={locales[locale]}
-            numberOfMonths={2}
+            numberOfMonths={1}
             disabled={{ before: new Date() }} // O'tib ketgan sanalarni bloklash
             className="custom-calendar-styles"
             classNames={{

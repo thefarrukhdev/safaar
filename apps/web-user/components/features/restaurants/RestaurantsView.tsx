@@ -1,43 +1,17 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Clock, MapPin, PhoneCall, Star, Utensils, SlidersHorizontal, Check, Map } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Clock, MapPin, PhoneCall, Star, Utensils, Search, SlidersHorizontal, Map } from "lucide-react";
 import { formatSum } from "@/lib/money";
 import type { Locale } from "@/i18n/config";
 import type { CatalogDict } from "@/i18n/dictionaries";
+import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import type { RestaurantItem } from "@/components/catalog/types";
 import { UniversalCard } from "@/components/ui/UniversalCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { RestaurantsHero } from "./RestaurantsHero";
+import { Input } from "@/components/ui/Input";
 
 export type { RestaurantItem };
-
-// Yordamchi: Hozirgi vaqt restoran ochiqmi?
-function isOpenNow(workingHours?: string): boolean | null {
-  if (!workingHours) return null;
-  // Kutilayotgan format: "09:00 - 23:00"
-  const parts = workingHours.split("-").map(p => p.trim());
-  if (parts.length !== 2) return null;
-  
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  
-  const parseMinutes = (timeStr: string) => {
-    const [h, m] = timeStr.split(":").map(Number);
-    if (isNaN(h) || isNaN(m)) return 0;
-    return h * 60 + m;
-  };
-  
-  const startMins = parseMinutes(parts[0]);
-  let endMins = parseMinutes(parts[1]);
-  if (endMins < startMins) endMins += 24 * 60; // Tungi smena
-  
-  const adjustedCurrent = currentMinutes < startMins && endMins > 24 * 60 
-    ? currentMinutes + 24 * 60 
-    : currentMinutes;
-    
-  return adjustedCurrent >= startMins && adjustedCurrent <= endMins;
-}
 
 function RestaurantCard({
   item,
@@ -48,20 +22,10 @@ function RestaurantCard({
   dict: CatalogDict["restaurants"];
   locale: Locale;
 }) {
-  const price = item.averageCheckSum > 0 ? item.averageCheckSum : 0;
-  
-  const isOpen = isOpenNow(item.workingHours);
-  
-  const statusBadge = isOpen !== null ? (
-    <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
-      <div className={`h-1.5 w-1.5 rounded-full ${isOpen ? 'bg-white' : 'bg-white/80'}`} />
-      {isOpen ? "Hozir ochiq" : "Yopiq"}
-    </div>
-  ) : null;
-
+  const price = item.averageCheckSum > 0 ? item.averageCheckSum : 180000;
   const tags = [
     item.cuisine,
-    item.workingHours ? `🕒 ${item.workingHours}` : null,
+    item.workingHours ? `🕒 ${item.workingHours}` : "🕒 09:00 - 23:00",
   ].filter(Boolean) as string[];
 
   return (
@@ -70,26 +34,14 @@ function RestaurantCard({
       imageSrc={item.imageUrl}
       imageAlt={item.name}
       showFavorite
-      topLeft={statusBadge}
       title={item.name}
       location={[item.cityName, item.address].filter(Boolean).join(" · ")}
       tags={tags}
-      price={price > 0 ? {
+      price={{
         amount: price,
         period: "o'rtacha chek",
-      } : undefined}
+      }}
       actionLabel="Batafsil"
-      extraInfo={
-        item.rating > 0 ? (
-          <div className="flex items-center gap-1 mt-1">
-            <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-            <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.rating.toFixed(1)}</span>
-            {item.reviewsCount > 0 && (
-              <span className="text-xs text-slate-500">({item.reviewsCount} sharh)</span>
-            )}
-          </div>
-        ) : null
-      }
     />
   );
 }
@@ -106,14 +58,12 @@ export function RestaurantsView({
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
   const [selectedCuisine, setSelectedCuisine] = useState("all");
-  // const [showMap, setShowMap] = useState(false); // Map view toggle for later
 
   const cities = useMemo(
     () => Array.from(new Set(items.map((item) => item.cityName).filter(Boolean))),
     [items],
   );
   
-  // Custom curated cuisines to show as pills
   const popularCuisines = ["Milliy", "Yevropa", "Osiyo", "Turkcha", "Fast Food"];
   const dbCuisines = useMemo(
     () => Array.from(new Set(items.map((item) => item.cuisine).filter(Boolean))),
@@ -137,21 +87,30 @@ export function RestaurantsView({
   }, [items, query, selectedCity, selectedCuisine]);
 
   return (
-    <div className="mx-auto w-full max-w-[1536px] flex-1 px-4 md:px-8 py-6 sm:px-6">
-      <RestaurantsHero
+    <div className="mx-auto w-full max-w-[1536px] flex-1 px-4 md:px-8 py-8 sm:px-6">
+      <CatalogHeader
         title={dict.title}
         subtitle={dict.subtitle || "O'zbekistonning eng sara restoran va kafelari"}
-        query={query}
-        onQueryChange={setQuery}
-        placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
+        searchControls={
+          <>
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
+              className="pl-10"
+            />
+          </>
+        }
       />
       
-      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
+      <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Sidebar Filters */}
-        <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-[280px] flex flex-col gap-6 rounded-2xl border border-slate-900/[0.08] bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
-            <SlidersHorizontal className="h-5 w-5 text-slate-500" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filtrlar</h3>
+        <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-[260px] flex flex-col gap-6 rounded-xl border border-slate-900/[0.08] bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+            <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Filtrlar</h3>
           </div>
           
           {/* City Filter */}
@@ -183,7 +142,7 @@ export function RestaurantsView({
             </div>
           </div>
 
-          {/* Cuisine Checkboxes Filter (Simplified as single select for now, but UI looks like multiple) */}
+          {/* Cuisine Filter */}
           <div className="flex flex-col gap-3">
             <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Oshxona turi</h4>
             <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
@@ -214,7 +173,7 @@ export function RestaurantsView({
         </aside>
 
         {/* Main Content (Pills + Grid) */}
-        <div className="flex w-full flex-col gap-6">
+        <div className="flex w-full flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <button 
@@ -233,7 +192,7 @@ export function RestaurantsView({
                 </button>
               ))}
             </div>
-            {/* Map toggle stub */}
+            
             <button className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <Map className="h-4 w-4" />
               Xaritada ko'rish
@@ -245,7 +204,7 @@ export function RestaurantsView({
           </div>
 
           {filtered.length === 0 ? (
-            <div className="mt-8">
+            <div className="mt-4">
               <EmptyState
                 icon={<Utensils className="h-6 w-6" />}
                 title={(dict as any).empty?.title || "Siz izlagan shartlarga mos restoran topilmadi"}

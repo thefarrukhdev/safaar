@@ -56,35 +56,11 @@ const INTL_CARD_THEME = {
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
-    name: "Uzcard",
-    subtitle: "Uzcard milliy plastik kartasi orqali to'g'ridan-to'g'ri to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 1.5%"],
+    name: "Karta orqali to'lash",
+    subtitle: "Uzum Checkout orqali xavfsiz to'lov",
+    badges: ["3D-Secure xavfsizlik"],
     type: "card",
     colorTheme: CARD_THEME,
-  },
-  {
-    id: "humo",
-    name: "Humo",
-    subtitle: "Humo milliy plastik kartasi orqali to'g'ridan-to'g'ri to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 1.5%"],
-    type: "card",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "visa",
-    name: "Visa",
-    subtitle: "Xalqaro Visa kartasi orqali to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 3.5%"],
-    type: "card",
-    colorTheme: INTL_CARD_THEME,
-  },
-  {
-    id: "mastercard",
-    name: "Mastercard",
-    subtitle: "Xalqaro Mastercard kartasi orqali to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 3.5%"],
-    type: "card",
-    colorTheme: INTL_CARD_THEME,
   },
   {
     id: "cash",
@@ -170,14 +146,28 @@ export function PaymentSelector({
                 {/* Method Icon / Logo Badge */}
                 <div
                   className={cn(
-                    "flex h-10 w-10 shrink-0 overflow-hidden items-center justify-center rounded-xl font-bold shadow-xs transition-transform duration-200 group-hover:scale-105",
-                    option.type === "card" ? "bg-white border border-slate-200 dark:border-slate-800" : option.colorTheme.iconBg
+                    "flex shrink-0 overflow-hidden items-center justify-center font-bold transition-transform duration-200 group-hover:scale-105",
+                    option.type === "card" 
+                      ? "gap-1 flex-wrap w-[88px]" // Make it wide enough to show multiple card icons
+                      : cn("h-10 w-10 rounded-xl shadow-xs", option.colorTheme.iconBg)
                   )}
                 >
-                  {option.id === "uzcard" && <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1" />}
-                  {option.id === "humo" && <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1" />}
-                  {option.id === "visa" && <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1" />}
-                  {option.id === "mastercard" && <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1" />}
+                  {option.type === "card" && (
+                    <>
+                      <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
+                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-0.5" />
+                      </div>
+                      <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
+                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-0.5" />
+                      </div>
+                      <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
+                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-0.5" />
+                      </div>
+                      <div className="h-6 w-9 rounded border border-slate-200 dark:border-slate-700 bg-white shadow-xs overflow-hidden">
+                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-0.5" />
+                      </div>
+                    </>
+                  )}
                   {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
                 </div>
 

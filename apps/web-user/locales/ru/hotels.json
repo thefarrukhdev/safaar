@@ -65,5 +65,6 @@
     "next": "Вперёд",
     "pageOf": "{page} / {total}"
   },
-  "mapView": "Карта"
+  "mapView": "Карта",
+  "gridView": "Сетка"
 }

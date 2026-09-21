@@ -95,7 +95,7 @@ export function AccommodationListWithMap({
                   className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 aria-pressed:bg-slate-900 aria-pressed:text-white aria-pressed:hover:bg-slate-900/90 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   <LayoutGrid className="size-5" />
-                  <span className="hidden sm:inline">Grid</span>
+                  <span className="hidden sm:inline">{(dict as any).gridView || "Grid"}</span>
                 </button>
 
                 <button

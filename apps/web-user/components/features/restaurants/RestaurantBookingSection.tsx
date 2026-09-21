@@ -20,10 +20,15 @@ import { Button } from "@/components/ui/Button";
 import { DatePicker } from "@/components/ui/DatePicker";
 import type { Locale } from "@/i18n/config";
 
+import type { CatalogDict } from "@/i18n/dictionaries";
+
 export function RestaurantBookingSection({
+  dict,
+
   restaurant,
 }: {
   restaurant: RestaurantDetailView;
+  dict: CatalogDict["restaurants"];
 }) {
   const params = useParams<{ lang?: string }>();
   const locale = params?.lang || "uz";
@@ -41,6 +46,7 @@ export function RestaurantBookingSection({
   const [guestPhone, setGuestPhone] = useState<string>("");
   const [guestEmail, setGuestEmail] = useState<string>("");
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+  const bDict = (dict as any).booking || {};
 
   // Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
@@ -75,7 +81,7 @@ export function RestaurantBookingSection({
   const handleOpenModal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim() || !guestPhone.trim()) {
-      setErrorMsg("Iltimos, ismingiz va telefon raqamingizni kiriting");
+      setErrorMsg(bDict.namePhoneRequired || "Iltimos, ismingiz va telefon raqamingizni kiriting");
       return;
     }
     setErrorMsg(null);
@@ -87,11 +93,11 @@ export function RestaurantBookingSection({
     if (paymentMethod === "card") {
       const rawCard = cardNumber.replace(/\s/g, "");
       if (rawCard.length < 16) {
-        setErrorMsg("Karta raqamini to'liq kiriting (16 xona)");
+        setErrorMsg(bDict.cardDigitsError || "Karta raqamini to'liq kiriting (16 xona)");
         return;
       }
       if (cardExpire.length < 5) {
-        setErrorMsg("Karta amal qilish muddatini kiriting (MM/YY)");
+        setErrorMsg(bDict.cardExpireError || "Karta amal qilish muddatini kiriting (MM/YY)");
         return;
       }
     }
@@ -126,7 +132,7 @@ export function RestaurantBookingSection({
       setSuccessBookingId(bookingId);
       setShowPaymentModal(false);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
     } finally {
       setLoading(false);
     }
@@ -143,11 +149,11 @@ export function RestaurantBookingSection({
           Bron ID: <span className="font-mono font-bold">{successBookingId}</span>
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-          <p><strong>Restoran:</strong> {restaurant.name}</p>
-          <p><strong>Stol:</strong> {selectedTable?.name}</p>
+          <p><strong>{bDict.restaurantLabel || "Restoran:"}</strong> {restaurant.name}</p>
+          <p><strong>{bDict.tableLabel || "Stol:"}</strong> {selectedTable?.name}</p>
           <p><strong>Sana va vaqt:</strong> {date} ({slotTime})</p>
-          <p><strong>Mijoz:</strong> {guestName} ({guestPhone})</p>
-          <p><strong>To'lov usuli:</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
+          <p><strong>{bDict.clientLabel || "Mijoz:"}</strong> {guestName} ({guestPhone})</p>
+          <p><strong>{bDict.paymentMethodLabel || "To'lov usuli:"}</strong> {paymentMethod === "card" ? (bDict.cardPayment || "Karta orqali") : (bDict.cashPayment || "Naqd pul")}</p>
         </div>
         <Button
           onClick={() => setSuccessBookingId(null)}
@@ -265,7 +271,7 @@ export function RestaurantBookingSection({
               </label>
               <input
                 type="text"
-                placeholder="Masalan: Ali Valiyev"
+                placeholder={bDict.namePlaceholder || "Masalan: Ali Valiyev"}
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -279,7 +285,7 @@ export function RestaurantBookingSection({
               </label>
               <input
                 type="tel"
-                placeholder="+998 90 123 45 67"
+                placeholder={bDict.phonePlaceholder || "+998 90 123 45 67"}
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -293,7 +299,7 @@ export function RestaurantBookingSection({
               </label>
               <input
                 type="email"
-                placeholder="ali@example.com"
+                placeholder={bDict.emailPlaceholder || "ali@example.com"}
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -339,21 +345,21 @@ export function RestaurantBookingSection({
             {/* Order Summary box */}
             <div className="mt-4 rounded-xl bg-slate-50 p-3.5 text-xs dark:bg-slate-800/60">
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Sana & Vaqt:</span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.dateTimeLabel || "Sana & Vaqt:"}</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {date} ({slotTime})
                 </span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Mijoz:</span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.clientLabel || "Mijoz:"}</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {guestName} ({guestPhone})
                 </span>
               </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-2 text-sm font-bold dark:border-slate-700">
-                <span className="text-slate-900 dark:text-white">Jami summa:</span>
+                <span className="text-slate-900 dark:text-white">{bDict.totalAmount || "Jami summa:"}</span>
                 <span className="text-primary-600 dark:text-primary-400">
-                  {totalAmount > 0 ? formatSum(totalAmount) : "Bepul (Stol band etish)"}
+                  {totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")}
                 </span>
               </div>
             </div>
@@ -469,10 +475,10 @@ export function RestaurantBookingSection({
                 className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
               >
                 {loading
-                  ? "To'lov amalga oshirilmoqda..."
+                  ? (bDict.processingPayment || "To'lov amalga oshirilmoqda...")
                   : paymentMethod === "card"
-                  ? `${totalAmount > 0 ? formatSum(totalAmount) : "To'lovni tasdiqlash"}`
-                  : "Bronni tasdiqlash (Naqd)"}
+                  ? `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`
+                  : (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")}
               </Button>
             </form>
           </div>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Clock, Utensils } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
+import { getDictionary } from "@/i18n/dictionaries";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export default async function RestaurantDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
+  const dict = await getDictionary(locale, "restaurants");
   let restaurant;
   try {
     restaurant = await getRestaurant(id, locale);
@@ -129,7 +131,7 @@ export default async function RestaurantDetailPage({
           {restaurant.workingHours && (
             <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
               <Clock className="h-4 w-4 text-slate-400" />
-              Ish vaqti: {restaurant.workingHours}
+              {(dict as any).detail?.workingHours || "Ish vaqti"}: {restaurant.workingHours}
             </span>
           )}
           {restaurant.phone && (
@@ -150,7 +152,7 @@ export default async function RestaurantDetailPage({
           {restaurant.description && (
             <section className="flex flex-col gap-2">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Restoran haqida
+                {(dict as any).detail?.about || "Restoran haqida"}
               </h2>
               <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
                 {restaurant.description}
@@ -161,7 +163,7 @@ export default async function RestaurantDetailPage({
           {restaurant.tables.length > 0 && (
             <section className="flex flex-col gap-3">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Mavjud stollar
+                {(dict as any).detail?.availableTables || "Mavjud stollar"}
               </h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {restaurant.tables.map((table) => (
@@ -173,7 +175,7 @@ export default async function RestaurantDetailPage({
                       {table.name}
                     </span>
                     <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Sig'imi: {table.capacity} kishilik
+                      {((dict as any).detail?.capacity || "Sig'imi: {count} kishilik").replace("{count}", table.capacity.toString())}
                     </span>
                   </div>
                 ))}
@@ -183,7 +185,7 @@ export default async function RestaurantDetailPage({
         </div>
 
         <aside className="lg:sticky lg:top-24">
-          <RestaurantBookingSection restaurant={restaurant} />
+          <RestaurantBookingSection restaurant={restaurant} dict={dict} />
         </aside>
       </div>
     </main>

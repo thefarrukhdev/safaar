@@ -16,10 +16,12 @@ export function ProfileForm({
   locale,
   profile,
   dict,
+  avatarDict,
 }: {
   locale: Locale;
   profile: ProfileView;
   dict: AccountDict["profile"];
+  avatarDict?: Record<string, string>;
 }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(
     updateProfileAction,
@@ -28,7 +30,7 @@ export function ProfileForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <AvatarForm profile={profile} dict={dict} />
+      <AvatarForm profile={profile} dict={avatarDict || {}} />
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="locale" value={locale} />
 

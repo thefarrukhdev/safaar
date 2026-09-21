@@ -66,5 +66,27 @@
     "pageOf": "{page} / {total}"
   },
   "mapView": "Xarita",
-  "gridView": "Ro'yxat"
+  "gridView": "Ro'yxat",
+  "banners": {
+    "all": {
+      "title": "Barcha turar joylarni qidirish xizmati",
+      "subtitle": "O'zbekiston bo'ylab o'zingizga mos va qulay turar joylarni arzon narxlarda kashf eting."
+    },
+    "hotels": {
+      "title": "O'zbekiston bo'ylab mehmonxonalar qidirish xizmati",
+      "subtitle": "O'zingizga mos va qulay mehmonxonalarni eng yaxshi narxlarda kashf eting."
+    },
+    "dachas": {
+      "title": "O'zbekiston bo'ylab dachalar qidirish xizmati",
+      "subtitle": "Dam olish uchun eng qulay dachalarni arzon narxlarda kashf eting."
+    },
+    "sanatoriums": {
+      "title": "O'zbekiston bo'ylab sanatoriylar qidirish xizmati",
+      "subtitle": "Sog'lomlashtirish va hordiq chiqarish maskanlarini kashf eting."
+    },
+    "resorts": {
+      "title": "O'zbekiston bo'ylab oromgohlar qidirish xizmati",
+      "subtitle": "Tabiat qo'ynidagi eng yaxshi oromgohlarni kashf eting."
+    }
+  }
 }

@@ -4,6 +4,7 @@ import React, { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Locale } from "@/i18n/config";
+import Image from "next/image";
 
 interface LampAuthLayoutProps {
   children: ReactNode;
@@ -17,6 +18,22 @@ export function LampAuthLayout({ children, locale }: LampAuthLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex flex-col lg:flex-row items-center justify-center overflow-hidden relative selection:bg-blue-500/30">
+      
+      {/* VIBE: Dimmed Luxury Hotel Background */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/experiment-hotel-picture.jpeg"
+          alt="Luxury Hotel"
+          fill
+          className="object-cover transition-all duration-1000 mix-blend-luminosity"
+          style={{ 
+            opacity: isOn ? 0.15 : 0.08,
+            filter: isOn ? "blur(2px) brightness(0.8)" : "blur(5px) brightness(0.3) contrast(1.2)" 
+          }}
+        />
+        {/* Dark overlay with subtle blue tint for moonlight feeling in the dark */}
+        <div className={`absolute inset-0 transition-colors duration-1000 ${isOn ? 'bg-gradient-to-r from-[#09090b] via-[#09090b]/80 to-[#09090b]' : 'bg-gradient-to-r from-[#020617] via-[#020617]/90 to-[#020617]'}`} />
+      </div>
       
       {/* Top Controls */}
       <div className="absolute top-6 right-6 z-50">
@@ -48,16 +65,18 @@ export function LampAuthLayout({ children, locale }: LampAuthLayoutProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-[10%] lg:top-[20%] left-1/2 -translate-x-1/2 text-zinc-500 text-xs font-medium tracking-wide bg-zinc-900/50 px-3 py-1.5 rounded-full backdrop-blur-sm border border-zinc-800/50 shadow-lg pointer-events-none"
+              className="absolute top-[10%] lg:top-[20%] left-1/2 -translate-x-1/2 text-zinc-300 text-xs font-bold tracking-widest bg-zinc-800/80 px-4 py-2 rounded-full backdrop-blur-md border border-zinc-600 shadow-[0_0_20px_rgba(255,255,255,0.15)] pointer-events-none animate-pulse"
             >
               Yoritish uchun torting
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="relative flex flex-col items-center scale-75 lg:scale-100">
-          {/* Lamp Shade */}
-          <div className="relative z-10 w-48 h-32 bg-zinc-900 rounded-t-xl rounded-b-sm border border-zinc-800 shadow-2xl flex items-end justify-center overflow-hidden">
+        <div className="relative flex flex-col items-center scale-75 lg:scale-100 mt-12 lg:mt-0">
+          {/* Lamp Shade (Realistic Metallic/Fabric) */}
+          <div className="relative z-10 w-48 h-32 bg-gradient-to-b from-zinc-800 to-zinc-950 rounded-t-xl rounded-b-sm border-t border-x border-zinc-700/50 shadow-2xl flex items-end justify-center overflow-hidden">
+            {/* Subtle top glare from moonlight */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-400/20 to-transparent" />
             <motion.div 
               animate={{ opacity: isOn ? 1 : 0.05 }}
               transition={{ duration: 0.2 }}
@@ -68,20 +87,20 @@ export function LampAuthLayout({ children, locale }: LampAuthLayoutProps) {
           {/* Bulb */}
           <motion.div
             animate={{
-              backgroundColor: isOn ? "#fbbf24" : "#27272a",
+              backgroundColor: isOn ? "#fbbf24" : "#18181b", // darker when off
               boxShadow: isOn 
                 ? "0 0 40px 10px rgba(251,191,36,0.6), 0 0 100px 20px rgba(245,158,11,0.4)" 
                 : "0 0 0px 0px rgba(251,191,36,0)",
             }}
             transition={{ duration: 0.1 }}
-            className="w-12 h-6 rounded-b-full relative -mt-1 z-0"
+            className="w-12 h-6 rounded-b-full relative -mt-1 z-0 shadow-inner"
           />
 
-          {/* Stand */}
-          <div className="w-3 h-64 lg:h-80 bg-zinc-900 border-x border-zinc-800 mt-0 z-[-1]" />
-          <div className="w-24 h-4 bg-zinc-900 rounded-t-lg border border-zinc-800 z-[-1]" />
+          {/* Stand (Metallic Cylinder) */}
+          <div className="w-3 h-64 lg:h-80 bg-gradient-to-r from-zinc-950 via-zinc-700 to-zinc-950 border-x border-zinc-900 mt-0 z-[-1]" />
+          <div className="w-24 h-4 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-900 rounded-t-lg border-t border-zinc-700 z-[-1]" />
 
-          {/* Pull String */}
+          {/* Pull String (Metallic chain) */}
           <motion.div
             drag="y"
             dragConstraints={{ top: 0, bottom: 40 }}
@@ -90,10 +109,27 @@ export function LampAuthLayout({ children, locale }: LampAuthLayoutProps) {
               if (info.offset.y > 20) toggleLight();
             }}
             onClick={toggleLight}
-            className="absolute top-[140px] right-[40px] w-1 h-32 flex flex-col items-center cursor-grab active:cursor-grabbing group"
+            className="absolute top-[140px] right-[40px] w-1 h-32 flex flex-col items-center cursor-grab active:cursor-grabbing group z-50"
           >
-            <div className="w-[2px] h-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors" />
-            <div className="w-4 h-6 bg-zinc-600 rounded-full border-2 border-zinc-500 shadow-lg group-hover:bg-zinc-400 transition-colors" />
+            {/* The string itself */}
+            <div className="w-[2px] h-full bg-gradient-to-b from-zinc-700 to-zinc-500 group-hover:from-zinc-500 group-hover:to-zinc-400 transition-all shadow-sm" />
+            
+            {/* The Pull Knob */}
+            <div className="w-5 h-8 bg-gradient-to-b from-zinc-400 to-zinc-600 rounded-full border border-zinc-300 shadow-[0_4px_10px_rgba(0,0,0,0.5)] group-hover:from-zinc-300 group-hover:to-zinc-500 transition-all flex items-center justify-center">
+               <div className="w-2 h-4 bg-zinc-200/20 rounded-full" /> {/* Inner reflection */}
+            </div>
+            
+            {/* Subtle glow on hover/when off to guide the user */}
+            <AnimatePresence>
+              {!isOn && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute -bottom-4 w-12 h-12 bg-zinc-400/10 rounded-full blur-md animate-pulse"
+                />
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Volumetric Cone */}

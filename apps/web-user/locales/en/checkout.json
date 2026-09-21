@@ -68,7 +68,7 @@
     },
     "local_card": {
       "title": "National cards",
-      "desc": "Secure payment via Uzcard, Humo",
+      "desc": "Secure payment via Uzcard, Humo, Visa, Mastercard",
       "badges": [
         "3D-Secure safe"
       ]

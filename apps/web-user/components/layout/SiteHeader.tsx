@@ -91,12 +91,12 @@ export function SiteHeader({
     },
     {
       href: `${base}/restaurants`,
-      label: navDict.restaurants ?? "Restaurants",
+      label: navDict.restaurants,
       icon: <UtensilsCrossed className="h-4.5 w-4.5" />,
     },
     {
       href: `${base}/transport`,
-      label: navDict.transport ?? "Transport",
+      label: navDict.transport,
       icon: <Car className="h-4.5 w-4.5" />,
     },
     {

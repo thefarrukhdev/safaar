@@ -53,7 +53,7 @@ export function HotelAmenities({
             className="border-slate-900 text-slate-900 bg-white hover:bg-slate-50 border font-semibold px-6"
             onClick={() => setIsOpen(true)}
           >
-            {(dict.amenities.showAll ?? "Show all {count} amenities").replace("{count}", String(amenities.length))}
+            {(dict.amenities.showAll).replace("{count}", String(amenities.length))}
           </Button>
         </div>
       )}

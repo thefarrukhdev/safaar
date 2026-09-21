@@ -62,5 +62,12 @@
     "failed": "Failed",
     "refunded": "Refunded",
     "reversed": "Reversed by bank"
+  },
+  "missing": {
+    "BronSummasi": "Booking amount",
+    "TolovHaqi": "payment fee (",
+    "JamiTolanadigan": "Total amount payable",
+    "SizAvvalBoshlagan": "Payment via",
+    "OrqaliTolovHali": "you started earlier is still pending. Complete it first (via the button below) or try again in a few minutes."
   }
 }

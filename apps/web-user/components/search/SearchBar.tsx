@@ -185,7 +185,7 @@ export function SearchBar({
                       <span className="font-semibold text-sm text-slate-800">{search.cityName}</span>
                       {(search.checkIn || search.checkOut) && (
                         <span className="text-xs text-slate-500">
-                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix ?? "mehmon"}
+                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix}
                         </span>
                       )}
                     </div>

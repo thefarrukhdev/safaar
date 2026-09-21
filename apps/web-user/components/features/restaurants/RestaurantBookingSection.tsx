@@ -142,7 +142,7 @@ export function RestaurantBookingSection({
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
           <p><strong>Restoran:</strong> {restaurant.name}</p>
-          <p><strong>Stol:</strong> {selectedTable?.name ?? "Tanlangan stol"}</p>
+          <p><strong>Stol:</strong> {selectedTable?.name}</p>
           <p><strong>Sana va vaqt:</strong> {date} ({slotTime})</p>
           <p><strong>Mijoz:</strong> {guestName} ({guestPhone})</p>
           <p><strong>To'lov usuli:</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
@@ -325,7 +325,7 @@ export function RestaurantBookingSection({
               To'lovni amalga oshirish
             </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {restaurant.name} · {selectedTable?.name ?? "Stol bron qilish"}
+              {restaurant.name} · {selectedTable?.name}
             </p>
 
             {errorMsg && (

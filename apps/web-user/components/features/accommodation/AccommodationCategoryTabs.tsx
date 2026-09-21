@@ -19,7 +19,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "all", 
       href: `/${locale}/hotels?all=true`, 
-      label: dict.all ?? "Barchasi", 
+      label: dict.all, 
       icon: LayoutGrid, 
       color: "text-blue-600",
       isActive: pathname === `/${locale}/hotels` && isAll
@@ -27,7 +27,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "hotels", 
       href: `/${locale}/hotels`, 
-      label: dict.hotels ?? "Mehmonxonalar", 
+      label: dict.hotels, 
       icon: Building2, 
       color: "text-blue-600",
       isActive: pathname === `/${locale}/hotels` && !isAll
@@ -35,7 +35,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "dachas", 
       href: `/${locale}/dachas`, 
-      label: dict.dachas ?? "Dachalar", 
+      label: dict.dachas, 
       icon: Home, 
       color: "text-emerald-500",
       isActive: pathname === `/${locale}/dachas`
@@ -43,7 +43,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "sanatoriums", 
       href: `/${locale}/sanatoriums`, 
-      label: dict.sanatoriums ?? "Sanatoriylar", 
+      label: dict.sanatoriums, 
       icon: HeartPulse, 
       color: "text-pink-500",
       isActive: pathname === `/${locale}/sanatoriums`
@@ -51,7 +51,7 @@ export function AccommodationCategoryTabs({
     { 
       key: "resorts", 
       href: `/${locale}/resorts`, 
-      label: dict.resorts ?? "Oromgohlar", 
+      label: dict.resorts, 
       icon: Mountain, 
       color: "text-purple-500",
       isActive: pathname === `/${locale}/resorts`

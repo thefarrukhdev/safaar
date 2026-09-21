@@ -126,7 +126,7 @@ export function RegisterForm({
         </div>
 
         {otpState.error && (
-          <p className="-mt-2 text-sm font-bold text-red-600">{otpState.error === "PHONE_REQUIRED" ? (dict.phoneRequired ?? "Telefon raqamini kiriting.") : dict.error}</p>
+          <p className="-mt-2 text-sm font-bold text-red-600">{otpState.error === "PHONE_REQUIRED" ? (dict.phoneRequired) : dict.error}</p>
         )}
 
         {otpState.devCode && (

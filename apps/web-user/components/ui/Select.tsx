@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { buttonVariants } from "@/components/ui/button-variants";
 
 export interface SelectOption {
   value: string;
@@ -16,6 +15,8 @@ export function Select({
   options,
   placeholder,
   className,
+  buttonClassName,
+  menuClassName,
   ariaLabel,
 }: {
   value: string;
@@ -23,6 +24,8 @@ export function Select({
   options: SelectOption[];
   placeholder?: string;
   className?: string;
+  buttonClassName?: string;
+  menuClassName?: string;
   ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -58,18 +61,19 @@ export function Select({
         aria-expanded={open}
         aria-label={ariaLabel}
         className={cn(
-          "flex h-12 w-full items-center justify-between rounded-xl border border-slate-900/50 bg-white px-4 text-base text-slate-900",
+          "flex h-12 w-full items-center justify-between rounded-xl border border-slate-900/50 bg-white px-4 text-base text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white",
           "transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
-          "hover:border-slate-900/70",
-          "focus-visible:border-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-600"
+          "hover:border-slate-900/70 dark:hover:border-slate-500",
+          "focus-visible:border-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-600",
+          buttonClassName
         )}
       >
-        <span className={cn("truncate", !selected && "text-slate-900/60")}>
+        <span className={cn("truncate", !selected && "text-slate-900/60 dark:text-slate-400")}>
           {display}
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-900/70 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
+            "h-4 w-4 shrink-0 text-slate-900/70 dark:text-slate-400 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
             open && "rotate-180"
           )}
           aria-hidden
@@ -77,9 +81,12 @@ export function Select({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-full min-w-[11rem] rounded-xl border border-slate-900/[0.08] bg-white p-1.5 shadow-float motion-reduce:transition-none">
+        <div className={cn(
+          "absolute left-0 top-[calc(100%+4px)] z-50 w-full min-w-[11rem] rounded-xl border border-slate-900/[0.08] bg-white p-1.5 shadow-float motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-950",
+          menuClassName
+        )}>
           {options.length === 0 && (
-            <span className="block px-3 py-2 text-sm text-slate-900/70">—</span>
+            <span className="block px-3 py-2 text-sm text-slate-900/70 dark:text-slate-400">—</span>
           )}
           {options.map((opt) => {
             const active = opt.value === value;
@@ -96,8 +103,8 @@ export function Select({
                 className={cn(
                   "flex w-full items-center rounded-lg px-3 py-2 text-sm transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.98]",
                   active
-                    ? "bg-slate-900/[0.08] font-medium text-slate-900"
-                    : "text-slate-900 hover:bg-slate-900/[0.03]"
+                    ? "bg-slate-900/[0.08] font-medium text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-900 hover:bg-slate-900/[0.03] dark:text-slate-300 dark:hover:bg-slate-800/50"
                 )}
               >
                 {opt.label}

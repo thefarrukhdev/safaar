@@ -171,8 +171,8 @@ export function ListingOverview() {
       listing.name.trim().length >= 3 &&
       listing.shortDescription.trim().length >= 20 &&
       listing.fullDescription.trim().length >= 100;
-    const photosComplete = listing.photos.length >= 3;
-    const amenitiesComplete = listing.amenities.length >= 3;
+    const photosComplete = isBus ? listing.photos.length >= 0 : listing.photos.length >= 3;
+    const amenitiesComplete = isBus ? true : listing.amenities.length >= 3;
     const locationComplete =
       Boolean(listing.address.trim()) &&
       typeof listing.latitude === 'number' &&
@@ -199,7 +199,7 @@ export function ListingOverview() {
       {
         id: 'photos',
         title: 'Rasmlar',
-        subtitle: 'Muqova va kamida 3 ta sifatli rasm',
+        subtitle: 'Muqova va rasm',
         action: 'Rasmlarni boshqarish',
         complete: photosComplete,
         summary: `${listing.photos.length} ta rasm${
@@ -208,7 +208,10 @@ export function ListingOverview() {
         icon: <ImageIcon className="h-4 w-4" aria-hidden />,
         missing: !photosComplete ? 'Kamida 3 ta rasm yuklang.' : undefined,
       },
-      {
+    ];
+
+    if (!isBus) {
+      base.push({
         id: 'amenities',
         title: 'Qulayliklar',
         subtitle: "Mijoz filtr va kartada ko'radigan imkoniyatlar",
@@ -222,30 +225,31 @@ export function ListingOverview() {
         missing: !amenitiesComplete
           ? 'Kamida 3 ta asosiy qulaylikni belgilang.'
           : undefined,
-      },
-      {
-        id: 'location',
-        title: 'Joylashuv',
-        subtitle: 'Manzil va yaqin joylar mijoz ishonchini oshiradi',
-        action: 'Manzilni tahrirlash',
-        complete: locationComplete,
-        summary: listing.address
-          ? `${listing.city} · ${
-              typeof listing.latitude === 'number'
-                ? 'xarita nuqtasi bor'
-                : 'xarita kerak'
-            }${
-              listing.nearby.length > 0
-                ? ` · ${listing.nearby.length} yaqin joy`
-                : ''
-            }`
-          : 'Manzil kiritilmagan',
-        icon: <MapPin className="h-4 w-4" aria-hidden />,
-        missing: !locationComplete
-          ? 'Manzil va xarita nuqtasini kiriting.'
-          : undefined,
-      },
-    ];
+      });
+    }
+
+    base.push({
+      id: 'location',
+      title: 'Joylashuv',
+      subtitle: 'Manzil va xarita nuqtasi',
+      action: 'Manzilni tahrirlash',
+      complete: locationComplete,
+      summary: listing.address
+        ? `${listing.city} · ${
+            typeof listing.latitude === 'number'
+              ? 'xarita nuqtasi bor'
+              : 'xarita kerak'
+          }${
+            listing.nearby.length > 0
+              ? ` · ${listing.nearby.length} yaqin joy`
+              : ''
+          }`
+        : 'Manzil kiritilmagan',
+      icon: <MapPin className="h-4 w-4" aria-hidden />,
+      missing: !locationComplete
+        ? 'Manzil va xarita nuqtasini kiriting.'
+        : undefined,
+    });
 
     base.push({
       id: 'rules',

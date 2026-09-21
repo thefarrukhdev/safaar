@@ -44,15 +44,29 @@ const AuthInput = React.forwardRef<HTMLInputElement, InputProps>(
 );
 AuthInput.displayName = "AuthInput";
 
-// ==========================================
-// Main Component
-// ==========================================
+import { loginAction, type LoginState } from "@/lib/auth/actions";
+import { useActionState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function LampAuth() {
+// ... skipping to Main Component ...
+export default function LampAuth({
+  dict,
+  initialIsLogin = true,
+  next = "",
+  socialError,
+  locale = "uz"
+}: {
+  dict?: any;
+  initialIsLogin?: boolean;
+  next?: string;
+  socialError?: string;
+  locale?: string;
+}) {
+  const router = useRouter();
   const [isOn, setIsOn] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(initialIsLogin);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -60,21 +74,22 @@ export default function LampAuth() {
     password: "",
   });
 
-  const toggleLight = () => {
-    setIsOn(!isOn);
-  };
+  const toggleLight = () => setIsOn(!isOn);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    console.log("Form submitted:", formData);
+  // Real Backend Action
+  const [loginState, loginFormAction, loggingIn] = useActionState<LoginState, FormData>(loginAction, {});
+
+  // Handle Register click
+  const handleTabClick = (tab: string) => {
+    if (tab === "Register") {
+      router.push(`/${locale}/register${next ? `?next=${encodeURIComponent(next)}` : ""}`);
+    } else {
+      setIsLogin(true);
+    }
   };
 
   return (
@@ -198,7 +213,7 @@ export default function LampAuth() {
               <button
                 key={tab}
                 type="button"
-                onClick={() => setIsLogin(tab === "Login")}
+                onClick={() => handleTabClick(tab)}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all relative ${
                   (isLogin && tab === "Login") || (!isLogin && tab === "Register")
                     ? "text-zinc-100"
@@ -228,7 +243,16 @@ export default function LampAuth() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+          <form action={loginFormAction} className="space-y-4 relative z-10">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="next" value={next} />
+            
+            {loginState.error && (
+              <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-xl mb-4">
+                {dict.invalidCredentials || "Xatolik yuz berdi"}
+              </div>
+            )}
+            
             <AnimatePresence mode="popLayout">
               {!isLogin && (
                 <motion.div
@@ -245,7 +269,6 @@ export default function LampAuth() {
                     placeholder="Eshmat Toshmatov"
                     value={formData.name}
                     onChange={handleChange}
-                    required={!isLogin}
                   />
                 </motion.div>
               )}
@@ -298,14 +321,14 @@ export default function LampAuth() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isLoading}
+              disabled={loggingIn}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loggingIn ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? "Tizimga kirish" : "Hisob yaratish"}
+                  {isLogin ? "Tizimga kirish" : "Davom etish"}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

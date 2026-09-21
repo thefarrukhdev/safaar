@@ -1,7 +1,7 @@
 {
   "hero": {
-    "title": "Find your perfect stay across Uzbekistan",
-    "subtitle": "Best prices, instant confirmation — all on Safaar.",
+    "title": "Find your dream hotel today",
+    "subtitle": "Discover hotels across Uzbekistan at guaranteed lowest prices. Book in seconds.",
     "trustChip1": "Instant confirmation",
     "trustChip2": "Best price guaranteed"
   },
@@ -65,19 +65,19 @@
         "name": "Malika Karimova",
         "city": "Bukhara",
         "rating": 4,
-        "text": "Booked a resort in Chimgan. The photos matched reality perfectly. Great organization."
+        "text": "Booked a hotel in Tashkent. The photos matched reality perfectly. Great organization."
       },
       {
         "name": "Bobur Khamidov",
         "city": "Fergana",
         "rating": 5,
-        "text": "Also booked my dacha here. Everything in one place — so convenient. I recommend it to everyone!"
+        "text": "Also booked a hotel here. Everything in one place — so convenient. I recommend it to everyone!"
       }
     ]
   },
   "partners": {
     "title": "Trusted Partners",
-    "subtitle": "Working with 500+ hotels and resorts"
+    "subtitle": "Working with 500+ hotels"
   },
   "why": {
     "title": "Why Safaar?",

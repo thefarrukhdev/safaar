@@ -199,7 +199,7 @@ export function TransportView({
               { value: "all", label: dict.allCities },
               ...cities.map((city) => ({ value: city, label: city })),
             ]}
-            className="h-[60px] sm:h-[68px] rounded-[16px]"
+            buttonClassName="h-[60px] sm:h-[68px] rounded-[16px]"
           />
 
           <div className="flex h-[60px] sm:h-[68px] flex-col justify-center rounded-[16px] bg-slate-50 px-5 border border-transparent dark:bg-slate-800">
@@ -290,7 +290,7 @@ export function TransportView({
               { value: "with", label: dict.driverIncluded },
               { value: "without", label: dict.withoutDriver },
             ]}
-            className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+            buttonClassName="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" className="w-40"
           />
           <Select
             value={sortBy}
@@ -301,7 +301,7 @@ export function TransportView({
               { value: "price_desc", label: dict.sortPriceDesc },
               { value: "seats", label: dict.sortSeats },
             ]}
-            className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+            buttonClassName="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" className="w-48"
           />
           <button
             onClick={handleClearFilters}

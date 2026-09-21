@@ -39,9 +39,9 @@ function RestaurantCard({
       tags={tags}
       price={{
         amount: price,
-        period: "o'rtacha chek",
+        period: (dict as any).averageCheck || "o'rtacha chek",
       }}
-      actionLabel="Batafsil"
+      actionLabel={(dict as any).viewDetails || "Batafsil"}
     />
   );
 }
@@ -64,6 +64,15 @@ export function RestaurantsView({
     [items],
   );
   
+  
+  const cuisineKeys: Record<string, string> = {
+    "Milliy": "National",
+    "Yevropa": "European",
+    "Osiyo": "Asian",
+    "Turkcha": "Turkish",
+    "Fast Food": "Fast Food",
+  };
+
   const popularCuisines = ["Milliy", "Yevropa", "Osiyo", "Turkcha", "Fast Food"];
   const dbCuisines = useMemo(
     () => Array.from(new Set(items.map((item) => item.cuisine).filter(Boolean))),
@@ -110,12 +119,12 @@ export function RestaurantsView({
         <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-[260px] flex flex-col gap-6 rounded-xl border border-slate-900/[0.08] bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
             <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Filtrlar</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{(dict as any).filtersTitle || "Filtrlar"}</h3>
           </div>
           
           {/* City Filter */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Shahar</h4>
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{(dict as any).city || "Shahar"}</h4>
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
@@ -144,7 +153,7 @@ export function RestaurantsView({
 
           {/* Cuisine Filter */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Oshxona turi</h4>
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{(dict as any).cuisineType || "Oshxona turi"}</h4>
             <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
@@ -154,7 +163,7 @@ export function RestaurantsView({
                   onChange={() => setSelectedCuisine("all")}
                   className="text-primary-600 focus:ring-primary-500"
                 />
-                <span className="text-sm text-slate-600 dark:text-slate-300">Barchasi</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">{(dict as any).all || "Barchasi"}</span>
               </label>
               {dbCuisines.map(cuisine => (
                 <label key={cuisine} className="flex items-center gap-2 cursor-pointer">
@@ -165,7 +174,7 @@ export function RestaurantsView({
                     onChange={() => setSelectedCuisine(cuisine)}
                     className="text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="text-sm text-slate-600 dark:text-slate-300">{cuisine}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{(dict as any).cuisines?.[cuisineKeys[cuisine] || cuisine] || cuisine}</span>
                 </label>
               ))}
             </div>
@@ -180,7 +189,7 @@ export function RestaurantsView({
                 onClick={() => setSelectedCuisine("all")}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCuisine === "all" ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
               >
-                Barchasi
+                {(dict as any).all || "Barchasi"}
               </button>
               {popularCuisines.map(c => (
                 <button 
@@ -188,19 +197,19 @@ export function RestaurantsView({
                   onClick={() => setSelectedCuisine(c)}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCuisine === c ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                 >
-                  {c}
+                  {(dict as any).cuisines?.[cuisineKeys[c] || c] || c}
                 </button>
               ))}
             </div>
             
             <button className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <Map className="h-4 w-4" />
-              Xaritada ko'rish
+              {(dict as any).viewOnMap || "Xaritada ko'rish"}
             </button>
           </div>
 
           <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-            <span>Jami: <strong className="text-slate-900 dark:text-white">{filtered.length}</strong> ta restoran topildi</span>
+            <span>{((dict as any).resultsCount || "Jami: {count} ta restoran topildi").replace("{count}", filtered.length.toString())}</span>
           </div>
 
           {filtered.length === 0 ? (
@@ -208,7 +217,7 @@ export function RestaurantsView({
               <EmptyState
                 icon={<Utensils className="h-6 w-6" />}
                 title={(dict as any).empty?.title || "Siz izlagan shartlarga mos restoran topilmadi"}
-                description="Filtrlarni o'zgartirib qayta urinib ko'ring"
+                description={(dict as any).emptyHint || "Filtrlarni o'zgartirib qayta urinib ko'ring"}
               />
             </div>
           ) : (

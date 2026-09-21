@@ -4,6 +4,7 @@ import React, { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Locale } from "@/i18n/config";
+import Image from "next/image";
 
 interface LampAuthLayoutProps {
   children: ReactNode;
@@ -17,6 +18,19 @@ export function LampAuthLayout({ children, locale }: LampAuthLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex flex-col lg:flex-row items-center justify-center overflow-hidden relative selection:bg-blue-500/30">
+      
+      {/* VIBE: Dimmed Luxury Hotel Background */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/experiment-hotel-picture.jpeg"
+          alt="Luxury Hotel"
+          fill
+          className="object-cover opacity-[0.15] grayscale transition-opacity duration-1000"
+          style={{ filter: isOn ? "brightness(0.6) blur(2px)" : "brightness(0.1) blur(6px)" }}
+        />
+        {/* Dark overlay to ensure text readability and Lamp contrast */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#09090b] via-[#09090b]/80 to-[#09090b]" />
+      </div>
       
       {/* Top Controls */}
       <div className="absolute top-6 right-6 z-50">

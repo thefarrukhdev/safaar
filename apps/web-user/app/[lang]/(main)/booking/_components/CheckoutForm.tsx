@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 import { createBookingAction, validatePromoAction, type CheckoutState } from "@/lib/booking/actions";
@@ -9,7 +9,7 @@ import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { PaymentSelector } from "@/components/features/checkout/PaymentSelector";
+import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { trackBookingStarted } from "@/lib/services/analytics/tracker";
 import { CheckoutMobileCtaBar } from "./CheckoutMobileCtaBar";
 
@@ -46,6 +46,12 @@ export function CheckoutForm({
   const [promoDiscount, setPromoDiscount] = useState<{ type: string; value: number } | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
+  const [smsCode, setSmsCode] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
     createBookingAction,
     {},
@@ -94,8 +100,28 @@ export function CheckoutForm({
     action(formData);
   };
 
+  const handleOnSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (paymentMethod !== "cash" && !showSmsModal) {
+      e.preventDefault();
+      
+      if (!formRef.current?.checkValidity()) {
+        formRef.current?.reportValidity();
+        return;
+      }
+      
+      setIsSmsLoading(true);
+      setTimeout(() => {
+         setIsSmsLoading(false);
+         setShowSmsModal(true);
+      }, 1500);
+    }
+  };
+
   return (
+    <>
     <form
+      ref={formRef}
+      onSubmit={handleOnSubmit}
       action={handleSubmitForm}
       className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]"
     >
@@ -206,7 +232,55 @@ export function CheckoutForm({
 
         <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
-          <PaymentSelector defaultValue="uzcard" name="paymentMethod" dict={dict.paymentMethods} />
+          <PaymentSelector
+            defaultValue="uzcard"
+            name="paymentMethod"
+            dict={dict.paymentMethods}
+            onChange={setPaymentMethod}
+          />
+          
+          {(paymentMethod === "uzcard" || paymentMethod === "humo" || paymentMethod === "visa" || paymentMethod === "mastercard") && (
+            <div className="mt-4 grid grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {dict.cardPayment?.cardNumber || "Karta raqami"}
+                </label>
+                <Input
+                  required
+                  name="cardNumber"
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className="bg-white dark:bg-slate-950"
+                  pattern="[\d ]+"
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, "");
+                    val = val.replace(/(.{4})/g, "$1 ").trim();
+                    e.target.value = val;
+                  }}
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {dict.cardPayment?.expiryDate || "Amal qilish muddati"}
+                </label>
+                <Input
+                  required
+                  name="expiryDate"
+                  placeholder="MM/YY"
+                  maxLength={5}
+                  className="bg-white dark:bg-slate-950"
+                  pattern="\d\d/\d\d"
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, "");
+                    if (val.length >= 3) {
+                      val = val.slice(0, 2) + "/" + val.slice(2, 4);
+                    }
+                    e.target.value = val;
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
@@ -285,7 +359,7 @@ export function CheckoutForm({
             variant="accent"
             size="lg"
             className="w-full rounded-full active:scale-[0.97]"
-            loading={pending}
+            loading={pending || isSmsLoading}
             disabled={nights < 1}
           >
             {dict.payButton || dict.confirm}
@@ -296,10 +370,58 @@ export function CheckoutForm({
       <CheckoutMobileCtaBar
         total={total}
         dict={{ total: dict.total, payButton: dict.payButton }}
-        pending={pending}
+        pending={pending || isSmsLoading}
         disabled={nights < 1}
         targetId="checkout-original-cta"
       />
+
+      {showSmsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
+              {dict.cardPayment?.smsCode || "SMS kod"}
+            </h3>
+            <p className="mb-6 text-sm text-slate-500">
+              {dict.cardPayment?.enterSmsPrompt || "Telefoningizga yuborilgan kodni kiriting."}
+            </p>
+            
+            <Input
+              name="smsCode"
+              value={smsCode}
+              onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000"
+              maxLength={6}
+              required
+              className="mb-6 text-center text-2xl tracking-[0.5em] font-mono h-14 bg-slate-50 dark:bg-slate-950"
+            />
+            
+            <div className="flex flex-col gap-3">
+              <Button
+                type="button"
+                variant="accent"
+                className="w-full h-12 text-base font-bold"
+                disabled={smsCode.length !== 6 || pending}
+                loading={pending}
+                onClick={() => {
+                  formRef.current?.requestSubmit();
+                }}
+              >
+                {dict.cardPayment?.verifyAndPay || "Tasdiqlash va To'lash"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={pending}
+                onClick={() => setShowSmsModal(false)}
+              >
+                {locale === 'ru' ? 'Отмена' : locale === 'en' ? 'Cancel' : 'Bekor qilish'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
+    </>
   );
 }

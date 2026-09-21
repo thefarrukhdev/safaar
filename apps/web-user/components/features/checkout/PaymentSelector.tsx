@@ -60,6 +60,7 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
     subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
     badges: ["3D-Secure xavfsizlik"],
     type: "local_card",
+    dictKey: "local_card" as any,
     colorTheme: CARD_THEME,
   },
   {
@@ -68,11 +69,12 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
     subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
     badges: ["3D-Secure xavfsizlik"],
     type: "intl_card",
+    dictKey: "intl_card" as any,
     colorTheme: INTL_CARD_THEME,
   },
   {
     id: "cash",
-    dictKey: "cash",
+    dictKey: "cash" as any,
     type: "cash",
     colorTheme: {
       badgeBg: "bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800",

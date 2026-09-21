@@ -65,6 +65,20 @@
         "No prepayment",
         "Flexible cancellation"
       ]
+    },
+    "local_card": {
+      "title": "National cards",
+      "desc": "Secure payment via Uzcard, Humo",
+      "badges": [
+        "3D-Secure safe"
+      ]
+    },
+    "intl_card": {
+      "title": "International cards",
+      "desc": "Secure payment via Visa, Mastercard",
+      "badges": [
+        "3D-Secure safe"
+      ]
     }
   },
   "errors": {
@@ -75,5 +89,14 @@
     "PROMO_INVALID": "Promo code is invalid or expired.",
     "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
     "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue."
+  },
+  "cardPayment": {
+    "cardNumber": "Card Number",
+    "expiryDate": "Expiry (MM/YY)",
+    "smsCode": "SMS Code",
+    "sendSms": "Get SMS Code",
+    "verifyAndPay": "Verify & Pay",
+    "enterSmsPrompt": "Enter the SMS code sent to your phone",
+    "resendSms": "Resend SMS"
   }
 }

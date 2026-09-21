@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { uploadAvatarAction, deleteAvatarAction } from "@/lib/account/actions";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
 import { buttonVariants } from "@/components/ui/button-variants";
 import type { ProfileView } from "@/types/view";
 import { useRouter } from "next/navigation";
@@ -31,7 +32,7 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || dict?.uploadFailed || "Upload failed");
+      toast.error(res?.error || dict?.uploadFailed || "Upload failed");
     }
   };
 
@@ -44,7 +45,7 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || dict?.deleteFailed || "Delete failed");
+      toast.error(res?.error || dict?.deleteFailed || "Delete failed");
     }
   };
 

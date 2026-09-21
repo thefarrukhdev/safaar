@@ -187,7 +187,7 @@ export function LoginForm({
             </button>
           </div>
 
-          <Button type="submit" size="lg" loading={loggingIn} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
+          <Button type="submit" size="lg" loading={loggingIn} className="rounded-full bg-primary-600 font-bold text-white hover:bg-primary-700 active:scale-[0.97]">
             {dict.login}
           </Button>
 
@@ -227,7 +227,7 @@ export function LoginForm({
               {authErrorMessageFor(resetRequestState.error, dict)}
             </p>
           )}
-          <Button type="submit" size="lg" loading={requestingReset} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
+          <Button type="submit" size="lg" loading={requestingReset} className="rounded-full bg-primary-600 font-bold text-white hover:bg-primary-700 active:scale-[0.97]">
             {dict.sendCode}
           </Button>
           <BackToLoginButton dict={dict} onClick={() => setMode("login")} />
@@ -258,7 +258,7 @@ export function LoginForm({
               {authErrorMessageFor(resetCodeState.error, dict)}
             </p>
           )}
-          <Button type="submit" size="lg" loading={verifyingResetCode} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
+          <Button type="submit" size="lg" loading={verifyingResetCode} className="rounded-full bg-primary-600 font-bold text-white hover:bg-primary-700 active:scale-[0.97]">
             {dict.verifyCode}
           </Button>
           <BackToLoginButton dict={dict} onClick={() => setMode("login")} />
@@ -298,7 +298,7 @@ export function LoginForm({
               {authErrorMessageFor(resetPasswordState.error, dict)}
             </p>
           )}
-          <Button type="submit" size="lg" loading={resettingPassword} className="rounded-xl bg-primary-600 font-bold text-white shadow-xs hover:bg-primary-700">
+          <Button type="submit" size="lg" loading={resettingPassword} className="rounded-full bg-primary-600 font-bold text-white hover:bg-primary-700 active:scale-[0.97]">
             {dict.saveNewPassword}
           </Button>
           <BackToLoginButton dict={dict} onClick={() => setMode("login")} />
@@ -356,7 +356,7 @@ function SocialLoginButtons({
       <div className="flex flex-col gap-3">
         <a
           href={`${API_URL}/auth/google?${oauthQuery}`}
-          className="flex items-center justify-center gap-3 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
+          className="flex items-center justify-center gap-3 rounded-full bg-slate-900/[0.05] px-4 py-2.5 text-sm font-bold text-slate-900 transition-transform active:scale-[0.97]"
         >
           <GoogleIcon />
           {dict.googleLogin}

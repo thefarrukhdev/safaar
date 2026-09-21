@@ -91,7 +91,7 @@ export async function createBookingAction(
     redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestAccessTokenParam}`);
   }
 
-  // MUHIM: bu yerdan endi Uzum/Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI
+  // MUHIM: bu yerdan endi Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI
   // o'tilmaydi — booking allaqachon o'zining "qoralama" to'lov qatoriga
   // ega (backend, booking yaratishning bir qismi sifatida). Foydalanuvchi
   // booking detail sahifasiga o'tkaziladi — u yerda to'lov usuli/fee/
@@ -157,4 +157,16 @@ export async function createBusBookingAction(
   // checkoutiga EMAS, booking detail sahifasiga (fee/yakuniy summa
   // ko'rsatilib, foydalanuvchi tasdiqlagach checkoutga o'tadi).
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
+}
+
+export async function validatePromoAction(code: string) {
+  try {
+    const res = await api.promos.validate(code);
+    return { success: true, data: res as any };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiRequestError ? (error.message || error.code || "Xato yuz berdi") : "Tizim xatosi",
+    };
+  }
 }

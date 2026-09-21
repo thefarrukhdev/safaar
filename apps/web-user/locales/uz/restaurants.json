@@ -77,5 +77,20 @@
     "about": "Restoran haqida",
     "availableTables": "Mavjud stollar",
     "capacity": "Sig'imi: {count} kishilik"
+  },
+  "filtersTitle": "Filtrlar",
+  "city": "Shahar",
+  "cuisineType": "Oshxona turi",
+  "all": "Barchasi",
+  "viewOnMap": "Xaritada ko'rish",
+  "resultsCount": "Jami: {count} ta restoran topildi",
+  "viewDetails": "Batafsil",
+  "emptyHint": "Filtrlarni o'zgartirib qayta urinib ko'ring",
+  "cuisines": {
+    "National": "Milliy",
+    "European": "Yevropa",
+    "Asian": "Osiyo",
+    "Turkish": "Turkcha",
+    "Fast Food": "Fast Food"
   }
 }

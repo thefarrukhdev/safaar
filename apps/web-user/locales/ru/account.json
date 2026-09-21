@@ -57,21 +57,20 @@
     "disclaimer": "*Ваши бонусные баллы, накопленные за поездки и бронирования."
   },
   "settings": {
-    "title": "Настройки",
-    "notificationPreferences": "Настройки уведомлений",
-    "emailAlerts": "Email-уведомления",
-    "smsAlerts": "SMS-уведомления",
-    "savePreferences": "Сохранить настройки",
+    "updated": "Настройки обновлены!",
+    "updateFailed": "Ошибка обновления",
+    "exportRequested": "Запрос на экспорт данных отправлен!",
+    "exportFailed": "Ошибка отправки запроса",
+    "deleteConfirm": "Вы уверены, что хотите запросить удаление аккаунта?",
+    "deleteRequested": "Запрос на удаление аккаунта отправлен!",
+    "deleteFailed": "Ошибка отправки запроса на удаление",
+    "notificationPrefs": "Настройки уведомлений",
+    "emailAlerts": "Email уведомления",
+    "smsAlerts": "SMS уведомления",
+    "savePrefs": "Сохранить настройки",
     "dataManagement": "Управление данными",
     "requestExport": "Запросить экспорт данных",
-    "requestDeletion": "Запросить удаление аккаунта",
-    "confirmDelete": "Вы уверены, что хотите запросить удаление аккаунта?",
-    "preferencesUpdated": "Настройки обновлены!",
-    "updateFailed": "Ошибка при обновлении",
-    "exportRequested": "Экспорт данных запрошен!",
-    "exportFailed": "Ошибка при запросе экспорта",
-    "deleteRequested": "Удаление аккаунта запрошено!",
-    "deleteFailed": "Ошибка при запросе удаления"
+    "requestDeletion": "Запросить удаление аккаунта"
   },
   "avatar": {
     "upload": "Загрузить",

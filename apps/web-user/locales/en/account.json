@@ -57,21 +57,20 @@
     "disclaimer": "*Your bonus points earned for trips and bookings."
   },
   "settings": {
-    "title": "Settings",
-    "notificationPreferences": "Notification Preferences",
-    "emailAlerts": "Email Alerts",
-    "smsAlerts": "SMS Alerts",
-    "savePreferences": "Save Preferences",
-    "dataManagement": "Data Management",
-    "requestExport": "Request Data Export",
-    "requestDeletion": "Request Account Deletion",
-    "confirmDelete": "Are you sure you want to request account deletion?",
-    "preferencesUpdated": "Preferences updated!",
+    "updated": "Preferences updated!",
     "updateFailed": "Update failed",
     "exportRequested": "Data export requested!",
     "exportFailed": "Export request failed",
+    "deleteConfirm": "Are you sure you want to request account deletion?",
     "deleteRequested": "Account deletion requested!",
-    "deleteFailed": "Deletion request failed"
+    "deleteFailed": "Deletion request failed",
+    "notificationPrefs": "Notification Preferences",
+    "emailAlerts": "Email Alerts",
+    "smsAlerts": "SMS Alerts",
+    "savePrefs": "Save Preferences",
+    "dataManagement": "Data Management",
+    "requestExport": "Request Data Export",
+    "requestDeletion": "Request Account Deletion"
   },
   "avatar": {
     "upload": "Upload",

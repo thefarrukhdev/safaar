@@ -31,16 +31,16 @@ export function ActiveFilters({
           key={`${chip.key}-${chip.label}`}
           type="button"
           onClick={chip.onRemove}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50/70 px-3 py-1.5 text-xs font-semibold text-primary-900 transition-all hover:bg-primary-100 hover:border-primary-300 active:scale-[0.97] dark:border-primary-900/50 dark:bg-primary-950/40 dark:text-primary-300"
+          className="inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-medium bg-slate-900/[0.05] text-slate-900/70 hover:bg-slate-900/[0.08] hover:text-slate-900 active:scale-[0.97] dark:bg-white/[0.08] dark:text-white/70 dark:hover:bg-white/[0.12] dark:hover:text-white transition-[transform,background-color,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 motion-reduce:transition-none"
         >
           <span>{chip.label}</span>
-          <X className="h-3.5 w-3.5 stroke-[2.5] text-primary-600 dark:text-primary-400" aria-hidden />
+          <X className="h-3.5 w-3.5" aria-hidden />
         </button>
       ))}
       <button
         type="button"
         onClick={onClearAll}
-        className="rounded-lg border border-slate-200 bg-card px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300 active:scale-[0.97] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+        className="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium text-slate-900/60 hover:text-slate-900 hover:bg-slate-900/[0.05] dark:text-white/60 dark:hover:text-white dark:hover:bg-white/[0.08] active:scale-[0.97] transition-[transform,background-color,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 motion-reduce:transition-none"
       >
         {clearAllLabel}
       </button>

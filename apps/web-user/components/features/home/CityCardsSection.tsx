@@ -62,7 +62,7 @@ export async function CityCardsSection({
             <EmptyState 
               icon={<MapPin className="h-10 w-10 text-slate-400" />}
               title={dict.empty || "Hozircha bo'sh"}
-              description="Ayni paytda mashhur shaharlar ruyxati shakllanmoqda." 
+              description={(dict as any).emptyDesc || "Ayni paytda mashhur shaharlar ro'yxati shakllanmoqda."} 
             />
           </div>
         ) : (
@@ -75,6 +75,7 @@ export async function CityCardsSection({
                 accentColor="#0284c7"
                 expandRatio={0.5}
                 grayscale={false}
+                radius={12}
               />
             </div>
 

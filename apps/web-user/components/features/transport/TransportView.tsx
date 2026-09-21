@@ -54,7 +54,7 @@ function TransportCard({
         amount: price,
         period: dict.perDay || "kuniga",
       }}
-      actionLabel={dict.book ?? "Batafsil"}
+      actionLabel={dict.book}
     />
   );
 }
@@ -91,9 +91,9 @@ export function TransportView({
   const categories = useMemo(
     () => [
       { id: "all", label: dict.categories?.all ?? dict.allTypes },
-      { id: "rent", label: dict.categories?.rent ?? "Avto ijarasi" },
-      { id: "transfer", label: dict.categories?.transfer ?? "Aeroport transfer" },
-      { id: "vip", label: dict.categories?.vip ?? "VIP & Biznes taksi" },
+      { id: "rent", label: dict.categories?.rent },
+      { id: "transfer", label: dict.categories?.transfer },
+      { id: "vip", label: dict.categories?.vip },
     ],
     [dict],
   );
@@ -240,12 +240,12 @@ export function TransportView({
             <Button
               variant="primary"
               size="lg"
-              rounded="xl"
+              
               onClick={handleSearch}
               className="w-full h-[60px] sm:h-[68px] uppercase tracking-wider font-extrabold"
             >
               <Search className="mr-2 h-5 w-5 stroke-[2.5]" />
-              {dict.checkAvailability ?? "QIDIRISH"}
+              {dict.checkAvailability}
             </Button>
           </div>
         </div>

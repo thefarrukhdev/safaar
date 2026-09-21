@@ -77,5 +77,20 @@
     "about": "О ресторане",
     "availableTables": "Доступные столики",
     "capacity": "Вместимость: {count} чел."
+  },
+  "filtersTitle": "Фильтры",
+  "city": "Город",
+  "cuisineType": "Тип кухни",
+  "all": "Все",
+  "viewOnMap": "Показать на карте",
+  "resultsCount": "Найдено ресторанов: {count}",
+  "viewDetails": "Подробнее",
+  "emptyHint": "Измените фильтры и попробуйте снова",
+  "cuisines": {
+    "National": "Национальная",
+    "European": "Европейская",
+    "Asian": "Азиатская",
+    "Turkish": "Турецкая",
+    "Fast Food": "Фастфуд"
   }
 }

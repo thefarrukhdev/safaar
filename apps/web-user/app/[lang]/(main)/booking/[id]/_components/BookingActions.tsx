@@ -107,7 +107,7 @@ export function BookingActions({
       const data = await api.bookings.cancelPreview(bookingId, { token });
       setPreviewData(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
     } finally {
       setLoadingPreview(false);
     }
@@ -120,13 +120,13 @@ export function BookingActions({
     try {
       await api.bookings.cancelBooking(
         bookingId,
-        dict.actions?.userCancelledReason ?? "Foydalanuvchi bekor qildi",
+        dict.actions?.userCancelledReason || "",
         { token }
       );
       setCancelModalOpen(false);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
     } finally {
       setCancelling(false);
     }
@@ -142,7 +142,7 @@ export function BookingActions({
       setRefundReason("");
       router.push(`/${locale}/account/refunds`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
     } finally {
       setRefunding(false);
     }
@@ -157,10 +157,10 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={handlePrint}
-            className="gap-2 font-bold"
+            className="gap-2 font-bold rounded-full active:scale-[0.97]"
           >
             <Printer className="h-4 w-4" />
-            {dict.actions?.printVoucher ?? dict.voucher ?? "Vaucherni chop etish"}
+            {dict.actions?.printVoucher ?? dict.voucher}
           </Button>
         )}
 
@@ -176,10 +176,10 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={handleCancelClick}
-            className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500"
+            className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500 rounded-full active:scale-[0.97]"
           >
             <XCircle className="h-4 w-4" />
-            {dict.actions?.cancelBooking ?? "Bekor qilish"}
+            {dict.actions?.cancelBooking}
           </Button>
         )}
 
@@ -189,23 +189,23 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={() => setRefundModalOpen(true)}
-            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500"
+            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500 rounded-full active:scale-[0.97]"
           >
             <RotateCcw className="h-4 w-4" />
-            {(dict as any).actions?.requestRefund ?? "Qaytarish so'rash"}
+            {(dict as any).actions?.requestRefund}
           </Button>
         )}
 
         <Link href={`/${locale}/account/bookings`}>
-          <Button variant="secondary" size="lg" className="font-bold">
-            {dict.actions?.myBookings ?? "Mening bronlarim"}
+          <Button variant="secondary" size="lg" className="font-bold rounded-full active:scale-[0.97]">
+            {dict.actions?.myBookings}
           </Button>
         </Link>
 
         <Link href={`/${locale}`}>
-          <Button variant="ghost" size="lg" className="gap-2 font-semibold">
+          <Button variant="ghost" size="lg" className="gap-2 font-semibold rounded-full active:scale-[0.97]">
             <ArrowLeft className="h-4 w-4" />
-            {dict.actions?.backHome ?? dict.backHome ?? "Bosh sahifaga"}
+            {dict.actions?.backHome ?? dict.backHome}
           </Button>
         </Link>
       </div>
@@ -213,17 +213,17 @@ export function BookingActions({
       <Modal
         isOpen={cancelModalOpen}
         onClose={() => !cancelling && setCancelModalOpen(false)}
-        title={dict.cancelModal?.title ?? "Bronni bekor qilish"}
+        title={dict.cancelModal?.title}
       >
         <div className="space-y-4">
           {loadingPreview ? (
             <p className="text-sm text-slate-500">
-              {dict.cancelModal?.calculating ?? "Hisoblanmoqda..."}
+              {dict.cancelModal?.calculating}
             </p>
           ) : error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : previewData ? (
-            <div className="space-y-3 rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+            <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 dark:bg-slate-800">
               {dict.cancelModal?.rulesIntro && (
                 <p className="text-sm text-slate-700 dark:text-slate-300">
                   {dict.cancelModal.rulesIntro}
@@ -232,7 +232,7 @@ export function BookingActions({
               <ul className="text-sm space-y-2">
                 <li className="flex justify-between">
                   <span className="text-slate-500">
-                    {dict.cancelModal?.paidAmount ?? "To'langan summa:"}
+                    {dict.cancelModal?.paidAmount}
                   </span>
                   <span className="font-medium">
                     {formatMoney((previewData.paid_amount ?? previewData.paidAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
@@ -240,7 +240,7 @@ export function BookingActions({
                 </li>
                 <li className="flex justify-between">
                   <span className="text-slate-500">
-                    {dict.cancelModal?.refundAmount ?? "Qaytariladigan summa:"}
+                    {dict.cancelModal?.refundAmount}
                   </span>
                   <span className="font-medium text-emerald-600">
                     {formatMoney((previewData.refund_amount ?? previewData.refundAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
@@ -248,7 +248,7 @@ export function BookingActions({
                 </li>
                 <li className="flex justify-between">
                   <span className="text-slate-500">
-                    {dict.cancelModal?.penaltyAmount ?? "Jarima:"}
+                    {dict.cancelModal?.penaltyAmount}
                   </span>
                   <span className="font-medium text-red-600">
                     {formatMoney((previewData.penalty_amount ?? previewData.penaltyAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
@@ -257,29 +257,30 @@ export function BookingActions({
               </ul>
               {previewData.policy && (
                 <div className="mt-4 text-xs text-slate-500">
-                  <strong>{dict.cancelModal?.policyLabel ?? "Qoida:"}</strong> {previewData.policy}
+                  <strong>{dict.cancelModal?.policyLabel}</strong> {previewData.policy}
                 </div>
               )}
             </div>
           ) : null}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
             <Button
               variant="ghost"
               onClick={() => setCancelModalOpen(false)}
               disabled={cancelling}
+              className="rounded-full active:scale-[0.97]"
             >
               Yopish
             </Button>
             <Button
               variant="secondary"
               onClick={confirmCancel}
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full active:scale-[0.97]"
               disabled={loadingPreview || cancelling || !!error}
             >
               {cancelling
-                ? (dict.cancelModal?.cancelling ?? "Bekor qilinmoqda...")
-                : (dict.cancelModal?.confirm ?? "Tasdiqlash")}
+                ? (dict.cancelModal?.cancelling)
+                : (dict.cancelModal?.confirm)}
             </Button>
           </div>
         </div>
@@ -287,32 +288,33 @@ export function BookingActions({
       <Modal
         isOpen={refundModalOpen}
         onClose={() => !refunding && setRefundModalOpen(false)}
-        title={dict.refundModal?.title ?? "Pulni qaytarishni so'rash"}
+        title={dict.refundModal?.title}
       >
         <div className="space-y-4">
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              {dict.refundModal?.reasonLabel ?? "Sababni kiriting:"}
+              {dict.refundModal?.reasonLabel}
             </label>
             <textarea
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               rows={4}
-              placeholder={dict.refundModal?.reasonPlaceholder ?? "Qaytarish sababini batafsil yozing..."}
+              placeholder={dict.refundModal?.reasonPlaceholder}
               value={refundReason}
               onChange={(e) => setRefundReason(e.target.value)}
               disabled={refunding}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding}>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
+            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding} className="rounded-full active:scale-[0.97]">
               Yopish
             </Button>
             <Button
               onClick={handleRefundSubmit}
               disabled={refunding || !refundReason.trim()}
+              className="rounded-full active:scale-[0.97]"
             >
-              {refunding ? (dict.refundModal?.requesting ?? "Yuborilmoqda...") : (dict.refundModal?.confirm ?? "Yuborish")}
+              {refunding ? (dict.refundModal?.requesting) : (dict.refundModal?.confirm)}
             </Button>
           </div>
         </div>

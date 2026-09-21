@@ -9,9 +9,10 @@ import {
 } from "@/lib/account/actions";
 
 export function SettingsForm({
-  preferences,
+  preferences, dict,
 }: {
   preferences: { emailAlerts?: boolean; smsAlerts?: boolean } | null;
+  dict: any;
 }) {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -24,9 +25,9 @@ export function SettingsForm({
     const res = await updateNotificationPreferencesAction(formData);
     setLoading(false);
     if (res?.ok) {
-      alert("Preferences updated!");
+      alert(dict.updated || "Preferences updated!");
     } else {
-      alert(res?.error || "Update failed");
+      alert(res?.error || dict.updateFailed || "Update failed");
     }
   };
 
@@ -35,28 +36,28 @@ export function SettingsForm({
     const res = await requestDataExportAction();
     setExportLoading(false);
     if (res?.ok) {
-      alert("Data export requested!");
+      alert(dict.exportRequested || "Data export requested!");
     } else {
-      alert(res?.error || "Export request failed");
+      alert(res?.error || dict.exportFailed || "Export request failed");
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to request account deletion?")) return;
+    if (!confirm(dict.deleteConfirm || "Are you sure you want to request account deletion?")) return;
     setDeleteLoading(true);
     const res = await requestAccountDeletionAction();
     setDeleteLoading(false);
     if (res?.ok) {
-      alert("Account deletion requested!");
+      alert(dict.deleteRequested || "Account deletion requested!");
     } else {
-      alert(res?.error || "Deletion request failed");
+      alert(res?.error || dict.deleteFailed || "Deletion request failed");
     }
   };
 
   return (
     <div className="flex flex-col gap-8">
       <form onSubmit={handlePreferences} className="flex flex-col gap-4">
-        <h3 className="text-md font-semibold">Notification Preferences</h3>
+        <h3 className="text-md font-semibold">{dict.notificationPrefs || "Notification Preferences"}</h3>
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -64,7 +65,7 @@ export function SettingsForm({
             defaultChecked={preferences?.emailAlerts}
             className="h-4 w-4 rounded border-gray-300"
           />
-          <span className="text-sm">Email Alerts</span>
+          <span className="text-sm">{dict.emailAlerts || "Email Alerts"}</span>
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -73,33 +74,27 @@ export function SettingsForm({
             defaultChecked={preferences?.smsAlerts}
             className="h-4 w-4 rounded border-gray-300"
           />
-          <span className="text-sm">SMS Alerts</span>
+          <span className="text-sm">{dict.smsAlerts || "SMS Alerts"}</span>
         </label>
         <div>
-          <Button type="submit" size="sm" loading={loading}>
-            Save Preferences
-          </Button>
+          <Button type="submit" size="sm" loading={loading}>{dict.savePrefs || "Save Preferences"}</Button>
         </div>
       </form>
 
       <div className="flex flex-col gap-4 border-t pt-4">
-        <h3 className="text-md font-semibold">Data Management</h3>
+        <h3 className="text-md font-semibold">{dict.dataManagement || "Data Management"}</h3>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             variant="secondary"
             onClick={handleExport}
             loading={exportLoading}
-          >
-            Request Data Export
-          </Button>
+          >{dict.requestExport || "Request Data Export"}</Button>
           <Button
             variant="secondary"
             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
             onClick={handleDelete}
             loading={deleteLoading}
-          >
-            Request Account Deletion
-          </Button>
+          >{dict.requestDeletion || "Request Account Deletion"}</Button>
         </div>
       </div>
     </div>

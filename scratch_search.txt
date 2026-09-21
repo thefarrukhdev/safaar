@@ -1,0 +1,100 @@
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/layout/header/MobileNav.tsx:29:  const currentLocale = (locale ?? "uz") as Locale;
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/layout/header/MobileNav.tsx:97:                {MENU_LABEL[currentLocale] ?? "Menyu"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/layout/header/MobileNav.tsx:155:                  {LANG_LABEL[currentLocale] ?? "Til"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/layout/SiteHeader.tsx:94:      label: navDict.restaurants ?? "Restaurants",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/layout/SiteHeader.tsx:99:      label: navDict.transport ?? "Transport",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/ui/DatePicker.tsx:91:  const intlLocale = INTL_LOCALE[locale] ?? "en-US";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/ui/Select.tsx:50:  const display = selected?.label ?? placeholder ?? "—";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCategoryTabs.tsx:22:      label: dict.all ?? "Barchasi", 
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCategoryTabs.tsx:30:      label: dict.hotels ?? "Mehmonxonalar", 
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCategoryTabs.tsx:38:      label: dict.dachas ?? "Dachalar", 
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCategoryTabs.tsx:46:      label: dict.sanatoriums ?? "Sanatoriylar", 
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCategoryTabs.tsx:54:      label: dict.resorts ?? "Oromgohlar", 
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCard.tsx:38:  const perNight = labels.perNight ?? DEFAULT_PER_NIGHT[locale] ?? "kecha";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/attractions/AttractionsView.tsx:221:      { id: "historical", label: dict.categories?.historical ?? "Tarixiy" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/attractions/AttractionsView.tsx:222:      { id: "unesco", label: dict.categories?.unesco ?? "UNESCO" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/attractions/AttractionsView.tsx:223:      { id: "nature", label: dict.categories?.nature ?? "Tabiat" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/chat/LiveSupportWidget.tsx:24:  const locale = params.lang ?? "uz";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/chat/LiveSupportWidget.tsx:44:          : result.error ?? "Xabar yuborishda xatolik yuz berdi.",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelAmenities.tsx:56:            {(dict.amenities.showAll ?? "Show all {count} amenities").replace("{count}", String(amenities.length))}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelStickyNav.tsx:15:      { id: "photos", label: dict?.photos ?? "Photos" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelStickyNav.tsx:16:      { id: "amenities", label: dict?.amenities ?? "Amenities" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelStickyNav.tsx:17:      { id: "rooms", label: dict?.rooms ?? "Rooms" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelStickyNav.tsx:18:      { id: "reviews", label: dict?.reviews ?? "Reviews" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelStickyNav.tsx:19:      { id: "location", label: dict?.location ?? "Location" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelFilters.tsx:24:  const [stars, setStars] = useState(searchParams.get("stars") ?? "5");
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelLocation.tsx:41:              {dict?.noCoordinates ?? "Aniq joylashuv koordinatalari mavjud emas"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/hotels/HotelLocation.tsx:54:        {dict?.openInMaps ?? "Google Maps'da ochish"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/restaurants/RestaurantBookingSection.tsx:145:          <p><strong>Stol:</strong> {selectedTable?.name ?? "Tanlangan stol"}</p>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/restaurants/RestaurantBookingSection.tsx:328:              {restaurant.name} · {selectedTable?.name ?? "Stol bron qilish"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:87:      alert(dict.submitError ?? "Sharh qoldirishda xatolik yuz berdi");
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:137:              <span className="text-sm font-semibold text-slate-900">{dict.exceptional ?? "Exceptional"}</span>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:167:            {dict.writeReview ?? "Write a review"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:174:          <h3 className="font-bold text-slate-900">{dict.writeReview ?? "Write a Review"}</h3>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:177:            <label className="text-sm font-medium text-slate-900">{dict.ratingLabel ?? "Rating (1-5)"}</label>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:185:                  {(dict.starsLabel ?? "{num} Stars").replace("{num}", String(num))}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:192:            <label className="text-sm font-medium text-slate-900">{dict.reviewTextLabel ?? "Review Text"}</label>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:199:              placeholder={dict.reviewTextPlaceholder ?? "Tell us about your experience..."}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:204:            <label className="text-sm font-medium text-slate-900">{dict.photosOptional ?? "Photos (optional)"}</label>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:223:              {isSubmitting ? (dict.submitting ?? "Submitting...") : (dict.submitReview ?? "Submit Review")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:249:                    alt={review.authorName || (dict.anonymousGuest ?? "Guest")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:250:                    fallback={review.authorName?.charAt(0) || (dict.anonymousGuest?.charAt(0) ?? "G")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/reviews/ReviewsList.tsx:257:                        {review.authorName || (dict.anonymousGuest ?? "Guest")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/transport/TransportView.tsx:57:      actionLabel={dict.book ?? "Batafsil"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/transport/TransportView.tsx:94:      { id: "rent", label: dict.categories?.rent ?? "Avto ijarasi" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/transport/TransportView.tsx:95:      { id: "transfer", label: dict.categories?.transfer ?? "Aeroport transfer" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/transport/TransportView.tsx:96:      { id: "vip", label: dict.categories?.vip ?? "VIP & Biznes taksi" },
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/transport/TransportView.tsx:248:              {dict.checkAvailability ?? "QIDIRISH"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/DatePicker.tsx:95:  const intlLocale = INTL_LOCALE[locale] ?? "en-US";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/DatePicker.tsx:172:            {displayValue ?? placeholder ?? "—"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/SearchBar.tsx:188:                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix ?? "mehmon"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/SearchDatePicker.tsx:85:  let displayValue = dict?.selectDate ?? "Sanani tanlang";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/SearchDatePicker.tsx:105:          <span className="text-xs font-bold text-slate-500">{dict?.checkInCheckOut ?? "Kirish - Chiqish"}</span>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/search/SearchDatePicker.tsx:115:             <span className="font-bold text-sm">{dict?.selectDate ?? "Sanani tanlang"}</span>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:242:      spec.target ?? "per-character",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:261:  const ranks = getStaggerRanks(units.length, spec.staggerMode ?? "normal");
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:269:      spec.target ?? "per-character",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:276:      spec.target ?? "per-character",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:397:  const target = spec.target ?? "per-character";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:492:      spec.target ?? "per-word",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:589:  const easing = build.easing ?? "cubic-bezier(0.2, 0.8, 0.2, 1)";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:590:  const exitEasing = build.exitEasing ?? "cubic-bezier(0.4, 0, 0.2, 1)";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:760:  const easing = build.easing ?? "cubic-bezier(0.2, 0.8, 0.2, 1)";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:761:  const exitEasing = build.exitEasing ?? "cubic-bezier(0.4, 0, 0.2, 1)";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/animata/text/text-animator.tsx:983:          console.error(`Failed to run text animation "${spec.id ?? "unknown"}"`, error);
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(auth)/login/page.tsx:17:    title: dict.title ?? "Kirish",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(auth)/register/page.tsx:17:    title: dict.registerTitle ?? "Ro'yxatdan o'tish",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(auth)/_components/RegisterForm.tsx:129:          <p className="-mt-2 text-sm font-bold text-red-600">{otpState.error === "PHONE_REQUIRED" ? (dict.phoneRequired ?? "Telefon raqamini kiriting.") : dict.error}</p>
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/bonuses/page.tsx:8:  return { title: dict.nav?.bonuses ?? "Bonuslar", robots: { index: false, follow: false } };
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/bookings/page.tsx:8:  return { title: dict.nav?.bookings ?? "Bronlarim", robots: { index: false, follow: false } };
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/favorites/page.tsx:10:  return { title: dict.nav?.favorites ?? "Sevimlilar", robots: { index: false, follow: false } };
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/refunds/page.tsx:8:  return { title: dict.refunds?.title ?? "Qaytarishlar", robots: { index: false, follow: false } };
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/refunds/page.tsx:57:          {dict.refunds?.title ?? "Mening qaytarishlarim"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/refunds/page.tsx:65:              {dict.refunds?.empty ?? "Hozircha qaytarishlar yo'q."}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/refunds/page.tsx:92:                    <span className="font-medium">{dict.refunds?.reason ?? "Sabab"}:</span> {refund.reason}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/account/page.tsx:8:  return { title: dict.nav?.profile ?? "Profil", robots: { index: false, follow: false } };
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:110:      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:123:        dict.actions?.userCancelledReason ?? "Foydalanuvchi bekor qildi",
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:129:      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:145:      setError(err instanceof Error ? err.message : (dict.actions?.error ?? "Xatolik yuz berdi"));
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:163:            {dict.actions?.printVoucher ?? dict.voucher ?? "Vaucherni chop etish"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:182:            {dict.actions?.cancelBooking ?? "Bekor qilish"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:195:            {(dict as any).actions?.requestRefund ?? "Qaytarish so'rash"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:201:            {dict.actions?.myBookings ?? "Mening bronlarim"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:208:            {dict.actions?.backHome ?? dict.backHome ?? "Bosh sahifaga"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:216:        title={dict.cancelModal?.title ?? "Bronni bekor qilish"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:221:              {dict.cancelModal?.calculating ?? "Hisoblanmoqda..."}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:235:                    {dict.cancelModal?.paidAmount ?? "To'langan summa:"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:243:                    {dict.cancelModal?.refundAmount ?? "Qaytariladigan summa:"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:251:                    {dict.cancelModal?.penaltyAmount ?? "Jarima:"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:260:                  <strong>{dict.cancelModal?.policyLabel ?? "Qoida:"}</strong> {previewData.policy}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:282:                ? (dict.cancelModal?.cancelling ?? "Bekor qilinmoqda...")
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:283:                : (dict.cancelModal?.confirm ?? "Tasdiqlash")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:291:        title={dict.refundModal?.title ?? "Pulni qaytarishni so'rash"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:297:              {dict.refundModal?.reasonLabel ?? "Sababni kiriting:"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:302:              placeholder={dict.refundModal?.reasonPlaceholder ?? "Qaytarish sababini batafsil yozing..."}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/_components/BookingActions.tsx:317:              {refunding ? (dict.refundModal?.requesting ?? "Yuborilmoqda...") : (dict.refundModal?.confirm ?? "Yuborish")}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/booking/[id]/page.tsx:271:            initialProvider={(providerQuery as PaymentProvider) ?? (payment?.provider as PaymentProvider) ?? "uzcard"}
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/app/[lang]/(main)/transport/page.tsx:20:  const transportTitle = (commonDict.nav as typeof commonDict.nav & { transport?: string }).transport ?? "Transport";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/accommodation/AccommodationCard.tsx:40:  const actionLabel = locale === "ru" ? "Подробнее" : locale === "en" ? "Details" : "Batafsil";
+/home/farrukh/Projects/Frontend/safaar/apps/web-user/components/features/home/DealsSection.tsx:42:  const viewDetailsLabel = locale === "ru" ? "Подробнее" : locale === "en" ? "Details" : "Batafsil";

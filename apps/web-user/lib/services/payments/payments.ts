@@ -1,7 +1,7 @@
 import { ApiRequestError } from "@safaar/api-client";
 import { config } from "@/lib/config";
 
-// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi Uzum Checkout
+// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
 // orqali ishlaydi (bitta texnik transport, foydalanuvchiga ko'rinmaydi),
 // karta turi FEE stavkasini belgilaydi (1.5% / 3.5%). Qarang
 // docs/frontend-payment-integration.md, 4-bo'lim.
@@ -133,7 +133,7 @@ function toPaymentResult(
     (raw.payment_url as string | undefined) ??
     (raw.paymentUrl as string | undefined);
   const amount = Number(raw.amount ?? 0);
-  // Click/Payme/Cash/Uzum (merchant) va schemasiz `uzum_checkout` uchun
+  // Click/Payme/Cash (merchant) va schemasiz `checkout` uchun
   // backend `base_amount`/`fee_rate`/`fee_amount`ni umuman qaytarmasligi
   // mumkin (eski qatorlar, migratsiyadan oldingi) — bu holda fee yo'q,
   // `baseAmount = amount` deb hisoblanadi (backend'ning o'zidagi

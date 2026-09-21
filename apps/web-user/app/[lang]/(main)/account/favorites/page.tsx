@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const dict = await getDictionary(lang as Locale, "account");
-  return { title: dict.nav?.favorites ?? "Sevimlilar", robots: { index: false, follow: false } };
+  return { title: dict.nav?.favorites, robots: { index: false, follow: false } };
 }
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";

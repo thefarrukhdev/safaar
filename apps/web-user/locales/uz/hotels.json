@@ -64,5 +64,7 @@
     "prev": "Oldingi",
     "next": "Keyingi",
     "pageOf": "{page} / {total}"
-  }
+  },
+  "mapView": "Xarita",
+  "gridView": "Ro'yxat"
 }

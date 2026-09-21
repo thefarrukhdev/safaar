@@ -80,7 +80,7 @@ export function HotelFilters({
           type="button"
           variant="secondary"
           size="md"
-          rounded="full"
+          
           onClick={() => setOpen(true)}
           className="w-full flex items-center justify-between !h-11 min-h-[44px] px-3.5 text-xs sm:text-sm font-bold"
         >

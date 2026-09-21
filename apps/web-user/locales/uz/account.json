@@ -57,21 +57,20 @@
     "disclaimer": "*Safarlar va bron qilishlar uchun to'plangan bonus balingiz."
   },
   "settings": {
-    "title": "Sozlamalar",
-    "notificationPreferences": "Xabarnoma sozlamalari",
+    "updated": "Sozlamalar yangilandi!",
+    "updateFailed": "Yangilashda xatolik yuz berdi",
+    "exportRequested": "Ma'lumotlarni yuklab olish so'rovi yuborildi!",
+    "exportFailed": "So'rov yuborishda xatolik",
+    "deleteConfirm": "Rostdan ham akkauntni o'chirishni so'raysizmi?",
+    "deleteRequested": "Akkauntni o'chirish so'rovi yuborildi!",
+    "deleteFailed": "O'chirish so'rovida xatolik yuz berdi",
+    "notificationPrefs": "Bildirishnoma sozlamalari",
     "emailAlerts": "Email xabarnomalari",
     "smsAlerts": "SMS xabarnomalari",
-    "savePreferences": "Sozlamalarni saqlash",
+    "savePrefs": "Sozlamalarni saqlash",
     "dataManagement": "Ma'lumotlarni boshqarish",
-    "requestExport": "Ma'lumotlarni eksport qilish",
-    "requestDeletion": "Akkauntni o'chirishni so'rash",
-    "confirmDelete": "Haqiqatan ham akkauntni o'chirishni so'ramoqchimisiz?",
-    "preferencesUpdated": "Sozlamalar yangilandi!",
-    "updateFailed": "Yangilashda xatolik yuz berdi",
-    "exportRequested": "Ma'lumotlar eksporti so'raldi!",
-    "exportFailed": "Eksport so'rovida xatolik yuz berdi",
-    "deleteRequested": "Akkauntni o'chirish so'raldi!",
-    "deleteFailed": "O'chirish so'rovida xatolik yuz berdi"
+    "requestExport": "Ma'lumotlarni yuklab olish",
+    "requestDeletion": "Akkauntni o'chirishni so'rash"
   },
   "avatar": {
     "upload": "Yuklash",

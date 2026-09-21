@@ -10,6 +10,13 @@ export interface Deal {
   discount_percent: number;
   ends_at: string;
   status: string;
+  /**
+   * E'lon turi (`hotels` | `dachas` | `restaurants` | `sanatoriums` |
+   * `resorts` | `transport`) — bosh sahifadagi deal kartasi qaysi katalog
+   * sahifasiga havola qilishini belgilaydi. Eski yozuvlarda bo'lmasligi
+   * mumkin, shuning uchun optional va bo'sh satr qaytishi mumkin.
+   */
+  listing_type?: string;
 }
 
 export interface PopularCity {

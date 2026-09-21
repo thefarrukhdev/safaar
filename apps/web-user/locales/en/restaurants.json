@@ -77,5 +77,20 @@
     "about": "About restaurant",
     "availableTables": "Available tables",
     "capacity": "Capacity: {count} persons"
+  },
+  "filtersTitle": "Filters",
+  "city": "City",
+  "cuisineType": "Cuisine type",
+  "all": "All",
+  "viewOnMap": "View on map",
+  "resultsCount": "Total: {count} restaurants found",
+  "viewDetails": "Details",
+  "emptyHint": "Change filters and try again",
+  "cuisines": {
+    "National": "National",
+    "European": "European",
+    "Asian": "Asian",
+    "Turkish": "Turkish",
+    "Fast Food": "Fast Food"
   }
 }

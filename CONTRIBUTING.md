@@ -44,7 +44,7 @@ hamma  →  develop  (har kim faqat o'z papkasida ishlaydi)
 ### Asosiy qoida
 > Kundalik ish **`develop`** branch'ida bo'ladi. Hamma shu branch'ga push qiladi,
 > lekin **faqat o'z papkasida**. `develop`'dagi kod barqaror va to'liq ishlaydigan
-> "zo'r versiya" bo'lganda — uni **`main`'ga merge** qilinadi (buni admin/lid qiladi).
+> "zo'r versiya" bo'lganda — uni **`main`'ga merge** qilinadi (buni admin (thefarrukhdev)/lid qiladi).
 
 ### Kundalik qadamlar
 ```bash
@@ -69,10 +69,10 @@ git push origin develop
 1. **Push'dan oldin DOIM `git pull --rebase origin develop`** — boshqalarning ishini ol.
 2. **Faqat ishlaydigan kod push qil** — `develop`'ni buzma (build/lint/test yashil bo'lsin).
 3. **O'z papkangdan chiqma** — shunda boshqalar bilan konflikt bo'lmaydi.
-4. `main`'ga merge'ni **faqat admin/lid** qiladi (develop barqaror bo'lganda).
+4. `main`'ga merge'ni **faqat admin (thefarrukhdev)/lid** qiladi (develop barqaror bo'lganda).
 
 ### main'ga qachon merge qilinadi
-`develop` to'liq sinovdan o'tib, barqaror "release" versiya bo'lganda — admin
+`develop` to'liq sinovdan o'tib, barqaror "release" versiya bo'lganda — admin (thefarrukhdev)
 `develop` → `main` ga merge qiladi. Shu tariqa `main` doim ishlaydigan, toza
 release versiya bo'lib qoladi.
 

@@ -52,6 +52,7 @@ export interface DealView {
   discountPercent: number;
   endsAt: string;
   status: string;
+  listingType?: string;
 }
 
 interface RawDeal {
@@ -65,6 +66,7 @@ interface RawDeal {
   discountPercent?: number;
   endsAt?: string;
   status?: string;
+  listingType?: string;
 }
 
 interface RawCmsSeo {
@@ -171,6 +173,7 @@ function toDealView(raw: RawDeal, locale: Locale): DealView {
     discountPercent: raw.discountPercent ?? 0,
     endsAt: raw.endsAt ?? "",
     status: raw.status ?? "active",
+    listingType: raw.listingType,
   };
 }
 

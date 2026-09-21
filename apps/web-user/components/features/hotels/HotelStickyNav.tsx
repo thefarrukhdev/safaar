@@ -12,11 +12,11 @@ export function HotelStickyNav({
 
   const navItems = useMemo(
     () => [
-      { id: "photos", label: dict?.photos ?? "Photos" },
-      { id: "amenities", label: dict?.amenities ?? "Amenities" },
-      { id: "rooms", label: dict?.rooms ?? "Rooms" },
-      { id: "reviews", label: dict?.reviews ?? "Reviews" },
-      { id: "location", label: dict?.location ?? "Location" },
+      { id: "photos", label: dict?.photos },
+      { id: "amenities", label: dict?.amenities },
+      { id: "rooms", label: dict?.rooms },
+      { id: "reviews", label: dict?.reviews },
+      { id: "location", label: dict?.location },
     ],
     [dict],
   );

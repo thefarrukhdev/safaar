@@ -2,7 +2,7 @@
 
 import type { ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
-import { type Variant, type Size, type Rounded, buttonVariants, sizeClasses, roundedClasses, baseButtonClasses } from "./button-variants";
+import { type Variant, type Size, type Rounded, buttonVariants } from "./button-variants";
 import { cn } from "@/lib/cn";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,7 +12,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Yuklanish holati: spinner ko'rsatadi, tugmani o'chiradi (aria-busy). */
   loading?: boolean;
 }
-
 
 export function Button({
   variant = "primary",
@@ -32,7 +31,7 @@ export function Button({
       {...props}
     >
       {loading && (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
       )}
       {children}
     </button>

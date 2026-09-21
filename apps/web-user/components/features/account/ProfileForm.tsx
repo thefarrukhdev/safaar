@@ -77,7 +77,7 @@ export function ProfileForm({
       {state.error && <p className="text-sm text-red-600">{dict.error}</p>}
 
       <div>
-        <Button type="submit" size="lg" loading={pending}>
+        <Button type="submit" size="lg" loading={pending} className="rounded-full active:scale-[0.97]">
           {dict.save}
         </Button>
       </div>

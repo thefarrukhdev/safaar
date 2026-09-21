@@ -86,7 +86,7 @@ export default async function BookingDetailPage({
   if (!booking) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
           {dict.error}
         </p>
       </main>
@@ -128,8 +128,9 @@ export default async function BookingDetailPage({
         <BackButton />
       </div>
 
+      <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-950">
       {isConfirmed ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50/80 p-6 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/40">
+        <div className="flex flex-col gap-2 bg-emerald-50/80 p-6 sm:p-8 dark:bg-emerald-950/40">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-7 w-7 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-emerald-950 dark:text-emerald-100 sm:text-2xl">
@@ -141,7 +142,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : isFailed ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50/80 p-6 shadow-sm dark:border-red-900/50 dark:bg-red-950/40">
+        <div className="flex flex-col gap-2 bg-red-50/80 p-6 sm:p-8 dark:bg-red-950/40">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-7 w-7 shrink-0 text-red-600 dark:text-red-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-red-950 dark:text-red-100 sm:text-2xl">
@@ -153,7 +154,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : isAwaitingCash ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-6 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/40">
+        <div className="flex flex-col gap-2 bg-amber-50/80 p-6 sm:p-8 dark:bg-amber-950/40">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 shrink-0 text-amber-600 dark:text-amber-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-amber-950 dark:text-amber-100 sm:text-2xl">
@@ -165,7 +166,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : isRefunded ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="flex flex-col gap-2 bg-slate-50 p-6 sm:p-8 dark:bg-slate-900/40">
           <div className="flex items-center gap-3">
             <RotateCcw className="h-7 w-7 shrink-0 text-slate-600 dark:text-slate-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
@@ -179,7 +180,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : isProcessing ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-primary-200 bg-primary-50/80 p-6 shadow-sm dark:border-primary-900/50 dark:bg-primary-950/40">
+        <div className="flex flex-col gap-2 bg-primary-50/80 p-6 sm:p-8 dark:bg-primary-950/40">
           <div className="flex items-center gap-3">
             <Clock className="h-7 w-7 shrink-0 animate-pulse text-primary-600 dark:text-primary-400" />
             <h1 className="text-xl font-extrabold tracking-tight text-primary-950 dark:text-primary-100 sm:text-2xl">
@@ -192,15 +193,20 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : (
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          {dict.title}
-        </h1>
+        <div className="bg-slate-50 p-6 sm:p-8 dark:bg-slate-900/40">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            {dict.title}
+          </h1>
+        </div>
       )}
 
       <section
         aria-label={dict.receiptSummary}
-        className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="relative flex flex-col gap-5 p-6 sm:p-8 bg-white dark:bg-slate-950"
       >
+        <div className="absolute left-0 right-0 top-0 h-px border-t-2 border-dashed border-slate-200 dark:border-slate-800" />
+        <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-950" />
+        <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-950" />
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {dict.receiptSummary}
@@ -223,17 +229,20 @@ export default async function BookingDetailPage({
         <Row label={dict.total} value={formatSum(booking.totalSum)} />
 
         {payment && (
-          <Row label={dict.payment}>
-            <span className="text-sm font-semibold capitalize text-slate-900 dark:text-white">
-              {payment.provider ? `${payment.provider.toUpperCase()} · ` : ""}
-              {paymentStatuses[payment.status] ?? payment.status}
+          <Row label={dict.payment} className="mt-2 border-t border-slate-100 pt-4 dark:border-slate-800/60">
+            <span className="flex items-center gap-2 text-sm font-semibold capitalize text-slate-900 dark:text-white">
+              {payment.provider ? `${payment.provider.toUpperCase()}` : ""}
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {paymentStatuses[payment.status] ?? payment.status}
+              </span>
             </span>
           </Row>
         )}
       </section>
+      </div>
 
       {(!isConfirmed && !isAwaitingCash && !isRefunded) || isFailed ? (
-        <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -294,16 +303,18 @@ export default async function BookingDetailPage({
 }
 
 function Row({
+  className,
   label,
   value,
   children,
 }: {
   label: string;
   value?: string;
+  className?: string;
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-1">
+    <div className={`flex items-center justify-between gap-4 py-1 ${className || ""}`}>
       <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
       {children ?? (
         <span className="font-semibold text-slate-900 dark:text-white">

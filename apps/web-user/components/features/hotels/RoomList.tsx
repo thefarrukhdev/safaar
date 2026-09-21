@@ -91,7 +91,7 @@ export function RoomList({
               ) : (
                 <Link
                   href={bookingHref(room.id)}
-                  className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-5 text-sm font-medium text-white shadow-emboss-primary transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+                  className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-5 text-sm font-medium text-white  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   {dict.book}
                 </Link>

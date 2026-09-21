@@ -93,7 +93,7 @@ export function HotelGallery({
                 e.stopPropagation();
                 setIsOpen(true);
               }}
-              className="absolute bottom-4 right-4 z-10 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900 shadow-emboss-alpha transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12] active:shadow-emboss-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="absolute bottom-4 right-4 z-10 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               <Camera className="size-5" aria-hidden="true" />
               <span>{shots.length} ta rasm</span>

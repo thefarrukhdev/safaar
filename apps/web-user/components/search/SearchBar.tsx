@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-white border border-slate-200 px-4 py-3 transition-all duration-300 hover:border-slate-300 md:rounded-[32px] md:border-transparent md:bg-transparent md:px-5 md:py-3 md:hover:border-slate-200 cursor-pointer";
+const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 rounded-full bg-transparent px-4 py-3 transition-colors duration-200 hover:bg-slate-900/[0.03] md:px-5 cursor-pointer";
 
 export function SearchBar({
   locale,
@@ -135,7 +135,7 @@ export function SearchBar({
     <div className="mx-auto w-full relative z-50">
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col gap-3 rounded-[32px] border border-slate-200 bg-white p-3 shadow-2xl transition-all duration-300 md:flex-row md:items-center md:gap-1 md:rounded-[40px] md:p-2 sm:p-4"
+        className="relative flex flex-col rounded-xl border border-slate-900/[0.12] bg-white p-2  transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full sm:p-2"
       >
         {/* 1. Shahar / Destinatsiya */}
         <div 
@@ -161,18 +161,14 @@ export function SearchBar({
           </div>
           
           {showRecent && recentSearches.length > 0 && !cityId && (
-            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-2xl p-3">
+            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-xl border border-slate-900/[0.08] bg-white shadow-float p-3">
               {recentSearches.map((search) => (
                 <div
                   key={search.timestamp}
-                  className="group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 bg-white border border-transparent hover:border-slate-200 transition-colors"
+                  className="group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 bg-transparent border border-transparent hover:bg-slate-900/[0.03] transition-colors"
                   onClick={() => {
                     setCityId(search.cityId);
                     setGuests(search.guests);
-                    // To sync checkIn/checkOut with nuqs (URL), we would need to push router or use useQueryStates here.
-                    // But since handleSubmit builds query string, setting it in URL or state is needed.
-                    // Actually SearchDatePicker uses nuqs directly. We can't update nuqs state easily here without useQueryStates.
-                    // Let's just navigate immediately to apply them. Or update URL manually.
                     const params = new URLSearchParams(window.location.search);
                     if (search.checkIn) params.set("checkIn", search.checkIn);
                     else params.delete("checkIn");
@@ -189,14 +185,14 @@ export function SearchBar({
                       <span className="font-semibold text-sm text-slate-800">{search.cityName}</span>
                       {(search.checkIn || search.checkOut) && (
                         <span className="text-xs text-slate-500">
-                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix ?? "mehmon"}
+                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix}
                         </span>
                       )}
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="p-1 rounded-full text-slate-400 bg-white border border-transparent hover:border-slate-200 hover:text-slate-600 transition-colors"
+                    className="p-1 rounded-full text-slate-400 bg-transparent hover:bg-slate-900/[0.05] hover:text-slate-600 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       setRecentSearches(prev => {
@@ -215,14 +211,14 @@ export function SearchBar({
           )}
         </div>
 
-        <div className="hidden h-10 w-px shrink-0 bg-slate-200 md:block" aria-hidden />
+        <span className="hidden h-6 w-px bg-slate-900/[0.12] md:block" aria-hidden="true"></span>
 
         {/* 2. Sanalar (Kirish - Chiqish) */}
         <div className="min-w-0 flex-1 px-2 md:px-0">
           <SearchDatePicker locale={locale} dict={dict} />
         </div>
 
-        <div className="hidden h-10 w-px shrink-0 bg-slate-200 md:block" aria-hidden />
+        <span className="hidden h-6 w-px bg-slate-900/[0.12] md:block" aria-hidden="true"></span>
 
         {/* 3. Mehmonlar soni */}
         <div className={fieldWrapperClass}>
@@ -235,13 +231,10 @@ export function SearchBar({
         </div>
 
         {/* 4. Qidirish tugmasi */}
-        <div className="shrink-0 pt-1 md:pt-0 md:pl-2">
+        <div className="shrink-0 md:pl-2">
           <Button
             type="submit"
-            variant="primary"
-            size="lg"
-            rounded="2xl"
-            className="w-full md:w-auto uppercase tracking-wide px-8 h-12 md:h-15"
+            className="w-full md:w-auto h-12 md:h-12 px-8 uppercase tracking-wide rounded-full  bg-blue-600 text-white font-medium transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] "
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
             <span>{dict.submit}</span>

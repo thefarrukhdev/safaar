@@ -21,56 +21,76 @@ export function SearchDatePicker({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // 1. Nuqs orqali URL bilan bog'lanish (Single Source of Truth)
+  // 1. Nuqs orqali URL bilan bog'lanish
   const [dates, setDates] = useQueryStates(
     {
       checkIn: searchParamsParsers.checkIn,
       checkOut: searchParamsParsers.checkOut,
     },
-    { shallow: false } // Shallow false means it triggers server fetch when URL changes!
+    { shallow: false } // Trigger server fetch only when fully selected
   );
 
-  // 2. React Day Picker uchun Range State
-  const selectedRange: DateRange | undefined = {
+  // 2. Internal state for the calendar so it doesn't trigger URL/server update on first click
+  const [internalRange, setInternalRange] = useState<DateRange | undefined>({
     from: dates.checkIn ? parseISO(dates.checkIn) : undefined,
     to: dates.checkOut ? parseISO(dates.checkOut) : undefined,
-  };
+  });
 
-  const handleSelect = (range: DateRange | undefined) => {
+  // Tashqaridan (URL'dan) kelgan o'zgarishlarni internal state'ga sinxronlash
+  useEffect(() => {
+    if (!open) {
+      setInternalRange({
+        from: dates.checkIn ? parseISO(dates.checkIn) : undefined,
+        to: dates.checkOut ? parseISO(dates.checkOut) : undefined,
+      });
+    }
+  }, [dates.checkIn, dates.checkOut, open]);
+
+  const applyDates = (range: DateRange | undefined) => {
     if (!range) {
       setDates({ checkIn: null, checkOut: null });
       return;
     }
-    
     setDates({
       checkIn: range.from ? format(range.from, "yyyy-MM-dd") : null,
       checkOut: range.to ? format(range.to, "yyyy-MM-dd") : null,
     });
+  };
 
-    if (range.from && range.to) {
-      setOpen(false); // Ikkala sana tanlangach, oynani yopish
+  const handleSelect = (range: DateRange | undefined) => {
+    setInternalRange(range);
+    
+    // Ikkala sana ham tanlanganda avtomatik yopish va URL'ni yangilash
+    if (range?.from && range?.to) {
+      applyDates(range);
+      setOpen(false);
     }
   };
 
-  // Tashqariga bosilganda yopish
+  // Tashqariga bosilganda yopish va chala qolgan tanlovni URL'ga yozish
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        if (open) {
+          applyDates(internalRange);
+          setOpen(false);
+        }
+      }
     }
     if (open) document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
+  }, [open, internalRange]);
 
   // UI matni
-  let displayValue = dict?.selectDate ?? "Sanani tanlang";
-  if (selectedRange.from && selectedRange.to) {
-    displayValue = `${format(selectedRange.from, "d-MMM", { locale: locales[locale] })} — ${format(
-      selectedRange.to,
+  let displayValue = dict?.selectDate;
+  if (internalRange?.from && internalRange?.to) {
+    displayValue = `${format(internalRange.from, "d-MMM", { locale: locales[locale] })} — ${format(
+      internalRange.to,
       "d-MMM",
       { locale: locales[locale] }
     )}`;
-  } else if (selectedRange.from) {
-    displayValue = format(selectedRange.from, "d-MMM", { locale: locales[locale] });
+  } else if (internalRange?.from) {
+    displayValue = format(internalRange.from, "d-MMM", { locale: locales[locale] });
   }
 
   return (
@@ -78,11 +98,11 @@ export function SearchDatePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-w-[220px] items-center gap-3 rounded-xl bg-white px-4 py-3 text-left transition-all hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800"
+        className="flex w-full min-w-[220px] items-center gap-3 rounded-full bg-transparent px-4 py-3 text-left transition-colors duration-200 hover:bg-slate-900/[0.03]"
       >
         <CalendarIcon className="h-5 w-5 text-primary-600" />
         <span className="flex flex-col">
-          <span className="text-xs font-bold text-slate-500">{dict?.checkInCheckOut ?? "Kirish - Chiqish"}</span>
+          <span className="text-xs font-bold text-slate-500">{dict?.checkInCheckOut}</span>
           <span className="text-sm font-bold text-slate-900 dark:text-white">
             {displayValue}
           </span>
@@ -90,23 +110,51 @@ export function SearchDatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 rounded-xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
+        <div className="absolute left-0 sm:-left-4 top-full z-50 mt-2 w-max max-w-[calc(100vw-2rem)] sm:max-w-none rounded-xl border border-slate-900/[0.08] bg-white p-4 shadow-float dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
           <div className="flex justify-between items-center mb-2 md:hidden">
-             <span className="font-bold text-sm">{dict?.selectDate ?? "Sanani tanlang"}</span>
-             <button onClick={() => setOpen(false)}><X className="h-5 w-5"/></button>
+             <span className="font-bold text-sm">{dict?.selectDate}</span>
+             <button onClick={() => {
+                 applyDates(internalRange);
+                 setOpen(false);
+             }}><X className="h-5 w-5"/></button>
           </div>
           
-          {/* DayPicker (Calendar) */}
+                              <style dangerouslySetInnerHTML={{__html: `
+            .custom-calendar-styles {
+              --rdp-accent-color: #2563eb; /* blue-600 */
+              --rdp-accent-background-color: #eff6ff; /* blue-50 */
+              --rdp-range_middle-background-color: #eff6ff;
+              --rdp-range_middle-color: #1e3a8a; /* blue-900 */
+              --rdp-range_start-color: white;
+              --rdp-range_start-date-background-color: #2563eb;
+              --rdp-range_end-color: white;
+              --rdp-range_end-date-background-color: #2563eb;
+            }
+            .dark .custom-calendar-styles {
+              --rdp-accent-color: #3b82f6; /* blue-500 */
+              --rdp-accent-background-color: rgba(37, 99, 235, 0.2);
+              --rdp-range_middle-background-color: rgba(37, 99, 235, 0.2);
+              --rdp-range_middle-color: #dbeafe; /* blue-100 */
+              --rdp-range_start-color: white;
+              --rdp-range_start-date-background-color: #3b82f6;
+              --rdp-range_end-color: white;
+              --rdp-range_end-date-background-color: #3b82f6;
+            }
+            /* Explicitly fix any selected text color that might bleed */
+            .custom-calendar-styles .rdp-range_middle .rdp-day_button {
+               color: var(--rdp-range_middle-color) !important;
+            }
+          `}} />
           <DayPicker
             mode="range"
-            selected={selectedRange}
+            selected={internalRange}
             onSelect={handleSelect}
             locale={locales[locale]}
-            numberOfMonths={2}
+            numberOfMonths={1}
             disabled={{ before: new Date() }} // O'tib ketgan sanalarni bloklash
             className="custom-calendar-styles"
             classNames={{
-              selected: "bg-primary-600 text-white hover:bg-primary-600 focus:bg-primary-600",
+              months: "flex flex-col sm:flex-row gap-4 sm:gap-6",
               today: "font-bold text-primary-600",
             }}
           />

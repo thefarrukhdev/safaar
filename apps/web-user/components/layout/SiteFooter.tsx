@@ -13,7 +13,6 @@ interface PaymentMethod {
 const PAYMENT_METHODS: PaymentMethod[] = [
   { name: "Click" },
   { name: "Payme" },
-  { name: "Uzum" },
   { name: "Humo" },
   { name: "UzCard" },
 ];
@@ -43,6 +42,27 @@ export function SiteFooter({
           {/* Col 1: Brand & Intro */}
           <div className="flex flex-col gap-5">
             <BrandLogo href={base} brand={dict.brand} variant="dark" />
+            
+            <div className="flex flex-col gap-3 text-xs text-slate-400 mt-2">
+              <span>{dict.footer.secureBooking}</span>
+              <div className="flex items-center -space-x-1.5 opacity-80 transition-opacity hover:opacity-100">
+                <div className="relative z-50 h-6 w-10 overflow-hidden rounded border border-white/10 bg-white shadow-sm ring-1 ring-black/5">
+                  <Image src="/payments/uzcard.jpg" alt="Uzcard" fill className="object-contain p-0.5" sizes="40px" />
+                </div>
+                <div className="relative z-40 h-6 w-10 overflow-hidden rounded border border-white/10 bg-white shadow-sm ring-1 ring-black/5">
+                  <Image src="/payments/humo.png" alt="Humo" fill className="object-contain p-0.5" sizes="40px" />
+                </div>
+                <div className="relative z-30 h-6 w-10 overflow-hidden rounded border border-white/10 bg-white shadow-sm ring-1 ring-black/5">
+                  <Image src="/payments/visa.jpeg" alt="Visa" fill className="object-contain p-0.5" sizes="40px" />
+                </div>
+                <div className="relative z-20 h-6 w-10 overflow-hidden rounded border border-white/10 bg-white shadow-sm ring-1 ring-black/5">
+                  <Image src="/payments/mastercard.jpg" alt="Mastercard" fill className="object-contain p-0.5" sizes="40px" />
+                </div>
+                <div className="relative z-10 ml-2 h-6 w-12 overflow-hidden rounded border border-white/10 bg-white shadow-sm ring-1 ring-black/5">
+                  <Image src="/payments/3dsecure.jpg" alt="3D Secure" fill className="object-contain p-1" sizes="48px" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Col 2: Platform */}
@@ -54,12 +74,6 @@ export function SiteFooter({
                 className="transition-colors hover:text-white hover:underline"
               >
                 {dict.nav.hotels}
-              </Link>
-              <Link
-                href={`${base}/dachas`}
-                className="transition-colors hover:text-white hover:underline"
-              >
-                {dict.nav.dachas}
               </Link>
               <Link
                 href={`${base}/transport`}
@@ -132,28 +146,11 @@ export function SiteFooter({
           </div>
         </div>
 
-        {/* Divider & Copyright */}
-        <div className="flex flex-col items-center justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row">
+        {/* Copyright */}
+        <div className="mt-8 flex flex-col items-center justify-between gap-6 sm:mt-12 sm:flex-row">
           <p className="text-xs text-slate-400">
             © {year} {dict.brand}. {dict.footer.rights}
           </p>
-          <div className="flex flex-col items-center sm:items-end gap-3 text-xs text-slate-400">
-            <span>{dict.footer.secureBooking}</span>
-            <div className="flex items-center gap-2">
-              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
-                <Image src="/payments/uzcard.jpg" alt="Uzcard" fill className="object-contain p-0.5" sizes="40px" />
-              </div>
-              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
-                <Image src="/payments/visa.jpeg" alt="Visa" fill className="object-contain p-0.5" sizes="40px" />
-              </div>
-              <div className="relative h-6 w-10 overflow-hidden rounded-sm bg-white">
-                <Image src="/payments/mastercard.jpg" alt="Mastercard" fill className="object-contain p-0.5" sizes="40px" />
-              </div>
-              <div className="relative h-6 w-14 overflow-hidden rounded-sm bg-white">
-                <Image src="/payments/3dsecure.jpg" alt="3D Secure" fill className="object-contain p-0.5" sizes="56px" />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </footer>

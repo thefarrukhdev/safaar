@@ -57,7 +57,7 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
    tekshir — **o'sha papkadan tashqariga chiqma**.
 2. **Push'dan OLDIN** o'z app'ingda build/lint (backend uchun test) **yashil**
    bo'lsin. Qizil bo'lsa — push qilma, avval xatoni tuzat.
-3. Faqat **`develop`**'ga push qil; `main`'ga tegma (uni admin boshqaradi).
+3. Faqat **`develop`**'ga push qil; `main`'ga tegma (uni admin, ya'ni thefarrukhdev boshqaradi).
 4. **Boshqaning papkasiga o'zgartirma.** `apps/backend/` va `packages/types/` —
    faqat o'qish (egasi backend dev).
 

@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { trackPaymentMethodSelected } from "@/lib/services/analytics/tracker";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
-// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi Uzum Checkout
+// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
 // orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
 // belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
 export type PaymentMethodId =
@@ -19,7 +19,7 @@ export type PaymentMethodId =
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
   dictKey?: "card" | "cash";
-  type: "online" | "card" | "cash";
+  type: "online" | "card" | "local_card" | "intl_card" | "cash";
   name?: string;
   subtitle?: string;
   badges?: string[];
@@ -56,34 +56,18 @@ const INTL_CARD_THEME = {
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
-    name: "Uzcard",
-    subtitle: "Uzcard milliy plastik kartasi orqali to'g'ridan-to'g'ri to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 1.5%"],
-    type: "card",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "humo",
-    name: "Humo",
-    subtitle: "Humo milliy plastik kartasi orqali to'g'ridan-to'g'ri to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 1.5%"],
-    type: "card",
+    name: "Milliy kartalar orqali to'lash",
+    subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
+    badges: ["3D-Secure xavfsizlik"],
+    type: "local_card",
     colorTheme: CARD_THEME,
   },
   {
     id: "visa",
-    name: "Visa",
-    subtitle: "Xalqaro Visa kartasi orqali to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 3.5%"],
-    type: "card",
-    colorTheme: INTL_CARD_THEME,
-  },
-  {
-    id: "mastercard",
-    name: "Mastercard",
-    subtitle: "Xalqaro Mastercard kartasi orqali to'lov (Uzum Checkout)",
-    badges: ["3D-Secure xavfsizlik", "To'lov haqi: 3.5%"],
-    type: "card",
+    name: "Xalqaro kartalar orqali to'lash",
+    subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
+    badges: ["3D-Secure xavfsizlik"],
+    type: "intl_card",
     colorTheme: INTL_CARD_THEME,
   },
   {
@@ -170,14 +154,32 @@ export function PaymentSelector({
                 {/* Method Icon / Logo Badge */}
                 <div
                   className={cn(
-                    "flex h-10 w-10 shrink-0 overflow-hidden items-center justify-center rounded-xl font-bold shadow-xs transition-transform duration-200 group-hover:scale-105",
-                    option.type === "card" ? "bg-white border border-slate-200 dark:border-slate-800" : option.colorTheme.iconBg
+                    "flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 mt-0.5",
+                    option.type === "local_card" || option.type === "intl_card"
+                      ? "mr-2"
+                      : cn("h-9 w-9 rounded-xl shadow-sm", option.colorTheme.iconBg)
                   )}
                 >
-                  {option.id === "uzcard" && <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1" />}
-                  {option.id === "humo" && <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1" />}
-                  {option.id === "visa" && <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1" />}
-                  {option.id === "mastercard" && <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1" />}
+                  {option.type === "local_card" && (
+                    <div className="flex items-center -space-x-2.5">
+                      <div className="relative z-10 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
+                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      </div>
+                      <div className="relative z-0 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
+                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      </div>
+                    </div>
+                  )}
+                  {option.type === "intl_card" && (
+                    <div className="flex items-center -space-x-2.5">
+                      <div className="relative z-10 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
+                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      </div>
+                      <div className="relative z-0 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
+                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      </div>
+                    </div>
+                  )}
                   {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
                 </div>
 
@@ -204,7 +206,7 @@ export function PaymentSelector({
                             option.colorTheme.badgeText
                           )}
                         >
-                          <ShieldCheck className="h-3 w-3" />
+                          {badge.includes("xavfsizlik") && <ShieldCheck className="h-3 w-3" />}
                           {badge}
                         </span>
                       ))}

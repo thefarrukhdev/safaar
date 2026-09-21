@@ -91,6 +91,8 @@ export default async function LangLayout({
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
 
+  const common = await getDictionary(lang, "common");
+
   return (
     <html
       lang={lang}
@@ -106,7 +108,7 @@ export default async function LangLayout({
               {children}
               <Toaster />
               <ServiceWorkerRegister />
-              <PwaInstallBanner />
+              <PwaInstallBanner dict={common.pwa} />
             </div>
           </NuqsAdapter>
         </AnalyticsProvider>

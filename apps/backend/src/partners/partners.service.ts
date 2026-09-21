@@ -43,6 +43,25 @@ type PublicPartnerStatus =
   | 'suspended';
 
 /**
+ * `bus_companies`dan `RETURNING`/`SELECT` orqali qaytadigan ustunlar —
+ * aniq tur beriladi, chunki `PostgresService.query<T>()` T berilmasa
+ * `QueryResultRow`ga (indeks-imzosiz, deyarli bo'sh interfeys) tushadi va
+ * keyinchalik `{ ...company, short_description: ... }` kabi spread qilinsa
+ * `company`dan kelgan maydonlar (masalan `name`) natija turida ko'rinmay
+ * qoladi.
+ */
+type BusCompanyRow = {
+  id: string;
+  partner_organization_id: string;
+  name: string;
+  status: string;
+  rating_average: number;
+  reviews_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
  * `hotels` jadvali "yashash joyi" turlari VA restoran uchun umumiy e'lon
  * yozuvi sifatida ishlatiladi — faqat sof `bus` turidagi hamkor bunday
  * yozuv yarata olmasligi kerak (u o'rniga `bus_companies`/`vehicles`/
@@ -2542,14 +2561,16 @@ export class PartnersService {
       [organizationId],
     );
     if (existing) {
-      return this.pg
-        .query(
-          `SELECT id::text, partner_organization_id::text, name, status,
-                rating_average::float8, reviews_count, created_at, updated_at
+      const [company] = await this.pg.query<BusCompanyRow>(
+        `SELECT id::text, partner_organization_id::text, name, status,
+              rating_average::float8, reviews_count, created_at, updated_at
          FROM bus_companies WHERE id = $1`,
-          [existing.id],
-        )
-        .then((rows) => rows[0]);
+        [existing.id],
+      );
+      return {
+        ...company,
+        ...(await this.hydrateBusCompanyDescriptions(existing.id)),
+      };
     }
 
     const name =
@@ -2558,15 +2579,25 @@ export class PartnersService {
       organization.legal_name ??
       'Avtobus kompaniyasi';
     const now = new Date().toISOString();
-    const [company] = await this.pg.query(
+    const [company] = await this.pg.query<BusCompanyRow>(
       `INSERT INTO bus_companies (id, partner_organization_id, name, status, created_at, updated_at)
        VALUES ($1, $2, $3, 'active', $4, $4)
        RETURNING id::text, partner_organization_id::text, name, status,
                  rating_average::float8, reviews_count, created_at, updated_at`,
       [randomUUID(), organizationId, name, now],
     );
+    const descriptions = await this.upsertBusCompanyTranslations(
+      company.id,
+      body,
+      new Map(),
+      now,
+    );
     this.invalidatePublicTransportCache();
-    return company;
+    return {
+      ...company,
+      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      full_description: localizedTextFromMap(descriptions.full_description, ''),
+    };
   }
 
   /**
@@ -2576,7 +2607,7 @@ export class PartnersService {
    */
   async busCompany(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
-    const [company] = await this.pg.query(
+    const [company] = await this.pg.query<BusCompanyRow>(
       `SELECT id::text, partner_organization_id::text, name, status,
               rating_average::float8, reviews_count, created_at, updated_at
        FROM bus_companies
@@ -2584,7 +2615,13 @@ export class PartnersService {
        ORDER BY created_at ASC LIMIT 1`,
       [organizationId],
     );
-    return company ?? null;
+    if (!company) {
+      return null;
+    }
+    return {
+      ...company,
+      ...(await this.hydrateBusCompanyDescriptions(company.id)),
+    };
   }
 
   async updateBusCompany(
@@ -2599,14 +2636,142 @@ export class PartnersService {
         message: 'Kompaniya nomini kiriting',
       });
     }
-    const [company] = await this.pg.query(
+    const now = new Date().toISOString();
+
+    const existingTranslations = await this.pg.query<{
+      language: string;
+      short_description: string | null;
+      description: string | null;
+    }>(
+      `SELECT language::text, short_description, description
+       FROM bus_company_translations WHERE company_id = $1::uuid`,
+      [companyId],
+    );
+    const current = new Map(
+      existingTranslations.map((row) => [row.language, row]),
+    );
+    const descriptions = await this.upsertBusCompanyTranslations(
+      companyId,
+      body,
+      current,
+      now,
+    );
+
+    const [company] = await this.pg.query<BusCompanyRow>(
       `UPDATE bus_companies SET name = $1, updated_at = $2 WHERE id = $3
        RETURNING id::text, partner_organization_id::text, name, status,
                  rating_average::float8, reviews_count, created_at, updated_at`,
-      [name, new Date().toISOString(), companyId],
+      [name, now, companyId],
     );
     this.invalidatePublicTransportCache();
-    return company;
+    return {
+      ...company,
+      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      full_description: localizedTextFromMap(descriptions.full_description, ''),
+    };
+  }
+
+  /**
+   * `bus_company_translations`dan joriy (til bo'yicha) qiymatlarni o'qib,
+   * `Localized` ({uz, ru, en}) shaklida qaytaradi — `busCompany()` (GET)
+   * va `createBusCompany()`ning idempotent shoxobchasi shu orqali o'qiydi.
+   * `hydratePartnerHotels()`dagi bir xil naqsh (qarang `localizedTextFromMap`).
+   */
+  private async hydrateBusCompanyDescriptions(companyId: string) {
+    const rows = await this.pg.query<{
+      language: string;
+      short_description: string | null;
+      description: string | null;
+    }>(
+      `SELECT language::text, short_description, description
+       FROM bus_company_translations WHERE company_id = $1::uuid`,
+      [companyId],
+    );
+    const shortDescriptions: Record<string, string> = {};
+    const fullDescriptions: Record<string, string> = {};
+    for (const row of rows) {
+      if (row.short_description) {
+        shortDescriptions[row.language] = row.short_description;
+      }
+      if (row.description) {
+        fullDescriptions[row.language] = row.description;
+      }
+    }
+    return {
+      short_description: localizedTextFromMap(shortDescriptions, ''),
+      full_description: localizedTextFromMap(fullDescriptions, ''),
+    };
+  }
+
+  /**
+   * `updateListingGeneral()`dagi (hotel_translations uchun) bir xil PATCH
+   * semantikasi: har bir til uchun avval `<field>_<language>` (masalan
+   * `short_description_uz`), keyin generic `<field>`/camelCase alias
+   * (`shortDescription`/`fullDescription`), toping bo'lmasa MAVJUD saqlangan
+   * qiymat (partial update — berilmagan maydon o'zgarmaydi), aks holda ''
+   * ishlatiladi. Har bir til uchun `ON CONFLICT (company_id, language) DO
+   * UPDATE` bilan upsert qilinadi (yangi kompaniya uchun ham xavfsiz —
+   * `current` bo'sh Map bo'lsa, hammasi '' bo'ladi yoki body'dan olinadi).
+   */
+  private async upsertBusCompanyTranslations(
+    companyId: string,
+    body: Record<string, unknown>,
+    current: Map<
+      string,
+      { short_description: string | null; description: string | null }
+    >,
+    now: string,
+  ): Promise<{
+    short_description: Record<string, string>;
+    full_description: Record<string, string>;
+  }> {
+    const translationValue = (
+      language: string,
+      field: 'short_description' | 'description',
+      aliases: string[],
+    ): string => {
+      const localized = body[`${field}_${language}`];
+      if (localized !== undefined) return String(localized);
+      for (const alias of aliases) {
+        const localizedAlias = body[`${alias}_${language}`];
+        if (localizedAlias !== undefined) return String(localizedAlias);
+      }
+      if (body[field] !== undefined) return String(body[field]);
+      for (const alias of aliases) {
+        if (body[alias] !== undefined) return String(body[alias]);
+      }
+      return String(current.get(language)?.[field] ?? '');
+    };
+
+    const shortDescriptions: Record<string, string> = {};
+    const fullDescriptions: Record<string, string> = {};
+    for (const language of ['uz', 'ru', 'en'] as const) {
+      const shortDescription = translationValue(
+        language,
+        'short_description',
+        ['shortDescription'],
+      );
+      const fullDescription = translationValue(language, 'description', [
+        'fullDescription',
+        'full_description',
+      ]);
+      shortDescriptions[language] = shortDescription;
+      fullDescriptions[language] = fullDescription;
+      await this.pg.query(
+        `INSERT INTO bus_company_translations
+           (id, company_id, language, short_description, description, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $6)
+         ON CONFLICT (company_id, language) DO UPDATE SET
+           short_description = EXCLUDED.short_description,
+           description = EXCLUDED.description,
+           updated_at = EXCLUDED.updated_at`,
+        [randomUUID(), companyId, language, shortDescription, fullDescription, now],
+      );
+    }
+    return {
+      short_description: shortDescriptions,
+      full_description: fullDescriptions,
+    };
   }
 
   // ---------------------------------------------------------------------------

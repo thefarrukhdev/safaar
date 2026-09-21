@@ -734,13 +734,37 @@ model BusCompany {
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  partner  PartnerOrganization @relation(fields: [partnerOrganizationId], references: [id])
-  vehicles Vehicle[]
-  trips    Trip[]
+  partner      PartnerOrganization      @relation(fields: [partnerOrganizationId], references: [id])
+  vehicles     Vehicle[]
+  trips        Trip[]
+  translations BusCompanyTranslation[]
 
   @@index([partnerOrganizationId, status])
   @@index([status, createdAt])
   @@map("bus_companies")
+}
+
+/**
+ * `hotel_translations` bilan bir xil naqsh: til boshiga bitta qator.
+ * Avval `bus_companies`da short/full description uchun HECH QANDAY ustun
+ * yo'q edi — partner PATCH'i shu maydonlarni yuborsa ham, backend ularni
+ * jimgina tashlab yuborardi (bus/rent_car hamkorlar "Umumiy ma'lumotlar"
+ * checklist'ini hech qachon to'ldira olmas edi). Nullable, chunki mavjud
+ * kompaniyalarning hech biri bu maydonlarni hali to'ldirmagan.
+ */
+model BusCompanyTranslation {
+  id               String   @id @default(uuid()) @db.Uuid
+  companyId        String   @map("company_id") @db.Uuid
+  language         Language
+  shortDescription String?  @map("short_description")
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  company BusCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, language])
+  @@map("bus_company_translations")
 }
 
 model Vehicle {

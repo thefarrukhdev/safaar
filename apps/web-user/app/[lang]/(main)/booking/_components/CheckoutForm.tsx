@@ -240,9 +240,10 @@ export function CheckoutForm({
           />
           
           {(paymentMethod as any === "card") && (
-            <div className="mt-4 grid grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="mt-1 grid grid-cols-2 gap-5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/50 dark:bg-emerald-950/20 relative overflow-hidden shadow-sm">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
               <div className="col-span-2 sm:col-span-1">
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                   {dict.cardPayment?.cardNumber || "Karta raqami"}
                 </label>
                 <Input
@@ -250,7 +251,7 @@ export function CheckoutForm({
                   name="cardNumber"
                   placeholder="0000 0000 0000 0000"
                   maxLength={19}
-                  className="bg-white dark:bg-slate-950"
+                  className="bg-white h-11 dark:bg-slate-950 shadow-sm font-mono text-base tracking-wide"
                   pattern="[\d ]+"
                   onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, "");
@@ -260,7 +261,7 @@ export function CheckoutForm({
                 />
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                   {dict.cardPayment?.expiryDate || "Amal qilish muddati"}
                 </label>
                 <Input
@@ -268,7 +269,7 @@ export function CheckoutForm({
                   name="expiryDate"
                   placeholder="MM/YY"
                   maxLength={5}
-                  className="bg-white dark:bg-slate-950"
+                  className="bg-white h-11 dark:bg-slate-950 shadow-sm font-mono text-base tracking-wide"
                   pattern="\d\d/\d\d"
                   onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, "");

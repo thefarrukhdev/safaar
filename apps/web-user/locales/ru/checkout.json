@@ -68,7 +68,7 @@
     },
     "local_card": {
       "title": "Национальные карты",
-      "desc": "Безопасная оплата через Uzcard, Humo",
+      "desc": "Безопасная оплата через Uzcard, Humo, Visa, Mastercard",
       "badges": [
         "3D-Secure безопасность"
       ]

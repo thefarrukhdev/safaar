@@ -66,5 +66,27 @@
     "pageOf": "{page} / {total}"
   },
   "mapView": "Map",
-  "gridView": "Grid"
+  "gridView": "Grid",
+  "banners": {
+    "all": {
+      "title": "Search for all accommodations",
+      "subtitle": "Discover comfortable accommodations across Uzbekistan at affordable prices."
+    },
+    "hotels": {
+      "title": "Search for Hotels across Uzbekistan",
+      "subtitle": "Discover comfortable and suitable hotels at the best prices."
+    },
+    "dachas": {
+      "title": "Search for Dachas across Uzbekistan",
+      "subtitle": "Discover the best dachas for your relaxing getaway."
+    },
+    "sanatoriums": {
+      "title": "Search for Sanatoriums across Uzbekistan",
+      "subtitle": "Discover the best places for wellness and relaxation."
+    },
+    "resorts": {
+      "title": "Search for Resorts across Uzbekistan",
+      "subtitle": "Discover the best nature resorts and retreats."
+    }
+  }
 }

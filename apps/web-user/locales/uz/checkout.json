@@ -68,7 +68,7 @@
     },
     "local_card": {
       "title": "Milliy kartalar",
-      "desc": "Uzcard, Humo orqali xavfsiz to'lov",
+      "desc": "Uzcard, Humo, Visa, Mastercard orqali xavfsiz to'lov",
       "badges": [
         "3D-Secure xavfsizlik"
       ]

@@ -141,18 +141,18 @@ export function PaymentSelector({
                   )}
                 >
                   {option.type === "local_card" && (
-                    <div className="flex items-center -space-x-2">
-                      <div className="relative z-30 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                      <div className="relative z-20 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                      <div className="relative z-10 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                      <div className="relative z-0 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
                     </div>
                   )}

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { LoginForm } from "../_components/LoginForm";
+import LampAuth from "@/components/features/auth/LampAuth";
 
 export async function generateMetadata({
   params,
@@ -54,8 +54,8 @@ export default async function LoginPage({
   }
 
   return (
-    <LoginForm
-      locale={locale}
+    <LampAuth
+      initialIsLogin={true}
       next={next}
       dict={dict}
       socialError={socialError}

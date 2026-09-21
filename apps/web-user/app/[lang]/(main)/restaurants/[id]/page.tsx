@@ -160,28 +160,7 @@ export default async function RestaurantDetailPage({
             </section>
           )}
 
-          {restaurant.tables.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {(dict as any).detail?.availableTables || "Mavjud stollar"}
-              </h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {restaurant.tables.map((table) => (
-                  <div
-                    key={table.id}
-                    className="flex flex-col rounded-xl border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {table.name.startsWith("Stol") ? table.name.replace("Stol", (dict as any).booking?.table || "Stol") : table.name}
-                    </span>
-                    <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {((dict as any).detail?.capacity || "Sig'imi: {count} kishilik").replace("{count}", table.capacity.toString())}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          
         </div>
 
         <aside className="lg:sticky lg:top-24">

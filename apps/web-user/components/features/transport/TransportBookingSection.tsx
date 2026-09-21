@@ -24,10 +24,15 @@ function daysBetween(checkIn: string, checkOut: string): number {
   return Math.round((end - start) / (1000 * 60 * 60 * 24));
 }
 
+import type { CatalogDict } from "@/i18n/dictionaries";
+
 export function TransportBookingSection({
+  dict,
+
   transport,
 }: {
   transport: TransportDetailView;
+  dict: CatalogDict["transport"];
 }) {
   const params = useParams<{ lang?: string }>();
   const locale = params?.lang || "uz";
@@ -44,6 +49,7 @@ export function TransportBookingSection({
   const [guestPhone, setGuestPhone] = useState<string>("");
   const [guestEmail, setGuestEmail] = useState<string>("");
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+  const bDict = (dict as any).booking || {};
 
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
@@ -75,11 +81,11 @@ export function TransportBookingSection({
   const handleOpenModal = (e: React.FormEvent) => {
     e.preventDefault();
     if (days <= 0) {
-      setErrorMsg("Qaytarish sanasi olib ketish sanasidan keyin bo'lishi kerak");
+      setErrorMsg(bDict.dateOrderError || "Qaytarish sanasi olib ketish sanasidan keyin bo'lishi kerak");
       return;
     }
     if (!guestName.trim() || !guestPhone.trim()) {
-      setErrorMsg("Iltimos, ismingiz va telefon raqamingizni kiriting");
+      setErrorMsg(bDict.namePhoneRequired || "Iltimos, ismingiz va telefon raqamingizni kiriting");
       return;
     }
     setErrorMsg(null);
@@ -91,16 +97,16 @@ export function TransportBookingSection({
     if (paymentMethod === "card") {
       const rawCard = cardNumber.replace(/\s/g, "");
       if (rawCard.length < 16) {
-        setErrorMsg("Karta raqamini to'liq kiriting (16 xona)");
+        setErrorMsg(bDict.cardDigitsError || "Karta raqamini to'liq kiriting (16 xona)");
         return;
       }
       if (cardExpire.length < 5) {
-        setErrorMsg("Karta amal qilish muddatini kiriting (MM/YY)");
+        setErrorMsg(bDict.cardExpireError || "Karta amal qilish muddatini kiriting (MM/YY)");
         return;
       }
     }
     if (!agreeTerms) {
-      setErrorMsg("Davom etish uchun Ommaviy Oferta shartlariga rozilik bering");
+      setErrorMsg(bDict.termsRequired || "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering");
       return;
     }
 
@@ -124,7 +130,7 @@ export function TransportBookingSection({
       setSuccessBookingId(bookingId);
       setShowPaymentModal(false);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
     } finally {
       setLoading(false);
     }
@@ -134,25 +140,20 @@ export function TransportBookingSection({
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">
-          To'lov bajarildi va mashina band qilindi!
-        </h3>
-        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-          Bron ID: <span className="font-mono font-bold">{successBookingId}</span>
+        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">{bDict.successTitle || "To'lov bajarildi va mashina band qilindi!"}</h3>
+        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">{bDict.bookingId || "Bron ID:"}<span className="font-mono font-bold">{successBookingId}</span>
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-          <p><strong>Transport:</strong> {transport.name}</p>
-          <p><strong>Muddat:</strong> {checkIn} — {checkOut} ({days} kun)</p>
-          <p><strong>Mijoz:</strong> {guestName} ({guestPhone})</p>
-          <p><strong>To'lov usuli:</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
+          <p><strong>{bDict.transportLabel || "Transport:"}</strong> {transport.name}</p>
+          <p><strong>{bDict.periodLabel || "Muddat:"}</strong> {checkIn} — {checkOut} ({days} kun)</p>
+          <p><strong>{bDict.clientLabel || "Mijoz:"}</strong> {guestName} ({guestPhone})</p>
+          <p><strong>{bDict.paymentMethodLabel || "To'lov usuli:"}</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
         </div>
         <Button
           onClick={() => setSuccessBookingId(null)}
           variant="secondary"
           className="mt-6 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
-        >
-          Yangi bron qilish
-        </Button>
+        >{bDict.newBooking || "Yangi bron qilish"}</Button>
       </div>
     );
   }
@@ -164,9 +165,7 @@ export function TransportBookingSection({
         className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-6 shadow-md dark:border-slate-800 dark:bg-slate-900"
       >
         <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
-          <Car className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-          Mashinani band qilish
-        </h2>
+          <Car className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.title || "Mashinani band qilish"}</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {formatSum(transport.pricePerDaySum)} / kuniga
         </p>
@@ -181,8 +180,7 @@ export function TransportBookingSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" /> Olib ketish
-              </label>
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}</label>
               <input
                 type="date"
                 value={checkIn}
@@ -195,8 +193,7 @@ export function TransportBookingSection({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" /> Qaytarish
-              </label>
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}</label>
               <input
                 type="date"
                 value={checkOut}
@@ -210,7 +207,7 @@ export function TransportBookingSection({
 
           {days > 0 && (
             <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs dark:bg-slate-800/60">
-              <span className="text-slate-500 dark:text-slate-400">{days} kun</span>
+              <span className="text-slate-500 dark:text-slate-400">{((dict as any).booking?.daysCount || "{days} kun").replace("{days}", days.toString())}</span>
               <span className="font-bold text-slate-900 dark:text-white">
                 {formatSum(totalAmount)}
               </span>
@@ -219,12 +216,10 @@ export function TransportBookingSection({
 
           <div className="space-y-2.5 border-t border-slate-100 pt-3 dark:border-slate-800">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Ismingiz *
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.nameRequired || "Ismingiz *"}</label>
               <input
                 type="text"
-                placeholder="Masalan: Ali Valiyev"
+                placeholder={bDict.namePlaceholder || "Masalan: Ali Valiyev"}
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -233,12 +228,10 @@ export function TransportBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Telefon raqamingiz *
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.phoneRequired || "Telefon raqamingiz *"}</label>
               <input
                 type="tel"
-                placeholder="+998 90 123 45 67"
+                placeholder={bDict.phonePlaceholder || "+998 90 123 45 67"}
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -247,12 +240,10 @@ export function TransportBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Email (ixtiyoriy)
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.emailOptional || "Email (ixtiyoriy)"}</label>
               <input
                 type="email"
-                placeholder="ali@example.com"
+                placeholder={bDict.emailPlaceholder || "ali@example.com"}
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -263,9 +254,7 @@ export function TransportBookingSection({
           <Button
             type="submit"
             className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3"
-          >
-            Mashinani band qilish
-          </Button>
+          >{bDict.title || "Mashinani band qilish"}</Button>
         </form>
       </div>
 
@@ -281,9 +270,7 @@ export function TransportBookingSection({
             </button>
 
             <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-              <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              To'lovni amalga oshirish
-            </h3>
+              <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.modalTitle || "To'lovni amalga oshirish"}</h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               {transport.name} · {checkIn} — {checkOut}
             </p>
@@ -296,19 +283,17 @@ export function TransportBookingSection({
 
             <div className="mt-4 rounded-xl bg-slate-50 p-3.5 text-xs dark:bg-slate-800/60">
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Muddat:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {days} kun
-                </span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.periodLabel || "Muddat:"}</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{((dict as any).booking?.daysCount || "{days} kun").replace("{days}", days.toString())}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Mijoz:</span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.clientLabel || "Mijoz:"}</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {guestName} ({guestPhone})
                 </span>
               </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-2 text-sm font-bold dark:border-slate-700">
-                <span className="text-slate-900 dark:text-white">Jami summa:</span>
+                <span className="text-slate-900 dark:text-white">{bDict.totalAmount || "Jami summa:"}</span>
                 <span className="text-primary-600 dark:text-primary-400">
                   {formatSum(totalAmount)}
                 </span>
@@ -317,9 +302,7 @@ export function TransportBookingSection({
 
             <form onSubmit={handleProcessPayment} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  To'lov usuli
-                </label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.paymentType || "To'lov usuli"}</label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -330,9 +313,7 @@ export function TransportBookingSection({
                         : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
-                    <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                    Bank kartasi
-                  </button>
+                    <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />{bDict.bankCard || "Bank kartasi"}</button>
 
                   <button
                     type="button"
@@ -343,18 +324,14 @@ export function TransportBookingSection({
                         : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
-                    <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    Naqd (Joyida)
-                  </button>
+                    <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{bDict.cashPayment || "Naqd (Joyida)"}</button>
                 </div>
               </div>
 
               {paymentMethod === "card" && (
                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Karta raqami (Uzcard / Humo / Visa)
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardNumber || "Karta raqami (Uzcard / Humo / Visa)"}</label>
                     <input
                       type="text"
                       placeholder="8600 0000 0000 0000"
@@ -367,9 +344,7 @@ export function TransportBookingSection({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Amal qilish muddati (MM/YY)
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardExpire || "Amal qilish muddati (MM/YY)"}</label>
                     <input
                       type="text"
                       placeholder="12/28"
@@ -382,17 +357,13 @@ export function TransportBookingSection({
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                    <Lock className="h-3 w-3 text-emerald-500" />
-                    256-bit xavfsiz to'lov shifrlanishi
-                  </div>
+                    <Lock className="h-3 w-3 text-emerald-500" />{bDict.securePayment || "256-bit xavfsiz to'lov shifrlanishi"}</div>
                 </div>
               )}
 
               {paymentMethod === "cash" && (
                 <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
-                  Mashina band qilinadi. To'lov mashinani olganingizda amalga oshiriladi.
-                </div>
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{bDict.cashNote || "Mashina band qilinadi. To'lov mashinani olganingizda amalga oshiriladi."}</div>
               )}
 
               <label className="flex items-start gap-2 text-xs">
@@ -409,9 +380,7 @@ export function TransportBookingSection({
                     href={`/${locale}/terms`}
                     target="_blank"
                     className="font-semibold text-primary-600 hover:underline"
-                  >
-                    Ommaviy Oferta
-                  </Link>{" "}
+                  >{bDict.termsLink || "Ommaviy Oferta"}</Link>{" "}
                   shartlariga roziman.
                 </span>
               </label>
@@ -422,7 +391,7 @@ export function TransportBookingSection({
                 className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
               >
                 {loading
-                  ? "To'lov amalga oshirilmoqda..."
+                  ? (bDict.bookingSubmitting || "To'lov amalga oshirilmoqda...")
                   : paymentMethod === "card"
                   ? formatSum(totalAmount)
                   : "Bronni tasdiqlash (Naqd)"}

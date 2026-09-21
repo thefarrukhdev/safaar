@@ -205,10 +205,10 @@ export function TransportView({
           <div className="flex h-[60px] sm:h-[68px] flex-col justify-center rounded-[16px] bg-slate-50 px-5 border border-transparent dark:bg-slate-800">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
               <Users className="h-3.5 w-3.5 text-primary-500" />
-              <span>Yo'lovchilar soni</span>
+              <span>{(dict as any).search?.passengers || "Yo'lovchilar soni"}</span>
             </div>
             <div className="mt-0.5 flex items-center justify-between text-[15px] font-bold text-slate-900 dark:text-white">
-              <span>{passengers} yo'lovchi</span>
+              <span>{passengers} {(dict as any).search?.passengerUnit || "kishi"}</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setPassengers(Math.max(1, passengers - 1))} className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm border border-slate-200 transition-colors hover:border-primary-300 hover:text-primary-600">
                   <Minus className="h-3.5 w-3.5" />
@@ -333,9 +333,9 @@ export function TransportView({
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Xavfsiz sayohat</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.safeTravelTitle || "Xavfsiz sayohat"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Tekshirilgan haydovchilar va sug'urtalangan transport
+              {(dict as any).search?.safeTravelDesc || "Tekshirilgan haydovchilar va sug'urtalangan transport"}
             </p>
           </div>
         </div>
@@ -345,9 +345,9 @@ export function TransportView({
             <Clock className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>24/7 yordam</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.support24Title || "24/7 yordam"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Istalgan vaqtda yordam berish xizmatimiz
+              {(dict as any).search?.support24Desc || "Istalgan vaqtda yordam berish xizmatimiz"}
             </p>
           </div>
         </div>
@@ -357,9 +357,9 @@ export function TransportView({
             <CreditCard className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Onlayn to'lov</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.onlinePaymentTitle || "Onlayn to'lov"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Xavfsiz va qulay to'lov tizimi (Uzcard, Humo)
+              {(dict as any).search?.onlinePaymentDesc || "Xavfsiz va qulay to'lov tizimi (Uzcard, Humo)"}
             </p>
           </div>
         </div>
@@ -369,9 +369,9 @@ export function TransportView({
             <Calendar className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Moslashuvchan</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.flexibleTitle || "Moslashuvchan"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Ko'pchilik buyurtmalarda bepul bekor qilish imkoni
+              {(dict as any).search?.flexibleDesc || "Ko'pchilik buyurtmalarda bepul bekor qilish imkoni"}
             </p>
           </div>
         </div>

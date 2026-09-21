@@ -285,6 +285,7 @@ export default async function Page({
           checkInTime={hotel.checkInTime}
           checkOutTime={hotel.checkOutTime}
           dict={dict}
+          locale={locale}
         />
       </div>
 
@@ -293,6 +294,7 @@ export default async function Page({
         perNightText={dict.perNight}
         buttonText={dict.book}
         targetId="hotel-original-cta"
+        locale={locale}
       />
     </main>
     </>

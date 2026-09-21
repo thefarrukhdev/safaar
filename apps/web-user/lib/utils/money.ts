@@ -28,7 +28,8 @@ export const CURRENCY_INFO: Record<
 export function formatMoney(
   amountInSum: number,
   currency: CurrencyCode = "UZS",
-  rates: Record<CurrencyCode, number> = DEFAULT_EXCHANGE_RATES
+  rates: Record<CurrencyCode, number> = DEFAULT_EXCHANGE_RATES,
+  locale: string = "uz"
 ): string {
   const rate = rates[currency] || 1;
   const converted = amountInSum / rate;
@@ -37,7 +38,8 @@ export function formatMoney(
     const formatted = Math.round(converted)
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
-    return `${formatted} so'm`;
+    const suffix = locale === "ru" ? "сум" : locale === "en" ? "UZS" : "so'm";
+    return `${formatted} ${suffix}`;
   }
 
   if (currency === "USD") {
@@ -54,14 +56,15 @@ export function formatMoney(
     const val = Math.round(converted)
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
-    return `${val} ₽`;
+    const suffix = locale === "ru" ? "руб." : "₽";
+    return `${val} ${suffix}`;
   }
 
   return `${Math.round(converted)} ${currency}`;
 }
 
 /** So'm qiymatini matn qilib qaytaradi (backward compatibility). */
-export function formatSum(sum: number): string {
-  return formatMoney(sum, "UZS");
+export function formatSum(sum: number, locale: string = "uz"): string {
+  return formatMoney(sum, "UZS", DEFAULT_EXCHANGE_RATES, locale);
 }
 

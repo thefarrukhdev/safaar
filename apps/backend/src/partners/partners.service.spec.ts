@@ -1098,7 +1098,8 @@ describe('PartnersService.createBusCompany (regression: no live code path ever c
         { type: 'bus', brand_name: 'Comfort Bus', legal_name: null },
       ])
       .mockResolvedValueOnce([{ id: 'company-existing' }])
-      .mockResolvedValueOnce([{ id: 'company-existing', status: 'active' }]);
+      .mockResolvedValueOnce([{ id: 'company-existing', status: 'active' }])
+      .mockResolvedValueOnce([]); // translations lookup for the existing company
 
     const result = await service.createBusCompany(actor, {});
 
@@ -1167,14 +1168,16 @@ describe('PartnersService.busCompany / updateBusCompany (read + rename for the t
   });
 
   it('returns the existing bus company scoped to the actor organization', async () => {
-    pg.query.mockResolvedValueOnce([
-      {
-        id: 'company-1',
-        partner_organization_id: 'org-1',
-        name: 'Comfort Bus',
-        status: 'active',
-      },
-    ]);
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Comfort Bus',
+          status: 'active',
+        },
+      ])
+      .mockResolvedValueOnce([]); // translations lookup
 
     const result = await service.busCompany(actor);
 
@@ -1185,6 +1188,10 @@ describe('PartnersService.busCompany / updateBusCompany (read + rename for the t
   it('updates the bus company name for the caller organization', async () => {
     pg.query
       .mockResolvedValueOnce([{ id: 'company-1' }]) // busCompanyId lookup
+      .mockResolvedValueOnce([]) // existing translations lookup (none yet)
+      .mockResolvedValueOnce([]) // upsert uz translation
+      .mockResolvedValueOnce([]) // upsert ru translation
+      .mockResolvedValueOnce([]) // upsert en translation
       .mockResolvedValueOnce([
         {
           id: 'company-1',
@@ -1227,6 +1234,259 @@ describe('PartnersService.busCompany / updateBusCompany (read + rename for the t
   });
 });
 
+describe('PartnersService bus company short_description/full_description persistence (regression: web-partner PATCH /partners/bus-company sent these fields, but bus_companies had no columns for them and updateBusCompany()/createBusCompany() only ever read body.name — the fields were silently dropped, so the "Umumiy ma\'lumotlar" checklist (generalComplete) could never become true for bus/rent_car partners)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('A: persists name + shortDescription + fullDescription on creation', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { type: 'bus', brand_name: 'Comfort Bus', legal_name: null },
+      ]) // organization lookup
+      .mockResolvedValueOnce([]) // no existing company
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Comfort Bus',
+          status: 'active',
+        },
+      ]) // INSERT bus_companies ... RETURNING
+      .mockResolvedValueOnce([]) // INSERT bus_company_translations (uz)
+      .mockResolvedValueOnce([]) // INSERT bus_company_translations (ru)
+      .mockResolvedValueOnce([]); // INSERT bus_company_translations (en)
+
+    const shortDescription = 'Qulay va ishonchli avtobus kompaniyasi';
+    const fullDescription =
+      "Comfort Bus 2010-yildan beri O'zbekiston bo'ylab yo'lovchi tashish xizmatlarini ko'rsatib kelmoqda.";
+
+    const result = await service.createBusCompany(actor, {
+      name: 'Comfort Bus',
+      shortDescription,
+      fullDescription,
+    });
+
+    const translationCalls = queryCallsOf(pg).filter(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('INSERT INTO bus_company_translations'),
+    );
+    expect(translationCalls).toHaveLength(3);
+    const languages = translationCalls.map(([, params]) => params?.[2]);
+    expect(new Set(languages)).toEqual(new Set(['uz', 'ru', 'en']));
+    for (const [, params] of translationCalls) {
+      expect(params?.[1]).toBe('company-1'); // company_id
+      expect(params?.[3]).toBe(shortDescription);
+      expect(params?.[4]).toBe(fullDescription);
+    }
+
+    expect(result.short_description).toEqual({
+      uz: shortDescription,
+      ru: shortDescription,
+      en: shortDescription,
+    });
+    expect(result.full_description).toEqual({
+      uz: fullDescription,
+      ru: fullDescription,
+      en: fullDescription,
+    });
+  });
+
+  it('B: update persists all three fields for an existing company', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }]) // busCompanyId lookup
+      .mockResolvedValueOnce([]) // existing translations (none yet)
+      .mockResolvedValueOnce([]) // upsert uz
+      .mockResolvedValueOnce([]) // upsert ru
+      .mockResolvedValueOnce([]) // upsert en
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Renamed Fleet',
+          status: 'active',
+        },
+      ]); // UPDATE bus_companies ... RETURNING
+
+    const shortDescription = 'Yangilangan qisqa tavsif';
+    const fullDescription = "Yangilangan to'liq tavsif matni.";
+
+    const result = await service.updateBusCompany(actor, {
+      name: 'Renamed Fleet',
+      shortDescription,
+      fullDescription,
+    });
+
+    const upsertCalls = queryCallsOf(pg).filter(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('INSERT INTO bus_company_translations'),
+    );
+    expect(upsertCalls).toHaveLength(3);
+    for (const [sql, params] of upsertCalls) {
+      expect(sql).toContain('ON CONFLICT (company_id, language) DO UPDATE');
+      expect(params?.[3]).toBe(shortDescription);
+      expect(params?.[4]).toBe(fullDescription);
+    }
+
+    expect(result.name).toBe('Renamed Fleet');
+    expect(result.short_description).toEqual({
+      uz: shortDescription,
+      ru: shortDescription,
+      en: shortDescription,
+    });
+    expect(result.full_description).toEqual({
+      uz: fullDescription,
+      ru: fullDescription,
+      en: fullDescription,
+    });
+  });
+
+  it('C: read returns all three fields, localized per language, from persisted translations', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Comfort Bus',
+          status: 'active',
+        },
+      ]) // company select
+      .mockResolvedValueOnce([
+        {
+          language: 'uz',
+          short_description: 'Qisqa tavsif (uz)',
+          description: "To'liq tavsif (uz)",
+        },
+        {
+          language: 'ru',
+          short_description: 'Краткое описание',
+          description: 'Полное описание',
+        },
+      ]); // translations select
+
+    const result = await service.busCompany(actor);
+
+    expect(result).toMatchObject({ id: 'company-1', name: 'Comfort Bus' });
+    expect(result?.short_description).toEqual({
+      uz: 'Qisqa tavsif (uz)',
+      ru: 'Краткое описание',
+      en: 'Qisqa tavsif (uz)', // no 'en' row persisted — falls back to uz, matching localizedTextFromMap()
+    });
+    expect(result?.full_description).toEqual({
+      uz: "To'liq tavsif (uz)",
+      ru: 'Полное описание',
+      en: "To'liq tavsif (uz)",
+    });
+  });
+
+  it('D: partial update — omitting shortDescription/fullDescription retains the previously persisted values (matches updateListingGeneral()\'s established PATCH semantics for hotel_translations)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }]) // busCompanyId lookup
+      .mockResolvedValueOnce([
+        {
+          language: 'uz',
+          short_description: 'Eski qisqa tavsif',
+          description: "Eski to'liq tavsif",
+        },
+        {
+          language: 'ru',
+          short_description: 'Старое краткое описание',
+          description: 'Старое полное описание',
+        },
+        {
+          language: 'en',
+          short_description: 'Old short description',
+          description: 'Old full description',
+        },
+      ]) // existing translations
+      .mockResolvedValueOnce([]) // upsert uz
+      .mockResolvedValueOnce([]) // upsert ru
+      .mockResolvedValueOnce([]) // upsert en
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Renamed Only',
+          status: 'active',
+        },
+      ]); // UPDATE ... RETURNING
+
+    const result = await service.updateBusCompany(actor, {
+      name: 'Renamed Only',
+      // shortDescription / fullDescription intentionally omitted
+    });
+
+    const upsertCalls = queryCallsOf(pg).filter(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('INSERT INTO bus_company_translations'),
+    );
+    const uzCall = upsertCalls.find(([, params]) => params?.[2] === 'uz');
+    const ruCall = upsertCalls.find(([, params]) => params?.[2] === 'ru');
+    expect(uzCall?.[1]?.[3]).toBe('Eski qisqa tavsif');
+    expect(uzCall?.[1]?.[4]).toBe("Eski to'liq tavsif");
+    expect(ruCall?.[1]?.[3]).toBe('Старое краткое описание');
+    expect(ruCall?.[1]?.[4]).toBe('Старое полное описание');
+
+    expect(result.short_description.uz).toBe('Eski qisqa tavsif');
+    expect(result.full_description.ru).toBe('Старое полное описание');
+  });
+
+  it('F: checklist verification — persisted-then-read-back values are genuinely non-empty, exactly what generalComplete (apps/web-partner listing-overview.tsx) observes', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { type: 'bus', brand_name: 'Comfort Bus', legal_name: null },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Comfort Bus',
+          status: 'active',
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const shortDescription =
+      'Bu kompaniya haqida qisqacha, lekin mazmunli tavsif.';
+    const fullDescription =
+      "Bu kompaniya haqida to'liq tavsif: tarixi, xizmatlari va yo'nalishlari haqida batafsil ma'lumot beriladi.";
+
+    const created = await service.createBusCompany(actor, {
+      name: 'Comfort Bus',
+      shortDescription,
+      fullDescription,
+    });
+
+    // generalComplete gates on non-empty, trimmed shortDescription/fullDescription —
+    // assert the backend response now genuinely carries that, not empty strings.
+    expect(created.short_description.uz.trim().length).toBeGreaterThan(0);
+    expect(created.full_description.uz.trim().length).toBeGreaterThan(0);
+    expect(created.short_description.uz).toBe(shortDescription);
+    expect(created.full_description.uz).toBe(fullDescription);
+  });
+});
+
 describe('PartnersService vehicle/company mutations invalidate the public transport cache (regression: GET /catalog/transports is cached for 1h with zero invalidation hooks — a partner creating a company or vehicle would not appear on the public Transport page for up to an hour)', () => {
   let service: PartnersService;
   let pg: { query: jest.Mock };
@@ -1266,8 +1526,12 @@ describe('PartnersService vehicle/company mutations invalidate the public transp
 
   it('invalidates catalog:transports when a bus company is renamed', async () => {
     pg.query
-      .mockResolvedValueOnce([{ id: 'company-1' }])
-      .mockResolvedValueOnce([{ id: 'company-1', name: 'New Name' }]);
+      .mockResolvedValueOnce([{ id: 'company-1' }]) // busCompanyId lookup
+      .mockResolvedValueOnce([]) // existing translations lookup
+      .mockResolvedValueOnce([]) // upsert uz translation
+      .mockResolvedValueOnce([]) // upsert ru translation
+      .mockResolvedValueOnce([]) // upsert en translation
+      .mockResolvedValueOnce([{ id: 'company-1', name: 'New Name' }]); // UPDATE ... RETURNING
 
     await service.updateBusCompany(actor, { name: 'New Name' });
 

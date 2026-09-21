@@ -172,7 +172,7 @@ export default async function RestaurantDetailPage({
                     className="flex flex-col rounded-xl border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
                   >
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {table.name}
+                      {table.name.startsWith("Stol") ? table.name.replace("Stol", (dict as any).booking?.table || "Stol") : table.name}
                     </span>
                     <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {((dict as any).detail?.capacity || "Sig'imi: {count} kishilik").replace("{count}", table.capacity.toString())}

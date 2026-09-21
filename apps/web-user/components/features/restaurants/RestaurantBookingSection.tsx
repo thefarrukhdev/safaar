@@ -147,7 +147,7 @@ export function RestaurantBookingSection({
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
           <p><strong>{bDict.restaurantLabel || "Restoran:"}</strong> {restaurant.name}</p>
-          <p><strong>{bDict.tableLabel || "Stol:"}</strong> {selectedTable?.name}</p>
+          <p><strong>{bDict.tableLabel || "Stol:"}</strong> {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}</p>
           <p><strong>{bDict.dateTimeLabel || "Sana va vaqt:"}</strong> {date} ({slotTime})</p>
           <p><strong>{bDict.clientLabel || "Mijoz:"}</strong> {guestName} ({guestPhone})</p>
           <p><strong>{bDict.paymentMethodLabel || "To'lov usuli:"}</strong> {paymentMethod === "card" ? (bDict.cardPayment || "Karta orqali") : (bDict.cashPayment || "Naqd pul")}</p>
@@ -195,7 +195,7 @@ export function RestaurantBookingSection({
                     }`}
                   >
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {tbl.name}
+                      {tbl.name.startsWith("Stol") ? tbl.name.replace("Stol", bDict.table || "Stol") : tbl.name}
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       {tbl.capacity} kishilik
@@ -308,7 +308,7 @@ export function RestaurantBookingSection({
             <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
               <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.modalTitle || "To'lovni amalga oshirish"}</h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {restaurant.name} · {selectedTable?.name}
+              {restaurant.name} · {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}
             </p>
 
             {errorMsg && (

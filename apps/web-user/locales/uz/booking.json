@@ -62,5 +62,12 @@
     "failed": "Muvaffaqiyatsiz",
     "refunded": "Qaytarilgan",
     "reversed": "Bank tomonidan bekor qilingan"
+  },
+  "missing": {
+    "BronSummasi": "Bron summasi",
+    "TolovHaqi": "to'lov haqi (",
+    "JamiTolanadigan": "Jami to'lanadigan summa",
+    "SizAvvalBoshlagan": "Siz avval boshlagan",
+    "OrqaliTolovHali": "orqali to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan so'ng qayta urinib ko'ring."
   }
 }

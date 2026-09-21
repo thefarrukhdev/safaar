@@ -16,19 +16,23 @@ import {
   MapPin,
   Pencil,
   Plus,
+  RefreshCcw,
   RotateCcw,
   Send,
   Sparkles,
   Star,
+  Tag,
+  Trash2,
   UtensilsCrossed,
   Users,
-  Trash2,
+  XCircle,
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../_components/ui/button';
 import { Card, CardBody } from '../../_components/ui/card';
 import { PreviewDrawer } from './_components/preview-drawer';
+import { PromotionDialog } from './_dialogs/promotion-dialog';
 import { GeneralEditor } from './_editors/general-editor';
 import { PhotosEditor } from './_editors/photos-editor';
 import { AmenitiesEditor } from './_editors/amenities-editor';
@@ -167,8 +171,8 @@ export function ListingOverview() {
       listing.name.trim().length >= 3 &&
       listing.shortDescription.trim().length >= 20 &&
       listing.fullDescription.trim().length >= 100;
-    const photosComplete = listing.photos.length >= 3;
-    const amenitiesComplete = listing.amenities.length >= 3;
+    const photosComplete = isBus ? listing.photos.length >= 0 : listing.photos.length >= 3;
+    const amenitiesComplete = isBus ? true : listing.amenities.length >= 3;
     const locationComplete =
       Boolean(listing.address.trim()) &&
       typeof listing.latitude === 'number' &&
@@ -195,7 +199,7 @@ export function ListingOverview() {
       {
         id: 'photos',
         title: 'Rasmlar',
-        subtitle: 'Muqova va kamida 3 ta sifatli rasm',
+        subtitle: 'Muqova va rasm',
         action: 'Rasmlarni boshqarish',
         complete: photosComplete,
         summary: `${listing.photos.length} ta rasm${
@@ -204,7 +208,10 @@ export function ListingOverview() {
         icon: <ImageIcon className="h-4 w-4" aria-hidden />,
         missing: !photosComplete ? 'Kamida 3 ta rasm yuklang.' : undefined,
       },
-      {
+    ];
+
+    if (!isBus) {
+      base.push({
         id: 'amenities',
         title: 'Qulayliklar',
         subtitle: "Mijoz filtr va kartada ko'radigan imkoniyatlar",
@@ -218,30 +225,31 @@ export function ListingOverview() {
         missing: !amenitiesComplete
           ? 'Kamida 3 ta asosiy qulaylikni belgilang.'
           : undefined,
-      },
-      {
-        id: 'location',
-        title: 'Joylashuv',
-        subtitle: 'Manzil va yaqin joylar mijoz ishonchini oshiradi',
-        action: 'Manzilni tahrirlash',
-        complete: locationComplete,
-        summary: listing.address
-          ? `${listing.city} · ${
-              typeof listing.latitude === 'number'
-                ? 'xarita nuqtasi bor'
-                : 'xarita kerak'
-            }${
-              listing.nearby.length > 0
-                ? ` · ${listing.nearby.length} yaqin joy`
-                : ''
-            }`
-          : 'Manzil kiritilmagan',
-        icon: <MapPin className="h-4 w-4" aria-hidden />,
-        missing: !locationComplete
-          ? 'Manzil va xarita nuqtasini kiriting.'
-          : undefined,
-      },
-    ];
+      });
+    }
+
+    base.push({
+      id: 'location',
+      title: 'Joylashuv',
+      subtitle: 'Manzil va xarita nuqtasi',
+      action: 'Manzilni tahrirlash',
+      complete: locationComplete,
+      summary: listing.address
+        ? `${listing.city} · ${
+            typeof listing.latitude === 'number'
+              ? 'xarita nuqtasi bor'
+              : 'xarita kerak'
+          }${
+            listing.nearby.length > 0
+              ? ` · ${listing.nearby.length} yaqin joy`
+              : ''
+          }`
+        : 'Manzil kiritilmagan',
+      icon: <MapPin className="h-4 w-4" aria-hidden />,
+      missing: !locationComplete
+        ? 'Manzil va xarita nuqtasini kiriting.'
+        : undefined,
+    });
 
     base.push({
       id: 'rules',
@@ -346,6 +354,8 @@ export function ListingOverview() {
       'border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)]',
   }[statusInfo.tone];
 
+  const [promoDialogOpen, setPromoDialogOpen] = useState(false);
+
   const handlePublishAction = () => {
     if (listing.status === ListingStatus.PUBLISHED) {
       updateStatus.mutate(ListingStatus.HIDDEN, {
@@ -439,6 +449,17 @@ export function ListingOverview() {
 
                   {!isBus && (
                     <div className="flex flex-wrap gap-2">
+                      {listing.status === ListingStatus.PUBLISHED && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200"
+                          onClick={() => setPromoDialogOpen(true)}
+                        >
+                          <Tag className="h-4 w-4" aria-hidden />
+                          Chegirma e'lon qilish
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -756,6 +777,10 @@ export function ListingOverview() {
         onClose={() => setVehicleDialogOpen(false)}
         editing={editingVehicle}
       />
+      <PromotionDialog
+        open={promoDialogOpen}
+        onClose={() => setPromoDialogOpen(false)}
+      />
     </div>
   );
 }
@@ -916,6 +941,7 @@ function RoomListingsPanel({
                   restaurant={restaurant}
                   isBus={isBus}
                   amenityLabels={amenityLabels}
+                  relatedRooms={relatedRooms}
                   onEdit={onEditRoomType ? () => onEditRoomType(roomType) : undefined}
                   onDelete={() => handleDelete(roomType, relatedRooms)}
                   onTogglePublish={async (publish) => {
@@ -956,6 +982,7 @@ function RoomAdCard({
   restaurant,
   isBus,
   amenityLabels,
+  relatedRooms,
   onEdit,
   onDelete,
   onTogglePublish,
@@ -975,6 +1002,7 @@ function RoomAdCard({
   restaurant: boolean;
   isBus?: boolean;
   amenityLabels?: Map<string, string>;
+  relatedRooms?: { id: string; number: string; isListed: boolean }[];
   onEdit?: () => void;
   onDelete?: () => void;
   onTogglePublish?: (publish: boolean) => Promise<void>;
@@ -1055,6 +1083,28 @@ function RoomAdCard({
           </div>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
+            {relatedRooms && relatedRooms.length > 0 && (
+              <div className="w-full mb-1">
+                <span className="text-[10px] uppercase font-semibold text-[var(--muted-foreground)] tracking-widest">Ichidagi {unitLabel}lar: </span>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {relatedRooms.map(room => (
+                    <span
+                      key={room.id}
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[10px] font-medium border",
+                        room.isListed
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400"
+                      )}
+                      title={room.isListed ? "Sotuvda" : "Yashirilgan"}
+                    >
+                      {room.number}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {amenities.slice(0, 5).map((amenity) => (
               <span
                 key={amenity}

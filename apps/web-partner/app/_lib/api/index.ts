@@ -6,3 +6,4 @@ export * as hotels from "./endpoints/hotels";
 export * as health from "./endpoints/health";
 export * as support from "./endpoints/support";
 export * as catalog from "./endpoints/catalog";
+export * as promotions from "./endpoints/promotions";

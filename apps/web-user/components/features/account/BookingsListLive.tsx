@@ -21,12 +21,14 @@ export function BookingsListLive({
   typeLabels,
   viewLabel,
   locale,
+  dict,
 }: {
   initialBookings: BookingView[];
   statuses: Record<string, string>;
   typeLabels: Record<string, string>;
   viewLabel: string;
   locale: string;
+  dict?: any;
 }) {
   const [bookings, setBookings] = useState(initialBookings);
   const { accessToken } = useRealtime();

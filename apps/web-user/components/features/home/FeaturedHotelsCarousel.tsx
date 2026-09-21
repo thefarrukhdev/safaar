@@ -43,7 +43,7 @@ export function FeaturedHotelsCarousel({
           <EmptyState 
             icon={<BedDouble className="h-10 w-10 text-slate-400 dark:text-slate-500" />}
             title={(dict as any).empty || "Hozircha bo'sh"} 
-            description="Ayni paytda tavsiya etilgan joylar mavjud emas. Tez orada yangilanadi." 
+            description={(dict as any).emptyDesc || "Ayni paytda tavsiya etilgan joylar mavjud emas. Tez orada yangilanadi."} 
           />
         </div>
       ) : (

@@ -575,7 +575,7 @@ export interface CmsArticle {
   title: string;
   type: 'news' | 'offer' | 'page';
   slug: string;
-  status: 'published' | 'draft';
+  status: 'published' | 'draft' | 'pending_review';
   publishedAt: string;
   metadata?: any;
 }

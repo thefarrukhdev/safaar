@@ -17,11 +17,18 @@ import {
 import { formatSum } from "@/lib/money";
 import type { RestaurantDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import { DatePicker } from "@/components/ui/DatePicker";
+import type { Locale } from "@/i18n/config";
+
+import type { CatalogDict } from "@/i18n/dictionaries";
 
 export function RestaurantBookingSection({
+  dict,
+
   restaurant,
 }: {
   restaurant: RestaurantDetailView;
+  dict: CatalogDict["restaurants"];
 }) {
   const params = useParams<{ lang?: string }>();
   const locale = params?.lang || "uz";
@@ -39,6 +46,7 @@ export function RestaurantBookingSection({
   const [guestPhone, setGuestPhone] = useState<string>("");
   const [guestEmail, setGuestEmail] = useState<string>("");
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+  const bDict = (dict as any).booking || {};
 
   // Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
@@ -73,7 +81,7 @@ export function RestaurantBookingSection({
   const handleOpenModal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim() || !guestPhone.trim()) {
-      setErrorMsg("Iltimos, ismingiz va telefon raqamingizni kiriting");
+      setErrorMsg(bDict.namePhoneRequired || "Iltimos, ismingiz va telefon raqamingizni kiriting");
       return;
     }
     setErrorMsg(null);
@@ -85,11 +93,11 @@ export function RestaurantBookingSection({
     if (paymentMethod === "card") {
       const rawCard = cardNumber.replace(/\s/g, "");
       if (rawCard.length < 16) {
-        setErrorMsg("Karta raqamini to'liq kiriting (16 xona)");
+        setErrorMsg(bDict.cardDigitsError || "Karta raqamini to'liq kiriting (16 xona)");
         return;
       }
       if (cardExpire.length < 5) {
-        setErrorMsg("Karta amal qilish muddatini kiriting (MM/YY)");
+        setErrorMsg(bDict.cardExpireError || "Karta amal qilish muddatini kiriting (MM/YY)");
         return;
       }
     }
@@ -124,7 +132,7 @@ export function RestaurantBookingSection({
       setSuccessBookingId(bookingId);
       setShowPaymentModal(false);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
     } finally {
       setLoading(false);
     }
@@ -134,26 +142,21 @@ export function RestaurantBookingSection({
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">
-          To'lov bajarildi va stol band qilindi!
-        </h3>
-        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-          Bron ID: <span className="font-mono font-bold">{successBookingId}</span>
+        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">{bDict.successTitle || "To'lov bajarildi va stol band qilindi!"}</h3>
+        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">{bDict.bookingId || "Bron ID:"}<span className="font-mono font-bold">{successBookingId}</span>
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-          <p><strong>Restoran:</strong> {restaurant.name}</p>
-          <p><strong>Stol:</strong> {selectedTable?.name ?? "Tanlangan stol"}</p>
-          <p><strong>Sana va vaqt:</strong> {date} ({slotTime})</p>
-          <p><strong>Mijoz:</strong> {guestName} ({guestPhone})</p>
-          <p><strong>To'lov usuli:</strong> {paymentMethod === "card" ? "Karta orqali" : "Naqd pul"}</p>
+          <p><strong>{bDict.restaurantLabel || "Restoran:"}</strong> {restaurant.name}</p>
+          <p><strong>{bDict.tableLabel || "Stol:"}</strong> {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}</p>
+          <p><strong>{bDict.dateTimeLabel || "Sana va vaqt:"}</strong> {date} ({slotTime})</p>
+          <p><strong>{bDict.clientLabel || "Mijoz:"}</strong> {guestName} ({guestPhone})</p>
+          <p><strong>{bDict.paymentMethodLabel || "To'lov usuli:"}</strong> {paymentMethod === "card" ? (bDict.cardPayment || "Karta orqali") : (bDict.cashPayment || "Naqd pul")}</p>
         </div>
         <Button
           onClick={() => setSuccessBookingId(null)}
           variant="secondary"
           className="mt-6 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
-        >
-          Yangi bron qilish
-        </Button>
+        >{bDict.newBooking || "Yangi bron qilish"}</Button>
       </div>
     );
   }
@@ -165,12 +168,8 @@ export function RestaurantBookingSection({
         className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-6 shadow-md dark:border-slate-800 dark:bg-slate-900"
       >
         <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
-          <Utensils className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-          Stol bron qilish
-        </h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Kechki ovqat yoki tushlik uchun stolni oldindan band qiling
-        </p>
+          <Utensils className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.title || "Stol bron qilish"}</h2>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{bDict.selectTimeGuests || "Kechki ovqat yoki tushlik uchun stolni oldindan band qiling"}</p>
 
         {errorMsg && !showPaymentModal && (
           <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
@@ -182,9 +181,7 @@ export function RestaurantBookingSection({
           {/* Table Selection */}
           {restaurant.tables.length > 0 && (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Stolni tanlang
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.selectTable || "Stolni tanlang"}</label>
               <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {restaurant.tables.map((tbl) => (
                   <button
@@ -198,7 +195,7 @@ export function RestaurantBookingSection({
                     }`}
                   >
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {tbl.name}
+                      {tbl.name.startsWith("Stol") ? tbl.name.replace("Stol", bDict.table || "Stol") : tbl.name}
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       {tbl.capacity} kishilik
@@ -213,22 +210,20 @@ export function RestaurantBookingSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" /> Sana
-              </label>
-              <input
-                type="date"
-                value={date}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setDate(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                required
-              />
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.date || "Sana"}</label>
+              <div className="mt-1 w-full">
+                <DatePicker
+                  locale={locale as Locale}
+                  value={date}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(newDate) => setDate(newDate)}
+                />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Clock className="mr-1 inline-block h-3.5 w-3.5" /> Kelish vaqti
-              </label>
+                <Clock className="mr-1 inline-block h-3.5 w-3.5" />{bDict.time || "Kelish vaqti"}</label>
               <input
                 type="time"
                 value={slotTime}
@@ -241,9 +236,7 @@ export function RestaurantBookingSection({
 
           {/* Guests Count */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Kishilar soni
-            </label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.guestsCount || "Kishilar soni"}</label>
             <input
               type="number"
               min={1}
@@ -258,12 +251,10 @@ export function RestaurantBookingSection({
           {/* Contact Info */}
           <div className="space-y-2.5 border-t border-slate-100 pt-3 dark:border-slate-800">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Ismingiz *
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.nameRequired || "Ismingiz *"}</label>
               <input
                 type="text"
-                placeholder="Masalan: Ali Valiyev"
+                placeholder={bDict.namePlaceholder || "Masalan: Ali Valiyev"}
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -272,12 +263,10 @@ export function RestaurantBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Telefon raqamingiz *
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.phoneRequired || "Telefon raqamingiz *"}</label>
               <input
                 type="tel"
-                placeholder="+998 90 123 45 67"
+                placeholder={bDict.phonePlaceholder || "+998 90 123 45 67"}
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -286,12 +275,10 @@ export function RestaurantBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Email (ixtiyoriy)
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.emailOptional || "Email (ixtiyoriy)"}</label>
               <input
                 type="email"
-                placeholder="ali@example.com"
+                placeholder={bDict.emailPlaceholder || "ali@example.com"}
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -302,9 +289,7 @@ export function RestaurantBookingSection({
           <Button
             type="submit"
             className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3"
-          >
-            Stolni bron qilish
-          </Button>
+          >{bDict.bookTable || "Stolni bron qilish"}</Button>
         </form>
       </div>
 
@@ -321,11 +306,9 @@ export function RestaurantBookingSection({
             </button>
 
             <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-              <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              To'lovni amalga oshirish
-            </h3>
+              <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.modalTitle || "To'lovni amalga oshirish"}</h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {restaurant.name} · {selectedTable?.name ?? "Stol bron qilish"}
+              {restaurant.name} · {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}
             </p>
 
             {errorMsg && (
@@ -337,21 +320,21 @@ export function RestaurantBookingSection({
             {/* Order Summary box */}
             <div className="mt-4 rounded-xl bg-slate-50 p-3.5 text-xs dark:bg-slate-800/60">
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Sana & Vaqt:</span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.dateTimeLabel || "Sana & Vaqt:"}</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {date} ({slotTime})
                 </span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-slate-500 dark:text-slate-400">Mijoz:</span>
+                <span className="text-slate-500 dark:text-slate-400">{bDict.clientLabel || "Mijoz:"}</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {guestName} ({guestPhone})
                 </span>
               </div>
               <div className="flex justify-between border-t border-slate-200/60 pt-2 text-sm font-bold dark:border-slate-700">
-                <span className="text-slate-900 dark:text-white">Jami summa:</span>
+                <span className="text-slate-900 dark:text-white">{bDict.totalAmount || "Jami summa:"}</span>
                 <span className="text-primary-600 dark:text-primary-400">
-                  {totalAmount > 0 ? formatSum(totalAmount) : "Bepul (Stol band etish)"}
+                  {totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")}
                 </span>
               </div>
             </div>
@@ -359,9 +342,7 @@ export function RestaurantBookingSection({
             <form onSubmit={handleProcessPayment} className="mt-4 space-y-4">
               {/* Payment Method Selector */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  To'lov usuli
-                </label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.paymentType || "To'lov usuli"}</label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -372,9 +353,7 @@ export function RestaurantBookingSection({
                         : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
-                    <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                    Bank kartasi
-                  </button>
+                    <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />{bDict.bankCard || "Bank kartasi"}</button>
 
                   <button
                     type="button"
@@ -385,9 +364,7 @@ export function RestaurantBookingSection({
                         : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
-                    <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    Naqd (Joyida)
-                  </button>
+                    <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{bDict.cashOnSite || "Naqd (Joyida)"}</button>
                 </div>
               </div>
 
@@ -395,9 +372,7 @@ export function RestaurantBookingSection({
               {paymentMethod === "card" && (
                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Karta raqami (Uzcard / Humo / Visa)
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardNumber || "Karta raqami (Uzcard / Humo / Visa)"}</label>
                     <div className="relative mt-1">
                       <input
                         type="text"
@@ -412,9 +387,7 @@ export function RestaurantBookingSection({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                      Amal qilish muddati (MM/YY)
-                    </label>
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardExpire || "Amal qilish muddati (MM/YY)"}</label>
                     <input
                       type="text"
                       placeholder="12/28"
@@ -427,17 +400,13 @@ export function RestaurantBookingSection({
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                    <Lock className="h-3 w-3 text-emerald-500" />
-                    256-bit xavfsiz to'lov shifrlanishi
-                  </div>
+                    <Lock className="h-3 w-3 text-emerald-500" />{bDict.securePayment || "256-bit xavfsiz to'lov shifrlanishi"}</div>
                 </div>
               )}
 
               {paymentMethod === "cash" && (
                 <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
-                  Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi.
-                </div>
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{bDict.cashNote || "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."}</div>
               )}
 
               <label className="flex items-start gap-2 text-xs">
@@ -467,10 +436,10 @@ export function RestaurantBookingSection({
                 className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
               >
                 {loading
-                  ? "To'lov amalga oshirilmoqda..."
+                  ? (bDict.processingPayment || "To'lov amalga oshirilmoqda...")
                   : paymentMethod === "card"
-                  ? `${totalAmount > 0 ? formatSum(totalAmount) : "To'lovni tasdiqlash"}`
-                  : "Bronni tasdiqlash (Naqd)"}
+                  ? `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`
+                  : (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")}
               </Button>
             </form>
           </div>

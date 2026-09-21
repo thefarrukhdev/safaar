@@ -9,7 +9,8 @@
     "title": "Mashhur yo'nalishlar",
     "subtitle": "Sayohatchilar eng ko'p tanlagan shaharlar",
     "empty": "Ma'lumotlar yuklanmoqda yoxud hozircha ro'yxat bo'sh.",
-    "hotels": "mehmonxona"
+    "hotels": "mehmonxona",
+    "emptyDesc": "Ayni paytda mashhur shaharlar ro'yxati shakllanmoqda."
   },
   "trust": {
     "hotels": "12,000+",
@@ -30,7 +31,8 @@
     "reviews": "sharh",
     "excellent": "A'lo",
     "good": "Yaxshi",
-    "all": "Barchasi"
+    "all": "Barchasi",
+    "emptyDesc": "Ayni paytda tavsiya etilgan joylar mavjud emas. Tez orada yangilanadi."
   },
   "deals": {
     "title": "Chegirmadagi takliflar",
@@ -41,22 +43,42 @@
     "perNight": "/ kecha",
     "book": "Bron qilish",
     "endsIn": "Tugashiga",
-    "days": "kun"
+    "days": "kun",
+    "emptyDesc": "Ushbu sahifada tez orada foydali chegirmalar paydo bo'ladi."
   },
   "reviews": {
     "title": "Mijozlar fikrlari",
     "items": [
-      { "name": "Shaxnoza Rahimova", "city": "Toshkent", "rating": 5, "text": "Safaar orqali birinchi marta bron qildim. Juda qulay va tez! Mehmonxona ajoyib edi." },
-      { "name": "Jasurbek Aliyev", "city": "Samarqand", "rating": 5, "text": "Samarqandga sayohatni Safaar orqali rejalashtirdim. Narxlar boshqa saytlardan arzonroq chiqdi." },
-      { "name": "Malika Karimova", "city": "Buxoro", "rating": 4, "text": "Chimgan oromgohini bron qildim. Suratlar haqiqatga to'liq mos keldi. Tashkillashtirish mukammal." },
-      { "name": "Bobur Hamidov", "city": "Farg'ona", "rating": 5, "text": "Dacha bron qilishni ham shu yerda qildim. Hammasi bir joyda — juda qulay. Kimlargadir tavsiya qilaman!" }
+      {
+        "name": "Shaxnoza Rahimova",
+        "city": "Toshkent",
+        "rating": 5,
+        "text": "Safaar orqali birinchi marta bron qildim. Juda qulay va tez! Mehmonxona ajoyib edi."
+      },
+      {
+        "name": "Jasurbek Aliyev",
+        "city": "Samarqand",
+        "rating": 5,
+        "text": "Samarqandga sayohatni Safaar orqali rejalashtirdim. Narxlar boshqa saytlardan arzonroq chiqdi."
+      },
+      {
+        "name": "Malika Karimova",
+        "city": "Buxoro",
+        "rating": 4,
+        "text": "Chimgan oromgohini bron qildim. Suratlar haqiqatga to'liq mos keldi. Tashkillashtirish mukammal."
+      },
+      {
+        "name": "Bobur Hamidov",
+        "city": "Farg'ona",
+        "rating": 5,
+        "text": "Dacha bron qilishni ham shu yerda qildim. Hammasi bir joyda — juda qulay. Kimlargadir tavsiya qilaman!"
+      }
     ]
   },
   "partners": {
     "title": "Ishonchli hamkorlar",
     "subtitle": "500+ mehmonxona va dam olish maskanlari bilan hamkorlikda"
   },
-
   "why": {
     "title": "Nega Safaar?",
     "items": {

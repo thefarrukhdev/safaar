@@ -28,6 +28,7 @@ import { JobQueueService } from '../infrastructure/job-queue.service';
 import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
 import { assertPublicHttpUrl } from '../common/ssrf-guard';
+import { isSlotWithinOperatingHours } from '../common/operating-hours';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
 
@@ -3358,9 +3359,15 @@ export class PartnersService {
         'SLOT_TIME_REQUIRED',
         'Vaqtni tanlang',
       );
+      // Yarim tundan keyin yopiladigan restoran (masalan 07:01 -> 01:53)
+      // uchun eski bir kunlik solishtiruv HAR QANDAY vaqtni rad etardi —
+      // `common/operating-hours.ts` ga qarang.
       if (
-        (hotel.check_in_time && slotTime < hotel.check_in_time) ||
-        (hotel.check_out_time && slotTime >= hotel.check_out_time)
+        !isSlotWithinOperatingHours(
+          slotTime,
+          hotel.check_in_time,
+          hotel.check_out_time,
+        )
       ) {
         throw new BadRequestException({
           code: 'SLOT_OUTSIDE_HOURS',

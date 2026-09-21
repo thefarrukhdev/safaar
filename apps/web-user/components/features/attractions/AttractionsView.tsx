@@ -218,9 +218,9 @@ export function AttractionsView({
   const categories = useMemo(
     () => [
       { id: "all", label: dict.categories?.all ?? dict.allPlaces },
-      { id: "historical", label: dict.categories?.historical ?? "Tarixiy" },
-      { id: "unesco", label: dict.categories?.unesco ?? "UNESCO" },
-      { id: "nature", label: dict.categories?.nature ?? "Tabiat" },
+      { id: "historical", label: dict.categories?.historical },
+      { id: "unesco", label: dict.categories?.unesco },
+      { id: "nature", label: dict.categories?.nature },
     ],
     [dict],
   );

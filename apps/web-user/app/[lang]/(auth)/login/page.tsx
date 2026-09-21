@@ -14,7 +14,7 @@ export async function generateMetadata({
   if (!isLocale(lang)) return {};
   const dict = await getDictionary(lang as Locale, "auth");
   return {
-    title: dict.title ?? "Kirish",
+    title: dict.title,
     robots: { index: false, follow: false },
   };
 }

@@ -1100,7 +1100,11 @@ model Favorite {
 
 model Review {
   id        String       @id @default(uuid()) @db.Uuid
-  userId    String       @map("user_id") @db.Uuid
+  // Mehmon (guest) sharhi uchun NULL — sharh qoldirish login talab qilmaydi
+  // (20260920120000_reviews_guest_authorship).
+  userId    String?      @map("user_id") @db.Uuid
+  authorType String      @default("USER") @map("author_type") @db.VarChar(32)
+  guestName String?      @map("guest_name") @db.VarChar(200)
   bookingId String?      @map("booking_id") @db.Uuid
   targetType String      @map("target_type") @db.VarChar(32)
   targetId  String       @map("target_id") @db.Uuid
@@ -1115,9 +1119,12 @@ model Review {
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([targetType, targetId, status])
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([bookingId])
   @@map("reviews")
 }
 

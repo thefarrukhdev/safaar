@@ -12,4 +12,12 @@ export const promosService = {
     const raw = await rawApi.get<unknown[]>("/promos", { cache: "no-store" });
     return camelizeKeys<PromoView[]>(raw);
   },
+
+  /**
+   * `POST /promos/validate` — checkout'da promo-kodni tekshiradi.
+   */
+  async validate(code: string): Promise<{ valid: boolean; discount_type: string; discount_value: number }> {
+    const raw = await rawApi.post<{ valid: boolean; discount_type: string; discount_value: number }>("/promos/validate", { code });
+    return raw;
+  },
 };

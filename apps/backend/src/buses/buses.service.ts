@@ -241,8 +241,42 @@ export class BusesService {
       });
     }
 
+    // `SELECT *` ATAYLAB olib tashlandi: bu marshrut ommaviy (guard yo'q),
+    // shuning uchun `reviews` jadvaliga qo'shiladigan har bir yangi ustun
+    // (masalan `guest_name`) avtomatik ravishda ommaga chiqib ketardi.
+    // `status` filtri ham yo'q edi — moderatsiya navbatidagi
+    // (`pending_review`) va yashirilgan (`hidden`) sharhlar ko'rinib
+    // turardi. Ikkalasi ham shu yerda tuzatildi.
     return this.pg.query(
-      "SELECT * FROM reviews WHERE target_type = 'bus_company' AND target_id = $1 ORDER BY created_at DESC",
+      `SELECT r.id::text,
+              r.target_type,
+              r.target_id::text,
+              r.rating::float8,
+              r.cleanliness::float8,
+              r.staff::float8,
+              r.location::float8,
+              r.value_for_money::float8,
+              r.photos,
+              r.body,
+              r.status::text,
+              r.author_type,
+              CASE
+                WHEN r.author_type = 'GUEST'
+                  THEN coalesce(nullif(trim(coalesce(r.guest_name, '')), ''), 'Mehmon')
+                ELSE coalesce(
+                  nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''),
+                  'Mijoz'
+                )
+              END AS author_name,
+              (r.booking_id IS NOT NULL) AS verified,
+              r.created_at,
+              r.updated_at
+       FROM reviews r
+       LEFT JOIN users u ON u.id = r.user_id
+       WHERE r.target_type = 'bus_company'
+         AND r.target_id = $1
+         AND r.status = 'published'
+       ORDER BY r.created_at DESC`,
       [id],
     );
   }

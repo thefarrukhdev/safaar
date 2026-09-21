@@ -1484,6 +1484,24 @@ describe('AdminService frontend action endpoints', () => {
       expect(params).toEqual([]);
     });
 
+    // Talab #20 (reviews E2E QA topshirig'i) — yuqoridagi ikkita test
+    // faqat status/target_type/min_rating filtrlarini tekshiradi, LIMIT/
+    // OFFSET emissiyasi ilgari tasdiqlanmagan edi. Bu yerga QO'SHILDI
+    // (mavjud filtr testlari TAKRORLANMAYDI).
+    it('reviewsList sukut bo`yicha LIMIT/OFFSET qo`shadi (admin pagination, defaultLimit=50)', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({});
+      const [sql] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('limit 50 offset 0');
+    });
+
+    it('reviewsList so`ralgan page/limit qiymatlariga mos LIMIT/OFFSET chiqaradi', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({ page: '2', limit: '10' });
+      const [sql] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('limit 10 offset 10');
+    });
+
     it("reviewModerate('publish') sets status=published and writes old/new audit", async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: reviewId, status: 'pending_review' }]) // SELECT existing

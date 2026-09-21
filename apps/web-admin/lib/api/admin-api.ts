@@ -739,7 +739,7 @@ function toCmsArticle(row: ApiRecord, type?: CmsArticle['type']): CmsArticle {
     title: localizedText(row.title, asString(row.slug, 'Kontent')),
     type: articleType,
     slug: asString(row.slug),
-    status: asString(row.status) === 'published' ? 'published' : 'draft',
+    status: asString(row.status) === 'published' ? 'published' : asString(row.status) === 'pending_review' ? 'pending_review' : 'draft',
     publishedAt: asString(
       row.publishedAt ?? row.published_at ?? row.created_at,
       new Date().toISOString(),

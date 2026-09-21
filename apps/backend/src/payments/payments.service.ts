@@ -194,14 +194,30 @@ export class PaymentsService {
       // 'uzum_checkout'` orqali ishlaydi); aks holda `provider`ning o'zi
       // so'ralgan usul (click/payme/cash/uzum/uzum_checkout-schemasiz).
       const existingMethod = String(existing.card_scheme ?? existing.provider);
-      if (existingMethod === requested) {
-        // Bir xil usul qayta so'raldi — mavjud (pending/processing) qatorni
-        // o'zgarishsiz qaytaramiz (real idempotentlik/duplicate-click himoyasi).
-        return this.shapePaymentResponse(existing);
-      }
       const hasLiveExternalSession =
-        existing.status === 'processing' || Boolean(existing.provider_reference);
-      if (hasLiveExternalSession) {
+        existing.status === 'processing' ||
+        Boolean(existing.provider_reference);
+      if (existingMethod === requested) {
+        // Bir xil usul qayta so'raldi. Agar qator HAQIQIY tashqi sessiya
+        // bo'lsa (`processing` va/yoki `provider_reference`) — o'zgarishsiz
+        // qaytaramiz: bu real idempotentlik/duplicate-click himoyasi,
+        // `checkout.register()` IKKINCHI marta CHAQIRILMAYDI.
+        //
+        // LEKIN Uzum Checkout orqali ketadigan usullar (humo/uzcard/visa/
+        // mastercard va schemasiz `uzum_checkout`) uchun qator faqat
+        // `/payment/register` javobi bilan "tirik" bo'ladi. Bron
+        // yaratilishida yozilgan ICHKI QORALAMA (`bookings.service.ts::
+        // createPayment()` — `pending`, `provider_reference` YO'Q,
+        // `payment_url` yo'q) esa O'LIK: uni qaytarish foydalanuvchini
+        // abadiy "to'lov kutilmoqda" holatida qoldirardi, chunki
+        // `checkout.register()` HECH QACHON chaqirilmasdi. Bunday qoralama
+        // quyida xavfsiz almashtiriladi (DELETE + yangi, real sessiya).
+        const needsExternalRegistration =
+          isCardScheme(requested) || requested === 'uzum_checkout';
+        if (hasLiveExternalSession || !needsExternalRegistration) {
+          return this.shapePaymentResponse(existing);
+        }
+      } else if (hasLiveExternalSession) {
         // Boshqa (yangi so'ralgan) usulga hali o'ta olmaymiz — eskisi
         // allaqachon HAQIQIY tashqi sessiya bilan bog'langan (masalan Uzum
         // Checkout `orderId`), uni jim tashlab yuborish reconciliation'ni
@@ -213,14 +229,15 @@ export class PaymentsService {
       // (webhook/register) tegmagan (`pending`, `provider_reference` yo'q).
       // Bu odatda booking yaratilishida ICHKI yaratilgan birinchi qator
       // (`bookings.service.ts::createPayment()`), agar checkout URL'i
-      // darhol tuzilmagan bo'lsa. Xavfsiz almashtiramiz — aks holda
-      // foydalanuvchi boshqa to'lov usulini TANLAY OLMAS edi (ilgari shu
+      // darhol tuzilmagan bo'lsa. Bu yerga IKKI yo'l bilan kelinadi:
+      // boshqa usul so'ralgan (yuqoridagi `else if`ga tushmagan), YOKI
+      // AYNAN shu usul so'ralgan-u, qator Uzum Checkout'ga hali umuman
+      // ro'yxatdan o'tmagan o'lik qoralama. Xavfsiz almashtiramiz — aks
+      // holda foydalanuvchi boshqa to'lov usulini TANLAY OLMAS edi (ilgari shu
       // audit findingi: `provider` so'rov maydoni butunlay e'tiborga
       // olinmasdi, chunki bu tekshiruv `provider`ni o'qishdan OLDIN
       // qaytib ketardi).
-      await this.pg.query('DELETE FROM payments WHERE id = $1', [
-        existing.id,
-      ]);
+      await this.pg.query('DELETE FROM payments WHERE id = $1', [existing.id]);
     }
 
     return this.writeNewPayment(booking, requested);
@@ -230,6 +247,28 @@ export class PaymentsService {
     booking: BookingVisibilityRow,
     requested: string,
   ) {
+    // ── HIMOYA: 0 (yoki manfiy/yaroqsiz) summali bron ──────────────────
+    // BEPUL bron (masalan restoran rezervatsiyasi) uchun to'lov sessiyasi
+    // YARATILMAYDI: hech bir provayder 0 so'mlik buyurtmani ro'yxatga ola
+    // olmaydi. Bunday bron `bookings.service.ts::confirmZeroAmountBooking()`
+    // orqali yaratilishi bilanoq `confirmed` bo'ladi, shuning uchun normal
+    // oqimda bu yerga YETIB KELMAYDI — lekin boshqa yo'llar mavjud
+    // (`retryPayment()`, eski/qo'lda yaratilgan bronlar), shuning uchun bu
+    // tekshiruv MAJBURIY.
+    //
+    // Busiz: karta turi tanlangan bo'lsa `createUzumCheckoutPayment()`
+    // ichidagi `calculateCardSchemeFee()` `RangeError` tashlaydi, va u
+    // `checkout.register()`ni o'rab turgan try/catch'dan TASHQARIDA
+    // hisoblangani uchun mijozga 500 (Internal Server Error) sifatida
+    // chiqib ketardi. Endi — aniq, o'qiladigan 422.
+    const grossAmount = Number(booking.total_amount);
+    if (!Number.isFinite(grossAmount) || grossAmount <= 0) {
+      throw new UnprocessableEntityException({
+        code: 'PAYMENT_NOT_REQUIRED',
+        message: 'Bu bron uchun to‘lov talab qilinmaydi (summa 0)',
+      });
+    }
+
     // HUMO/UZCARD/VISA/MASTERCARD — barchasi Uzum Checkout orqali (yagona
     // real, checkout-sahifali karta integratsiyasi; karta turi faqat fee
     // stavkasini belgilaydi, alohida provayder EMAS). `uzum_checkout`
@@ -1937,10 +1976,20 @@ export class PaymentsService {
       return { scanned: 0, updated: 0 };
     }
 
+    // `coalesce(provider_reference, '') <> ''` — quyidagi sikldagi
+    // `if (!orderId) continue;` bilan AYNAN bir xil shart, faqat SQL
+    // darajasida: qator bo'yicha xatti-harakat O'ZGARMAYDI (orderId'siz
+    // qatorlar avval ham hech narsa qilmasdan o'tkazib yuborilardi), lekin
+    // `LIMIT 100` oynasini bron yaratilishidagi ICHKI QORALAMALAR
+    // (`provider='uzum_checkout'`, `pending`, `provider_reference` YO'Q —
+    // `bookings.service.ts::createPayment()`) band qilib, HAQIQIY
+    // `processing` sessiyalarni rekonsiliatsiyadan siqib chiqarmaydi.
+    // `olderThanMinutes` oynasi va `LIMIT` ATAYLAB o'zgartirilmagan.
     const rows = await this.pg.query<PaymentRow>(
       `SELECT * FROM payments
        WHERE provider = 'uzum_checkout'
          AND status IN ('pending', 'processing')
+         AND coalesce(provider_reference, '') <> ''
          AND created_at < now() - make_interval(mins => $1::int)
        ORDER BY created_at ASC
        LIMIT 100`,

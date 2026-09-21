@@ -21,7 +21,7 @@ function formatMessageTime(createdAt: string): string {
 
 export function LiveSupportWidget() {
   const params = useParams<{ lang?: string }>();
-  const locale = params.lang ?? "uz";
+  const locale = params.lang;
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,9 +39,7 @@ export function LiveSupportWidget() {
 
     if (!result.ok) {
       setError(
-        result.authRequired
-          ? "Xabar yuborish uchun akkauntga kiring."
-          : result.error ?? "Xabar yuborishda xatolik yuz berdi.",
+        result.authRequired ? "Xabar yuborish uchun akkauntga kiring." : (result.error || "Xatolik"),
       );
       return;
     }

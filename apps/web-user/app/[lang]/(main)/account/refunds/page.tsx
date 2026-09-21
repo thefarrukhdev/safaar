@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const dict = await getDictionary(lang as Locale, "account");
-  return { title: dict.refunds?.title ?? "Qaytarishlar", robots: { index: false, follow: false } };
+  return { title: dict.refunds?.title, robots: { index: false, follow: false } };
 }
 
 import { isLocale, type Locale } from "@/i18n/config";
@@ -54,7 +54,7 @@ export default async function AccountRefundsPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          {dict.refunds?.title ?? "Mening qaytarishlarim"}
+          {dict.refunds?.title}
         </h2>
       </div>
 
@@ -62,7 +62,7 @@ export default async function AccountRefundsPage({
         <Card>
           <CardBody className="py-12 text-center">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {dict.refunds?.empty ?? "Hozircha qaytarishlar yo'q."}
+              {dict.refunds?.empty}
             </p>
           </CardBody>
         </Card>
@@ -89,7 +89,7 @@ export default async function AccountRefundsPage({
                     </span>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    <span className="font-medium">{dict.refunds?.reason ?? "Sabab"}:</span> {refund.reason}
+                    <span className="font-medium">{dict.refunds?.reason}:</span> {refund.reason}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0">

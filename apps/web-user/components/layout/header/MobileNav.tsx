@@ -74,7 +74,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
           onClick={() => setMenuOpen((v) => !v)}
           aria-expanded={menuOpen}
           aria-label={menuOpen ? "Menyuni yopish" : "Menyuni ochish"}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10"
         >
           {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>

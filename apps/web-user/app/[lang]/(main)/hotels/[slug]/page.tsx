@@ -131,14 +131,9 @@ export default async function Page({
 
   return (
     <>
-      {/* Back Button — main contentdan TASHQARIDA, chap tomonda sticky */}
-      <div className="fixed left-4 top-28 z-50 hidden xl:block">
-        <BackButton />
-      </div>
-
-      <main className="mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col gap-6 px-3 sm:px-4 md:px-8 py-4 sm:py-6 pb-28 md:pb-6">
-        {/* Back Button — mobil va tablet uchun (xl'dan kichik ekranlar) */}
-        <div className="xl:hidden">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 sm:gap-6 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
+        {/* Back Button */}
+        <div className="w-full flex items-center">
           <BackButton />
         </div>
 

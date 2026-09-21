@@ -64,5 +64,6 @@
     "prev": "Previous",
     "next": "Next",
     "pageOf": "{page} / {total}"
-  }
+  },
+  "mapView": "Map"
 }

@@ -115,10 +115,10 @@ export async function AccommodationPage({
       <div className="relative mb-4 sm:mb-6 flex h-[160px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-[20px] sm:rounded-xl bg-gradient-to-r from-[#f0f7ff] to-[#e6f2ff] px-5 sm:px-8 md:px-12 dark:from-slate-900 dark:to-slate-800">
         <div className="relative z-10 w-full sm:max-w-[65%] lg:max-w-[52%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-[#0f172a] dark:text-white leading-tight">
-            Mehmonxona, Dacha, Sanatoriya va Oromgohlar qidirish xizmati
+            {dict.bannerTitle || "Mehmonxona, Dacha, Sanatoriya va Oromgohlar qidirish xizmati"}
           </h1>
           <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-[#475569] dark:text-slate-400">
-            O'zbekiston bo'ylab o'zingizga mos va qulay turar joylarni arzon narxlarda kashf eting.
+            {dict.bannerSubtitle || "O'zbekiston bo'ylab o'zingizga mos va qulay turar joylarni arzon narxlarda kashf eting."}
           </p>
         </div>
         

@@ -65,6 +65,20 @@
         "Oldindan to'lovsiz",
         "Moslashuvchan bekor qilish"
       ]
+    },
+    "local_card": {
+      "title": "Milliy kartalar",
+      "desc": "Uzcard, Humo orqali xavfsiz to'lov",
+      "badges": [
+        "3D-Secure xavfsizlik"
+      ]
+    },
+    "intl_card": {
+      "title": "Xalqaro kartalar",
+      "desc": "Visa, Mastercard orqali xavfsiz to'lov",
+      "badges": [
+        "3D-Secure xavfsizlik"
+      ]
     }
   },
   "errors": {
@@ -75,5 +89,14 @@
     "PROMO_INVALID": "Promokod noto'g'ri yoki muddati o'tgan.",
     "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
     "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering."
+  },
+  "cardPayment": {
+    "cardNumber": "Karta raqami",
+    "expiryDate": "Muddat (AA/YY)",
+    "smsCode": "SMS kod",
+    "sendSms": "SMS kod olish",
+    "verifyAndPay": "Tasdiqlash va To'lash",
+    "enterSmsPrompt": "Telefoningizga yuborilgan SMS kodni kiriting",
+    "resendSms": "Qayta yuborish"
   }
 }

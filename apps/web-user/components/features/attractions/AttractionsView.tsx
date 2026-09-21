@@ -7,7 +7,7 @@ import { AttractionCard } from "@/components/attractions/AttractionCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { AttractionItem } from "@/components/catalog/types";
-import type { CatalogDict } from "@/i18n/dictionaries";
+import type { AttractionsDict } from "@/i18n/dictionaries";
 
 // ─── SHIMMER SKELETON (Design System: Sweep, not Pulse) ──────────────────────
 function ShimmerCard() {
@@ -22,7 +22,7 @@ function ShimmerCard() {
   );
 }
 
-// ─── STICKY GLASSMORPHIC FILTER HEADER ───────────────────────────────────────
+// ─── FILTER HEADER (Responsive: Horizontal scroll on mobile) ─────────────────
 function FilterHeader({
   query,
   onQueryChange,
@@ -34,93 +34,90 @@ function FilterHeader({
   dict,
 }: {
   query: string;
-  onQueryChange: (v: string) => void;
+  onQueryChange: (q: string) => void;
   selectedCategory: string;
-  onCategoryChange: (v: string) => void;
+  onCategoryChange: (c: string) => void;
   categories: { id: string; label: string }[];
   onOpenFilters: () => void;
   totalCount: number;
-  dict: CatalogDict["attractions"];
+  dict: AttractionsDict;
 }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-white/40 bg-white/72 backdrop-blur-md dark:border-slate-800/50 dark:bg-slate-950/72 transition-all duration-500">
-      {/* Top row */}
-      <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2 sm:px-6">
-        <div className="flex items-center gap-2">
-          <Compass className="h-4 w-4 text-primary-600 transition-colors duration-500" />
-          <div>
-            <span className="text-sm font-black text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>
-              {dict.title}
-            </span>
-            {/* Live count — Lapis Blue accent (Design System info color) */}
-            <span className="ml-2 rounded-full bg-[#3B55C8]/10 px-2 py-0.5 text-[10px] font-bold text-[#3B55C8] dark:bg-[#3B55C8]/20 dark:text-[#7F96E8]">
-              {totalCount} ta
-            </span>
-          </div>
+    <div className="sticky top-0 z-30 flex flex-col gap-3 bg-slate-50/80 px-4 py-3 backdrop-blur-xl dark:bg-[#080E0D]/80 sm:gap-4 sm:px-5 sm:py-4">
+      {/* Search and Filters */}
+      <div className="flex w-full items-center gap-2">
+        <div className="relative flex-1">
+          <Input
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder={dict.searchPlaceholder || "Obida nomi yoki shahar bo'yicha qidiruv..."}
+            className="h-12 w-full rounded-full border-slate-200 bg-white pl-11 pr-4 text-sm font-medium shadow-xs transition-shadow hover:shadow-sm focus-visible:ring-primary-500 dark:border-slate-800 dark:bg-slate-900"
+          />
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
         </div>
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 md:hidden"
+          aria-label="Filtrlar"
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+        </button>
+      </div>
 
-        <div className="flex items-center gap-2">
+      {/* Desktop categories */}
+      <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-none">
+        {categories.map((cat) => (
           <button
+            key={cat.id}
             type="button"
-            onClick={onOpenFilters}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 shadow-sm"
-            aria-label="Filtrlar"
+            onClick={() => onCategoryChange(cat.id)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${
+              selectedCategory === cat.id
+                ? "bg-primary-600 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+            }`}
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            {cat.label}
           </button>
-        </div>
+        ))}
       </div>
-
-      {/* Search Input */}
-      <div className="relative px-4 pb-2 sm:px-6">
-        <Search className="absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 sm:left-9" />
-        <Input
-          type="text"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Nom yoki shahar bo'yicha qidirish..."
-          className="pl-10 text-sm"
-        />
-      </div>
-
-      {/* Category Chips — Silk Road palette per category */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-0 scrollbar-none sm:px-6">
-        {categories.map((cat) => {
-          const isActive = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => onCategoryChange(cat.id)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 ${
-                isActive
-                  ? "bg-primary-600 text-white shadow-md"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-primary-300 hover:text-primary-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-primary-600"
-              }`}
-            >
-              {cat.label}
-            </button>
-          );
-        })}
+      
+      {/* Results count */}
+      <div className="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+        {totalCount} {dict.title}
       </div>
     </div>
   );
 }
 
-// ─── MAP PLACEHOLDER (Warm Neutral tints from design system) ─────────────────
-function MapPlaceholder({ dict }: { dict: CatalogDict["attractions"] }) {
+// ─── PLACEHOLDER MAP (Matches layout aesthetics) ─────────────────────────────
+function MapPlaceholder({ dict }: { dict: AttractionsDict }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 m-4 rounded-xl border-2 border-dashed border-slate-200/80 bg-[#F8FAF9] dark:border-slate-700/60 dark:bg-slate-900/40">
-      {/* Jade soft glow behind icon */}
-      <div className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-primary-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_12px_rgba(5,150,105,0.12)] dark:bg-primary-900/20">
-        <Map className="h-9 w-9 text-primary-600 dark:text-primary-400" />
+    <div className="relative h-full w-full bg-[#E5E5DF] dark:bg-[#1A1A1A]">
+      {/* Decorative Grid */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+      
+      {/* Floating UI Elements */}
+      <div className="absolute right-6 top-6 flex flex-col gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg dark:bg-slate-800 dark:text-slate-300">
+          <Compass className="h-5 w-5" />
+        </div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg dark:bg-slate-800 dark:text-slate-300">
+          <LayoutGrid className="h-5 w-5" />
+        </div>
       </div>
-      <div className="text-center">
-        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(dict as any).map?.title || "Interaktiv xarita"}</p>
-        <p className="mt-1 flex items-center justify-center gap-1 text-xs text-slate-400">
-          <MapPin className="h-3 w-3" />
-          {(dict as any).map?.soon || "Tez orada ulanadi"}
-        </p>
+      
+      {/* Center Message */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-4 rounded-3xl bg-white/80 p-6 backdrop-blur-xl shadow-2xl dark:bg-slate-950/80">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+          <MapPin className="h-8 w-8" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-lg font-black text-slate-900 dark:text-white">{dict.map?.title}</h3>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict.map?.soon}</p>
+        </div>
       </div>
     </div>
   );
@@ -207,7 +204,7 @@ export function AttractionsView({
   dict,
   items,
 }: {
-  dict: CatalogDict["attractions"];
+  dict: AttractionsDict;
   items: AttractionItem[];
 }) {
   const [query, setQuery] = useState("");
@@ -258,7 +255,7 @@ export function AttractionsView({
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Compass className="h-6 w-6" />}
-              title={(dict as any).empty?.title || "Ma'lumot topilmadi"}
+              title={dict.empty?.title || "Ma'lumot topilmadi"}
             />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -296,11 +293,11 @@ export function AttractionsView({
           md:hidden"
       >
         <Map className="h-4 w-4" />
-        {(dict as any).map?.show || "Xaritada ko'rish"}
+        {dict.map?.show || "Xaritada ko'rish"}
       </button>
 
       {/* ── MOBILE BOTTOM SHEET: Filters ──────────────────────── */}
-      <BottomSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={(dict as any).filters?.title || "Filtrlar"}>
+      <BottomSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={dict.filters?.title || "Filtrlar"}>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <button
@@ -320,12 +317,12 @@ export function AttractionsView({
       </BottomSheet>
 
       {/* ── MOBILE BOTTOM SHEET: Map ──────────────────────────── */}
-      <BottomSheet open={mapOpen} onClose={() => setMapOpen(false)} title={(dict as any).map?.title || "Xarita"}>
+      <BottomSheet open={mapOpen} onClose={() => setMapOpen(false)} title={dict.map?.title || "Xarita"}>
         <div className="flex h-[42vh] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-[#F8FAF9]">
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-50">
             <Map className="h-7 w-7 text-primary-600" />
           </div>
-          <p className="text-sm font-bold text-slate-600">{(dict as any).map?.soon || "Xarita tez orada ulanadi"}</p>
+          <p className="text-sm font-bold text-slate-600">{dict.map?.soon || "Xarita tez orada ulanadi"}</p>
         </div>
       </BottomSheet>
     </div>

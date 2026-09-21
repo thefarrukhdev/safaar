@@ -186,10 +186,24 @@ export class CmsService {
       created_at: row.created_at,
       updated_at: row.updated_at,
       hotel_id: meta.hotel_id ?? meta.hotelId ?? '',
+      listing_type: meta.listing_type ?? meta.listingType ?? '',
       city_name: meta.city_name ?? meta.cityName ?? {},
       image_url: meta.image_url ?? meta.imageUrl ?? '',
-      old_price: numberValue(meta.old_price ?? meta.oldPrice),
-      new_price: numberValue(meta.new_price ?? meta.newPrice),
+      // Narx kalitlari uchta avlodda yozilgan: `old_price`/`new_price`
+      // (migratsiya + seed), `oldPrice`/`newPrice` (eski admin Deals sahifasi)
+      // va `oldPriceSum`/`newPriceSum` (hozirgi admin Deals sahifasi).
+      // `cmsUpdate` metadata'ni `||` bilan SHALLOW merge qiladi, ya'ni eski
+      // kalitlar o'chmaydi — shuning uchun eng oxirgi yozilgan kalit
+      // (`*Sum`) birinchi o'qiladi, aks holda admin narxni tahrirlagandan
+      // keyin ham ommaviy sahifada eski narx ko'rinib qolardi.
+      // `??` null/undefined'ni o'tkazib yuboradi, shuning uchun admin narx
+      // maydonini bo'sh qoldirsa (`oldPriceSum: null`) eski qiymat saqlanadi.
+      old_price: numberValue(
+        meta.oldPriceSum ?? meta.old_price ?? meta.oldPrice,
+      ),
+      new_price: numberValue(
+        meta.newPriceSum ?? meta.new_price ?? meta.newPrice,
+      ),
       discount_percent: numberValue(
         meta.discount_percent ?? meta.discountPercent,
       ),

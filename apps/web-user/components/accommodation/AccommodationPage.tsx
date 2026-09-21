@@ -113,7 +113,7 @@ export async function AccommodationPage({
     <main className="relative mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col px-3 sm:px-4 md:px-8 pb-8 pt-3 sm:pt-6">
       
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-[20px] sm:rounded-xl px-5 sm:px-8 md:px-12">
+      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         {/* Background photo */}
         <Image
           src="/hotels_hero.jpg"
@@ -126,8 +126,6 @@ export async function AccommodationPage({
         />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/45" />
-        {/* Bottom gradient blending into page */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-100/80 to-transparent dark:from-slate-950/80" />
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">

@@ -60,7 +60,7 @@ export default async function AccountRefundsPage({
 
       {(!refunds || refunds.length === 0) ? (
         <Card>
-          <CardBody className="py-12 text-center">
+          <CardBody className="py-12 sm:py-16 text-center">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               {dict.refunds?.empty}
             </p>
@@ -70,7 +70,7 @@ export default async function AccountRefundsPage({
         <div className="grid gap-4">
           {refunds.map((refund) => (
             <Card key={refund.id}>
-              <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between py-4">
+              <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between py-4 sm:py-5">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-900 dark:text-white">

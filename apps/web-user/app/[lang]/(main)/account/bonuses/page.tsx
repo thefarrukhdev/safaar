@@ -68,7 +68,7 @@ export default async function AccountBonusesPage({
 
       {entries.length === 0 ? (
         <Card>
-          <CardBody className="py-12 text-center">
+          <CardBody className="py-12 sm:py-16 text-center">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict.bonuses.empty}</p>
           </CardBody>
         </Card>

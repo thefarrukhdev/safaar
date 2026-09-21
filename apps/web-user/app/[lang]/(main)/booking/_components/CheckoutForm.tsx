@@ -47,7 +47,7 @@ export function CheckoutForm({
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("card" as any);
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [isSmsLoading, setIsSmsLoading] = useState(false);
   const [smsCode, setSmsCode] = useState("");
@@ -233,13 +233,13 @@ export function CheckoutForm({
         <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
           <PaymentSelector
-            defaultValue="uzcard"
+            defaultValue={"card" as any}
             name="paymentMethod"
             dict={dict.paymentMethods}
             onChange={setPaymentMethod}
           />
           
-          {(paymentMethod === "uzcard" || paymentMethod === "humo" || paymentMethod === "visa" || paymentMethod === "mastercard") && (
+          {(paymentMethod as any === "card") && (
             <div className="mt-4 grid grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
               <div className="col-span-2 sm:col-span-1">
                 <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">

@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/Input";
 import type { ProfileView } from "@/types/view";
 import { AvatarForm } from "./AvatarForm";
 import { CheckCircle2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useEffect } from "react";
 
 export function ProfileForm({
   locale,
@@ -28,6 +30,14 @@ export function ProfileForm({
     updateProfileAction,
     { ok: false },
   );
+
+  useEffect(() => {
+    if (state.ok) {
+      toast.success(dict.saved);
+    } else if (state.error) {
+      toast.error(dict.error);
+    }
+  }, [state, dict]);
 
   return (
     <div className="flex flex-col gap-8">

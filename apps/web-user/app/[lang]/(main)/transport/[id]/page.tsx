@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Users, Fuel, Luggage, Car } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
+import { getDictionary } from "@/i18n/dictionaries";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export default async function TransportDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
+  const dict = await getDictionary(locale, "transport");
   let transport;
   try {
     transport = await getTransport(id, locale);
@@ -127,7 +129,7 @@ export default async function TransportDetailPage({
         <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600 dark:text-slate-300">
           <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
             <Users className="h-4 w-4 text-slate-400" />
-            {transport.seats} o'rin
+            {transport.seats} {(dict as any).detail?.seats || "o'rin"}
           </span>
           {transport.fuelType && (
             <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
@@ -138,7 +140,7 @@ export default async function TransportDetailPage({
           {transport.luggageCapacityBags != null && (
             <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
               <Luggage className="h-4 w-4 text-slate-400" />
-              {transport.luggageCapacityBags} sumka
+              {transport.luggageCapacityBags} {(dict as any).detail?.bags || "sumka"}
             </span>
           )}
           {transport.phone && (
@@ -156,18 +158,15 @@ export default async function TransportDetailPage({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-8">
           <section className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Transport haqida
-            </h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{(dict as any).detail?.about || "Transport haqida"}</h2>
             <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
-              {transport.companyName || "Hamkor"} tomonidan taqdim etiladigan{" "}
-              {transport.name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.
+              {((dict as any).detail?.rentalDescription || "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.").replace("{company}", transport.companyName || "Hamkor").replace("{name}", transport.name)}
             </p>
           </section>
         </div>
 
         <aside className="lg:sticky lg:top-24">
-          <TransportBookingSection transport={transport} />
+          <TransportBookingSection transport={transport} dict={dict} />
         </aside>
       </div>
     </main>

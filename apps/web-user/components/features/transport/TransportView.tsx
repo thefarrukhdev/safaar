@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Car, ShieldCheck, Users, Search, Calendar, Minus, Plus, CreditCard, Clock,
 } from "lucide-react";
@@ -157,23 +158,25 @@ export function TransportView({
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
 
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-5 sm:mb-8 flex h-[150px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-xl sm:rounded-[32px] bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 px-5 sm:px-8 md:px-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-        <div className="relative z-10 w-full sm:max-w-[65%]">
-          <h1 className="mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight" style={{ fontFamily: "var(--font-manrope, sans-serif)", letterSpacing: "-0.02em" }}>
+      <div className="relative mb-5 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+        <Image
+          src="/transport_hero.jpg"
+          alt="Transport"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-black/50" />
+
+        <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
+          <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
             {dict.title}
           </h1>
-          <p className="hidden sm:block text-[14px] sm:text-[15px] font-medium leading-relaxed text-slate-300">
+          <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
             {dict.subtitle}
           </p>
-        </div>
-
-        <div
-          className="absolute inset-0 z-0 h-full w-full bg-cover bg-center bg-no-repeat opacity-[0.25] mix-blend-screen pointer-events-none"
-          style={{ backgroundImage: "url('/Tashkent-city-skyline.jpeg')" }}
-        ></div>
-
-        <div className="absolute -bottom-2 right-4 sm:right-12 z-10 w-[180px] sm:w-[280px] lg:w-[400px] opacity-80 sm:opacity-100 flex items-center justify-center">
-          <Car className="h-32 w-32 sm:h-48 sm:w-48 text-white/30 drop-shadow-2xl" />
         </div>
       </div>
 

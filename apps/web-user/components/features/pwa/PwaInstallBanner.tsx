@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Download, X, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+import type { CommonDict } from "@/i18n/dictionaries";
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function PwaInstallBanner() {
+export function PwaInstallBanner({ dict }: { dict?: CommonDict["pwa"] }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -47,10 +49,10 @@ export function PwaInstallBanner() {
         
         <div className="flex min-w-0 flex-1 flex-col justify-center pl-1">
           <span className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-white">
-            Safaar ilovasini o'rnating
+            {dict?.installTitle || "Safaar ilovasini o'rnating"}
           </span>
           <span className="truncate text-[10px] font-medium leading-tight text-slate-500 dark:text-slate-400 mt-0.5">
-            Tezkor kirish va offlayn rejim
+            {dict?.installSubtitle || "Tezkor kirish va offlayn rejim"}
           </span>
         </div>
 
@@ -60,7 +62,7 @@ export function PwaInstallBanner() {
           onClick={handleInstall}
           className="h-7 shrink-0 rounded-[10px] px-3 text-[11px] font-bold shadow-none"
         >
-          O'rnatish
+          {dict?.installButton || "O'rnatish"}
         </Button>
 
         <button

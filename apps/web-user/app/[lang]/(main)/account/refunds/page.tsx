@@ -74,7 +74,7 @@ export default async function AccountRefundsPage({
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-900 dark:text-white">
-                      Bron: #{refund.booking_id}
+                      {(dict as any).refunds?.booking || "Bron"}: #{refund.booking_id}
                     </span>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${

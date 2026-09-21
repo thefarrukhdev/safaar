@@ -29,12 +29,12 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || "Upload failed");
+      alert(res?.error || dict?.uploadFailed || "Upload failed");
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(dict?.deleteConfirm || "Are you sure?")) return;
+    if (!confirm(dict?.confirmDelete || "Are you sure?")) return;
     setLoading(true);
     const res = await deleteAvatarAction();
     setLoading(false);
@@ -42,7 +42,7 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || "Delete failed");
+      alert(res?.error || dict?.deleteFailed || "Delete failed");
     }
   };
 

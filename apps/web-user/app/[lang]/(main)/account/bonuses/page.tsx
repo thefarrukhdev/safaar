@@ -61,7 +61,7 @@ export default async function AccountBonusesPage({
             {formatSum(balanceSum)}
           </span>
           <p className="mt-1 text-xs text-primary-200/80">
-            *Safarlar va bron qilishlar uchun to'plangan bonus balingiz.
+            {(dict as any).bonuses?.disclaimer || "*Safarlar va bron qilishlar uchun to'plangan bonus balingiz."}
           </p>
         </div>
       </div>

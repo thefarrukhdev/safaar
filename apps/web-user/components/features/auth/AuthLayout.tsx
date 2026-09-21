@@ -1,0 +1,98 @@
+"use client";
+
+import React, { ReactNode, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { Locale } from "@/i18n/config";
+import Image from "next/image";
+
+interface AuthLayoutProps {
+  children: ReactNode;
+  locale: Locale;
+}
+
+const IMAGES = [
+  { src: "/samarqans.jpg", alt: "Samarkand Registan" },
+  { src: "/hotels_hero.jpg", alt: "Luxury Hotel" },
+  { src: "/Zaamin.jpeg", alt: "Zaamin Mountains" },
+];
+
+export function AuthLayout({ children, locale }: AuthLayoutProps) {
+  const [currentImage, setCurrentImage] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % IMAGES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row items-stretch justify-center overflow-hidden relative selection:bg-primary-500/30">
+      
+      {/* Top Controls (Mobile mostly, but also desktop) */}
+      <div className="absolute top-6 right-6 z-50">
+        <LocaleSwitcher current={locale} />
+      </div>
+
+      {/* LEFT COLUMN: THE DESTINATION CAROUSEL */}
+      <div className="hidden lg:flex relative w-1/2 flex-shrink-0 z-20 items-end justify-start p-12 overflow-hidden bg-slate-900">
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={currentImage}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="absolute inset-0 z-0"
+          >
+            <Image
+              src={IMAGES[currentImage].src}
+              alt={IMAGES[currentImage].alt}
+              fill
+              className="object-cover"
+              priority
+            />
+            {/* Dark gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="relative z-10 text-white max-w-lg">
+          <motion.h1 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-5xl font-black tracking-tight mb-4"
+          >
+            Safaar
+          </motion.h1>
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="text-lg font-medium text-slate-200"
+          >
+            O'zbekiston bo'ylab eng yaxshi mehmonxonalar, dalahovlilar va oromgohlarni kashf eting.
+          </motion.p>
+          
+          <div className="flex gap-2 mt-8">
+            {IMAGES.map((_, idx) => (
+              <div 
+                key={idx} 
+                className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentImage ? 'w-8 bg-white' : 'w-4 bg-white/30'}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: DYNAMIC CONTENT (WHITE CARD) */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center z-30 p-4 lg:p-12">
+        <div className="w-full max-w-[420px] bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

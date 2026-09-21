@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import LampRegisterForm from "@/components/features/auth/LampRegisterForm";
+import ModernRegisterForm from "@/components/features/auth/ModernRegisterForm";
 
 export async function generateMetadata({
   params,
@@ -50,5 +50,5 @@ export default async function RegisterPage({
     redirect(safeNext);
   }
 
-  return <LampRegisterForm locale={locale} next={next} dict={dict} />;
+  return <ModernRegisterForm locale={locale} next={next} dict={dict} />;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
 import {
   updateNotificationPreferencesAction,
   requestDataExportAction,
@@ -26,9 +27,9 @@ export function SettingsForm({
     const res = await updateNotificationPreferencesAction(formData);
     setLoading(false);
     if (res?.ok) {
-      alert(dict.updated || "Preferences updated!");
+      toast.success(dict.updated || "Preferences updated!");
     } else {
-      alert(res?.error || dict.updateFailed || "Update failed");
+      toast.error(res?.error || dict.updateFailed || "Update failed");
     }
   };
 
@@ -37,9 +38,9 @@ export function SettingsForm({
     const res = await requestDataExportAction();
     setExportLoading(false);
     if (res?.ok) {
-      alert(dict.exportRequested || "Data export requested!");
+      toast.success(dict.exportRequested || "Data export requested!");
     } else {
-      alert(res?.error || dict.exportFailed || "Export request failed");
+      toast.error(res?.error || dict.exportFailed || "Export request failed");
     }
   };
 
@@ -49,9 +50,9 @@ export function SettingsForm({
     const res = await requestAccountDeletionAction();
     setDeleteLoading(false);
     if (res?.ok) {
-      alert(dict.deleteRequested || "Account deletion requested!");
+      toast.success(dict.deleteRequested || "Account deletion requested!");
     } else {
-      alert(res?.error || dict.deleteFailed || "Deletion request failed");
+      toast.error(res?.error || dict.deleteFailed || "Deletion request failed");
     }
   };
 

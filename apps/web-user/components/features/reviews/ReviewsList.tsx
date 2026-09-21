@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -85,7 +86,7 @@ export function ReviewsList({
       setFiles([]);
     } catch (err) {
       console.error(err);
-      alert(dict.submitError);
+      toast.error(dict.submitError);
     } finally {
       setIsSubmitting(false);
     }

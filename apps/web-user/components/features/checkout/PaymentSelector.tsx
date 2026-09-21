@@ -40,37 +40,15 @@ const CARD_THEME = {
   iconBg: "bg-emerald-600 text-white",
 };
 
-const INTL_CARD_THEME = {
-  badgeBg: "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800",
-  badgeText: "text-indigo-700 dark:text-indigo-300",
-  borderSelected: "border-indigo-500 ring-2 ring-indigo-500/20",
-  bgSelected: "bg-indigo-50/40 dark:bg-indigo-950/20",
-  iconBg: "bg-indigo-600 text-white",
-};
-
-// Fee stavkalari — mahsulot talabi bo'yicha tasdiqlangan, backend'dagi
-// `card-scheme-fee.ts`dagi bilan BIR XIL (2026-09-16). Bu yerda FAQAT
-// informativ belgi (badge) sifatida ko'rsatiladi — yakuniy summa hech
-// qachon shu qiymatdan frontendda HISOBLANMAYDI, backend qaytargan
-// haqiqiy `fee_amount`/`amount` ishlatiladi (checkout sahifasida).
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
-    id: "uzcard",
-    name: "Milliy kartalar orqali to'lash",
-    subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
+    id: "card" as any,
+    name: "Karta orqali to'lash",
+    subtitle: "Uzcard, Humo, Visa va Mastercard",
     badges: ["3D-Secure xavfsizlik"],
     type: "local_card",
     dictKey: "local_card" as any,
     colorTheme: CARD_THEME,
-  },
-  {
-    id: "visa",
-    name: "Xalqaro kartalar orqali to'lash",
-    subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
-    badges: ["3D-Secure xavfsizlik"],
-    type: "intl_card",
-    dictKey: "intl_card" as any,
-    colorTheme: INTL_CARD_THEME,
   },
   {
     id: "cash",

@@ -81,6 +81,10 @@ export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
+import { cookies } from "next/headers";
+import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
+import { type CurrencyCode } from "@/lib/utils/money";
+
 export default async function LangLayout({
   children,
   params,
@@ -92,6 +96,9 @@ export default async function LangLayout({
   if (!isLocale(lang)) notFound();
 
   const common = await getDictionary(lang, "common");
+  const cookieStore = await cookies();
+  const currencyCookie = cookieStore.get("safaar_currency")?.value as CurrencyCode | undefined;
+  const initialCurrency: CurrencyCode = currencyCookie || "UZS";
 
   return (
     <html
@@ -104,12 +111,14 @@ export default async function LangLayout({
         <AnalyticsProvider>
           <NuqsAdapter>
 
-            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-              {children}
-              <Toaster />
-              <ServiceWorkerRegister />
-              <PwaInstallBanner dict={common.pwa} />
-            </div>
+            <CurrencyProvider initialCurrency={initialCurrency}>
+              <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+                {children}
+                <Toaster />
+                <ServiceWorkerRegister />
+                <PwaInstallBanner dict={common.pwa} />
+              </div>
+            </CurrencyProvider>
           </NuqsAdapter>
         </AnalyticsProvider>
       </body>

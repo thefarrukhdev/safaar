@@ -33,6 +33,7 @@ export interface UniversalCardProps {
     oldAmount?: number | string;
     period?: string;
   };
+  locale?: string;
   footerLeft?: React.ReactNode;
   footerRight?: React.ReactNode;
   actionLabel?: string;
@@ -57,6 +58,7 @@ export function UniversalCard({
   tags,
   extraInfo,
   price,
+  locale = "uz",
   footerLeft,
   footerRight,
   actionLabel,
@@ -227,11 +229,11 @@ export function UniversalCard({
     <div className="flex flex-col leading-tight">
       {price.oldAmount !== undefined && (
         <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 line-through">
-          {typeof price.oldAmount === "number" ? formatSum(price.oldAmount) : price.oldAmount}
+          {typeof price.oldAmount === "number" ? formatSum(price.oldAmount, locale) : price.oldAmount}
         </span>
       )}
       <span className="text-sm sm:text-base md:text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-        {typeof price.amount === "number" ? formatSum(price.amount) : price.amount}
+        {typeof price.amount === "number" ? formatSum(price.amount, locale) : price.amount}
       </span>
       {price.period && (
         <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400">

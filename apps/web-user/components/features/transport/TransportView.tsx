@@ -38,6 +38,7 @@ function TransportCard({
   return (
     <UniversalCard
       href={`/${locale}/transport/${item.id}`}
+      locale={locale}
       imageSrc={item.imageUrl}
       imageAlt={item.name}
       topLeft={

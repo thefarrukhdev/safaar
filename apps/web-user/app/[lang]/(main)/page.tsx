@@ -185,6 +185,8 @@ export default async function HomePage({
         </div>
       )}
 
+      <TrustStats dict={dict.trust} publicStats={publicStats} />
+
       {/* EKRAN 2: Chegirmadagi takliflar */}
       <div className="py-10 sm:py-14 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "450ms" }}>
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
@@ -198,6 +200,8 @@ export default async function HomePage({
           <CityCardsSection locale={locale} dict={dict.popularCities} />
         </Suspense>
       </div>
+
+      <Testimonials dict={dict.reviews} />
     </main>
   );
 }

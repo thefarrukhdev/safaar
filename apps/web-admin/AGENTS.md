@@ -100,7 +100,7 @@ va davom etishdan oldin so'ra.
 ## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
 
 **Branch:** hamma **`develop`**'da ishlaydi (har kim o'z papkasida). `main` — admin
-boshqaradigan release; lekin repo egasi (farrukhdev) ruxsat bersa, **sen `main`'ga ham merge qilasan**.
+boshqaradigan release; lekin repo egasi (thefarrukhdev) ruxsat bersa, **sen `main`'ga ham merge qilasan**.
 
 ### Ish boshlashdan oldin
 ```bash
@@ -131,5 +131,5 @@ git push origin develop
 - Push'dan oldin DOIM: build/lint **yashil** va `git pull --rebase origin develop`.
 - Faqat **o'z papkangda** o'zgartir. `apps/backend/`, `packages/types/` — faqat o'qi;
   boshqa frontend papkalari — **tegma**. Hech qachon boshqaning papkasiga o'zgartirma.
-- Asosan `develop`'ga push qil, repo egasi (farrukhdev) ruxsat bersa `main`'ga ham merge qila olasan.
+- Asosan `develop`'ga push qil, repo egasi (thefarrukhdev) ruxsat bersa `main`'ga ham merge qila olasan.
 - Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.

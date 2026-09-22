@@ -82,7 +82,7 @@ npm run test           # barcha testlar
 - O'zgartirishdan keyin **build va testni ishga tushiring**, yashil bo'lsin.
 - Commit'lar aniq va kichik bo'lsin. Kundalik ish **`develop`** branch'ida bo'ladi
   (hamma shu yerda, faqat o'z papkasida). Push'dan oldin doim
-  `git pull --rebase origin develop`. Repozitoriya egasi (farrukhdev) ruxsat bersa,
+  `git pull --rebase origin develop`. Repozitoriya egasi (thefarrukhdev) ruxsat bersa,
   AI agent to'g'ridan-to'g'ri `main` branchiga ham merge qila oladi. Batafsil — `CONTRIBUTING.md`.
 - Til: UI matnlari O'zbek tilida (kerak bo'lsa Rus/Ingliz). Pul birligi — so'm (UZS).
 
@@ -93,7 +93,7 @@ npm run test           # barcha testlar
    tekshir — **o'sha papkadan tashqariga chiqma**.
 2. **Push'dan OLDIN** o'z app'ingda build/lint (backend uchun test) **yashil**
    bo'lsin. Qizil bo'lsa — push qilma, avval xatoni tuzat.
-3. Asosan **`develop`**'ga push qil; lekin repo egasi (farrukhdev) ruxsat bersa, `main` branchiga ham merge qila olasan.
+3. Asosan **`develop`**'ga push qil; lekin repo egasi (thefarrukhdev) ruxsat bersa, `main` branchiga ham merge qila olasan.
 4. **Boshqaning papkasiga o'zgartirma.** `apps/backend/` va `packages/types/` —
    faqat o'qish (egasi backend dev).
 

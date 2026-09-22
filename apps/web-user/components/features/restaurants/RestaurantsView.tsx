@@ -31,6 +31,7 @@ function RestaurantCard({
   return (
     <UniversalCard
       href={`/${locale}/restaurants/${item.id}`}
+      locale={locale}
       imageSrc={item.imageUrl}
       imageAlt={item.name}
       showFavorite

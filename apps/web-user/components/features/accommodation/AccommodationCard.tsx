@@ -29,11 +29,17 @@ export function AccommodationCard({
 }) {
   const imageUrl = resolveImage(hotel.imageUrl);
 
+  const trans = {
+    uz: { breakfast: "Nonushta", parking: "Parking", restaurant: "Restoran", spa: "Spa" },
+    ru: { breakfast: "Завтрак", parking: "Парковка", restaurant: "Ресторан", spa: "Спа" },
+    en: { breakfast: "Breakfast", parking: "Parking", restaurant: "Restaurant", spa: "Spa" },
+  }[locale] || { breakfast: "Breakfast", parking: "Parking", restaurant: "Restaurant", spa: "Spa" };
+
   const amenityPills = hotel.name.toLowerCase().includes("chimgan")
-    ? ["Wi-Fi", "Nonushta", "Parking"]
+    ? ["Wi-Fi", trans.breakfast, trans.parking]
     : hotel.name.toLowerCase().includes("buxoro")
-    ? ["Wi-Fi", "Nonushta", "Restoran"]
-    : ["Wi-Fi", "Nonushta", "Spa"];
+    ? ["Wi-Fi", trans.breakfast, trans.restaurant]
+    : ["Wi-Fi", trans.breakfast, trans.spa];
 
   const perNight = labels.perNight ?? DEFAULT_PER_NIGHT[locale] ?? "kecha";
   const price = hotel.minPriceSum > 0 ? hotel.minPriceSum : undefined;
@@ -49,6 +55,7 @@ export function AccommodationCard({
       tags={amenityPills}
       href={`/${locale}/hotels/${hotel.slug}`}
       price={price ? { amount: price, period: `1 ${perNight}` } : undefined}
+      locale={locale}
       actionLabel={actionLabel}
     />
   );

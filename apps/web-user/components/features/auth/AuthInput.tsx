@@ -15,6 +15,16 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     const hasError = Boolean(error);
     const errorText = typeof error === "string" ? error : undefined;
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (props.type === "tel") {
+        let val = e.target.value;
+        // Ruxsat berilgan belgilar: raqamlar, probel, plyus, qavslar va chiziqcha
+        val = val.replace(/[^\d\s+()-]/g, "");
+        e.target.value = val;
+      }
+      props.onChange?.(e);
+    };
+
     return (
       <div className={cn("space-y-1.5 w-full", disabled && "opacity-60")}>
         <div className="flex justify-between items-center pl-1">
@@ -55,6 +65,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
               className
             )}
             {...props}
+            onChange={handleChange}
           />
           
           {rightElement && (

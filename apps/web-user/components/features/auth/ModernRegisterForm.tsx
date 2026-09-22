@@ -60,9 +60,21 @@ export default function ModernRegisterForm({
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
-  const [phone, setPhone] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState("+998 ");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^\d\s+]/g, "");
+    if (!val.startsWith("+998")) {
+      val = "+998 " + val.replace(/\+998/g, "").trim();
+    }
+    // Prevent deleting +998 completely
+    if (val.trim() === "+99" || val.trim() === "+9" || val.trim() === "+") {
+      val = "+998 ";
+    }
+    setPhone(val);
+  };
 
   const [otpState, requestAction, sending] = useActionState<OtpState, FormData>(requestOtpAction, { ok: false });
   const [verifyState, verifyAction, verifying] = useActionState<VerifyState, FormData>(verifyOtpAction, {} as VerifyState);
@@ -142,7 +154,7 @@ export default function ModernRegisterForm({
                 icon={Phone}
                 placeholder="+998 90 123 45 67"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 required
               />
 

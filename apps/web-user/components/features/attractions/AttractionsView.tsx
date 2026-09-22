@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Map, X, SlidersHorizontal, Search, Compass, Sparkles, LayoutGrid, MapPin } from "lucide-react";
 import { gsap } from "gsap";
 import { AttractionCard } from "@/components/attractions/AttractionCard";
@@ -252,6 +253,29 @@ export function AttractionsView({
 
         {/* Card Grid */}
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          {/* ═══ Header Banner ═══ */}
+          <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+            <Image
+              src="/images/heroes/samarqans.jpg"
+              alt="Attractions hero"
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              quality={85}
+            />
+            <div className="absolute inset-0 bg-black/45" />
+
+            <div className="relative z-10 w-full sm:max-w-[90%] lg:max-w-[80%]">
+              <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+                {dict.title}
+              </h1>
+              <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
+                {dict.subtitle || "O'zbekistonning eng go'zal joylari"}
+              </p>
+            </div>
+          </div>
+
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Compass className="h-6 w-6" />}

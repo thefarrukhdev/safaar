@@ -12,9 +12,9 @@ interface AuthLayoutProps {
 }
 
 const IMAGES = [
-  { src: "/samarqans.jpg", alt: "Samarkand Registan" },
-  { src: "/hotels_hero.jpg", alt: "Luxury Hotel" },
-  { src: "/Zaamin.jpeg", alt: "Zaamin Mountains" },
+  { src: "/images/heroes/samarqans.jpg", alt: "Samarkand Registan" },
+  { src: "/images/heroes/hotels_hero.jpg", alt: "Luxury Hotel" },
+  { src: "/images/mock/Zaamin.jpeg", alt: "Zaamin Mountains" },
 ];
 
 export function AuthLayout({ children, locale }: AuthLayoutProps) {

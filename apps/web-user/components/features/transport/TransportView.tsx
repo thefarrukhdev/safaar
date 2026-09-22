@@ -160,7 +160,7 @@ export function TransportView({
       {/* ═══ Header Banner ═══ */}
       <div className="relative mb-5 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         <Image
-          src="/transport_hero.jpg"
+          src="/images/heroes/transport_hero.jpg"
           alt="Transport"
           fill
           priority

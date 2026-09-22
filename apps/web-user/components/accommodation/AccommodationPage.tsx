@@ -125,7 +125,7 @@ export async function AccommodationPage({
       <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         {/* Background photo */}
         <Image
-          src="/hotels_hero.jpg"
+          src="/images/heroes/hotels_hero.jpg"
           alt="Hotels hero"
           fill
           priority

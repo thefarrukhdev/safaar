@@ -5,7 +5,7 @@ import { Clock, MapPin, PhoneCall, Star, Utensils, Search, SlidersHorizontal, Ma
 import { formatSum } from "@/lib/money";
 import type { Locale } from "@/i18n/config";
 import type { CatalogDict } from "@/i18n/dictionaries";
-import { CatalogHeader } from "@/components/catalog/CatalogHeader";
+import Image from "next/image";
 import type { RestaurantItem } from "@/components/catalog/types";
 import { UniversalCard } from "@/components/ui/UniversalCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -98,22 +98,41 @@ export function RestaurantsView({
 
   return (
     <div className="mx-auto w-full max-w-[1536px] flex-1 px-4 md:px-8 py-8 sm:px-6">
-      <CatalogHeader
-        title={dict.title}
-        subtitle={dict.subtitle || "O'zbekistonning eng sara restoran va kafelari"}
-        searchControls={
-          <>
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
-              className="pl-10"
-            />
-          </>
-        }
-      />
+      {/* ═══ Header Banner ═══ */}
+      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+        <Image
+          src="/images/heroes/hero.png"
+          alt="Restaurants hero"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-black/45" />
+
+        <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
+          <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+            {dict.title}
+          </h1>
+          <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
+            {dict.subtitle || "O'zbekistonning eng sara restoran va kafelari"}
+          </p>
+        </div>
+      </div>
+      
+      <div className="relative z-20 mb-6 w-full lg:w-4/5 mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
+            className="pl-10 h-12 w-full rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
+          />
+        </div>
+      </div>
       
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Sidebar Filters */}

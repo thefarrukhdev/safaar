@@ -683,13 +683,15 @@ export function ListingOverview() {
             <h2 className="text-sm font-semibold">Mijozga ko'rinadiganlar</h2>
             <ChecklistItem done={Boolean(listing.name)} label="E'lon nomi" />
             <ChecklistItem
-              done={listing.photos.length >= 3}
-              label="Kamida 3 ta rasm"
+              done={isBus ? listing.photos.length >= 0 : listing.photos.length >= 3}
+              label={isBus ? "Kamida 1 ta rasm (ixtiyoriy)" : "Kamida 3 ta rasm"}
             />
-            <ChecklistItem
-              done={listing.amenities.length >= 3}
-              label="Asosiy qulayliklar"
-            />
+            {!isBus && (
+              <ChecklistItem
+                done={listing.amenities.length >= 3}
+                label="Asosiy qulayliklar"
+              />
+            )}
             <ChecklistItem
               done={Boolean(listing.address)}
               label="Aniq manzil"

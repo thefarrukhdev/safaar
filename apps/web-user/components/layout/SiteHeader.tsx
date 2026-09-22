@@ -6,6 +6,7 @@ import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/cn";
+import { CurrencySwitcher } from "./CurrencySwitcher";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { HeaderWrapper, type NavItem } from "./header";
 
@@ -124,7 +125,7 @@ export function SiteHeader({
       brandHref={base}
       locale={locale}
       actions={actions}
-      localeSwitcher={<LocaleSwitcher current={locale} />}
+      localeSwitcher={<div className="flex items-center gap-2"><CurrencySwitcher /><LocaleSwitcher current={locale} /></div>}
       authActions={authActionsMobile}
     />
   );

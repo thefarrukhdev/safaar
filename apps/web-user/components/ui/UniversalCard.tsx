@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageOff, Heart, MapPin, ChevronRight, ChevronLeft } from "lucide-react";
-import { formatSum } from "@/lib/utils/money";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 export interface UniversalCardProps {
   imageSrc?: string | string[] | null;
@@ -65,6 +65,7 @@ export function UniversalCard({
   actionIcon,
   onActionClick,
 }: UniversalCardProps) {
+  const { formatPrice } = useCurrency();
   const [favorite, setFavorite] = useState(initialIsFavorite);
 
   // Carousel State
@@ -229,11 +230,11 @@ export function UniversalCard({
     <div className="flex flex-col leading-tight">
       {price.oldAmount !== undefined && (
         <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 line-through">
-          {typeof price.oldAmount === "number" ? formatSum(price.oldAmount, locale) : price.oldAmount}
+          {typeof price.oldAmount === "number" ? formatPrice(price.oldAmount, locale) : price.oldAmount}
         </span>
       )}
       <span className="text-sm sm:text-base md:text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-        {typeof price.amount === "number" ? formatSum(price.amount, locale) : price.amount}
+        {typeof price.amount === "number" ? formatPrice(price.amount, locale) : price.amount}
       </span>
       {price.period && (
         <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400">

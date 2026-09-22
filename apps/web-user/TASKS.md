@@ -30,27 +30,5 @@ Frontend tayyor — API qo'shilishi bilan darhol ulanadi.
 
 ---
 
-## ✅ Bajarilgan Vazifalar
-
-- [x] HotelFilters — Amenities va Payment filterlarini qaytarish
-- [x] Hotel Detail — Xarita (Map) qo'shish
-- [x] Booking — Special Requests maydoni qo'shish
-- [x] Booking — Promokod maydoni qo'shish
-- [x] Account — Profilni to'liq boshqarish
-- [x] Booking — Bronni bekor qilish va Chat
-- [x] Hotels — Sharh yozish (Leave a Review)
-- [x] Map — Dinamik Xarita Filtri
-- [x] Hotels sahifasi — `city_id` UUID validatsiyasi (backend crash fix)
-- [x] Hotel Detail sahifasi — Gallery Modal + Carousel (rasm ko'rish)
-- [x] Hotel Detail sahifasi — Premium dizayn (header, sidebar glassmorphism)
-- [x] Hotel Detail sahifasi — BackButton joylashuvi to'g'rilandi
-- [x] HotelFilters — Keraksiz (backend'da ishlamaydigan) filterlar olib tashlandi
-- [x] Global UI — `Carousel.tsx` komponenti yaratildi
-- [x] Global UI — `Modal.tsx` komponenti yaratildi
-- [x] Checkout — Guest va DatePicker integratsiyasi
-- [x] Restaurant — Hardcoded fetch xatosi tuzatildi (api-client ga o'tkazildi)
-
----
-
 > **Eslatma:** Backend devga yuqoridagi "Backend Devdan So'rovlar" bo'limidagi vazifalarni yetkazing.
 > Frontend ular tayyor bo'lishi bilan darhol ulanishga tayyor.

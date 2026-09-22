@@ -15,16 +15,16 @@ set name = excluded.name, updated_at = now();
 
 insert into cities (id, region_id, name, slug, image_url, sort_order, created_at, updated_at)
 values
-  ('00000000-0000-1002-0000-000000000001', '00000000-0000-1001-0000-000000000001', '{"uz":"Toshkent","ru":"Ташкент","en":"Tashkent"}', 'toshkent', '/Tashkent-city-skyline.jpeg', 1, now(), now()),
-  ('00000000-0000-1002-0000-000000000002', '00000000-0000-1001-0000-000000000002', '{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"}', 'samarqand', '/Samarkand-Registan-cinematic.jpeg', 2, now(), now()),
-  ('00000000-0000-1002-0000-000000000003', '00000000-0000-1001-0000-000000000003', '{"uz":"Buxoro","ru":"Бухара","en":"Bukhara"}', 'buxoro', '/Bukhara-old-city-golden-hour.jpeg', 3, now(), now()),
-  ('00000000-0000-1002-0000-000000000004', '00000000-0000-1001-0000-000000000004', '{"uz":"Xiva","ru":"Хива","en":"Khiva"}', 'xiva', '/Khiva-Ichan-Kala-aerial.jpeg', 4, now(), now()),
-  ('00000000-0000-1002-0000-000000000005', '00000000-0000-1001-0000-000000000005', '{"uz":"Farg''ona","ru":"Фергана","en":"Fergana"}', 'fargona', '/Uzbekistan-travel.jpeg', 5, now(), now()),
-  ('00000000-0000-1002-0000-000000000006', '00000000-0000-1001-0000-000000000006', '{"uz":"Namangan","ru":"Наманган","en":"Namangan"}', 'namangan', '/Uzbekistan-travel.jpeg', 6, now(), now()),
-  ('00000000-0000-1002-0000-000000000007', '00000000-0000-1001-0000-000000000001', '{"uz":"Charvak","ru":"Чарвак","en":"Charvak"}', 'charvak', '/Charvak-Lake-drone.jpeg', 7, now(), now()),
-  ('00000000-0000-1002-0000-000000000008', '00000000-0000-1001-0000-000000000001', '{"uz":"Chimgan","ru":"Чимган","en":"Chimgan"}', 'chimgan', '/Chimgan-mountains-landscape.jpeg', 8, now(), now()),
-  ('00000000-0000-1002-0000-000000000009', '00000000-0000-1001-0000-000000000007', '{"uz":"Zaamin","ru":"Заамин","en":"Zaamin"}', 'zaamin', '/Zaamin.jpeg', 9, now(), now()),
-  ('00000000-0000-1002-0000-00000000000a', '00000000-0000-1001-0000-000000000008', '{"uz":"Nukus","ru":"Нукус","en":"Nukus"}', 'nukus', '/Uzbekistan-travel.jpeg', 10, now(), now())
+  ('00000000-0000-1002-0000-000000000001', '00000000-0000-1001-0000-000000000001', '{"uz":"Toshkent","ru":"Ташкент","en":"Tashkent"}', 'toshkent', '/images/mock/Tashkent-city-skyline.jpeg', 1, now(), now()),
+  ('00000000-0000-1002-0000-000000000002', '00000000-0000-1001-0000-000000000002', '{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"}', 'samarqand', '/images/mock/Samarkand-Registan-cinematic.jpeg', 2, now(), now()),
+  ('00000000-0000-1002-0000-000000000003', '00000000-0000-1001-0000-000000000003', '{"uz":"Buxoro","ru":"Бухара","en":"Bukhara"}', 'buxoro', '/images/mock/Bukhara-old-city-golden-hour.jpeg', 3, now(), now()),
+  ('00000000-0000-1002-0000-000000000004', '00000000-0000-1001-0000-000000000004', '{"uz":"Xiva","ru":"Хива","en":"Khiva"}', 'xiva', '/images/mock/Khiva-Ichan-Kala-aerial.jpeg', 4, now(), now()),
+  ('00000000-0000-1002-0000-000000000005', '00000000-0000-1001-0000-000000000005', '{"uz":"Farg''ona","ru":"Фергана","en":"Fergana"}', 'fargona', '/images/mock/Uzbekistan-travel.jpeg', 5, now(), now()),
+  ('00000000-0000-1002-0000-000000000006', '00000000-0000-1001-0000-000000000006', '{"uz":"Namangan","ru":"Наманган","en":"Namangan"}', 'namangan', '/images/mock/Uzbekistan-travel.jpeg', 6, now(), now()),
+  ('00000000-0000-1002-0000-000000000007', '00000000-0000-1001-0000-000000000001', '{"uz":"Charvak","ru":"Чарвак","en":"Charvak"}', 'charvak', '/images/mock/Charvak-Lake-drone.jpeg', 7, now(), now()),
+  ('00000000-0000-1002-0000-000000000008', '00000000-0000-1001-0000-000000000001', '{"uz":"Chimgan","ru":"Чимган","en":"Chimgan"}', 'chimgan', '/images/mock/Chimgan-mountains-landscape.jpeg', 8, now(), now()),
+  ('00000000-0000-1002-0000-000000000009', '00000000-0000-1001-0000-000000000007', '{"uz":"Zaamin","ru":"Заамин","en":"Zaamin"}', 'zaamin', '/images/mock/Zaamin.jpeg', 9, now(), now()),
+  ('00000000-0000-1002-0000-00000000000a', '00000000-0000-1001-0000-000000000008', '{"uz":"Nukus","ru":"Нукус","en":"Nukus"}', 'nukus', '/images/mock/Uzbekistan-travel.jpeg', 10, now(), now())
 on conflict (id) do update
 set region_id = excluded.region_id, name = excluded.name, slug = excluded.slug, image_url = excluded.image_url, sort_order = excluded.sort_order, updated_at = now();
 
@@ -73,9 +73,9 @@ set name = excluded.name, updated_at = now();
 
 insert into room_types (id, code, name, description, image_url, bed_type, size_sqm, base_price, capacity, amenities, created_at, updated_at)
 values
-  ('00000000-0000-1004-0000-000000000001', 'standard', '{"uz":"Standart","ru":"Стандарт","en":"Standard"}', 'Qulay standart xona', '/hotel-uzbekistan.jpeg', 'queen', 24, 650000, 2, '["wifi","tv","ac"]', now(), now()),
-  ('00000000-0000-1004-0000-000000000002', 'deluxe', '{"uz":"Deluxe","ru":"Делюкс","en":"Deluxe"}', 'Keng deluxe xona', '/hilton-hostel.jpeg', 'king', 32, 820000, 3, '["wifi","tv","ac","minibar"]', now(), now()),
-  ('00000000-0000-1004-0000-000000000003', 'suite', '{"uz":"Suite","ru":"Люкс","en":"Suite"}', 'Premium suite xona', '/experiment-hotel-picture.jpeg', 'king', 48, 1450000, 4, '["wifi","tv","ac","minibar","workspace"]', now(), now())
+  ('00000000-0000-1004-0000-000000000001', 'standard', '{"uz":"Standart","ru":"Стандарт","en":"Standard"}', 'Qulay standart xona', '/images/mock/hotel-uzbekistan.jpeg', 'queen', 24, 650000, 2, '["wifi","tv","ac"]', now(), now()),
+  ('00000000-0000-1004-0000-000000000002', 'deluxe', '{"uz":"Deluxe","ru":"Делюкс","en":"Deluxe"}', 'Keng deluxe xona', '/images/mock/hilton-hostel.jpeg', 'king', 32, 820000, 3, '["wifi","tv","ac","minibar"]', now(), now()),
+  ('00000000-0000-1004-0000-000000000003', 'suite', '{"uz":"Suite","ru":"Люкс","en":"Suite"}', 'Premium suite xona', '/images/mock/experiment-hotel-picture.jpeg', 'king', 48, 1450000, 4, '["wifi","tv","ac","minibar","workspace"]', now(), now())
 on conflict (code) do update
 set name = excluded.name,
     description = excluded.description,
@@ -197,11 +197,11 @@ set password_hash = excluded.password_hash,
 
 update partner_organizations
 set logo_url = case tax_id
-    when 'DEMO-HOTEL-001' then '/hotel-uzbekistan.jpeg'
-    when 'DEMO-HOTEL-002' then '/hilton-hostel.jpeg'
-    when 'DEMO-HOTEL-003' then '/Bukhara-old-city-golden-hour.jpeg'
-    when 'DEMO-BUS-001' then '/Uzbekistan-travel.jpeg'
-    when 'DEMO-BUS-002' then '/Tashkent-city-skyline.jpeg'
+    when 'DEMO-HOTEL-001' then '/images/mock/hotel-uzbekistan.jpeg'
+    when 'DEMO-HOTEL-002' then '/images/mock/hilton-hostel.jpeg'
+    when 'DEMO-HOTEL-003' then '/images/mock/Bukhara-old-city-golden-hour.jpeg'
+    when 'DEMO-BUS-001' then '/images/mock/Uzbekistan-travel.jpeg'
+    when 'DEMO-BUS-002' then '/images/mock/Tashkent-city-skyline.jpeg'
     else logo_url
   end,
   showcase = tax_id in ('DEMO-HOTEL-001', 'DEMO-HOTEL-002', 'DEMO-HOTEL-003', 'DEMO-BUS-001', 'DEMO-BUS-002'),
@@ -253,12 +253,12 @@ insert into media_files (
   visibility, caption, category, sort_order, is_cover, created_at, deleted_at
 )
 values
-  ('00000000-0000-4006-0000-000000000001', 'hotel', '00000000-0000-4001-0000-000000000001', 'public', 'demo/hotels/grand-samarkand-cover.jpeg', '/hotel-uzbekistan.jpeg', 'image/jpeg', 180000, 'public', 'Grand Samarkand cover', 'gallery', 1, true, now(), null),
-  ('00000000-0000-4006-0000-000000000002', 'hotel', '00000000-0000-4001-0000-000000000001', 'public', 'demo/hotels/grand-samarkand-gallery.jpeg', '/Samarkand-Registan-cinematic.jpeg', 'image/jpeg', 180000, 'public', 'Grand Samarkand gallery', 'gallery', 2, false, now(), null),
-  ('00000000-0000-4006-0000-000000000003', 'hotel', '00000000-0000-4001-0000-000000000002', 'public', 'demo/hotels/hilton-tashkent-cover.jpeg', '/hilton-hostel.jpeg', 'image/jpeg', 180000, 'public', 'Hilton Tashkent cover', 'gallery', 1, true, now(), null),
-  ('00000000-0000-4006-0000-000000000004', 'hotel', '00000000-0000-4001-0000-000000000002', 'public', 'demo/hotels/hilton-tashkent-gallery.jpeg', '/Tashkent-skyline-night.jpeg', 'image/jpeg', 180000, 'public', 'Hilton Tashkent gallery', 'gallery', 2, false, now(), null),
-  ('00000000-0000-4006-0000-000000000005', 'hotel', '00000000-0000-4001-0000-000000000003', 'public', 'demo/hotels/buxoro-palace-cover.jpeg', '/Bukhara-old-city-golden-hour.jpeg', 'image/jpeg', 180000, 'public', 'Buxoro Palace cover', 'gallery', 1, true, now(), null),
-  ('00000000-0000-4006-0000-000000000006', 'hotel', '00000000-0000-4001-0000-000000000003', 'public', 'demo/hotels/buxoro-palace-gallery.jpeg', '/registan-back-tour.jpg', 'image/jpeg', 180000, 'public', 'Buxoro Palace gallery', 'gallery', 2, false, now(), null)
+  ('00000000-0000-4006-0000-000000000001', 'hotel', '00000000-0000-4001-0000-000000000001', 'public', 'demo/hotels/grand-samarkand-cover.jpeg', '/images/mock/hotel-uzbekistan.jpeg', 'image/jpeg', 180000, 'public', 'Grand Samarkand cover', 'gallery', 1, true, now(), null),
+  ('00000000-0000-4006-0000-000000000002', 'hotel', '00000000-0000-4001-0000-000000000001', 'public', 'demo/hotels/grand-samarkand-gallery.jpeg', '/images/mock/Samarkand-Registan-cinematic.jpeg', 'image/jpeg', 180000, 'public', 'Grand Samarkand gallery', 'gallery', 2, false, now(), null),
+  ('00000000-0000-4006-0000-000000000003', 'hotel', '00000000-0000-4001-0000-000000000002', 'public', 'demo/hotels/hilton-tashkent-cover.jpeg', '/images/mock/hilton-hostel.jpeg', 'image/jpeg', 180000, 'public', 'Hilton Tashkent cover', 'gallery', 1, true, now(), null),
+  ('00000000-0000-4006-0000-000000000004', 'hotel', '00000000-0000-4001-0000-000000000002', 'public', 'demo/hotels/hilton-tashkent-gallery.jpeg', '/images/mock/Tashkent-skyline-night.jpeg', 'image/jpeg', 180000, 'public', 'Hilton Tashkent gallery', 'gallery', 2, false, now(), null),
+  ('00000000-0000-4006-0000-000000000005', 'hotel', '00000000-0000-4001-0000-000000000003', 'public', 'demo/hotels/buxoro-palace-cover.jpeg', '/images/mock/Bukhara-old-city-golden-hour.jpeg', 'image/jpeg', 180000, 'public', 'Buxoro Palace cover', 'gallery', 1, true, now(), null),
+  ('00000000-0000-4006-0000-000000000006', 'hotel', '00000000-0000-4001-0000-000000000003', 'public', 'demo/hotels/buxoro-palace-gallery.jpeg', '/images/mock/registan-back-tour.jpg', 'image/jpeg', 180000, 'public', 'Buxoro Palace gallery', 'gallery', 2, false, now(), null)
 on conflict (id) do update
 set owner_type = excluded.owner_type,
     owner_id = excluded.owner_id,
@@ -590,8 +590,8 @@ set sender_type = excluded.sender_type,
 
 insert into cms_entries (id, type, slug, title, body, status, metadata, published_at, created_at, updated_at)
 values
-  ('00000000-0000-7005-0000-000000000001', 'banner', 'summer-discount', '{"uz":"Yozgi tatil uchun 20% chegirma"}', '{"uz":"Yozgi promo banner."}', 'published', '{"imageUrl":"/Uzbekistan-travel.jpeg","link":"/uz/hotels","order":1}', now() - interval '3 days', now(), now()),
-  ('00000000-0000-7005-0000-000000000002', 'banner', 'samarkand-bus', '{"uz":"Samarqandga avtobus qatnovi"}', '{"uz":"Samarqand yo nalishi banner."}', 'published', '{"imageUrl":"/Samarkand-Registan-cinematic.jpeg","link":"/uz/transport","order":2}', now() - interval '2 days', now(), now()),
+  ('00000000-0000-7005-0000-000000000001', 'banner', 'summer-discount', '{"uz":"Yozgi tatil uchun 20% chegirma"}', '{"uz":"Yozgi promo banner."}', 'published', '{"imageUrl":"/images/mock/Uzbekistan-travel.jpeg","link":"/uz/hotels","order":1}', now() - interval '3 days', now(), now()),
+  ('00000000-0000-7005-0000-000000000002', 'banner', 'samarkand-bus', '{"uz":"Samarqandga avtobus qatnovi"}', '{"uz":"Samarqand yo nalishi banner."}', 'published', '{"imageUrl":"/images/mock/Samarkand-Registan-cinematic.jpeg","link":"/uz/transport","order":2}', now() - interval '2 days', now(), now()),
   ('00000000-0000-7005-0000-000000000003', 'news', 'yangi-mehmonxonalar-iyun', '{"uz":"Yangi mehmonxonalar qoshildi"}', '{"uz":"Platformaga yangi hamkor mehmonxonalar qoshildi."}', 'published', '{"category":"news"}', now() - interval '2 days', now(), now()),
   ('00000000-0000-7005-0000-000000000004', 'page', 'about', '{"uz":"Biz haqimizda"}', '{"uz":"safaar haqida demo sahifa."}', 'published', '{"menu":"footer"}', now() - interval '100 days', now(), now()),
   ('00000000-0000-7005-0000-000000000005', 'promo', 'summer20', '{"uz":"SUMMER20"}', '{"uz":"20 foiz chegirma promo kodi."}', 'published', '{"discountType":"percent","discountValue":20,"usageLimit":100,"usedCount":45}', now() - interval '1 day', now(), now()),
@@ -617,7 +617,7 @@ values
       'hotel_id', '00000000-0000-4001-0000-000000000001',
       'slug', 'grand-samarkand-hotel',
       'city_name', jsonb_build_object('uz', 'Samarqand', 'ru', 'Самарканд', 'en', 'Samarkand'),
-      'image_url', '/hotel-uzbekistan.jpeg',
+      'image_url', '/images/mock/hotel-uzbekistan.jpeg',
       'old_price', 900000,
       'new_price', 650000,
       'discount_percent', 28,
@@ -639,7 +639,7 @@ values
       'hotel_id', '00000000-0000-4001-0000-000000000002',
       'slug', 'hilton-tashkent',
       'city_name', jsonb_build_object('uz', 'Toshkent', 'ru', 'Ташкент', 'en', 'Tashkent'),
-      'image_url', '/hilton-hostel.jpeg',
+      'image_url', '/images/mock/hilton-hostel.jpeg',
       'old_price', 1250000,
       'new_price', 980000,
       'discount_percent', 22,
@@ -661,7 +661,7 @@ values
       'hotel_id', '00000000-0000-4001-0000-000000000003',
       'slug', 'buxoro-palace',
       'city_name', jsonb_build_object('uz', 'Buxoro', 'ru', 'Бухара', 'en', 'Bukhara'),
-      'image_url', '/Bukhara-old-city-golden-hour.jpeg',
+      'image_url', '/images/mock/Bukhara-old-city-golden-hour.jpeg',
       'old_price', 710000,
       'new_price', 520000,
       'discount_percent', 27,
@@ -679,7 +679,7 @@ values
     '{"uz":"Registon maydoni","ru":"Площадь Регистан","en":"Registan Square"}',
     '{"uz":"Samarqand markazidagi tarixiy ansambl.","ru":"Исторический ансамбль в центре Самарканда.","en":"Historic ensemble in central Samarkand."}',
     'published',
-    '{"city_name":{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"},"category_key":"unesco","category_default":"UNESCO Merosi","rating":4.9,"latitude":39.6542,"longitude":66.9750,"image_url":"/Samarkand-Registan-cinematic.jpeg","best_time_to_visit":{"uz":"Mart-may, sentabr-oktabr","ru":"Март-май, сентябрь-октябрь","en":"March-May, September-October"},"order":1}',
+    '{"city_name":{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"},"category_key":"unesco","category_default":"UNESCO Merosi","rating":4.9,"latitude":39.6542,"longitude":66.9750,"image_url":"/images/mock/Samarkand-Registan-cinematic.jpeg","best_time_to_visit":{"uz":"Mart-may, sentabr-oktabr","ru":"Март-май, сентябрь-октябрь","en":"March-May, September-October"},"order":1}',
     now() - interval '6 days',
     now(),
     now()
@@ -691,7 +691,7 @@ values
     '{"uz":"Chorvoq suv ombori","ru":"Чарвакское водохранилище","en":"Charvak Lake"}',
     '{"uz":"Tog''lar orasidagi dam olish maskani.","ru":"Зона отдыха среди гор.","en":"A mountain getaway by the water."}',
     'published',
-    '{"city_name":{"uz":"Charvak","ru":"Чарвак","en":"Charvak"},"category_key":"nature","category_default":"Tabiat & Hordiq","rating":4.7,"latitude":41.6369,"longitude":69.9392,"image_url":"/Charvak-Lake-drone.jpeg","best_time_to_visit":{"uz":"May-sentabr","ru":"Май-сентябрь","en":"May-September"},"order":2}',
+    '{"city_name":{"uz":"Charvak","ru":"Чарвак","en":"Charvak"},"category_key":"nature","category_default":"Tabiat & Hordiq","rating":4.7,"latitude":41.6369,"longitude":69.9392,"image_url":"/images/mock/Charvak-Lake-drone.jpeg","best_time_to_visit":{"uz":"May-sentabr","ru":"Май-сентябрь","en":"May-September"},"order":2}',
     now() - interval '5 days',
     now(),
     now()
@@ -703,7 +703,7 @@ values
     '{"uz":"Ichan-Qal''a","ru":"Ичан-Кала","en":"Itchan Kala"}',
     '{"uz":"Xivadagi qadimiy shahriston.","ru":"Древний город-крепость в Хиве.","en":"Ancient walled inner town in Khiva."}',
     'published',
-    '{"city_name":{"uz":"Xiva","ru":"Хива","en":"Khiva"},"category_key":"historical","category_default":"Tarixiy Obida","rating":4.8,"latitude":41.3783,"longitude":60.3639,"image_url":"/Khiva-Ichan-Kala-aerial.jpeg","best_time_to_visit":{"uz":"Aprel-may, sentabr","ru":"Апрель-май, сентябрь","en":"April-May, September"},"order":3}',
+    '{"city_name":{"uz":"Xiva","ru":"Хива","en":"Khiva"},"category_key":"historical","category_default":"Tarixiy Obida","rating":4.8,"latitude":41.3783,"longitude":60.3639,"image_url":"/images/mock/Khiva-Ichan-Kala-aerial.jpeg","best_time_to_visit":{"uz":"Aprel-may, sentabr","ru":"Апрель-май, сентябрь","en":"April-May, September"},"order":3}',
     now() - interval '4 days',
     now(),
     now()
@@ -715,7 +715,7 @@ values
     '{"uz":"Osh Markazi","ru":"Центр плова","en":"Osh Markazi"}',
     '{"uz":"Toshkentcha osh va milliy taomlar.","ru":"Ташкентский плов и национальная кухня.","en":"Tashkent plov and national dishes."}',
     'published',
-    '{"city_name":{"uz":"Toshkent","ru":"Ташкент","en":"Tashkent"},"address":"Toshkent, Beshyog''och ko''chasi 12","cuisine":"Milliy taomlar","rating":4.6,"reviews_count":84,"average_check":120000,"latitude":41.3111,"longitude":69.2797,"working_hours":"10:00-22:00","image_url":"/Uzbekistan-travel.jpeg","phone":"+998901234501","order":1}',
+    '{"city_name":{"uz":"Toshkent","ru":"Ташкент","en":"Tashkent"},"address":"Toshkent, Beshyog''och ko''chasi 12","cuisine":"Milliy taomlar","rating":4.6,"reviews_count":84,"average_check":120000,"latitude":41.3111,"longitude":69.2797,"working_hours":"10:00-22:00","image_url":"/images/mock/Uzbekistan-travel.jpeg","phone":"+998901234501","order":1}',
     now() - interval '4 days',
     now(),
     now()
@@ -727,7 +727,7 @@ values
     '{"uz":"Registon Terrace","ru":"Registon Terrace","en":"Registan Terrace"}',
     '{"uz":"Samarqand markazida oilaviy restoran.","ru":"Семейный ресторан в центре Самарканда.","en":"Family restaurant in central Samarkand."}',
     'published',
-    '{"city_name":{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"},"address":"Samarqand, Registon ko''chasi 5","cuisine":"Milliy va yevropa","rating":4.7,"reviews_count":56,"average_check":150000,"latitude":39.6554,"longitude":66.9746,"working_hours":"09:00-23:00","image_url":"/registan-back-tour.jpg","phone":"+998901234502","order":2}',
+    '{"city_name":{"uz":"Samarqand","ru":"Самарканд","en":"Samarkand"},"address":"Samarqand, Registon ko''chasi 5","cuisine":"Milliy va yevropa","rating":4.7,"reviews_count":56,"average_check":150000,"latitude":39.6554,"longitude":66.9746,"working_hours":"09:00-23:00","image_url":"/images/mock/registan-back-tour.jpg","phone":"+998901234502","order":2}',
     now() - interval '3 days',
     now(),
     now()
@@ -739,7 +739,7 @@ values
     '{"uz":"Buxoro Caravan","ru":"Bukhara Caravan","en":"Bukhara Caravan"}',
     '{"uz":"Buxorocha taomlar va choyxona muhiti.","ru":"Бухарские блюда и атмосфера чайханы.","en":"Bukhara dishes and teahouse atmosphere."}',
     'published',
-    '{"city_name":{"uz":"Buxoro","ru":"Бухара","en":"Bukhara"},"address":"Buxoro, Lyabi Hovuz 3","cuisine":"Buxoro taomlari","rating":4.5,"reviews_count":41,"average_check":135000,"latitude":39.7747,"longitude":64.4286,"working_hours":"10:00-23:00","image_url":"/Bukhara-old-city-golden-hour.jpeg","phone":"+998901234503","order":3}',
+    '{"city_name":{"uz":"Buxoro","ru":"Бухара","en":"Bukhara"},"address":"Buxoro, Lyabi Hovuz 3","cuisine":"Buxoro taomlari","rating":4.5,"reviews_count":41,"average_check":135000,"latitude":39.7747,"longitude":64.4286,"working_hours":"10:00-23:00","image_url":"/images/mock/Bukhara-old-city-golden-hour.jpeg","phone":"+998901234503","order":3}',
     now() - interval '2 days',
     now(),
     now()
@@ -804,23 +804,23 @@ values
   ('00000000-0000-8001-0000-000000000001', '00000000-0000-1002-0000-000000000002', 'registon-maydoni',
    '{"uz":"Registon maydoni","ru":"Площадь Регистан","en":"Registan Square"}',
    '{"uz":"Samarqandning yuragi — Ulug''bek, Sherdor va Tillakori madrasalaridan tashkil topgan jahon miqyosidagi meʼmoriy ansambl.","ru":"Сердце Самарканда — архитектурный ансамбль медресе Улугбека, Шердор и Тилля-Кори мирового значения.","en":"The heart of Samarkand — a world-renowned architectural ensemble of the Ulugbek, Sher-Dor, and Tilla-Kori madrasas."}',
-   'historical', '/Samarkand-Registan-cinematic.jpeg', '["/Samarkand-Registan-cinematic.jpeg"]', 39.6542400, 66.9758600, 50000, '08:00-20:00', 90, 4.8, 0, true, now(), now()),
+   'historical', '/images/mock/Samarkand-Registan-cinematic.jpeg', '["/images/mock/Samarkand-Registan-cinematic.jpeg"]', 39.6542400, 66.9758600, 50000, '08:00-20:00', 90, 4.8, 0, true, now(), now()),
   ('00000000-0000-8001-0000-000000000002', '00000000-0000-1002-0000-000000000003', 'buxoro-eski-shahar',
    '{"uz":"Buxoro Eski Shahri va Kalon Minorasi","ru":"Старый город Бухары и минарет Калян","en":"Bukhara Old City and Kalyan Minaret"}',
    '{"uz":"UNESCO ro''yxatidagi tarixiy markaz — Kalon minorasi, masjidi va Mir-Arab madrasasi atrofida joylashgan qadimiy ko''chalar.","ru":"Исторический центр из списка ЮНЕСКО — древние улицы вокруг минарета Калян, мечети и медресе Мир-Араб.","en":"A UNESCO-listed historic center — ancient streets around the Kalyan Minaret, mosque, and Mir-i-Arab Madrasa."}',
-   'historical', '/Bukhara-old-city-golden-hour.jpeg', '["/Bukhara-old-city-golden-hour.jpeg"]', 39.7747000, 64.4144000, 40000, '08:00-19:00', 120, 4.7, 0, true, now(), now()),
+   'historical', '/images/mock/Bukhara-old-city-golden-hour.jpeg', '["/images/mock/Bukhara-old-city-golden-hour.jpeg"]', 39.7747000, 64.4144000, 40000, '08:00-19:00', 120, 4.7, 0, true, now(), now()),
   ('00000000-0000-8001-0000-000000000003', '00000000-0000-1002-0000-000000000004', 'xiva-ichan-qala',
    '{"uz":"Xiva Ichan-Qal''a","ru":"Ичан-Кала Хивы","en":"Khiva Itchan Kala"}',
    '{"uz":"Devor bilan o''ralgan qadimiy ichki shahar — O''zbekistondagi birinchi UNESCO Jahon merosi obyekti.","ru":"Обнесённый стеной древний внутренний город — первый объект Всемирного наследия ЮНЕСКО в Узбекистане.","en":"A walled ancient inner city — Uzbekistan''s first UNESCO World Heritage Site."}',
-   'historical', '/Khiva-Ichan-Kala-aerial.jpeg', '["/Khiva-Ichan-Kala-aerial.jpeg"]', 41.3778000, 60.3617000, 45000, '08:00-19:00', 120, 4.8, 0, true, now(), now()),
+   'historical', '/images/mock/Khiva-Ichan-Kala-aerial.jpeg', '["/images/mock/Khiva-Ichan-Kala-aerial.jpeg"]', 41.3778000, 60.3617000, 45000, '08:00-19:00', 120, 4.8, 0, true, now(), now()),
   ('00000000-0000-8001-0000-000000000004', '00000000-0000-1002-0000-000000000007', 'chorvoq-suv-ombori',
    '{"uz":"Chorvoq suv ombori va dam olish hududi","ru":"Чарвакское водохранилище и зона отдыха","en":"Charvak Reservoir and Recreation Area"}',
    '{"uz":"Toshkentdan bir soatlik masofada joylashgan tog'' ko''li — suzish, qayiqda sayr va piknik uchun sevimli maskan.","ru":"Горное озеро в часе езды от Ташкента — популярное место для плавания, катания на лодках и пикников.","en":"A mountain lake an hour from Tashkent — a favorite spot for swimming, boating, and picnics."}',
-   'nature', '/Charvak-Lake-drone.jpeg', '["/Charvak-Lake-drone.jpeg"]', 41.6206000, 70.0489000, null, '24 soat', 180, 4.6, 0, true, now(), now()),
+   'nature', '/images/mock/Charvak-Lake-drone.jpeg', '["/images/mock/Charvak-Lake-drone.jpeg"]', 41.6206000, 70.0489000, null, '24 soat', 180, 4.6, 0, true, now(), now()),
   ('00000000-0000-8001-0000-000000000005', '00000000-0000-1002-0000-000000000009', 'zomin-milliy-bogi',
    '{"uz":"Zomin milliy bog''i","ru":"Заминский национальный парк","en":"Zaamin National Park"}',
    '{"uz":"Archazorlar va tog'' manzaralari bilan mashhur qo''riqxona — tabiat sayohati va sog''lomlashtirish uchun ideal.","ru":"Заповедник, известный можжевеловыми лесами и горными пейзажами — идеален для природного туризма и оздоровления.","en":"A reserve famous for juniper forests and mountain scenery — ideal for nature tourism and wellness."}',
-   'nature', '/Zaamin.jpeg', '["/Zaamin.jpeg"]', 39.9500000, 68.4500000, 20000, '09:00-18:00', 150, 4.5, 0, true, now(), now())
+   'nature', '/images/mock/Zaamin.jpeg', '["/images/mock/Zaamin.jpeg"]', 39.9500000, 68.4500000, 20000, '09:00-18:00', 150, 4.5, 0, true, now(), now())
 on conflict (id) do update
 set title = excluded.title,
     description = excluded.description,
@@ -834,11 +834,11 @@ values
   ('00000000-0000-8002-0000-000000000001',
    '{"uz":"Yozgi Chorvoq dam olishi","ru":"Летний отдых на Чарваке","en":"Summer getaway at Charvak"}',
    '{"uz":"Tog'' ko''li bo''yidagi mehmonxonalarda maxsus chegirma","ru":"Специальная скидка в отелях у горного озера","en":"Special discount at hotels by the mountain lake"}',
-   'Aksiya -20%', '/Charvak-Lake-drone.jpeg', '/hotels?city=charvak', 20, now(), now() + interval '30 days', true, 1, now(), now()),
+   'Aksiya -20%', '/images/mock/Charvak-Lake-drone.jpeg', '/hotels?city=charvak', 20, now(), now() + interval '30 days', true, 1, now(), now()),
   ('00000000-0000-8002-0000-000000000002',
    '{"uz":"Samarqand va Buxoroga tarixiy sayohat","ru":"Историческое путешествие в Самарканд и Бухару","en":"Historic journey to Samarkand and Bukhara"}',
    '{"uz":"Ikki shahar uchun mehmonxona va transport paketida chegirma","ru":"Скидка на пакет отель + транспорт для двух городов","en":"Discount on hotel + transport package for both cities"}',
-   'Paket -15%', '/Samarkand-Registan-cinematic.jpeg', '/hotels?city=samarqand', 15, now(), now() + interval '45 days', true, 2, now(), now())
+   'Paket -15%', '/images/mock/Samarkand-Registan-cinematic.jpeg', '/hotels?city=samarqand', 15, now(), now() + interval '45 days', true, 2, now(), now())
 on conflict (id) do update
 set title = excluded.title,
     subtitle = excluded.subtitle,

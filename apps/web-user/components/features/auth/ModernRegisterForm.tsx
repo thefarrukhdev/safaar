@@ -30,6 +30,7 @@ function passwordStrength(pw: string): { label: string; level: number; color: st
 }
 
 import { AuthInput } from "./AuthInput";
+import MaskedHeading from "@/components/reactbits/MaskedHeading";
 
 const formVariants = {
   enter: (direction: number) => ({
@@ -102,8 +103,21 @@ export default function ModernRegisterForm({
         </button>
       )}
 
-      <div className="mb-8 relative z-10 text-center">
-        <h2 className="text-2xl font-bold text-slate-900 mb-1">
+      <div className="mb-8 relative z-10 text-center flex flex-col items-center">
+        <div className="w-full h-16 sm:h-20 flex justify-center mb-2">
+          <MaskedHeading 
+            text="Safaar" 
+            tag="h1"
+            src="/images/mock/Zaamin.jpeg"
+            fillScale={1.1}
+            parallax={15}
+            reveal="rise"
+            textScale={0.11}
+            align="center"
+            className="text-4xl sm:text-5xl font-black tracking-tighter uppercase !m-0"
+          />
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">
           {step === 3 ? dict.completeProfileTitle || "Profilni yakunlash" : dict.registerTitle || "Ro'yxatdan o'tish"}
         </h2>
         <p className="text-slate-500 text-sm">

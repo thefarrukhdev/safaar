@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Locale } from "@/i18n/config";
 import Image from "next/image";
+import MaskedHeading from "@/components/reactbits/MaskedHeading";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -59,14 +60,24 @@ export function AuthLayout({ children, locale }: AuthLayoutProps) {
         </AnimatePresence>
 
         <div className="relative z-10 text-white max-w-lg">
-          <motion.h1 
+          <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-5xl font-black tracking-tight mb-4"
+            className="mb-4 w-full h-20 flex justify-start items-center"
           >
-            Safaar
-          </motion.h1>
+            <MaskedHeading 
+              text="Safaar" 
+              tag="h1"
+              src={IMAGES[currentImage].src}
+              fillScale={1.3}
+              parallax={20}
+              reveal="fade"
+              textScale={0.16}
+              align="left"
+              className="text-6xl md:text-[80px] font-black tracking-tighter uppercase !m-0 drop-shadow-lg"
+            />
+          </motion.div>
           <motion.p 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

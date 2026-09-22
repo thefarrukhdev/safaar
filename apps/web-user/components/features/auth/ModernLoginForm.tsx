@@ -20,6 +20,7 @@ import { config } from "@/lib/config";
 import type { Locale } from "@/i18n/config";
 import type { AuthDict } from "@/i18n/dictionaries";
 import { AuthInput } from "./AuthInput";
+import MaskedHeading from "@/components/reactbits/MaskedHeading";
 
 const API_URL = config.apiUrl;
 
@@ -127,9 +128,22 @@ export default function ModernLoginForm({
               transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
               className="w-full flex flex-col"
             >
-              <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">{dict.title || "Xush kelibsiz"}</h2>
-                <p className="text-slate-500 text-sm">{dict.passwordLoginSubtitle || "Tizimga kirish uchun ma'lumotlaringizni kiriting."}</p>
+              <div className="mb-8 text-center flex flex-col items-center">
+                <div className="w-full h-16 sm:h-20 flex justify-center mb-2">
+                  <MaskedHeading 
+                    text="Safaar" 
+                    tag="h1"
+                    src="/images/mock/Zaamin.jpeg"
+                    fillScale={1.1}
+                    parallax={15}
+                    reveal="rise"
+                    textScale={0.11}
+                    align="center"
+                    className="text-4xl sm:text-5xl font-black tracking-tighter uppercase !m-0"
+                  />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">{dict.title || "Xush kelibsiz"}</h2>
+                <p className="text-slate-500 text-sm">{dict.passwordLoginSubtitle || "Hisobingizga kiring yoki yangi oching."}</p>
               </div>
 
               <form action={loginFormAction} className="space-y-4">

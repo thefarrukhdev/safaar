@@ -92,3 +92,37 @@ Once the backend endpoints are ready, the frontend developer will update `create
 
 **Note on Database/Entities:**
 You may need to add a table or fields to store partial payment sessions (`sessionId`) before the payment is fully authorized.
+
+---
+
+# 3. Multi-Currency (Exchange Rates) - Backend Task
+
+## Context
+Platformada mehmonxonalar narxlarini nafaqat UZS (so'm), balki xalqaro mijozlar uchun USD ($), EUR (€), va RUB (₽) da ham ko'rsatish talab etilmoqda. Hozirda Frontend narxlarni o'girish uchun `apps/web-user/lib/utils/money.ts` faylida qotirib yozilgan (hardcoded) kurslardan (`USD: 12650`) foydalanmoqda. 
+
+Narxlar har doim dolzarb (real vaqtda) bo'lishi va platforma zarar ko'rmasligi uchun, kurslarni **Backend** taqdim etishi kerak.
+
+## Nima qilish kerak?
+
+1. **Exchange Rates Endpoint yaratish:**
+   - **Endpoint:** `GET /v1/exchange-rates` (Ochiq, authorization talab etilmaydi)
+   - **Qanday ishlaydi:** Keshga olingan (cached) joriy valyuta kurslarini qaytaradi.
+   - **Response formati:**
+     ```json
+     {
+       "base": "UZS",
+       "rates": {
+         "USD": 12650.00,
+         "EUR": 13800.00,
+         "RUB": 140.00
+       },
+       "updatedAt": "2026-09-22T10:00:00Z"
+     }
+     ```
+
+2. **Kurslarni Avtomatik Yangilash (Cron Job):**
+   - Backend har kuni (masalan, Markaziy Bank - CBU API yoki valyuta birjasi API'dan) joriy kurslarni olib, bazaga yoki Redis'ga saqlashi kerak.
+   - Tranzaksiyalar (xaridlar) amalga oshirilganda (payment gateway'ga), to'lov hisob-kitoblarida qaysi kurs ishlatilayotganini inobatga olish uchun backend ham buni hisobga olishi kerak. Asosan to'lov shlyuzlari (Payme/Click) summa (UZS) ni talab qilgani uchun, frontend vizual tarzda ko'rsatish uchun ham ushbu ma'lumotdan foydalanadi.
+
+## Frontend integratsiyasi
+Backend tayyor bo'lgach, Frontend jamoasi `Zustand` yoki `React Query` orqali ilova yuklanganda ushbu API'ni bir marta chaqiradi. Foydalanuvchi UI (Header) orqali USD yoki RUB ni tanlasa, hamma mehmonxonalar narxi backenddan kelgan real kurs bilan dinamik o'zgaradi (Cookie orqali SSR bilan birga).

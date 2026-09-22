@@ -6,10 +6,12 @@ import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Locale } from "@/i18n/config";
 import Image from "next/image";
 import MaskedHeading from "@/components/reactbits/MaskedHeading";
+import { AuthDict } from "@/i18n/dictionaries";
 
 interface AuthLayoutProps {
   children: ReactNode;
   locale: Locale;
+  dict?: AuthDict;
 }
 
 const IMAGES = [
@@ -18,7 +20,7 @@ const IMAGES = [
   { src: "/images/mock/Zaamin.jpeg", alt: "Zaamin Mountains" },
 ];
 
-export function AuthLayout({ children, locale }: AuthLayoutProps) {
+export function AuthLayout({ children, locale, dict }: AuthLayoutProps) {
   const [currentImage, setCurrentImage] = useState(0);
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function AuthLayout({ children, locale }: AuthLayoutProps) {
             transition={{ delay: 0.7 }}
             className="text-lg font-medium text-slate-200"
           >
-            O'zbekiston bo'ylab eng yaxshi mehmonxonalar, dalahovlilar va oromgohlarni kashf eting.
+            {dict?.bannerSubtitle || "O'zbekiston bo'ylab eng yaxshi mehmonxonalar, dalahovlilar va oromgohlarni kashf eting."}
           </motion.p>
           
           <div className="flex gap-2 mt-8">

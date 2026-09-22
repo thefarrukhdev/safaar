@@ -106,7 +106,7 @@ export default function ModernRegisterForm({
   };
 
   return (
-    <AuthLayout locale={locale}>
+    <AuthLayout locale={locale} dict={dict}>
       
       {step > 1 && (
         <button onClick={goBack} className="absolute top-8 left-8 text-slate-500 hover:text-slate-900 transition-colors z-50">

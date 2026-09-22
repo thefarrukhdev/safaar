@@ -104,7 +104,7 @@ export default function ModernLoginForm({
   }, [resetPasswordState.ok]);
 
   return (
-    <AuthLayout locale={locale}>
+    <AuthLayout locale={locale} dict={dict}>
       
       {mode !== "login" && (
         <button onClick={() => changeMode("login", -1)} className="absolute top-8 left-8 text-slate-500 hover:text-slate-900 transition-colors z-50">

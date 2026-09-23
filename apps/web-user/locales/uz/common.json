@@ -73,7 +73,12 @@
     "loginBtn": "Kirish",
     "inputPlaceholder": "Xabaringizni yozing...",
     "sendAria": "Yuborish",
-    "sendError": "Xabar yuborishda xatolik yuz berdi."
+    "sendError": "Xabar yuborishda xatolik yuz berdi.",
+    "guestPrompt": "Xabaringizni qabul qildik! Iltimos, mutaxassislarimiz siz bilan bog'lanishi uchun ismingiz va telefon raqamingizni kiriting.",
+    "guestSuccess": "Rahmat! Ma'lumotlaringiz qabul qilindi. Tez orada siz bilan bog'lanamiz.",
+    "nameLabel": "Ismingiz",
+    "phoneLabel": "Telefon raqamingiz",
+    "submitDetails": "Yuborish"
   },
   "pwa": {
     "installTitle": "Safaar ilovasini o'rnating",

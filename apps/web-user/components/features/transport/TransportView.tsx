@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Car, ShieldCheck, Users, Search, Calendar, Minus, Plus, CreditCard, Clock,
 } from "lucide-react";
@@ -157,23 +158,25 @@ export function TransportView({
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
 
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-5 sm:mb-8 flex h-[150px] sm:h-[200px] w-full flex-col justify-center overflow-hidden rounded-xl sm:rounded-[32px] bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 px-5 sm:px-8 md:px-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-        <div className="relative z-10 w-full sm:max-w-[65%]">
-          <h1 className="mb-2 sm:mb-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight" style={{ fontFamily: "var(--font-manrope, sans-serif)", letterSpacing: "-0.02em" }}>
+      <div className="relative mb-5 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+        <Image
+          src="/transport_hero.jpg"
+          alt="Transport"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-black/50" />
+
+        <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
+          <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
             {dict.title}
           </h1>
-          <p className="hidden sm:block text-[14px] sm:text-[15px] font-medium leading-relaxed text-slate-300">
+          <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
             {dict.subtitle}
           </p>
-        </div>
-
-        <div
-          className="absolute inset-0 z-0 h-full w-full bg-cover bg-center bg-no-repeat opacity-[0.25] mix-blend-screen pointer-events-none"
-          style={{ backgroundImage: "url('/Tashkent-city-skyline.jpeg')" }}
-        ></div>
-
-        <div className="absolute -bottom-2 right-4 sm:right-12 z-10 w-[180px] sm:w-[280px] lg:w-[400px] opacity-80 sm:opacity-100 flex items-center justify-center">
-          <Car className="h-32 w-32 sm:h-48 sm:w-48 text-white/30 drop-shadow-2xl" />
         </div>
       </div>
 
@@ -199,16 +202,16 @@ export function TransportView({
               { value: "all", label: dict.allCities },
               ...cities.map((city) => ({ value: city, label: city })),
             ]}
-            className="h-[60px] sm:h-[68px] rounded-[16px]"
+            buttonClassName="h-[60px] sm:h-[68px] rounded-[16px]"
           />
 
           <div className="flex h-[60px] sm:h-[68px] flex-col justify-center rounded-[16px] bg-slate-50 px-5 border border-transparent dark:bg-slate-800">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
               <Users className="h-3.5 w-3.5 text-primary-500" />
-              <span>Yo'lovchilar soni</span>
+              <span>{(dict as any).search?.passengers || "Yo'lovchilar soni"}</span>
             </div>
             <div className="mt-0.5 flex items-center justify-between text-[15px] font-bold text-slate-900 dark:text-white">
-              <span>{passengers} yo'lovchi</span>
+              <span>{passengers} {(dict as any).search?.passengerUnit || "kishi"}</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setPassengers(Math.max(1, passengers - 1))} className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm border border-slate-200 transition-colors hover:border-primary-300 hover:text-primary-600">
                   <Minus className="h-3.5 w-3.5" />
@@ -290,7 +293,7 @@ export function TransportView({
               { value: "with", label: dict.driverIncluded },
               { value: "without", label: dict.withoutDriver },
             ]}
-            className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+            buttonClassName="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" className="w-40"
           />
           <Select
             value={sortBy}
@@ -301,7 +304,7 @@ export function TransportView({
               { value: "price_desc", label: dict.sortPriceDesc },
               { value: "seats", label: dict.sortSeats },
             ]}
-            className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+            buttonClassName="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" className="w-48"
           />
           <button
             onClick={handleClearFilters}
@@ -333,9 +336,9 @@ export function TransportView({
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Xavfsiz sayohat</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.safeTravelTitle || "Xavfsiz sayohat"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Tekshirilgan haydovchilar va sug'urtalangan transport
+              {(dict as any).search?.safeTravelDesc || "Tekshirilgan haydovchilar va sug'urtalangan transport"}
             </p>
           </div>
         </div>
@@ -345,9 +348,9 @@ export function TransportView({
             <Clock className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>24/7 yordam</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.support24Title || "24/7 yordam"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Istalgan vaqtda yordam berish xizmatimiz
+              {(dict as any).search?.support24Desc || "Istalgan vaqtda yordam berish xizmatimiz"}
             </p>
           </div>
         </div>
@@ -357,9 +360,9 @@ export function TransportView({
             <CreditCard className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Onlayn to'lov</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.onlinePaymentTitle || "Onlayn to'lov"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Xavfsiz va qulay to'lov tizimi (Uzcard, Humo)
+              {(dict as any).search?.onlinePaymentDesc || "Xavfsiz va qulay to'lov tizimi (Uzcard, Humo)"}
             </p>
           </div>
         </div>
@@ -369,9 +372,9 @@ export function TransportView({
             <Calendar className="h-6 w-6" />
           </div>
           <div className="pt-1">
-            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>Moslashuvchan</h4>
+            <h4 className="text-[15px] font-bold text-slate-900 dark:text-white" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>{(dict as any).search?.flexibleTitle || "Moslashuvchan"}</h4>
             <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Ko'pchilik buyurtmalarda bepul bekor qilish imkoni
+              {(dict as any).search?.flexibleDesc || "Ko'pchilik buyurtmalarda bepul bekor qilish imkoni"}
             </p>
           </div>
         </div>

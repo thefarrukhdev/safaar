@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { uploadAvatarAction, deleteAvatarAction } from "@/lib/account/actions";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
+import { buttonVariants } from "@/components/ui/button-variants";
 import type { ProfileView } from "@/types/view";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export function AvatarForm({
   profile,
@@ -29,12 +32,12 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || "Upload failed");
+      toast.error(res?.error || dict?.uploadFailed || "Upload failed");
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(dict?.deleteConfirm || "Are you sure?")) return;
+    if (!confirm(dict?.confirmDelete || "Are you sure?")) return;
     setLoading(true);
     const res = await deleteAvatarAction();
     setLoading(false);
@@ -42,31 +45,32 @@ export function AvatarForm({
     if (res?.ok) {
       router.refresh();
     } else {
-      alert(res?.error || "Delete failed");
+      toast.error(res?.error || dict?.deleteFailed || "Delete failed");
     }
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="h-16 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+    <div className="flex items-center gap-5 sm:gap-6">
+      <div className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-500 shadow-inner dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 items-center justify-center">
         {profile.avatarUrl ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={profile.avatarUrl}
-              alt="Avatar"
-              className="h-full w-full object-cover"
-            />
-          </>
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={profile.avatarUrl}
+            alt="Avatar"
+            className="h-full w-full object-cover"
+          />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-slate-400">
+          <span>
             {profile.firstName?.[0]}
             {profile.lastName?.[0]}
-          </div>
+          </span>
         )}
       </div>
-      <div className="flex gap-2">
-        <label className="relative cursor-pointer rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+      <div className="flex flex-wrap items-center gap-3">
+        <label
+          className={buttonVariants({ variant: "secondary", size: "sm", className: "cursor-pointer" }) + (loading ? " opacity-50 pointer-events-none" : "")}
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <span>{dict?.upload || "Upload"}</span>
           <input
             type="file"
@@ -78,8 +82,8 @@ export function AvatarForm({
         </label>
         {profile.avatarUrl && (
           <Button
-            variant="secondary"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            variant="ghost"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
             onClick={handleDelete}
             loading={loading}
             size="sm"

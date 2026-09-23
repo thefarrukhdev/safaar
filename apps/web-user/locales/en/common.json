@@ -73,7 +73,12 @@
     "loginBtn": "Login",
     "inputPlaceholder": "Type your message...",
     "sendAria": "Send",
-    "sendError": "Failed to send message."
+    "sendError": "Failed to send message.",
+    "guestPrompt": "We have received your message! Please enter your name and phone number so our specialists can contact you.",
+    "guestSuccess": "Thank you! Your details have been received. We will contact you shortly.",
+    "nameLabel": "Your Name",
+    "phoneLabel": "Your Phone Number",
+    "submitDetails": "Submit"
   },
   "pwa": {
     "installTitle": "Install Safaar App",

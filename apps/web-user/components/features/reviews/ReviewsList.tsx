@@ -1,8 +1,10 @@
 "use client";
+import { toast } from "sonner";
 
 import { useState } from "react";
 import Image from "next/image";
 import { ShieldCheck, Camera } from "lucide-react";
+import { Select } from "@/components/ui/Select";
 import type { Locale } from "@/i18n/config";
 import type { ReviewsDict } from "@/i18n/dictionaries";
 import type { ReviewView } from "@/types/view";
@@ -84,7 +86,7 @@ export function ReviewsList({
       setFiles([]);
     } catch (err) {
       console.error(err);
-      alert(dict.submitError);
+      toast.error(dict.submitError);
     } finally {
       setIsSubmitting(false);
     }
@@ -175,17 +177,15 @@ export function ReviewsList({
           
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-900">{dict.ratingLabel}</label>
-            <select 
-              value={rating} 
-              onChange={(e) => setRating(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-white p-2.5 text-sm outline-none focus:border-slate-400"
-            >
-              {[5,4,3,2,1].map(num => (
-                <option key={num} value={num}>
-                  {(dict.starsLabel).replace("{num}", String(num))}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={String(rating)}
+              onChange={(val) => setRating(Number(val))}
+              buttonClassName="h-11 rounded-xl border-slate-200"
+              options={[5,4,3,2,1].map(num => ({
+                value: String(num),
+                label: dict.starsLabel.replace("{num}", String(num))
+              }))}
+            />
           </div>
 
           <div className="flex flex-col gap-2">

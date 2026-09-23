@@ -15,7 +15,7 @@ import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import dynamic from "next/dynamic";
 import NextTopLoader from "nextjs-toploader";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/Toaster";
 import { config } from "@/lib/config";
 
 
@@ -91,6 +91,8 @@ export default async function LangLayout({
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
 
+  const common = await getDictionary(lang, "common");
+
   return (
     <html
       lang={lang}
@@ -104,9 +106,9 @@ export default async function LangLayout({
 
             <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
               {children}
-              <Toaster position="top-right" richColors />
+              <Toaster />
               <ServiceWorkerRegister />
-              <PwaInstallBanner />
+              <PwaInstallBanner dict={common.pwa} />
             </div>
           </NuqsAdapter>
         </AnalyticsProvider>

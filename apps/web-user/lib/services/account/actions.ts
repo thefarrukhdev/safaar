@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
 import { defaultLocale, isLocale } from "@/i18n/config";
@@ -32,6 +33,7 @@ export async function updateProfileAction(
   return safeAction<ProfileState>(
     async () => {
       await api.users.updateProfile(input, { token: session.accessToken });
+      revalidatePath("/", "layout");
       return { ok: true };
     },
     { ok: false, error: "ERROR" },

@@ -110,3 +110,18 @@ export async function sendSupportMessageAction(input: {
     return supportError(error);
   }
 }
+
+export async function sendGuestSupportTicketAction(input: {
+  message: string;
+  guestName: string;
+  guestPhone: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  // TODO: Hozircha backend tayyor emas, shuning uchun shunchaki MOCK qilib turamiz.
+  // Backend tayyor bo'lgach, bu yerda api.support.createAnonymousTicket chaqiriladi.
+  console.log("GUEST TICKET SUBMITTED:", input);
+  
+  // Kichik kechikish simulatsiyasi
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  
+  return { ok: true };
+}

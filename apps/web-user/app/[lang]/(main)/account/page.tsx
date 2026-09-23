@@ -55,7 +55,7 @@ export default async function AccountProfilePage({
             {dict.profile.memberSince}: {memberSince}
           </p>
         </div>
-        <ProfileForm locale={locale} profile={profile} dict={dict.profile} />
+        <ProfileForm locale={locale} profile={profile} dict={dict.profile} avatarDict={(dict as any).avatar} />
       </CardBody>
     </Card>
     <Card className="mt-6">

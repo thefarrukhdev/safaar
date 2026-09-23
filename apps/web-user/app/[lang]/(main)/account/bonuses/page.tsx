@@ -61,14 +61,14 @@ export default async function AccountBonusesPage({
             {formatSum(balanceSum)}
           </span>
           <p className="mt-1 text-xs text-primary-200/80">
-            *Safarlar va bron qilishlar uchun to'plangan bonus balingiz.
+            {(dict as any).bonuses?.disclaimer || "*Safarlar va bron qilishlar uchun to'plangan bonus balingiz."}
           </p>
         </div>
       </div>
 
       {entries.length === 0 ? (
         <Card>
-          <CardBody className="py-12 text-center">
+          <CardBody className="py-12 sm:py-16 text-center">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict.bonuses.empty}</p>
           </CardBody>
         </Card>

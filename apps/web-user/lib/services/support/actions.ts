@@ -116,12 +116,21 @@ export async function sendGuestSupportTicketAction(input: {
   guestName: string;
   guestPhone: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  // TODO: Hozircha backend tayyor emas, shuning uchun shunchaki MOCK qilib turamiz.
-  // Backend tayyor bo'lgach, bu yerda api.support.createAnonymousTicket chaqiriladi.
-  console.log("GUEST TICKET SUBMITTED:", input);
-  
-  // Kichik kechikish simulatsiyasi
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  
-  return { ok: true };
+  const message = input.message.trim();
+  const guestName = input.guestName.trim();
+  const guestPhone = input.guestPhone.trim();
+
+  if (!message || !guestName || !guestPhone) {
+    return { ok: false, error: "MISSING_FIELDS" };
+  }
+
+  try {
+    await api.support.createGuestTicket({ message, guestName, guestPhone });
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof ApiRequestError ? error.message : "ERROR",
+    };
+  }
 }

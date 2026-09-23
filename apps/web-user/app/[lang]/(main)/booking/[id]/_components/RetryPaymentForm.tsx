@@ -219,6 +219,7 @@ export function RetryPaymentForm({
           checkoutUrl={iframeUrl}
           bookingId={bookingId}
           guestToken={guestToken}
+          title={`To'lov (${METHOD_LABELS[selected] ?? selected})`}
           onClose={() => setIframeUrl(null)}
           onPaid={() => {
             setIframeUrl(null);

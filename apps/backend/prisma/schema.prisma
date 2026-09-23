@@ -1193,6 +1193,8 @@ model SupportTicket {
   subject   String
   priority  String    @default("medium") @db.VarChar(32)
   status    String    @default("open") @db.VarChar(32)
+  guestName  String?  @map("guest_name") @db.VarChar(200)
+  guestPhone String?  @map("guest_phone") @db.VarChar(20)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 

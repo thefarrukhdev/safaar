@@ -12,6 +12,13 @@ export interface CreateSupportMessageInput {
   body: string;
 }
 
+export interface CreateGuestSupportTicketInput {
+  message: string;
+  guestName: string;
+  guestPhone: string;
+  subject?: string;
+}
+
 type RawSupportTicket = Parameters<typeof toSupportTicketView>[0];
 type RawSupportMessage = Parameters<typeof toSupportMessageView>[0];
 
@@ -48,6 +55,22 @@ export const supportService = {
       },
       authOptions(options),
     );
+    return toSupportTicketView(camelizeKeys<RawSupportTicket>(raw));
+  },
+
+  /**
+   * `POST /support/tickets/guest` — login qilmagan mehmon uchun ochiq yo'l
+   * (token talab qilinmaydi).
+   */
+  async createGuestTicket(
+    input: CreateGuestSupportTicketInput,
+  ): Promise<SupportTicketView> {
+    const raw = await rawApi.post<unknown>("/support/tickets/guest", {
+      message: input.message,
+      guestName: input.guestName,
+      guestPhone: input.guestPhone,
+      subject: input.subject,
+    });
     return toSupportTicketView(camelizeKeys<RawSupportTicket>(raw));
   },
 

@@ -16,11 +16,15 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 export function CurrencyProvider({
   children,
   initialCurrency,
+  initialRates,
 }: {
   children: React.ReactNode;
   initialCurrency: CurrencyCode;
+  /** Backend `GET /currency/rates`dan (CBU.uz) — mavjud bo'lmasa qattiq yozilgan standart qiymatlarga tushadi. */
+  initialRates?: Record<CurrencyCode, number>;
 }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>(initialCurrency);
+  const rates = initialRates ?? DEFAULT_EXCHANGE_RATES;
   const router = useRouter();
 
   const setCurrency = useCallback(
@@ -35,9 +39,9 @@ export function CurrencyProvider({
 
   const formatPrice = useCallback(
     (amountInSum: number, locale: string = "uz") => {
-      return formatMoney(amountInSum, currency, DEFAULT_EXCHANGE_RATES, locale);
+      return formatMoney(amountInSum, currency, rates, locale);
     },
-    [currency]
+    [currency, rates]
   );
 
   return (

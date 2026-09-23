@@ -84,6 +84,7 @@ export function generateStaticParams() {
 import { cookies } from "next/headers";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { type CurrencyCode } from "@/lib/utils/money";
+import { api } from "@/lib/api";
 
 export default async function LangLayout({
   children,
@@ -100,6 +101,14 @@ export default async function LangLayout({
   const currencyCookie = cookieStore.get("safaar_currency")?.value as CurrencyCode | undefined;
   const initialCurrency: CurrencyCode = currencyCookie || "UZS";
 
+  let initialRates = undefined;
+  try {
+    const ratesRes = await api.currency.getRates();
+    initialRates = ratesRes.rates;
+  } catch (err) {
+    console.error("Failed to fetch currency rates:", err);
+  }
+
   return (
     <html
       lang={lang}
@@ -111,7 +120,7 @@ export default async function LangLayout({
         <AnalyticsProvider>
           <NuqsAdapter>
 
-            <CurrencyProvider initialCurrency={initialCurrency}>
+            <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
               <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
                 {children}
                 <Toaster />

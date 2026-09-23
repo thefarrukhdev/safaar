@@ -13,7 +13,7 @@ function guestDto(
     guestName: 'Aziza Karimova',
     guestPhone: '+998901234567',
     ...overrides,
-  } as CreateGuestSupportTicketDto;
+  };
 }
 
 describe('SupportService.createGuest', () => {
@@ -40,7 +40,9 @@ describe('SupportService.createGuest', () => {
       .mockResolvedValueOnce([
         { id: 'ticket-1', actor_type: 'guest', status: 'open' },
       ])
-      .mockResolvedValueOnce([{ id: 'message-1', body: 'Bron uchun to‘lov o‘tmadi' }]);
+      .mockResolvedValueOnce([
+        { id: 'message-1', body: 'Bron uchun to‘lov o‘tmadi' },
+      ]);
 
     const result = (await service.createGuest(undefined, guestDto())) as {
       id: string;
@@ -50,7 +52,7 @@ describe('SupportService.createGuest', () => {
     expect(result.id).toBe('ticket-1');
     expect(result.messages).toHaveLength(1);
 
-    const ticketInsert = pgMock.query.mock.calls[0]!;
+    const ticketInsert = pgMock.query.mock.calls[0];
     expect(ticketInsert[0]).toContain('INSERT INTO support_tickets');
     expect(ticketInsert[1]).toEqual([
       expect.any(String), // id
@@ -62,7 +64,7 @@ describe('SupportService.createGuest', () => {
       expect.any(String), // created_at
     ]);
 
-    const messageInsert = pgMock.query.mock.calls[1]!;
+    const messageInsert = pgMock.query.mock.calls[1];
     expect(messageInsert[0]).toContain('INSERT INTO support_messages');
     expect(messageInsert[1]![3]).toBe('Bron uchun to‘lov o‘tmadi');
 
@@ -82,7 +84,7 @@ describe('SupportService.createGuest', () => {
 
     await service.createGuest(actor, guestDto());
 
-    const ticketInsert = pgMock.query.mock.calls[0]!;
+    const ticketInsert = pgMock.query.mock.calls[0];
     expect(ticketInsert[1]![1]).toBe('user-42'); // user_id populated
   });
 
@@ -93,7 +95,7 @@ describe('SupportService.createGuest', () => {
 
     await service.createGuest(undefined, guestDto({ subject: undefined }));
 
-    const ticketInsert = pgMock.query.mock.calls[0]!;
+    const ticketInsert = pgMock.query.mock.calls[0];
     expect(ticketInsert[1]![3]).toContain('Aziza Karimova');
   });
 });

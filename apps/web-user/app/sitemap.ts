@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
-import { locales } from "@/i18n/config";
+import { locales, defaultLocale } from "@/i18n/config";
 import { config } from "@/lib/config";
+import { api } from "@/lib/api";
 
 const SITE_URL = config.siteUrl;
 
@@ -18,9 +19,11 @@ const PUBLIC_PATHS = [
   "/terms",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  return locales.flatMap((lang) =>
+  
+  // 1. Static paths
+  const staticPaths: MetadataRoute.Sitemap = locales.flatMap((lang) =>
     PUBLIC_PATHS.map((path) => ({
       url: `${SITE_URL}/${lang}${path}`,
       lastModified: now,
@@ -33,4 +36,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     })),
   );
+
+  // 2. Dynamic paths (Hotels)
+  let hotelPaths: MetadataRoute.Sitemap = [];
+  try {
+    const hotelsRes = await api.hotels.getHotels(defaultLocale, { limit: 100 });
+    
+    if (hotelsRes && hotelsRes.items) {
+      hotelPaths = locales.flatMap((lang) =>
+        hotelsRes.items.map((hotel) => ({
+          url: `${SITE_URL}/${lang}/hotels/${hotel.slug}`,
+          lastModified: now,
+          changeFrequency: "daily",
+          priority: 0.9,
+          alternates: {
+            languages: Object.fromEntries(
+              locales.map((l) => [l, `${SITE_URL}/${l}/hotels/${hotel.slug}`]),
+            ),
+          },
+        })),
+      );
+    }
+  } catch (error) {
+    console.error("Failed to fetch hotels for sitemap:", error);
+  }
+
+  return [...staticPaths, ...hotelPaths];
 }

@@ -1,1 +1,0 @@
-# Barcha Backend vazifalar yakunlandi\n\n1. Guest Support Flow - Bajarildi.\n2. Direct Card Payment - Uzum IFRAME orqali to'lovga almashtirildi va hal qilindi.\n3. Multi-Currency - Backend ulandi va Frontendda SSR orqali ulandi.

@@ -5,6 +5,7 @@ import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { SupportService } from './support.service';
 import {
+  CreateGuestSupportTicketDto,
   CreateSupportMessageDto,
   CreateSupportTicketDto,
 } from './dto/support.dto';
@@ -21,6 +22,16 @@ export class SupportController {
     @Body() body: CreateSupportTicketDto,
   ) {
     return this.supportService.create(actor, body);
+  }
+
+  // Ataylab `@Roles()` yo'q — `POST /bookings/hotel` bilan bir xil naqsh:
+  // `RolesGuard` bunday marshrutni auth-ixtiyoriy (guest) deb hisoblaydi.
+  @Post('guest')
+  createGuest(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: CreateGuestSupportTicketDto,
+  ) {
+    return this.supportService.createGuest(actor, body);
   }
 
   @Get()

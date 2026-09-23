@@ -10,6 +10,7 @@ import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
 import type {
+  CreateGuestSupportTicketDto,
   CreateSupportMessageDto,
   CreateSupportTicketDto,
 } from './dto/support.dto';
@@ -48,6 +49,56 @@ export class SupportService {
 
     this.events.supportTicketUpdated(ticket);
     return ticket;
+  }
+
+  /**
+   * Login qilmagan mehmon uchun ochiq yo'l — `RequestActor` talab qilmaydi
+   * (controller darajasida `@Roles()` yo'q, shuning uchun `RolesGuard` buni
+   * guest checkout kabi ixtiyoriy-auth marshrut deb hisoblaydi). Agar token
+   * bilan kirilgan bo'lsa (masalan login qilingan foydalanuvchi shu formani
+   * ishlatsa), `user_id` baribir bog'lanadi — lekin `guestName`/`guestPhone`
+   * har doim saqlanadi, chunki bu maxsus "aloqa uchun" maydonlar.
+   */
+  async createGuest(
+    actor: RequestActor | undefined,
+    body: CreateGuestSupportTicketDto,
+  ) {
+    const now = new Date().toISOString();
+    const id = randomUUID();
+    const guestActorId = randomUUID();
+    const userId = actor?.actorType === 'user' ? actor.id : null;
+    const guestName = String(body.guestName).trim();
+    const guestPhone = String(body.guestPhone).trim();
+    const message = String(body.message).trim();
+
+    const [ticket] = await this.pg.query(
+      `INSERT INTO support_tickets
+         (id, user_id, actor_type, actor_id, subject, priority, status, guest_name, guest_phone, created_at, updated_at)
+       VALUES ($1, $2, 'guest', $3, $4, 'medium', 'open', $5, $6, $7, $7)
+       RETURNING *`,
+      [
+        id,
+        userId,
+        guestActorId,
+        String(body.subject ?? `Mehmon so'rovi — ${guestName}`),
+        guestName,
+        guestPhone,
+        now,
+      ],
+    );
+
+    const messageId = randomUUID();
+    const [supportMessage] = await this.pg.query(
+      `INSERT INTO support_messages (id, ticket_id, sender_type, sender_id, body, created_at)
+       VALUES ($1, $2, 'guest', $3, $4, $5)
+       RETURNING *`,
+      [messageId, id, guestActorId, message, now],
+    );
+
+    this.events.supportTicketUpdated(ticket);
+    this.events.supportMessageCreated(id, supportMessage, ticket);
+
+    return { ...ticket, messages: [supportMessage] };
   }
 
   async list(actor: RequestActor | undefined) {

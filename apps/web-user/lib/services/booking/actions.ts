@@ -87,9 +87,7 @@ export async function createBookingAction(
     };
   }
 
-  const isMockCardPayment = formData.get("smsCode") != null;
-
-  if (paymentMethod === "cash" || isMockCardPayment) {
+  if (paymentMethod === "cash") {
     redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=${paymentMethod}${guestAccessTokenParam}`);
   }
 

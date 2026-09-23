@@ -90,13 +90,5 @@
     "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
     "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue."
   },
-  "cardPayment": {
-    "cardNumber": "Card Number",
-    "expiryDate": "Expiry (MM/YY)",
-    "smsCode": "SMS Code",
-    "sendSms": "Get SMS Code",
-    "verifyAndPay": "Verify & Pay",
-    "enterSmsPrompt": "Enter the SMS code sent to your phone",
-    "resendSms": "Resend SMS"
-  }
+  "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number."
 }

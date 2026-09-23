@@ -90,13 +90,5 @@
     "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
     "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering."
   },
-  "cardPayment": {
-    "cardNumber": "Karta raqami",
-    "expiryDate": "Muddat (AA/YY)",
-    "smsCode": "SMS kod",
-    "sendSms": "SMS kod olish",
-    "verifyAndPay": "Tasdiqlash va To'lash",
-    "enterSmsPrompt": "Telefoningizga yuborilgan SMS kodni kiriting",
-    "resendSms": "Qayta yuborish"
-  }
+  "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi."
 }

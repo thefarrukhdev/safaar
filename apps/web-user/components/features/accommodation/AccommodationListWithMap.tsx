@@ -86,7 +86,7 @@ export function AccommodationListWithMap({
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-900/[0.08] pb-4">
             <div>{headerTitle}</div>
             <div className="flex items-center gap-3">
-              {headerSort}
+              <div className="hidden lg:block">{headerSort}</div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"

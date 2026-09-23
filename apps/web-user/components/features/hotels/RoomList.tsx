@@ -78,7 +78,7 @@ export function RoomList({
             <div className="flex items-center justify-between gap-4 border-t border-slate-900/[0.08] pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
               <div className="text-left sm:text-right">
                 <span className="text-lg font-semibold tabular-nums text-slate-900">
-                  {formatSum(room.priceSum)}
+                  {formatSum(room.priceSum, locale)}
                 </span>
                 <span className="text-xs font-normal text-slate-900/70">
                   {" "}

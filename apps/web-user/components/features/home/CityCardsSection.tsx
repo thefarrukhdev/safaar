@@ -9,7 +9,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 import { resolveImage } from "@/lib/images";
 
-const FALLBACK_IMAGE = "/Uzbekistan-travel.jpeg";
+const FALLBACK_IMAGE = "/images/mock/Uzbekistan-travel.jpeg";
 
 export async function CityCardsSection({
   locale,

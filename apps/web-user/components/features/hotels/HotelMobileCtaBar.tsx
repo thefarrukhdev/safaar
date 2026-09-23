@@ -11,6 +11,7 @@ export interface HotelMobileCtaBarProps {
   targetId?: string;
   roomsTargetId?: string;
   className?: string;
+  locale?: string;
 }
 
 export function HotelMobileCtaBar({
@@ -20,6 +21,7 @@ export function HotelMobileCtaBar({
   targetId = "hotel-original-cta",
   roomsTargetId = "rooms",
   className,
+  locale,
 }: HotelMobileCtaBarProps) {
   const isHidden = useIsTargetHidden(targetId);
 
@@ -47,7 +49,7 @@ export function HotelMobileCtaBar({
         <div className="flex flex-col min-w-0">
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-semibold tabular-nums text-slate-900 truncate">
-              {formatSum(price)}
+              {formatSum(price, locale)}
             </span>
             <span className="text-xs text-slate-900/70 shrink-0">
               / {perNightText}

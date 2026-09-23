@@ -87,8 +87,10 @@ export async function createBookingAction(
     };
   }
 
-  if (paymentMethod === "cash") {
-    redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestAccessTokenParam}`);
+  const isMockCardPayment = formData.get("smsCode") != null;
+
+  if (paymentMethod === "cash" || isMockCardPayment) {
+    redirect(`/${locale}/booking/${bookingId}?status=confirmed&payment=${paymentMethod}${guestAccessTokenParam}`);
   }
 
   // MUHIM: bu yerdan endi Click/Payme checkoutiga TO'G'RIDAN-TO'G'RI

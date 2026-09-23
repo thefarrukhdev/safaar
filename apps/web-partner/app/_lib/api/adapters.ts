@@ -200,8 +200,7 @@ export function toListing(hotel: BackendHotel): Listing {
   const imageIds = hotel.image_ids ?? [];
   return {
     name: localized(hotel.name),
-    shortDescription:
-      localized(hotel.short_description) || localized(hotel.description),
+    shortDescription: localized(hotel.short_description),
     fullDescription: localized(hotel.description),
     status:
       hotel.status === 'published'

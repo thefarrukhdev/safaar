@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import { isLocale, type Locale } from '@/i18n/config';
+import { isLocale, type Locale, locales } from '@/i18n/config';
+import { config } from '@/lib/config';
 import { getDictionary } from '@/i18n/dictionaries';
 import { api, ApiRequestError } from '@/lib/api';
 import { getSession } from '@/lib/auth/session';
@@ -78,9 +79,34 @@ export async function generateMetadata({
   const locale = isLocale(lang) ? lang : "uz";
   const hotel = await getCachedHotel(locale, slug);
   if (!hotel || hotel === 404) return {};
+
+  const title = `${hotel.name} — Safaar`;
+  const description = hotel.description?.slice(0, 160) || `Book ${hotel.name} on Safaar.uz`;
+  const url = `${config.siteUrl}/${locale}/hotels/${slug}`;
+  const images = hotel.images || [];
+
   return {
-    title: `${hotel.name} — Safaar`,
-    description: hotel.description?.slice(0, 160),
+    title,
+    description,
+    alternates: {
+      canonical: url,
+      languages: Object.fromEntries(
+        locales.map((l) => [l, `${config.siteUrl}/${l}/hotels/${slug}`])
+      ),
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      images: images.map(imgUrl => ({ url: imgUrl })),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images,
+    },
   };
 }
 
@@ -129,8 +155,30 @@ export default async function Page({
     amenitiesRes.map((amenity) => [amenity.id, amenity.name]),
   );
 
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Hotel",
+    name: hotel.name,
+    description: hotel.description,
+    image: hotel.images,
+    address: hotel.address ? {
+      "@type": "PostalAddress",
+      streetAddress: hotel.address,
+      addressLocality: hotel.cityName
+    } : undefined,
+    aggregateRating: (hotel.rating > 0 && hotel.reviewsCount > 0) ? {
+      "@type": "AggregateRating",
+      ratingValue: hotel.rating,
+      reviewCount: hotel.reviewsCount,
+    } : undefined,
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 sm:gap-6 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
         {/* Back Button */}
         <div className="w-full flex items-center">
@@ -285,6 +333,7 @@ export default async function Page({
           checkInTime={hotel.checkInTime}
           checkOutTime={hotel.checkOutTime}
           dict={dict}
+          locale={locale}
         />
       </div>
 
@@ -293,6 +342,7 @@ export default async function Page({
         perNightText={dict.perNight}
         buttonText={dict.book}
         targetId="hotel-original-cta"
+        locale={locale}
       />
     </main>
     </>

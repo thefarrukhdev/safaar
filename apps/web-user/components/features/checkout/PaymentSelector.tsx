@@ -40,39 +40,19 @@ const CARD_THEME = {
   iconBg: "bg-emerald-600 text-white",
 };
 
-const INTL_CARD_THEME = {
-  badgeBg: "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800",
-  badgeText: "text-indigo-700 dark:text-indigo-300",
-  borderSelected: "border-indigo-500 ring-2 ring-indigo-500/20",
-  bgSelected: "bg-indigo-50/40 dark:bg-indigo-950/20",
-  iconBg: "bg-indigo-600 text-white",
-};
-
-// Fee stavkalari — mahsulot talabi bo'yicha tasdiqlangan, backend'dagi
-// `card-scheme-fee.ts`dagi bilan BIR XIL (2026-09-16). Bu yerda FAQAT
-// informativ belgi (badge) sifatida ko'rsatiladi — yakuniy summa hech
-// qachon shu qiymatdan frontendda HISOBLANMAYDI, backend qaytargan
-// haqiqiy `fee_amount`/`amount` ishlatiladi (checkout sahifasida).
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
-    id: "uzcard",
-    name: "Milliy kartalar orqali to'lash",
-    subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
+    id: "card" as any,
+    name: "Karta orqali to'lash",
+    subtitle: "Uzcard, Humo, Visa va Mastercard",
     badges: ["3D-Secure xavfsizlik"],
     type: "local_card",
+    dictKey: "local_card" as any,
     colorTheme: CARD_THEME,
   },
   {
-    id: "visa",
-    name: "Xalqaro kartalar orqali to'lash",
-    subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
-    badges: ["3D-Secure xavfsizlik"],
-    type: "intl_card",
-    colorTheme: INTL_CARD_THEME,
-  },
-  {
     id: "cash",
-    dictKey: "cash",
+    dictKey: "cash" as any,
     type: "cash",
     colorTheme: {
       badgeBg: "bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800",
@@ -161,22 +141,18 @@ export function PaymentSelector({
                   )}
                 >
                   {option.type === "local_card" && (
-                    <div className="flex items-center -space-x-2.5">
-                      <div className="relative z-10 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                      <div className="relative z-0 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                    </div>
-                  )}
-                  {option.type === "intl_card" && (
-                    <div className="flex items-center -space-x-2.5">
-                      <div className="relative z-10 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
-                      <div className="relative z-0 flex h-7 w-11 items-center justify-center overflow-hidden rounded border border-slate-200/80 bg-white shadow-sm ring-1 ring-white/20 dark:border-slate-700">
-                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
                       </div>
                     </div>
                   )}

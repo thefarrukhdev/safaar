@@ -38,6 +38,7 @@ function TransportCard({
   return (
     <UniversalCard
       href={`/${locale}/transport/${item.id}`}
+      locale={locale}
       imageSrc={item.imageUrl}
       imageAlt={item.name}
       topLeft={
@@ -158,9 +159,9 @@ export function TransportView({
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
 
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-5 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         <Image
-          src="/transport_hero.jpg"
+          src="/images/heroes/transport_hero.jpg"
           alt="Transport"
           fill
           priority
@@ -168,7 +169,7 @@ export function TransportView({
           sizes="100vw"
           quality={85}
         />
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-black/45" />
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">

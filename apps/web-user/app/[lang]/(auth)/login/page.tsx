@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { LoginForm } from "../_components/LoginForm";
+import ModernLoginForm from "@/components/features/auth/ModernLoginForm";
 
 export async function generateMetadata({
   params,
@@ -35,9 +35,8 @@ export default async function LoginPage({
   const next = typeof nextRaw === "string" && nextRaw.startsWith("/")
     ? nextRaw
     : "";
-  const socialErrorRaw = sp.socialError;
   const socialError =
-    typeof socialErrorRaw === "string" ? socialErrorRaw : undefined;
+    typeof sp.error === "string" && sp.error.length > 0 ? sp.error : undefined;
 
   // SENIOR OPTIMIZATION: Parallelize session check and dictionary loading
   const [session, dict] = await Promise.all([
@@ -54,7 +53,7 @@ export default async function LoginPage({
   }
 
   return (
-    <LoginForm
+    <ModernLoginForm
       locale={locale}
       next={next}
       dict={dict}

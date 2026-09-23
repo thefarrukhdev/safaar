@@ -109,6 +109,15 @@ export async function AccommodationPage({
   const clearedQuery = new URLSearchParams(clearedParams).toString();
   const clearedHref = `${basePath}${clearedQuery ? `?${clearedQuery}` : ""}`;
 
+  const isAll = sp.all === "true";
+  let bannerKey = "hotels";
+  if (isAll) bannerKey = "all";
+  else if (type === "dacha") bannerKey = "dachas";
+  else if (type === "sanatorium") bannerKey = "sanatoriums";
+  else if (type === "resort") bannerKey = "resorts";
+
+  const dynamicBanner = (dict.banners as any)?.[bannerKey] || {};
+
   return (
     <main className="relative mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col px-3 sm:px-4 md:px-8 pb-8 pt-3 sm:pt-6">
       
@@ -116,7 +125,7 @@ export async function AccommodationPage({
       <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         {/* Background photo */}
         <Image
-          src="/hotels_hero.jpg"
+          src="/images/heroes/hotels_hero.jpg"
           alt="Hotels hero"
           fill
           priority
@@ -129,10 +138,10 @@ export async function AccommodationPage({
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
-            {dict.bannerTitle || "Mehmonxona, Dacha, Sanatoriya va Oromgohlar qidirish xizmati"}
+            {dynamicBanner.title || dict.bannerTitle}
           </h1>
           <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
-            {dict.bannerSubtitle || "O'zbekiston bo'ylab o'zingizga mos va qulay turar joylarni arzon narxlarda kashf eting."}
+            {dynamicBanner.subtitle || dict.bannerSubtitle}
           </p>
         </div>
         

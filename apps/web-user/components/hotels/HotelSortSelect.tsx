@@ -25,7 +25,7 @@ export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
         value={current}
         onChange={onChange}
         ariaLabel={dict.label}
-        buttonClassName="h-10 max-md:h-11 w-full sm:w-auto min-w-[200px] rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] hover:bg-slate-900/[0.08] dark:border-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-medium"
+        buttonClassName="h-10 max-md:h-11 w-full sm:w-auto min-w-0 sm:min-w-[200px] rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] hover:bg-slate-900/[0.08] dark:border-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-medium"
         options={[
           { value: "", label: dict.default },
           { value: "price_asc", label: dict.priceAsc },

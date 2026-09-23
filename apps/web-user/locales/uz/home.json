@@ -1,7 +1,7 @@
 {
   "hero": {
-    "title": "Orzuyingizdagi sayohatni bugun boshlang",
-    "subtitle": "Mehmonxonalar, dachalar va oromgohlarni kafolatlangan eng arzon narxlarda kashf eting. Soniyalar ichida bron qiling.",
+    "title": "Orzuyingizdagi mehmonxonani bugun toping",
+    "subtitle": "O'zbekiston bo'ylab mehmonxonalarni kafolatlangan eng arzon narxlarda kashf eting. Soniyalar ichida bron qiling.",
     "trustChip1": "Tezkor tasdiq",
     "trustChip2": "Eng yaxshi narxlar"
   },
@@ -65,19 +65,19 @@
         "name": "Malika Karimova",
         "city": "Buxoro",
         "rating": 4,
-        "text": "Chimgan oromgohini bron qildim. Suratlar haqiqatga to'liq mos keldi. Tashkillashtirish mukammal."
+        "text": "Toshkentdagi mehmonxonani bron qildim. Suratlar haqiqatga to'liq mos keldi. Tashkillashtirish mukammal."
       },
       {
         "name": "Bobur Hamidov",
         "city": "Farg'ona",
         "rating": 5,
-        "text": "Dacha bron qilishni ham shu yerda qildim. Hammasi bir joyda — juda qulay. Kimlargadir tavsiya qilaman!"
+        "text": "Mehmonxona bron qilishni ham shu yerda qildim. Hammasi bir joyda — juda qulay. Barchaga tavsiya qilaman!"
       }
     ]
   },
   "partners": {
     "title": "Ishonchli hamkorlar",
-    "subtitle": "500+ mehmonxona va dam olish maskanlari bilan hamkorlikda"
+    "subtitle": "500+ mehmonxonalar bilan hamkorlikda"
   },
   "why": {
     "title": "Nega Safaar?",

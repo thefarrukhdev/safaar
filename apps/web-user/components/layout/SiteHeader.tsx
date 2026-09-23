@@ -6,6 +6,7 @@ import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/cn";
+import { CurrencySwitcher } from "./CurrencySwitcher";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { HeaderWrapper, type NavItem } from "./header";
 
@@ -22,19 +23,27 @@ function AuthButtons({
 }) {
   const base = `/${locale}`;
   const isCol = orientation === "vertical";
-  const sizeClass = isCol ? "w-full min-h-[44px]" : "";
+  const sizeClass = isCol ? "w-full min-h-[48px] text-[15px]" : "";
+
+  const transparentClasses = isCol 
+    ? "" 
+    : "group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20";
+    
+  const transparentGhost = isCol 
+    ? "" 
+    : "group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10";
 
   if (authed) {
     return (
-      <div className={`flex gap-2 ${isCol ? "flex-col" : "items-center"}`}>
+      <div className={`flex gap-3 ${isCol ? "flex-col mt-2" : "items-center"}`}>
         <Link
           href={`${base}/account`}
-          className={buttonVariants({ variant: "ghost",  className: cn(sizeClass, "font-bold text-slate-700 dark:text-white hover:bg-slate-100 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10") })}
+          className={buttonVariants({ variant: "ghost",  className: cn(sizeClass, "font-bold text-slate-700 dark:text-white hover:bg-slate-100", transparentGhost) })}
         >
           {dict.actions.account}
         </Link>
         <form action={logoutAction.bind(null, locale)} className={isCol ? "w-full flex" : ""}>
-          <Button size="md" variant="secondary"  type="submit" className={cn(isCol ? "w-full flex-1" : "", "group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20")}>
+          <Button size="md" variant="secondary" type="submit" className={cn(isCol ? "w-full flex-1 min-h-[48px] text-[15px]" : "", transparentClasses)}>
             {dict.actions.logout}
           </Button>
         </form>
@@ -44,18 +53,16 @@ function AuthButtons({
 
   const loginClasses = buttonVariants({ 
     variant: "secondary", 
-     
-    className: cn(sizeClass, "!h-10 px-4 text-[14px] font-bold group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20") 
+    className: cn(sizeClass, isCol ? "" : "!h-10 px-4 text-[14px]", "font-bold", transparentClasses) 
   });
   
   const registerClasses = buttonVariants({ 
     variant: "primary", 
-     
-    className: cn(sizeClass, "!h-10 px-4 text-[14px] font-bold") 
+    className: cn(sizeClass, isCol ? "" : "!h-10 px-4 text-[14px]", "font-bold") 
   });
 
   return (
-    <div className={`flex gap-2.5 ${isCol ? "flex-col" : "items-center"}`}>
+    <div className={`flex gap-3 ${isCol ? "flex-col mt-2" : "items-center"}`}>
       <Link href={`${base}/login`} className={loginClasses}>
         {dict.actions.login}
       </Link>
@@ -124,7 +131,7 @@ export function SiteHeader({
       brandHref={base}
       locale={locale}
       actions={actions}
-      localeSwitcher={<LocaleSwitcher current={locale} />}
+      localeSwitcher={<div className="flex items-center gap-2"><CurrencySwitcher /><LocaleSwitcher current={locale} /></div>}
       authActions={authActionsMobile}
     />
   );

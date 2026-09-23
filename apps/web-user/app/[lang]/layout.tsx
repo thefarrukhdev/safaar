@@ -75,7 +75,7 @@ export async function generateMetadata({
   };
 }
 
-export const viewport: Viewport = { themeColor: "#059669" };
+export const viewport: Viewport = { themeColor: "#2563eb" };
 
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));

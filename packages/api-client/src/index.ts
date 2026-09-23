@@ -2,6 +2,7 @@ import { authService } from "./services/auth";
 import { bookingsService } from "./services/bookings";
 import { catalogService } from "./services/catalog";
 import { cmsService } from "./services/cms";
+import { currencyService } from "./services/currency";
 import { hotelsService } from "./services/hotels";
 import { promosService } from "./services/promos";
 import { reviewsService } from "./services/reviews";
@@ -13,6 +14,7 @@ export const api = {
   bookings: bookingsService,
   catalog: catalogService,
   cms: cmsService,
+  currency: currencyService,
   hotels: hotelsService,
   promos: promosService,
   reviews: reviewsService,
@@ -29,6 +31,7 @@ export * from "./services/auth";
 export * from "./services/bookings";
 export * from "./services/catalog";
 export * from "./services/cms";
+export * from "./services/currency";
 export * from "./services/hotels";
 export * from "./services/promos";
 export * from "./services/reviews";

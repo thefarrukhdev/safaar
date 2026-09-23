@@ -27,3 +27,29 @@ export class CreateSupportMessageDto {
   @MaxLength(4000)
   body!: string;
 }
+
+export class CreateGuestSupportTicketDto {
+  @ApiProperty({ example: 'Bron uchun to‘lov o‘tmadi' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4000)
+  message!: string;
+
+  @ApiProperty({ example: 'Aziza Karimova' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  guestName!: string;
+
+  @ApiProperty({ example: '+998901234567' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  guestPhone!: string;
+
+  @ApiPropertyOptional({ example: 'Bron savoli' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  subject?: string;
+}

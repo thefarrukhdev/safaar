@@ -6,6 +6,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { createPaymentSessionAction, previewPayment, type RetryPaymentState } from "@/lib/payments/actions";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { formatSum } from "@/lib/money";
 import type { PaymentResult } from "@/lib/services/payments/payments";
 
@@ -59,6 +60,7 @@ export function RetryPaymentForm({
   const [preview, setPreview] = useState<PaymentResult | null>(null);
   const [previewError, setPreviewError] = useState<string | undefined>();
   const [isPreviewing, startPreview] = useTransition();
+  const [showIframe, setShowIframe] = useState(false);
   const requestSeq = useRef(0);
 
   const [state, formAction, isConfirming] = useActionState<RetryPaymentState, FormData>(
@@ -106,7 +108,12 @@ export function RetryPaymentForm({
   const hasFee = Boolean(preview && preview.feeAmount > 0 && !providerMismatch);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4" onSubmit={(e) => {
+      if (preview?.paymentUrl && !providerMismatch) {
+        e.preventDefault();
+        setShowIframe(true);
+      }
+    }}>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="bookingId" value={bookingId} />
       {guestToken && <input type="hidden" name="guestToken" value={guestToken} />}
@@ -189,6 +196,22 @@ export function RetryPaymentForm({
           ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[preview?.provider ?? ""] ?? ""})`
           : `To'lash — ${formatSum(preview ? preview.amount : bookingAmount)}`}
       </Button>
+
+      {showIframe && preview?.paymentUrl && (
+        <Modal
+          isOpen={showIframe}
+          onClose={() => setShowIframe(false)}
+          title={`To'lov (${METHOD_LABELS[selected] ?? selected})`}
+        >
+          <div className="flex flex-col h-[70vh] sm:h-[600px] w-full min-w-[320px]">
+            <iframe 
+              src={preview.paymentUrl} 
+              className="w-full h-full border-0 rounded-xl"
+              allow="payment"
+            />
+          </div>
+        </Modal>
+      )}
     </form>
   );
 }

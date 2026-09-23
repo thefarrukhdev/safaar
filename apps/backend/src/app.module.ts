@@ -31,6 +31,7 @@ import { CurrencyModule } from './currency/currency.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ChatModule } from './chat/chat.module';
 import { JobsModule } from './jobs/jobs.module';
+import { AiTranslateModule } from './ai-translate/ai-translate.module';
 import { validateEnv } from './config/env.validation';
 import { MaintenanceGuard } from './common/maintenance.guard';
 
@@ -78,6 +79,7 @@ import { MaintenanceGuard } from './common/maintenance.guard';
     AdminModule,
     RealtimeModule,
     ChatModule,
+    AiTranslateModule,
   ],
   controllers: [AppController],
   providers: [

@@ -406,6 +406,18 @@ describe('UzumCheckoutProvider.register — real wire-format (mocked fetch, hech
     });
   });
 
+  it('viewType berilsa — aynan shu qiymat yuboriladi (masalan IFRAME)', async () => {
+    const fetchSpy = mockFetchOnce({
+      errorCode: 0,
+      result: { orderId: 'order-iframe', paymentRedirectUrl: 'https://checkout.example/iframe' },
+    });
+    const p = new UzumCheckoutProvider(mkConfig(FULL_UZUM_CONFIG));
+    await p.register({ ...registerInput, viewType: 'IFRAME' });
+    const [, init] = fetchSpy.mock.calls[0];
+    const body = parseRequestBody(init as RequestInit);
+    expect(body.viewType).toBe('IFRAME');
+  });
+
   it('TIN sozlangan bo‘lsa (PINFL emas) — receiptParams.TIN yuboriladi, PINFL yo‘q', async () => {
     const fetchSpy = mockFetchOnce({
       errorCode: 0,

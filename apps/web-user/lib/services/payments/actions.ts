@@ -53,11 +53,13 @@ export async function previewPayment(
 /**
  * Yakuniy "To'lash" bosqichi — form orqali (`useActionState`) chaqiriladi.
  * Odatda `previewPayment()` allaqachon chaqirilgan va `payment_url` client
- * state'da bor bo'ladi (shu holda component to'g'ridan-to'g'ri
- * `window.location.href` bilan navigatsiya qiladi, bu action UMUMAN
- * chaqirilmaydi). Bu action — fallback/qayta-urinish yo'li: agar client
- * state yo'qolgan bo'lsa (masalan sahifa qayta ochilgan) ham forma
- * to'g'ri ishlashi uchun.
+ * state'da bor bo'ladi (shu holda component to'g'ridan-to'g'ri o'sha
+ * URL bilan iframe ochadi, bu action UMUMAN chaqirilmaydi). Bu action —
+ * fallback/qayta-urinish yo'li: agar client state yo'qolgan bo'lsa
+ * (masalan sahifa qayta ochilgan) ham forma to'g'ri ishlashi uchun.
+ * Muvaffaqiyatli bo'lsa checkout URL'ini QAYTARADI, hech qachon boshqa
+ * domenga redirect QILMAYDI — iframe orqali ko'rsatish komponentning
+ * ishi (`UzumCheckoutFrame`).
  */
 export async function createPaymentSessionAction(
   _prev: RetryPaymentState,
@@ -101,9 +103,43 @@ export async function createPaymentSessionAction(
   if (result.error) return result;
   const checkoutUrl = result.url ?? "";
 
+  // MUHIM: bu yerda ENDI to'g'ridan-to'g'ri boshqa domenga (Uzum) o'tib
+  // ketilmaydi — checkout URL shunchaki komponentga qaytariladi, u esa
+  // buni SAFAAR sahifasi ICHIDAGI iframe'da ochadi (`UzumCheckoutFrame`).
+  // Karta ma'lumotini hamon FAQAT Uzum'ning o'z sahifasi yig'adi.
   if (checkoutUrl) {
-    redirect(checkoutUrl);
+    return { url: checkoutUrl };
   }
 
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${provider}${guestTokenParam}`);
+}
+
+/**
+ * Iframe ichidan kelgan (tasdiqlangan origindan) postMessage'dan keyin
+ * to'lov holatini HAQIQIY backend orqali tekshirish uchun. Uzum'ning
+ * postMessage payload'idagi hech qanday maydonga ("success"/"status" va h.k.)
+ * ishonilmaydi — bu action FAQAT `GET /payments/:bookingId`ni chaqiradi,
+ * yagona haqiqat manbai shu.
+ */
+export async function checkPaymentStatusAction(
+  bookingId: string,
+  guestToken?: string,
+): Promise<{ status?: string; error?: string }> {
+  const session = await getSession();
+  if (!session && !guestToken) {
+    return { error: "AUTH_TOKEN_INVALID" };
+  }
+  if (!bookingId) {
+    return { error: "INVALID_BOOKING" };
+  }
+
+  try {
+    const payment = await api.payments.getPaymentStatus(bookingId, {
+      token: session?.accessToken,
+      guestToken,
+    });
+    return { status: payment?.status };
+  } catch {
+    return { error: "ERROR" };
+  }
 }

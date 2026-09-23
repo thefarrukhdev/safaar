@@ -457,6 +457,11 @@ export class PaymentsService {
         currency: booking.currency,
         successUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=success`,
         failureUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=failed`,
+        // web-user checkout'ni endi o'z sahifasi ichida (iframe) ko'rsatadi
+        // — foydalanuvchi butunlay boshqa domenga o'tkazilmaydi. Karta
+        // ma'lumotini hamon FAQAT Uzum'ning o'z sahifasi yig'adi/ko'radi;
+        // bu shunchaki ko'rinish rejimi, xavfsizlik modeli o'zgarmaydi.
+        viewType: 'IFRAME',
       });
     } catch (err) {
       if (err instanceof UzumCheckoutError) {

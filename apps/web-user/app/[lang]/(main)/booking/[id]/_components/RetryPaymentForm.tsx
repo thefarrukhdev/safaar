@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { createPaymentSessionAction, previewPayment, type RetryPaymentState } from "@/lib/payments/actions";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { Button } from "@/components/ui/Button";
 import { formatSum } from "@/lib/money";
 import type { PaymentResult } from "@/lib/services/payments/payments";
+import { UzumCheckoutFrame } from "./UzumCheckoutFrame";
 
 // Onlayn to'lov usullari — "cash" bu yerda ATAYLAB YO'Q: backend
 // `POST /payments/:bookingId/create` "cash" uchun payment qatorini
@@ -60,11 +62,32 @@ export function RetryPaymentForm({
   const [previewError, setPreviewError] = useState<string | undefined>();
   const [isPreviewing, startPreview] = useTransition();
   const requestSeq = useRef(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
 
   const [state, formAction, isConfirming] = useActionState<RetryPaymentState, FormData>(
     createPaymentSessionAction,
     {},
   );
+
+  // Fallback yo'l: agar client state yo'qolib, forma `createPaymentSessionAction`
+  // orqali qayta yuborilsa, natijadagi URL shu yerda iframe sifatida ochiladi
+  // (endi hech qachon boshqa domenga redirect qilinmaydi).
+  useEffect(() => {
+    if (state.url) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIframeUrl(state.url);
+    }
+  }, [state.url]);
+
+  const handlePayClick = () => {
+    if (preview?.paymentUrl) {
+      setIframeUrl(preview.paymentUrl);
+      return;
+    }
+    formRef.current?.requestSubmit();
+  };
 
   const runPreview = (provider: PaymentMethodId) => {
     setPreviewError(undefined);
@@ -106,7 +129,7 @@ export function RetryPaymentForm({
   const hasFee = Boolean(preview && preview.feeAmount > 0 && !providerMismatch);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="bookingId" value={bookingId} />
       {guestToken && <input type="hidden" name="guestToken" value={guestToken} />}
@@ -178,7 +201,8 @@ export function RetryPaymentForm({
       )}
 
       <Button
-        type="submit"
+        type="button"
+        onClick={handlePayClick}
         variant="accent"
         size="lg"
         loading={isConfirming}
@@ -189,6 +213,19 @@ export function RetryPaymentForm({
           ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[preview?.provider ?? ""] ?? ""})`
           : `To'lash — ${formatSum(preview ? preview.amount : bookingAmount)}`}
       </Button>
+
+      {iframeUrl && (
+        <UzumCheckoutFrame
+          checkoutUrl={iframeUrl}
+          bookingId={bookingId}
+          guestToken={guestToken}
+          onClose={() => setIframeUrl(null)}
+          onPaid={() => {
+            setIframeUrl(null);
+            router.refresh();
+          }}
+        />
+      )}
     </form>
   );
 }

@@ -236,6 +236,13 @@ export interface RegisterCheckoutInput {
   successUrl: string;
   /** To'lov bekor/muvaffaqiyatsiz bo'lsa qaytadigan URL. */
   failureUrl: string;
+  /**
+   * Uzum to'lov sahifasining ko'rinish turi — rasmiy qiymatlar:
+   * `REDIRECT` (butun sahifa yo'naltirish), `IFRAME` (SAFAAR sahifasi
+   * ichida ko'mma), `WEB_VIEW` (mobil ilova). Berilmasa — `REDIRECT`
+   * (avvalgi, xavfsiz standart xatti-harakat saqlanadi).
+   */
+  viewType?: 'REDIRECT' | 'IFRAME' | 'WEB_VIEW';
 }
 
 export interface RegisterCheckoutResult {
@@ -863,7 +870,7 @@ export class UzumCheckoutProvider {
       amount: amountTiyin,
       paymentDetails: `SAFAAR booking ${input.orderNumber}`,
       sessionTimeoutSecs: 1800,
-      viewType: 'REDIRECT',
+      viewType: input.viewType ?? 'REDIRECT',
       successUrl: input.successUrl,
       failureUrl: input.failureUrl,
       paymentParams: { payType: 'ONE_STEP', force3ds: true },

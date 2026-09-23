@@ -124,6 +124,13 @@ interface EnvironmentConfig {
   FACEBOOK_APP_ID?: string;
   FACEBOOK_APP_SECRET?: string;
   FACEBOOK_CALLBACK_URL?: string;
+  // AI tarjima (partner CMS matnlari uchun) — Google Gemini
+  // (Generative Language API) kaliti. Bo'sh bo'lsa `POST /ai/translate`
+  // `NOT_CONFIGURED` bilan fail-closed rad etadi (backend-support-task.md,
+  // 4-band).
+  AI_TRANSLATE_API_KEY?: string;
+  // Ixtiyoriy — Gemini model nomi. Bo'sh bo'lsa `gemini-3.6-flash`.
+  AI_TRANSLATE_MODEL?: string;
 }
 
 function toNumber(value: unknown, fallback: number): number {
@@ -445,6 +452,12 @@ export function validateEnv(
       : undefined,
     FACEBOOK_CALLBACK_URL: config.FACEBOOK_CALLBACK_URL
       ? String(config.FACEBOOK_CALLBACK_URL)
+      : undefined,
+    AI_TRANSLATE_API_KEY: config.AI_TRANSLATE_API_KEY
+      ? String(config.AI_TRANSLATE_API_KEY)
+      : undefined,
+    AI_TRANSLATE_MODEL: config.AI_TRANSLATE_MODEL
+      ? String(config.AI_TRANSLATE_MODEL)
       : undefined,
   };
 }

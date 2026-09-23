@@ -24,6 +24,10 @@ export interface HotelListParams {
    */
   type?: string;
   paymentType?: "online_payment" | "pay_at_property";
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
+  amenities?: string[];
 }
 
 export interface HotelListResult {
@@ -65,6 +69,10 @@ export const hotelsService = {
         ne_lng: params.neLng,
         sw_lat: params.swLat,
         sw_lng: params.swLng,
+        check_in: params.checkIn,
+        check_out: params.checkOut,
+        guests: params.guests,
+        amenities: params.amenities?.join(","),
       },
       next: { revalidate: 60 },
     } as any);

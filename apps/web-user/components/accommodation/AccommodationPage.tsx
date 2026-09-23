@@ -63,6 +63,8 @@ export async function AccommodationPage({
   const guests = int(one(sp.guests));
   const paymentTypeRaw = one(sp.payment_type);
   const paymentType = paymentTypeRaw === "online_payment" || paymentTypeRaw === "pay_at_property" ? paymentTypeRaw : undefined;
+  const amenitiesRaw = sp.amenities;
+  const amenities = Array.isArray(amenitiesRaw) ? amenitiesRaw : (typeof amenitiesRaw === "string" ? [amenitiesRaw] : undefined);
 
   const [common, dict, cities, hotelsResult] = await Promise.all([
     getDictionary(locale, "common"),
@@ -79,6 +81,10 @@ export async function AccommodationPage({
       page,
       limit: PAGE_SIZE,
       paymentType,
+      checkIn,
+      checkOut,
+      guests,
+      amenities,
     }),
   ]);
 

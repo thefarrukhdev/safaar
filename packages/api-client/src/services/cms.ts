@@ -238,7 +238,7 @@ export const cmsService = {
   async getPage(locale: Locale, slug: string): Promise<CmsPageView> {
     const raw = await rawApi.get<unknown>(
       `/cms/pages/${encodeURIComponent(slug)}`,
-      { cache: "no-store" },
+      { next: { revalidate: 3600, tags: ["cms", `page-${slug}`] } } as any,
     );
     return toCmsPageView(camelizeKeys<RawCmsPage>(raw), locale);
   },

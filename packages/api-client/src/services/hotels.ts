@@ -74,7 +74,7 @@ export const hotelsService = {
         guests: params.guests,
         amenities: params.amenities?.join(","),
       },
-      next: { revalidate: 60 },
+      next: { revalidate: 60, tags: ["hotels", "search"] },
     } as any);
 
     const data = camelizeKeys<RawListResponse | unknown[]>(raw);
@@ -97,7 +97,9 @@ export const hotelsService = {
 
   /** `GET /hotels/:slugOrId` — bitta mehmonxona (xonalari bilan). */
   async getHotel(locale: Locale, slugOrId: string): Promise<HotelDetail> {
-    const raw = await rawApi.get<unknown>(`/hotels/${encodeURIComponent(slugOrId)}`);
+    const raw = await rawApi.get<unknown>(`/hotels/${encodeURIComponent(slugOrId)}`, {
+      next: { revalidate: 60, tags: ["hotels", `hotel-${slugOrId}`] },
+    } as any);
     return toHotelDetail(camelizeKeys(raw) as any, locale);
   },
 

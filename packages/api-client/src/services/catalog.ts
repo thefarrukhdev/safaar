@@ -204,7 +204,10 @@ async function fetchCatalog(
   path: string,
   locale: Locale,
 ): Promise<Array<{ id: string; name: string }>> {
-  const raw = await rawApi.get<unknown>(path, { next: { revalidate: 60 } } as any);
+  const tag = path.includes("cities") ? "cities" : "amenities";
+  const raw = await rawApi.get<unknown>(path, { 
+    next: { revalidate: 3600, tags: ["catalog", tag] } 
+  } as any);
   const items = camelizeKeys<RawCatalogItem[]>(raw);
   return (items ?? []).map((item) => ({
     id: item.id,
@@ -226,7 +229,7 @@ export const catalogService = {
   /** `GET /catalog/destinations` — bosh sahifa uchun mashhur shaharlar (CMS Destinations). */
   async getPopularCities(locale: Locale): Promise<PopularCityView[]> {
     const raw = await rawApi.get<unknown>("/catalog/destinations", {
-      next: { revalidate: 60 },
+      next: { revalidate: 3600, tags: ["catalog", "destinations"] },
     } as any);
     const items = camelizeKeys<any[]>(raw);
     return (items ?? []).map((item) => {

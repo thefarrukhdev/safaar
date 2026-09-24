@@ -85,6 +85,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
       { label: "Chegirmali takliflar", href: "/cms/deals", icon: "Tag" },
       { label: "Bannerlar", href: "/cms/banners", icon: "Image" },
       { label: "Yo'nalishlar", href: "/cms/destinations", icon: "MapPin" },
+      { label: "Ko'ngilochar joylar", href: "/cms/attractions", icon: "MapPin" },
       { label: "Yangiliklar", href: "/cms/news", icon: "Newspaper" },
       { label: "Sahifalar", href: "/cms/pages", icon: "FileText" },
       { label: "Tarjimalar", href: "/cms/translations", icon: "Languages" },

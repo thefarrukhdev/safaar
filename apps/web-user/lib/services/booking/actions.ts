@@ -227,12 +227,9 @@ export async function createVehicleBookingAction(input: {
   paymentMethod: string;
 }) {
   const session = await getSession();
-  
-  if (!session) {
-    return { ok: false, error: "AUTH_REQUIRED" };
-  }
 
   try {
+    const options = session ? { token: session.accessToken } : undefined;
     const booking = await api.bookings.createVehicleBooking(
       {
         vehicleId: input.vehicleId,
@@ -243,7 +240,7 @@ export async function createVehicleBookingAction(input: {
         guestEmail: input.guestEmail,
         paymentMethod: input.paymentMethod as any,
       },
-      { token: session.accessToken },
+      options
     );
     return { ok: true, bookingId: booking.bookingNumber || booking.id };
   } catch (err: unknown) {

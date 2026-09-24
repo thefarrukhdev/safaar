@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 import { Button } from '../../_components/ui/button';
 import { Card, CardBody } from '../../_components/ui/card';
 import { PreviewDrawer } from './_components/preview-drawer';
-import { PromotionDialog } from './_dialogs/promotion-dialog';
+
 import { GeneralEditor } from './_editors/general-editor';
 import { PhotosEditor } from './_editors/photos-editor';
 import { AmenitiesEditor } from './_editors/amenities-editor';
@@ -354,7 +354,7 @@ export function ListingOverview() {
       'border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)]',
   }[statusInfo.tone];
 
-  const [promoDialogOpen, setPromoDialogOpen] = useState(false);
+
 
   const handlePublishAction = () => {
     if (listing.status === ListingStatus.PUBLISHED) {
@@ -449,17 +449,7 @@ export function ListingOverview() {
 
                   {!isBus && (
                     <div className="flex flex-wrap gap-2">
-                      {listing.status === ListingStatus.PUBLISHED && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200"
-                          onClick={() => setPromoDialogOpen(true)}
-                        >
-                          <Tag className="h-4 w-4" aria-hidden />
-                          Chegirma e'lon qilish
-                        </Button>
-                      )}
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -778,10 +768,6 @@ export function ListingOverview() {
         open={vehicleDialogOpen}
         onClose={() => setVehicleDialogOpen(false)}
         editing={editingVehicle}
-      />
-      <PromotionDialog
-        open={promoDialogOpen}
-        onClose={() => setPromoDialogOpen(false)}
       />
     </div>
   );

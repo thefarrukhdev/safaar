@@ -4,6 +4,8 @@ import React, { ReactNode, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Locale } from "@/i18n/config";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import MaskedHeading from "@/components/reactbits/MaskedHeading";
 import { AuthDict } from "@/i18n/dictionaries";
@@ -34,6 +36,17 @@ export function AuthLayout({ children, locale, dict }: AuthLayoutProps) {
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row items-stretch justify-center overflow-hidden relative selection:bg-primary-500/30">
       
       {/* Top Controls (Mobile mostly, but also desktop) */}
+      <div className="absolute top-6 left-6 z-50">
+        <Link 
+          href={`/${locale}`}
+          className="flex items-center gap-2 px-4 py-2 backdrop-blur-md rounded-full text-sm font-semibold transition-all duration-300
+                     bg-white/50 text-slate-800 border border-slate-200 hover:bg-white/80
+                     lg:bg-white/10 lg:text-white lg:border-white/20 lg:hover:bg-white/20"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {dict?.backToHome || "Ortga"}
+        </Link>
+      </div>
       <div className="absolute top-6 right-6 z-50">
         <LocaleSwitcher current={locale} />
       </div>

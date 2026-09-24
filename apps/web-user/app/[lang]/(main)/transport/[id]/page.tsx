@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Users, Fuel, Luggage, Car } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
+import { HotelGallery } from "@/components/hotels/HotelGallery";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 
@@ -43,8 +45,9 @@ export default async function TransportDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
-  const [dict, session] = await Promise.all([
+  const [dict, favDict, session] = await Promise.all([
     getDictionary(locale, "transport"),
+    getDictionary(locale, "favorites"),
     getSession()
   ]);
   let transport;
@@ -67,48 +70,29 @@ export default async function TransportDetailPage({
         <BackButton />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="relative aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800">
-          {transport.imageUrl ? (
-            <Image
-              src={transport.imageUrl}
-              alt={transport.name}
-              fill
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-slate-400">
-              <Car className="h-16 w-16" />
-            </div>
-          )}
-        </div>
-
-        {transport.images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-3">
-            {transport.images.map((img, idx) => (
-              <div
-                key={idx}
-                className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
-              >
-                <Image
-                  src={img}
-                  alt={`${transport.name} ${idx + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="overflow-hidden rounded-2xl">
+        <HotelGallery
+          images={transport.images.length > 0 ? transport.images : (transport.imageUrl ? [transport.imageUrl] : [])}
+          alt={transport.name}
+        />
       </div>
 
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              {transport.name}
-            </h1>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                {transport.name}
+              </h1>
+              <FavoriteButton
+                targetType="transport"
+                targetId={transport.id}
+                initialFavoriteId={(transport as any).favoriteId ?? null}
+                authed={!!session}
+                loginHref={`/${locale}/login?next=/${locale}/transport/${transport.id}`}
+                dict={favDict}
+              />
+            </div>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
               <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
               {transport.cityName}

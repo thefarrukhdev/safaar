@@ -11,6 +11,7 @@ interface AttractionCardProps {
   item: AttractionItem;
   categoryLabel: string;
   index: number;
+  onHover?: (hovering: boolean) => void;
 }
 
 // ─── CATEGORY BADGE COLORS (Silk Road Palette) ───────────────────────────────

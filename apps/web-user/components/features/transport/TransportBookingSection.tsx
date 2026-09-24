@@ -16,6 +16,7 @@ import {
 import { formatSum } from "@/lib/money";
 import type { TransportDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import { createVehicleBookingAction } from "@/lib/services/booking/actions";
 
 function daysBetween(checkIn: string, checkOut: string): number {
   const start = Date.parse(checkIn);
@@ -28,11 +29,12 @@ import type { CatalogDict } from "@/i18n/dictionaries";
 
 export function TransportBookingSection({
   dict,
-
   transport,
+  isLoggedIn = false,
 }: {
   transport: TransportDetailView;
-  dict: CatalogDict["transport"];
+  dict: any;
+  isLoggedIn?: boolean;
 }) {
   const params = useParams<{ lang?: string }>();
   const locale = params?.lang || "uz";
@@ -114,8 +116,7 @@ export function TransportBookingSection({
     setLoading(true);
 
     try {
-      const { api } = await import("@/lib/api");
-      const booking = await api.bookings.createVehicleBooking({
+      const res = await createVehicleBookingAction({
         vehicleId: transport.id,
         checkIn,
         checkOut,
@@ -125,9 +126,11 @@ export function TransportBookingSection({
         paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
       });
 
-      const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
+      if (!res.ok) {
+        throw new Error(res.error || bDict.error || "Xatolik yuz berdi");
+      }
 
-      setSuccessBookingId(bookingId);
+      setSuccessBookingId(res.bookingId as string);
       setShowPaymentModal(false);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));

@@ -48,8 +48,8 @@ export function CheckoutForm({
   const [promoError, setPromoError] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("card" as any);
-  
-  
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
+  const [showSmsModal, setShowSmsModal] = useState(false);
   
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<CheckoutState, FormData>(

@@ -216,3 +216,40 @@ export async function createRestaurantBookingAction(input: {
     return { ok: false, error: err instanceof Error ? err.message : "Xatolik yuz berdi" };
   }
 }
+
+export async function createVehicleBookingAction(input: {
+  vehicleId: string;
+  checkIn: string;
+  checkOut: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
+  paymentMethod: string;
+}) {
+  const session = await getSession();
+  
+  if (!session) {
+    return { ok: false, error: "AUTH_REQUIRED" };
+  }
+
+  try {
+    const booking = await api.bookings.createVehicleBooking(
+      {
+        vehicleId: input.vehicleId,
+        checkIn: input.checkIn,
+        checkOut: input.checkOut,
+        guestName: input.guestName,
+        guestPhone: input.guestPhone,
+        guestEmail: input.guestEmail,
+        paymentMethod: input.paymentMethod as any,
+      },
+      { token: session.accessToken },
+    );
+    return { ok: true, bookingId: booking.bookingNumber || booking.id };
+  } catch (err: unknown) {
+    return { 
+      ok: false, 
+      error: err instanceof Error ? err.message : "Xatolik yuz berdi" 
+    };
+  }
+}

@@ -9,6 +9,7 @@ import { MapPin, Phone, Star, Users, Fuel, Luggage, Car } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
 import { getDictionary } from "@/i18n/dictionaries";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,10 @@ export default async function TransportDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
-  const dict = await getDictionary(locale, "transport");
+  const [dict, session] = await Promise.all([
+    getDictionary(locale, "transport"),
+    getSession()
+  ]);
   let transport;
   try {
     transport = await getTransport(id, locale);
@@ -166,7 +170,7 @@ export default async function TransportDetailPage({
         </div>
 
         <aside className="lg:sticky lg:top-24">
-          <TransportBookingSection transport={transport} dict={dict} />
+          <TransportBookingSection transport={transport} dict={dict} isLoggedIn={!!session} />
         </aside>
       </div>
     </main>

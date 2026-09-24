@@ -5,7 +5,6 @@
 /*
  * Safaar Single Global Design System & Unified Background
  */
-@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   /* ── Brand Primary (Safaar Blue - Functional Minimalism) ── */

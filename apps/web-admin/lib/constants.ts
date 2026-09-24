@@ -49,6 +49,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     icon: "Building2",
     children: [
       { label: "Arizalar", href: "/partners/requests", icon: "FileText" },
+      { label: "Chegirma arizalari", href: "/partners/promotions", icon: "Tag" },
       { label: "Ro'yxat", href: "/partners/list", icon: "List" },
       { label: "E'lonlar", href: "/partners/listings", icon: "Megaphone" },
     ],

@@ -1083,6 +1083,22 @@ function cmsDestinationPayload(
   return payload;
 }
 
+export interface PartnerPromotion {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  entityId: string;
+  entityType: "room" | "vehicle";
+  entityName: string;
+  oldPriceSum: number;
+  newPriceSum: number;
+  discountPercent: number;
+  startDate: string;
+  endDate: string;
+  status: "pending_review" | "published" | "rejected";
+  createdAt: string;
+}
+
 export const AdminApi = {
   // Media Upload
   uploadMedia: async (file: File) => {
@@ -2250,9 +2266,53 @@ export const AdminApi = {
   // (verified live against the QA backend this session).
   //
   // 2026-09-19: was a frontend-only mock (no backend route at all) —
-  // AdminService.setHotelFeatured now backs this for real. Server decides
-  // `featured_order` (appends to the end of the existing order on ON,
-  // clears it on OFF); it's never accepted from the client.
+  // MOCK: Chegirmalarni tasdiqlash uchun (Backend tayyor emas)
+  getPartnerPromotions: async (): Promise<PartnerPromotion[]> => {
+    // Kutilayotgan API: /admin/promotions
+    return [
+      {
+        id: "promo-1",
+        partnerId: "partner-1",
+        partnerName: "Hilton Tashkent",
+        entityId: "room-101",
+        entityType: "room",
+        entityName: "Xona: 101",
+        oldPriceSum: 1500000,
+        newPriceSum: 1200000,
+        discountPercent: 20,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 86400000 * 5).toISOString(),
+        status: "pending_review",
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "promo-2",
+        partnerId: "partner-2",
+        partnerName: "AvtoRent",
+        entityId: "car-99",
+        entityType: "vehicle",
+        entityName: "01A123AA (Cobalt)",
+        oldPriceSum: 400000,
+        newPriceSum: 300000,
+        discountPercent: 25,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 86400000 * 10).toISOString(),
+        status: "published",
+        createdAt: new Date().toISOString(),
+      }
+    ];
+  },
+
+  approvePartnerPromotion: async (id: string): Promise<void> => {
+    // MOCK: await apiClient.post(`/admin/promotions/${id}/approve`);
+    return Promise.resolve();
+  },
+
+  rejectPartnerPromotion: async (id: string): Promise<void> => {
+    // MOCK: await apiClient.post(`/admin/promotions/${id}/reject`);
+    return Promise.resolve();
+  },
+
   toggleListingFeatured: async (
     id: string,
     featured: boolean,

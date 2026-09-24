@@ -724,15 +724,36 @@ model RoomInventory {
   @@map("room_inventory")
 }
 
+/**
+ * `address`/`latitude`/`longitude`/`nearbyPlaces`/`checkInTime`/
+ * `checkOutTime`/`cancellationPolicyCode`/`extraFees` deliberately mirror
+ * `Hotel`'s own fields (same types, same nullable/default semantics) —
+ * Transport (bus/rent_car) partners edit "Joylashuv"/"Ijara qoidalari"
+ * through the same UI shape as lodging partners, just backed by this table
+ * instead of `hotels`. Previously these columns did not exist at all, so
+ * the partner-submitted values were silently discarded (see migration
+ * 20260924120000_bus_company_transport_fields). All new columns are
+ * NULLABLE or carry a default so every pre-existing row stays valid.
+ * No `cancellationPolicyId` FK (unlike `Hotel`) — only the `_code` field
+ * was requested/needed for Transport.
+ */
 model BusCompany {
-  id                    String   @id @default(uuid()) @db.Uuid
-  partnerOrganizationId String   @map("partner_organization_id") @db.Uuid
-  name                  String   @db.VarChar(255)
-  status                String   @default("active") @db.VarChar(32)
-  ratingAverage         Decimal  @default(0) @map("rating_average") @db.Decimal(3, 2)
-  reviewsCount          Int      @default(0) @map("reviews_count")
-  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id                     String   @id @default(uuid()) @db.Uuid
+  partnerOrganizationId  String   @map("partner_organization_id") @db.Uuid
+  name                   String   @db.VarChar(255)
+  status                 String   @default("active") @db.VarChar(32)
+  ratingAverage          Decimal  @default(0) @map("rating_average") @db.Decimal(3, 2)
+  reviewsCount           Int      @default(0) @map("reviews_count")
+  address                String?
+  latitude               Decimal? @db.Decimal(10, 7)
+  longitude              Decimal? @db.Decimal(10, 7)
+  nearbyPlaces           Json     @default("[]") @map("nearby_places")
+  checkInTime            String?  @map("check_in_time") @db.VarChar(5)
+  checkOutTime           String?  @map("check_out_time") @db.VarChar(5)
+  cancellationPolicyCode String   @default("MODERATE") @map("cancellation_policy_code") @db.VarChar(32)
+  extraFees              Json     @default("[]") @map("extra_fees")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   partner      PartnerOrganization      @relation(fields: [partnerOrganizationId], references: [id])
   vehicles     Vehicle[]

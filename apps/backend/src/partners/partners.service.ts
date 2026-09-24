@@ -57,9 +57,23 @@ type BusCompanyRow = {
   status: string;
   rating_average: number;
   reviews_count: number;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  nearby_places: unknown;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  cancellation_policy_code: string;
+  extra_fees: unknown;
   created_at: string;
   updated_at: string;
 };
+
+const BUS_COMPANY_RETURNING_SQL = `id::text, partner_organization_id::text, name, status,
+              rating_average::float8, reviews_count,
+              address, latitude::float8, longitude::float8, nearby_places,
+              check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+              created_at, updated_at`;
 
 /**
  * `hotels` jadvali "yashash joyi" turlari VA restoran uchun umumiy e'lon
@@ -2562,8 +2576,7 @@ export class PartnersService {
     );
     if (existing) {
       const [company] = await this.pg.query<BusCompanyRow>(
-        `SELECT id::text, partner_organization_id::text, name, status,
-              rating_average::float8, reviews_count, created_at, updated_at
+        `SELECT ${BUS_COMPANY_RETURNING_SQL}
          FROM bus_companies WHERE id = $1`,
         [existing.id],
       );
@@ -2579,12 +2592,42 @@ export class PartnersService {
       organization.legal_name ??
       'Avtobus kompaniyasi';
     const now = new Date().toISOString();
+    const address = this.optionalString(body.address);
+    const latitude = this.parseOptionalDecimal(body.latitude);
+    const longitude = this.parseOptionalDecimal(body.longitude);
+    const nearbyPlacesInput = body.nearbyPlaces ?? body.nearby_places;
+    const nearbyPlaces = Array.isArray(nearbyPlacesInput) ? nearbyPlacesInput : [];
+    const checkInTime = this.optionalString(body.checkInTime ?? body.check_in_time);
+    const checkOutTime = this.optionalString(body.checkOutTime ?? body.check_out_time);
+    const cancellationPolicyCode =
+      this.optionalString(
+        body.cancellationPolicyCode ?? body.cancellation_policy_code,
+      )?.toUpperCase() ?? 'MODERATE';
+    const extraFeesInput = body.extraFees ?? body.extra_fees;
+    const extraFees = Array.isArray(extraFeesInput) ? extraFeesInput : [];
     const [company] = await this.pg.query<BusCompanyRow>(
-      `INSERT INTO bus_companies (id, partner_organization_id, name, status, created_at, updated_at)
-       VALUES ($1, $2, $3, 'active', $4, $4)
-       RETURNING id::text, partner_organization_id::text, name, status,
-                 rating_average::float8, reviews_count, created_at, updated_at`,
-      [randomUUID(), organizationId, name, now],
+      `INSERT INTO bus_companies (
+         id, partner_organization_id, name, status,
+         address, latitude, longitude, nearby_places,
+         check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+         created_at, updated_at
+       )
+       VALUES ($1, $2, $3, 'active', $4, $5, $6, $7::jsonb, $8, $9, $10, $11::jsonb, $12, $12)
+       RETURNING ${BUS_COMPANY_RETURNING_SQL}`,
+      [
+        randomUUID(),
+        organizationId,
+        name,
+        address,
+        latitude,
+        longitude,
+        JSON.stringify(nearbyPlaces),
+        checkInTime,
+        checkOutTime,
+        cancellationPolicyCode,
+        JSON.stringify(extraFees),
+        now,
+      ],
     );
     const descriptions = await this.upsertBusCompanyTranslations(
       company.id,
@@ -2608,8 +2651,7 @@ export class PartnersService {
   async busCompany(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
     const [company] = await this.pg.query<BusCompanyRow>(
-      `SELECT id::text, partner_organization_id::text, name, status,
-              rating_average::float8, reviews_count, created_at, updated_at
+      `SELECT ${BUS_COMPANY_RETURNING_SQL}
        FROM bus_companies
        WHERE partner_organization_id = $1
        ORDER BY created_at ASC LIMIT 1`,
@@ -2657,11 +2699,69 @@ export class PartnersService {
       now,
     );
 
+    // Qisman (partial) yangilash — faqat `body`da AYNAN berilgan maydonlar
+    // o'zgaradi, qolganlari tegilmaydi. Bir xil naqsh: `updateListingLocation()`/
+    // `updateListingRules()` (hotels uchun).
+    const sets: string[] = ['name = $1'];
+    const params: unknown[] = [name];
+    let idx = 2;
+
+    if (body.address !== undefined) {
+      sets.push(`address = $${idx++}`);
+      params.push(this.optionalString(body.address));
+    }
+    if (body.latitude !== undefined) {
+      const latitude = this.parseOptionalDecimal(body.latitude);
+      if (latitude !== null) {
+        sets.push(`latitude = $${idx++}`);
+        params.push(latitude);
+      }
+    }
+    if (body.longitude !== undefined) {
+      const longitude = this.parseOptionalDecimal(body.longitude);
+      if (longitude !== null) {
+        sets.push(`longitude = $${idx++}`);
+        params.push(longitude);
+      }
+    }
+    const nearbyPlacesInput = body.nearbyPlaces ?? body.nearby_places;
+    if (Array.isArray(nearbyPlacesInput)) {
+      sets.push(`nearby_places = $${idx++}::jsonb`);
+      params.push(JSON.stringify(nearbyPlacesInput));
+    }
+    const checkInTimeInput = body.checkInTime ?? body.check_in_time;
+    if (checkInTimeInput !== undefined) {
+      sets.push(`check_in_time = $${idx++}`);
+      params.push(this.optionalString(checkInTimeInput));
+    }
+    const checkOutTimeInput = body.checkOutTime ?? body.check_out_time;
+    if (checkOutTimeInput !== undefined) {
+      sets.push(`check_out_time = $${idx++}`);
+      params.push(this.optionalString(checkOutTimeInput));
+    }
+    const cancellationPolicyCodeInput =
+      body.cancellationPolicyCode ?? body.cancellation_policy_code;
+    if (cancellationPolicyCodeInput !== undefined) {
+      const code = this.optionalString(cancellationPolicyCodeInput);
+      if (code) {
+        sets.push(`cancellation_policy_code = $${idx++}`);
+        params.push(code.toUpperCase());
+      }
+    }
+    const extraFeesInput = body.extraFees ?? body.extra_fees;
+    if (Array.isArray(extraFeesInput)) {
+      sets.push(`extra_fees = $${idx++}::jsonb`);
+      params.push(JSON.stringify(extraFeesInput));
+    }
+
+    sets.push(`updated_at = $${idx++}`);
+    params.push(now);
+    params.push(companyId);
+
     const [company] = await this.pg.query<BusCompanyRow>(
-      `UPDATE bus_companies SET name = $1, updated_at = $2 WHERE id = $3
-       RETURNING id::text, partner_organization_id::text, name, status,
-                 rating_average::float8, reviews_count, created_at, updated_at`,
-      [name, now, companyId],
+      `UPDATE bus_companies SET ${sets.join(', ')} WHERE id = $${idx}
+       RETURNING ${BUS_COMPANY_RETURNING_SQL}`,
+      params,
     );
     this.invalidatePublicTransportCache();
     return {
@@ -4696,6 +4796,20 @@ export class PartnersService {
   private optionalString(value: unknown): string | null {
     const text = String(value ?? '').trim();
     return text.length > 0 ? text : null;
+  }
+
+  /**
+   * `latitude`/`longitude` uchun: berilmagan/bo'sh/raqam bo'lmagan qiymatni
+   * `null`ga tushiradi — Postgres `NUMERIC` ustuniga `NaN` yozishga urinish
+   * (masalan `updateListingLocation()`dagi tekshiruvsiz `Number(...)` bilan
+   * bo'lgani kabi) DB darajasida xato beradi; bu yerda shunchaki jimgina
+   * e'tiborsiz qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega
+   * emas, shu bilan bir xil "best-effort" uslubda).
+   */
+  private parseOptionalDecimal(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private requiredString(

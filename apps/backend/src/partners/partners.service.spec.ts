@@ -1088,6 +1088,14 @@ describe('PartnersService.createBusCompany (regression: no live code path ever c
       expect.any(String),
       'org-1',
       'Comfort Bus',
+      null,
+      null,
+      null,
+      '[]',
+      null,
+      null,
+      'MODERATE',
+      '[]',
       expect.any(String),
     ]);
   });
@@ -1484,6 +1492,382 @@ describe('PartnersService bus company short_description/full_description persist
     expect(created.full_description.uz.trim().length).toBeGreaterThan(0);
     expect(created.short_description.uz).toBe(shortDescription);
     expect(created.full_description.uz).toBe(fullDescription);
+  });
+});
+
+describe('PartnersService bus company Transport location/rental-rules persistence (regression: "SAFAAR — VERIFY BUS/TRANSPORT LOCATION & RENTAL RULES PERSISTENCE" audit confirmed bus_companies had no columns at all for address/latitude/longitude/nearby_places/check_in_time/check_out_time/cancellation_policy_code/extra_fees, and createBusCompany()/updateBusCompany() only ever read body.name — every value the "Joylashuv"/"Ijara qoidalari" screens submitted for a bus/rent_car partner was silently discarded)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  const nearbyPlaces = [{ id: 'p1', name: 'Aeroport', distance: '5 km' }];
+  const extraFees = [
+    { id: 'f1', name: 'Garov puli', amount: 100000, charge: 'per_stay', required: true },
+  ];
+
+  it('CREATE: persists all eight fields when supplied', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { type: 'bus', brand_name: 'Comfort Bus', legal_name: null },
+      ]) // organization lookup
+      .mockResolvedValueOnce([]) // no existing company
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Comfort Bus',
+          status: 'active',
+          address: 'Toshkent, Amir Temur ko\'chasi 1',
+          latitude: 41.311081,
+          longitude: 69.240562,
+          nearby_places: nearbyPlaces,
+          check_in_time: '09:00',
+          check_out_time: '18:00',
+          cancellation_policy_code: 'STRICT',
+          extra_fees: extraFees,
+        },
+      ]) // INSERT bus_companies ... RETURNING
+      .mockResolvedValueOnce([]) // INSERT bus_company_translations (uz)
+      .mockResolvedValueOnce([]) // INSERT bus_company_translations (ru)
+      .mockResolvedValueOnce([]); // INSERT bus_company_translations (en)
+
+    const result = await service.createBusCompany(actor, {
+      name: 'Comfort Bus',
+      address: "Toshkent, Amir Temur ko'chasi 1",
+      latitude: 41.311081,
+      longitude: 69.240562,
+      nearbyPlaces,
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      cancellationPolicyCode: 'strict',
+      extraFees,
+    });
+
+    const insertCall = queryCallsOf(pg).find(
+      ([sql]) => typeof sql === 'string' && sql.includes('INSERT INTO bus_companies'),
+    );
+    expect(insertCall).toBeDefined();
+    const [, params] = insertCall!;
+    expect(params).toEqual([
+      expect.any(String), // id (randomUUID)
+      'org-1',
+      'Comfort Bus',
+      "Toshkent, Amir Temur ko'chasi 1",
+      41.311081,
+      69.240562,
+      JSON.stringify(nearbyPlaces),
+      '09:00',
+      '18:00',
+      'STRICT', // normalized to uppercase
+      JSON.stringify(extraFees),
+      expect.any(String), // now (created_at = updated_at)
+    ]);
+
+    expect(result.address).toBe("Toshkent, Amir Temur ko'chasi 1");
+    expect(result.latitude).toBe(41.311081);
+    expect(result.longitude).toBe(69.240562);
+    expect(result.nearby_places).toEqual(nearbyPlaces);
+    expect(result.check_in_time).toBe('09:00');
+    expect(result.check_out_time).toBe('18:00');
+    expect(result.cancellation_policy_code).toBe('STRICT');
+    expect(result.extra_fees).toEqual(extraFees);
+  });
+
+  it('CREATE: omitted fields fall back to null/default (address/lat/lng/times → null, nearbyPlaces/extraFees → [], cancellationPolicyCode → MODERATE) — matches bus_companies column defaults', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { type: 'bus', brand_name: 'Comfort Bus', legal_name: null },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    await service.createBusCompany(actor, { name: 'Comfort Bus' });
+
+    const [, params] = queryCallsOf(pg).find(
+      ([sql]) => typeof sql === 'string' && sql.includes('INSERT INTO bus_companies'),
+    )!;
+    expect(params).toEqual([
+      expect.any(String),
+      'org-1',
+      'Comfort Bus',
+      null, // address
+      null, // latitude
+      null, // longitude
+      '[]', // nearby_places
+      null, // check_in_time
+      null, // check_out_time
+      'MODERATE', // cancellation_policy_code
+      '[]', // extra_fees
+      expect.any(String),
+    ]);
+  });
+
+  it('UPDATE: persists all eight fields for an existing company, alongside the existing name/translation behavior', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }]) // busCompanyId lookup
+      .mockResolvedValueOnce([]) // existing translations (none yet)
+      .mockResolvedValueOnce([]) // upsert uz
+      .mockResolvedValueOnce([]) // upsert ru
+      .mockResolvedValueOnce([]) // upsert en
+      .mockResolvedValueOnce([
+        {
+          id: 'company-1',
+          partner_organization_id: 'org-1',
+          name: 'Renamed Fleet',
+          status: 'active',
+          address: 'Samarqand, Registon ko\'chasi 5',
+          latitude: 39.654896,
+          longitude: 66.975786,
+          nearby_places: nearbyPlaces,
+          check_in_time: '08:30',
+          check_out_time: '20:00',
+          cancellation_policy_code: 'FLEXIBLE',
+          extra_fees: extraFees,
+        },
+      ]); // UPDATE ... RETURNING
+
+    const result = await service.updateBusCompany(actor, {
+      name: 'Renamed Fleet',
+      address: "Samarqand, Registon ko'chasi 5",
+      latitude: 39.654896,
+      longitude: 66.975786,
+      nearbyPlaces,
+      checkInTime: '08:30',
+      checkOutTime: '20:00',
+      cancellationPolicyCode: 'flexible',
+      extraFees,
+    });
+
+    const updateCall = queryCallsOf(pg).find(
+      ([sql]) => typeof sql === 'string' && sql.startsWith('UPDATE bus_companies'),
+    );
+    expect(updateCall).toBeDefined();
+    const [sql, params] = updateCall!;
+    for (const column of [
+      'name',
+      'address',
+      'latitude',
+      'longitude',
+      'nearby_places',
+      'check_in_time',
+      'check_out_time',
+      'cancellation_policy_code',
+      'extra_fees',
+      'updated_at',
+    ]) {
+      expect(sql).toContain(`${column} = $`);
+    }
+    expect(params).toEqual([
+      'Renamed Fleet',
+      "Samarqand, Registon ko'chasi 5",
+      39.654896,
+      66.975786,
+      JSON.stringify(nearbyPlaces),
+      '08:30',
+      '20:00',
+      'FLEXIBLE',
+      JSON.stringify(extraFees),
+      expect.any(String), // updated_at
+      'company-1', // WHERE id = $N
+    ]);
+
+    expect(result.address).toBe("Samarqand, Registon ko'chasi 5");
+    expect(result.latitude).toBe(39.654896);
+    expect(result.longitude).toBe(66.975786);
+    expect(result.nearby_places).toEqual(nearbyPlaces);
+    expect(result.check_in_time).toBe('08:30');
+    expect(result.check_out_time).toBe('20:00');
+    expect(result.cancellation_policy_code).toBe('FLEXIBLE');
+    expect(result.extra_fees).toEqual(extraFees);
+  });
+
+  it('UPDATE (partial): supplying only address + extraFees leaves latitude/longitude/nearbyPlaces/checkInTime/checkOutTime/cancellationPolicyCode untouched in the SQL', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ]);
+
+    await service.updateBusCompany(actor, {
+      name: 'Comfort Bus',
+      address: 'Buxoro, Registon 10',
+      extraFees,
+    });
+
+    const [sql, params] = queryCallsOf(pg).find(
+      ([s]) => typeof s === 'string' && s.startsWith('UPDATE bus_companies'),
+    )!;
+    expect(sql).toContain('address = $');
+    expect(sql).toContain('extra_fees = $');
+    for (const column of [
+      'latitude',
+      'longitude',
+      'nearby_places',
+      'check_in_time',
+      'check_out_time',
+      'cancellation_policy_code',
+    ]) {
+      expect(sql).not.toContain(`${column} = $`);
+    }
+    // name, address, extra_fees, updated_at, id — nothing else
+    expect(params).toEqual([
+      'Comfort Bus',
+      'Buxoro, Registon 10',
+      JSON.stringify(extraFees),
+      expect.any(String),
+      'company-1',
+    ]);
+  });
+
+  it('UPDATE: an explicitly empty address clears it to null rather than storing an empty string', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active', address: null },
+      ]);
+
+    await service.updateBusCompany(actor, { name: 'Comfort Bus', address: '   ' });
+
+    const [, params] = queryCallsOf(pg).find(
+      ([s]) => typeof s === 'string' && s.startsWith('UPDATE bus_companies'),
+    )!;
+    expect(params[1]).toBeNull();
+  });
+
+  it('UPDATE: a non-numeric latitude is not persisted (skipped, not written as NaN) and does not throw', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ]);
+
+    await expect(
+      service.updateBusCompany(actor, { name: 'Comfort Bus', latitude: 'not-a-number' }),
+    ).resolves.toBeDefined();
+
+    const [sql] = queryCallsOf(pg).find(
+      ([s]) => typeof s === 'string' && s.startsWith('UPDATE bus_companies'),
+    )!;
+    expect(sql).not.toContain('latitude = $');
+  });
+
+  it('UPDATE: a blank cancellationPolicyCode is not persisted (NOT NULL column keeps its previous value rather than being set blank)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ]);
+
+    await service.updateBusCompany(actor, { name: 'Comfort Bus', cancellationPolicyCode: '' });
+
+    const [sql] = queryCallsOf(pg).find(
+      ([s]) => typeof s === 'string' && s.startsWith('UPDATE bus_companies'),
+    )!;
+    expect(sql).not.toContain('cancellation_policy_code = $');
+  });
+
+  it('UPDATE: also accepts snake_case aliases (nearby_places, check_in_time, check_out_time, cancellation_policy_code, extra_fees)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ]);
+
+    await service.updateBusCompany(actor, {
+      name: 'Comfort Bus',
+      nearby_places: nearbyPlaces,
+      check_in_time: '10:00',
+      check_out_time: '17:00',
+      cancellation_policy_code: 'moderate',
+      extra_fees: extraFees,
+    });
+
+    const [sql, params] = queryCallsOf(pg).find(
+      ([s]) => typeof s === 'string' && s.startsWith('UPDATE bus_companies'),
+    )!;
+    expect(sql).toContain('nearby_places = $');
+    expect(sql).toContain('check_in_time = $');
+    expect(sql).toContain('check_out_time = $');
+    expect(sql).toContain('cancellation_policy_code = $');
+    expect(sql).toContain('extra_fees = $');
+    expect(params).toContain('10:00');
+    expect(params).toContain('17:00');
+    expect(params).toContain('MODERATE');
+  });
+
+  it('translation persistence (shortDescription/fullDescription) keeps working unchanged alongside the new fields', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'company-1' }])
+      .mockResolvedValueOnce([]) // existing translations
+      .mockResolvedValueOnce([]) // upsert uz
+      .mockResolvedValueOnce([]) // upsert ru
+      .mockResolvedValueOnce([]) // upsert en
+      .mockResolvedValueOnce([
+        { id: 'company-1', partner_organization_id: 'org-1', name: 'Comfort Bus', status: 'active' },
+      ]);
+
+    const shortDescription = 'Qulay va ishonchli avtobus kompaniyasi';
+    const fullDescription = "Comfort Bus O'zbekiston bo'ylab ishlaydi.";
+
+    const result = await service.updateBusCompany(actor, {
+      name: 'Comfort Bus',
+      shortDescription,
+      fullDescription,
+      address: 'Toshkent',
+    });
+
+    const upsertCalls = queryCallsOf(pg).filter(
+      ([sql]) =>
+        typeof sql === 'string' &&
+        sql.includes('INSERT INTO bus_company_translations'),
+    );
+    expect(upsertCalls).toHaveLength(3);
+    for (const [, params] of upsertCalls) {
+      expect(params?.[3]).toBe(shortDescription);
+      expect(params?.[4]).toBe(fullDescription);
+    }
+    expect(result.short_description.uz).toBe(shortDescription);
+    expect(result.full_description.uz).toBe(fullDescription);
   });
 });
 

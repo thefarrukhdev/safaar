@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { parsePagination, type QueryLike } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -105,6 +109,128 @@ export class HotelsService {
         );
         params.push(bounds.west, bounds.east);
       }
+    }
+
+    // `?check_in=&check_out=` — audit topilmasi: frontend allaqachon
+    // yuborardi, lekin bu yerda UMUMAN o'qilmasdi (URL o'zgaradi, natijalar
+    // filtrlanmaydi). Ikkalasi birga berilishi shart — faqat bittasi
+    // berilsa noto'g'ri so'rov hisoblanadi. Format/oraliq tekshiruvi
+    // `bookings.service.ts`dagi (booking yaratish) AYNAN bir xil
+    // `BOOKING_DATES_INVALID` konvensiyasi bilan bir xil (`Date.parse` +
+    // `checkOut <= checkIn` rad etiladi).
+    const checkInRaw = first(query.check_in);
+    const checkOutRaw = first(query.check_out);
+    let availabilityRange: { checkIn: string; checkOut: string } | undefined;
+    if (checkInRaw || checkOutRaw) {
+      const checkIn = String(checkInRaw ?? '');
+      const checkOut = String(checkOutRaw ?? '');
+      const checkInMs = Date.parse(checkIn);
+      const checkOutMs = Date.parse(checkOut);
+      if (
+        !Number.isFinite(checkInMs) ||
+        !Number.isFinite(checkOutMs) ||
+        checkOutMs <= checkInMs
+      ) {
+        throw new BadRequestException({
+          code: 'SEARCH_DATES_INVALID',
+          message: "check_in/check_out sanalari noto'g'ri",
+        });
+      }
+      availabilityRange = { checkIn, checkOut };
+    }
+
+    // `?guests=` — "guests" domenda "adults"ga mos keladi (qarang
+    // `packages/api-client/src/services/bookings.ts`: `adults: input.guests
+    // ?? 1` — booking yaratishda ishlatiladigan AYNAN shu naqsh), shu
+    // sabab xona sig'imi `hotel_rooms.max_adults` bilan solishtiriladi.
+    const guestsRaw = first(query.guests);
+    let guests: number | undefined;
+    if (guestsRaw !== undefined && guestsRaw !== '') {
+      const parsed = Number(guestsRaw);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
+        throw new BadRequestException({
+          code: 'SEARCH_GUESTS_INVALID',
+          message: "guests parametri noto'g'ri",
+        });
+      }
+      guests = parsed;
+    }
+
+    // Xona mavjudligi: hotel FAQAT kamida bitta "band qilinadigan" xonasi
+    // bo'lsa qaytariladi — booking yaratishdagi (`bookings.service.ts`)
+    // AYNAN bir xil ikki tekshiruv qayta ishlatiladi (yangi mantiq
+    // o'ylab topilmadi):
+    //   1) `room_inventory.closed=true` — hamkor/admin vaqtincha
+    //      bloklagan sanalar (qarang `roomAvailabilityBlock()`).
+    //   2) band qilingan xonalar yig'indisi (`price_snapshot->>'rooms'`)
+    //      `total_inventory`dan oshmasligi — faqat HALI YAKUNLANMAGAN
+    //      bronlar hisoblanadi: `cancelled`/`expired`/`completed`
+    //      chiqarib tashlanadi (bir xil `activeExclusions` ro'yxati,
+    //      `bookings.service.ts:528`).
+    // Bitta EXISTS-subquery orqali — N+1 emas, bitta SQL so'rovining bir
+    // qismi (Postgres uni nested-loop/index orqali bajaradi).
+    if (availabilityRange || guests !== undefined) {
+      const roomConditions: string[] = [
+        'r.hotel_id = h.id',
+        "r.status = 'active'",
+      ];
+      if (guests !== undefined) {
+        roomConditions.push(`r.max_adults >= $${paramIndex++}`);
+        params.push(guests);
+      }
+      if (availabilityRange) {
+        const checkInParam = paramIndex++;
+        const checkOutParam = paramIndex++;
+        params.push(availabilityRange.checkIn, availabilityRange.checkOut);
+        roomConditions.push(
+          `NOT EXISTS (
+             SELECT 1 FROM room_inventory ri
+             WHERE ri.room_id = r.id AND ri.closed = true
+               AND ri.date >= $${checkInParam}::date AND ri.date < $${checkOutParam}::date
+           )`,
+        );
+        roomConditions.push(
+          `r.total_inventory > COALESCE((
+             SELECT SUM(COALESCE((b.price_snapshot->>'rooms')::int, 1))
+             FROM bookings b
+             WHERE b.room_id = r.id
+               AND b.status NOT IN ('cancelled', 'expired', 'completed')
+               AND b.check_in < $${checkOutParam}::date
+               AND $${checkInParam}::date < b.check_out
+           ), 0)`,
+        );
+      }
+      conditions.push(
+        `EXISTS (SELECT 1 FROM hotel_rooms r WHERE ${roomConditions.join(' AND ')})`,
+      );
+    }
+
+    // `?amenities=wifi,pool` — vergul bilan ajratilgan `amenities.code`
+    // ro'yxati (frontend AYNAN shu formatda yuboradi: `packages/api-client
+    // /src/services/hotels.ts`: `amenities: params.amenities?.join(",")`).
+    // AND semantikasi: hotel SO'RALGAN HAMMA amenity'larga ega bo'lishi
+    // kerak (frontend/mock hech qanday OR signalini bermagan — bir nechta
+    // filtrni birga tanlash odatda natijalarni TORAYTIRADI, kengaytirmaydi
+    // — standart qidiruv-filtr UX konvensiyasi). Relyatsion bo'lish
+    // ("division"): so'ralgan kodlar orasida hotel EGA BO'LMAGAN birortasi
+    // qolmasligi kerak.
+    const amenityCodes = String(first(query.amenities) ?? '')
+      .split(',')
+      .map((code) => code.trim())
+      .filter(Boolean);
+    if (amenityCodes.length > 0) {
+      conditions.push(
+        `NOT EXISTS (
+           SELECT 1 FROM unnest($${paramIndex}::text[]) AS required_code
+           WHERE NOT EXISTS (
+             SELECT 1 FROM hotel_amenities ha
+             JOIN amenities a ON a.id = ha.amenity_id
+             WHERE ha.hotel_id = h.id AND a.code = required_code
+           )
+         )`,
+      );
+      params.push(amenityCodes);
+      paramIndex++;
     }
 
     const pagination = parsePagination(query, 'public', {

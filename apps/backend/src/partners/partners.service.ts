@@ -29,6 +29,11 @@ import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
 import { assertPublicHttpUrl } from '../common/ssrf-guard';
 import { isSlotWithinOperatingHours } from '../common/operating-hours';
+import {
+  PROMOTION_RETURNING_SQL,
+  toPromotionApiShape,
+  type PromotionRow,
+} from '../common/promotion';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
 
@@ -57,9 +62,23 @@ type BusCompanyRow = {
   status: string;
   rating_average: number;
   reviews_count: number;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  nearby_places: unknown;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  cancellation_policy_code: string;
+  extra_fees: unknown;
   created_at: string;
   updated_at: string;
 };
+
+const BUS_COMPANY_RETURNING_SQL = `id::text, partner_organization_id::text, name, status,
+              rating_average::float8, reviews_count,
+              address, latitude::float8, longitude::float8, nearby_places,
+              check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+              created_at, updated_at`;
 
 /**
  * `hotels` jadvali "yashash joyi" turlari VA restoran uchun umumiy e'lon
@@ -2562,8 +2581,7 @@ export class PartnersService {
     );
     if (existing) {
       const [company] = await this.pg.query<BusCompanyRow>(
-        `SELECT id::text, partner_organization_id::text, name, status,
-              rating_average::float8, reviews_count, created_at, updated_at
+        `SELECT ${BUS_COMPANY_RETURNING_SQL}
          FROM bus_companies WHERE id = $1`,
         [existing.id],
       );
@@ -2579,12 +2597,48 @@ export class PartnersService {
       organization.legal_name ??
       'Avtobus kompaniyasi';
     const now = new Date().toISOString();
+    const address = this.optionalString(body.address);
+    const latitude = this.parseOptionalDecimal(body.latitude);
+    const longitude = this.parseOptionalDecimal(body.longitude);
+    const nearbyPlacesInput = body.nearbyPlaces ?? body.nearby_places;
+    const nearbyPlaces = Array.isArray(nearbyPlacesInput)
+      ? nearbyPlacesInput
+      : [];
+    const checkInTime = this.optionalString(
+      body.checkInTime ?? body.check_in_time,
+    );
+    const checkOutTime = this.optionalString(
+      body.checkOutTime ?? body.check_out_time,
+    );
+    const cancellationPolicyCode =
+      this.optionalString(
+        body.cancellationPolicyCode ?? body.cancellation_policy_code,
+      )?.toUpperCase() ?? 'MODERATE';
+    const extraFeesInput = body.extraFees ?? body.extra_fees;
+    const extraFees = Array.isArray(extraFeesInput) ? extraFeesInput : [];
     const [company] = await this.pg.query<BusCompanyRow>(
-      `INSERT INTO bus_companies (id, partner_organization_id, name, status, created_at, updated_at)
-       VALUES ($1, $2, $3, 'active', $4, $4)
-       RETURNING id::text, partner_organization_id::text, name, status,
-                 rating_average::float8, reviews_count, created_at, updated_at`,
-      [randomUUID(), organizationId, name, now],
+      `INSERT INTO bus_companies (
+         id, partner_organization_id, name, status,
+         address, latitude, longitude, nearby_places,
+         check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+         created_at, updated_at
+       )
+       VALUES ($1, $2, $3, 'active', $4, $5, $6, $7::jsonb, $8, $9, $10, $11::jsonb, $12, $12)
+       RETURNING ${BUS_COMPANY_RETURNING_SQL}`,
+      [
+        randomUUID(),
+        organizationId,
+        name,
+        address,
+        latitude,
+        longitude,
+        JSON.stringify(nearbyPlaces),
+        checkInTime,
+        checkOutTime,
+        cancellationPolicyCode,
+        JSON.stringify(extraFees),
+        now,
+      ],
     );
     const descriptions = await this.upsertBusCompanyTranslations(
       company.id,
@@ -2595,7 +2649,10 @@ export class PartnersService {
     this.invalidatePublicTransportCache();
     return {
       ...company,
-      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      short_description: localizedTextFromMap(
+        descriptions.short_description,
+        '',
+      ),
       full_description: localizedTextFromMap(descriptions.full_description, ''),
     };
   }
@@ -2608,8 +2665,7 @@ export class PartnersService {
   async busCompany(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
     const [company] = await this.pg.query<BusCompanyRow>(
-      `SELECT id::text, partner_organization_id::text, name, status,
-              rating_average::float8, reviews_count, created_at, updated_at
+      `SELECT ${BUS_COMPANY_RETURNING_SQL}
        FROM bus_companies
        WHERE partner_organization_id = $1
        ORDER BY created_at ASC LIMIT 1`,
@@ -2657,16 +2713,77 @@ export class PartnersService {
       now,
     );
 
+    // Qisman (partial) yangilash — faqat `body`da AYNAN berilgan maydonlar
+    // o'zgaradi, qolganlari tegilmaydi. Bir xil naqsh: `updateListingLocation()`/
+    // `updateListingRules()` (hotels uchun).
+    const sets: string[] = ['name = $1'];
+    const params: unknown[] = [name];
+    let idx = 2;
+
+    if (body.address !== undefined) {
+      sets.push(`address = $${idx++}`);
+      params.push(this.optionalString(body.address));
+    }
+    if (body.latitude !== undefined) {
+      const latitude = this.parseOptionalDecimal(body.latitude);
+      if (latitude !== null) {
+        sets.push(`latitude = $${idx++}`);
+        params.push(latitude);
+      }
+    }
+    if (body.longitude !== undefined) {
+      const longitude = this.parseOptionalDecimal(body.longitude);
+      if (longitude !== null) {
+        sets.push(`longitude = $${idx++}`);
+        params.push(longitude);
+      }
+    }
+    const nearbyPlacesInput = body.nearbyPlaces ?? body.nearby_places;
+    if (Array.isArray(nearbyPlacesInput)) {
+      sets.push(`nearby_places = $${idx++}::jsonb`);
+      params.push(JSON.stringify(nearbyPlacesInput));
+    }
+    const checkInTimeInput = body.checkInTime ?? body.check_in_time;
+    if (checkInTimeInput !== undefined) {
+      sets.push(`check_in_time = $${idx++}`);
+      params.push(this.optionalString(checkInTimeInput));
+    }
+    const checkOutTimeInput = body.checkOutTime ?? body.check_out_time;
+    if (checkOutTimeInput !== undefined) {
+      sets.push(`check_out_time = $${idx++}`);
+      params.push(this.optionalString(checkOutTimeInput));
+    }
+    const cancellationPolicyCodeInput =
+      body.cancellationPolicyCode ?? body.cancellation_policy_code;
+    if (cancellationPolicyCodeInput !== undefined) {
+      const code = this.optionalString(cancellationPolicyCodeInput);
+      if (code) {
+        sets.push(`cancellation_policy_code = $${idx++}`);
+        params.push(code.toUpperCase());
+      }
+    }
+    const extraFeesInput = body.extraFees ?? body.extra_fees;
+    if (Array.isArray(extraFeesInput)) {
+      sets.push(`extra_fees = $${idx++}::jsonb`);
+      params.push(JSON.stringify(extraFeesInput));
+    }
+
+    sets.push(`updated_at = $${idx++}`);
+    params.push(now);
+    params.push(companyId);
+
     const [company] = await this.pg.query<BusCompanyRow>(
-      `UPDATE bus_companies SET name = $1, updated_at = $2 WHERE id = $3
-       RETURNING id::text, partner_organization_id::text, name, status,
-                 rating_average::float8, reviews_count, created_at, updated_at`,
-      [name, now, companyId],
+      `UPDATE bus_companies SET ${sets.join(', ')} WHERE id = $${idx}
+       RETURNING ${BUS_COMPANY_RETURNING_SQL}`,
+      params,
     );
     this.invalidatePublicTransportCache();
     return {
       ...company,
-      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      short_description: localizedTextFromMap(
+        descriptions.short_description,
+        '',
+      ),
       full_description: localizedTextFromMap(descriptions.full_description, ''),
     };
   }
@@ -2746,11 +2863,9 @@ export class PartnersService {
     const shortDescriptions: Record<string, string> = {};
     const fullDescriptions: Record<string, string> = {};
     for (const language of ['uz', 'ru', 'en'] as const) {
-      const shortDescription = translationValue(
-        language,
-        'short_description',
-        ['shortDescription'],
-      );
+      const shortDescription = translationValue(language, 'short_description', [
+        'shortDescription',
+      ]);
       const fullDescription = translationValue(language, 'description', [
         'fullDescription',
         'full_description',
@@ -2765,7 +2880,14 @@ export class PartnersService {
            short_description = EXCLUDED.short_description,
            description = EXCLUDED.description,
            updated_at = EXCLUDED.updated_at`,
-        [randomUUID(), companyId, language, shortDescription, fullDescription, now],
+        [
+          randomUUID(),
+          companyId,
+          language,
+          shortDescription,
+          fullDescription,
+          now,
+        ],
       );
     }
     return {
@@ -4570,6 +4692,185 @@ export class PartnersService {
   }
 
   // ---------------------------------------------------------------------------
+  // Promotions (xona/mashina uchun vaqtinchalik chegirma taklifi — admin
+  // tasdig'idan keyin e'lon qilinadi). Ilgari `web-partner/promotions.ts`da
+  // butunlay brauzer-xotira mock edi ("SAFAAR — IMPLEMENT THE TWO CONFIRMED
+  // BACKEND GAPS" auditi).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * `entityId` haqiqatan ham shu hamkor tashkilotiga tegishli ekanini
+   * tekshiradi — boshqa hamkorning xonasi/mashinasi uchun chegirma
+   * yaratishning oldini oladi (task talabi). `entityType==='room'` bo'lsa
+   * `hotel_rooms -> hotels.partner_organization_id`, `'vehicle'` bo'lsa
+   * `vehicles -> bus_companies.partner_organization_id` orqali tekshiradi
+   * — ikkalasi ham mavjud egalik zanjiri, yangi mexanizm emas.
+   */
+  private async assertPromotionEntityOwnership(
+    organizationId: string,
+    entityType: 'room' | 'vehicle',
+    entityId: string,
+  ): Promise<void> {
+    const [owned] =
+      entityType === 'room'
+        ? await this.pg.query<{ id: string }>(
+            `SELECT hr.id::text FROM hotel_rooms hr
+             JOIN hotels h ON h.id = hr.hotel_id
+             WHERE hr.id = $1 AND h.partner_organization_id = $2`,
+            [entityId, organizationId],
+          )
+        : await this.pg.query<{ id: string }>(
+            `SELECT v.id::text FROM vehicles v
+             JOIN bus_companies bc ON bc.id = v.company_id
+             WHERE v.id = $1 AND bc.partner_organization_id = $2`,
+            [entityId, organizationId],
+          );
+    if (!owned) {
+      throw new NotFoundException({
+        code: 'PROMOTION_ENTITY_NOT_FOUND',
+        message:
+          entityType === 'room'
+            ? 'Xona topilmadi yoki sizning tashkilotingizga tegishli emas'
+            : 'Mashina topilmadi yoki sizning tashkilotingizga tegishli emas',
+      });
+    }
+  }
+
+  /**
+   * `GET /partners/promotions` — faqat AYNAN shu hamkor tashkilotining
+   * chegirmalari (`partner_organization_id` bo'yicha filtrlangan — boshqa
+   * hamkorning yozuvi hech qachon qaytmaydi). `admin.service.ts`ning
+   * `listPromotions()`i bilan bir xil `PROMOTION_RETURNING_SQL`/
+   * `toPromotionApiShape()`dan foydalanadi, lekin admin versiyasidan farqli
+   * ravishda `partnerId`/`partnerName` YO'Q (hamkor o'zining tashkiloti
+   * ekanini allaqachon biladi) — frontendning mavjud `Promotion` (emas
+   * `PartnerPromotion`) shakli bilan mos.
+   */
+  async listPromotions(actor: RequestActor | undefined) {
+    const organizationId = this.organizationId(actor);
+    const rows = await this.pg.query<PromotionRow>(
+      `SELECT ${PROMOTION_RETURNING_SQL}
+       FROM promotions
+       WHERE partner_organization_id = $1
+       ORDER BY created_at DESC`,
+      [organizationId],
+    );
+    return rows.map(toPromotionApiShape);
+  }
+
+  async createPromotion(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
+    const organizationId = this.organizationId(actor);
+
+    const entityTypeRaw = this.requiredString(
+      body.entityType,
+      'PROMOTION_ENTITY_TYPE_REQUIRED',
+      'Obyekt turini tanlang',
+    );
+    if (entityTypeRaw !== 'room' && entityTypeRaw !== 'vehicle') {
+      throw new BadRequestException({
+        code: 'PROMOTION_ENTITY_TYPE_INVALID',
+        message: "entityType 'room' yoki 'vehicle' bo'lishi kerak",
+      });
+    }
+    const entityType = entityTypeRaw;
+    const entityId = this.requiredString(
+      body.entityId,
+      'PROMOTION_ENTITY_ID_REQUIRED',
+      'Obyektni tanlang',
+    );
+    const entityName = this.requiredString(
+      body.entityName,
+      'PROMOTION_ENTITY_NAME_REQUIRED',
+      "Obyekt nomi ko'rsatilishi shart",
+    );
+
+    const oldPriceSum = this.requiredNonNegativeNumber(
+      body.oldPriceSum,
+      'PROMOTION_OLD_PRICE_INVALID',
+      "Eski narx noto'g'ri",
+    );
+    const newPriceSum = this.requiredNonNegativeNumber(
+      body.newPriceSum,
+      'PROMOTION_NEW_PRICE_INVALID',
+      "Yangi narx noto'g'ri",
+    );
+    if (newPriceSum >= oldPriceSum) {
+      throw new BadRequestException({
+        code: 'PROMOTION_PRICE_INVALID',
+        message: "Yangi narx eski narxdan kichik bo'lishi kerak",
+      });
+    }
+    const discountPercent = this.requiredPositiveInteger(
+      body.discountPercent,
+      'PROMOTION_DISCOUNT_INVALID',
+      "Chegirma foizi noto'g'ri",
+    );
+    if (discountPercent > 99) {
+      throw new BadRequestException({
+        code: 'PROMOTION_DISCOUNT_INVALID',
+        message: "Chegirma foizi 99 dan katta bo'lishi mumkin emas",
+      });
+    }
+
+    const startDate = this.requiredString(
+      body.startDate,
+      'PROMOTION_START_DATE_REQUIRED',
+      'Boshlanish sanasini kiriting',
+    );
+    const endDate = this.requiredString(
+      body.endDate,
+      'PROMOTION_END_DATE_REQUIRED',
+      'Tugash sanasini kiriting',
+    );
+    const startMs = Date.parse(startDate);
+    const endMs = Date.parse(endDate);
+    if (
+      !Number.isFinite(startMs) ||
+      !Number.isFinite(endMs) ||
+      endMs <= startMs
+    ) {
+      throw new BadRequestException({
+        code: 'PROMOTION_DATES_INVALID',
+        message: "startDate/endDate sanalari noto'g'ri",
+      });
+    }
+
+    await this.assertPromotionEntityOwnership(
+      organizationId,
+      entityType,
+      entityId,
+    );
+
+    const now = new Date().toISOString();
+    const [promotion] = await this.pg.query<PromotionRow>(
+      `INSERT INTO promotions (
+         id, partner_organization_id, entity_type, entity_id, entity_name,
+         old_price_sum, new_price_sum, discount_percent, start_date, end_date,
+         status, created_at, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::date, 'pending_review', $11, $11)
+       RETURNING ${PROMOTION_RETURNING_SQL}`,
+      [
+        randomUUID(),
+        organizationId,
+        entityType,
+        entityId,
+        entityName,
+        oldPriceSum,
+        newPriceSum,
+        discountPercent,
+        startDate,
+        endDate,
+        now,
+      ],
+    );
+    return toPromotionApiShape(promotion);
+  }
+
+  // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
 
@@ -4696,6 +4997,20 @@ export class PartnersService {
   private optionalString(value: unknown): string | null {
     const text = String(value ?? '').trim();
     return text.length > 0 ? text : null;
+  }
+
+  /**
+   * `latitude`/`longitude` uchun: berilmagan/bo'sh/raqam bo'lmagan qiymatni
+   * `null`ga tushiradi — Postgres `NUMERIC` ustuniga `NaN` yozishga urinish
+   * (masalan `updateListingLocation()`dagi tekshiruvsiz `Number(...)` bilan
+   * bo'lgani kabi) DB darajasida xato beradi; bu yerda shunchaki jimgina
+   * e'tiborsiz qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega
+   * emas, shu bilan bir xil "best-effort" uslubda).
+   */
+  private parseOptionalDecimal(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private requiredString(

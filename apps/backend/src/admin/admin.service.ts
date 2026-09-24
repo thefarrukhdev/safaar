@@ -4213,6 +4213,12 @@ export class AdminService {
     if (resource === 'destinations') {
       void this.cache.del('catalog:destinations');
     }
+    if (resource === 'attractions') {
+      void this.cache.delByPattern('catalog:attractions:*');
+    }
+    if (resource === 'restaurants') {
+      void this.cache.delByPattern('catalog:restaurants:*');
+    }
   }
 
   async cmsList(resource: string, query: QueryLike = {}) {

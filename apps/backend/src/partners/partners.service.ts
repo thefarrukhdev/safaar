@@ -2601,9 +2601,15 @@ export class PartnersService {
     const latitude = this.parseOptionalDecimal(body.latitude);
     const longitude = this.parseOptionalDecimal(body.longitude);
     const nearbyPlacesInput = body.nearbyPlaces ?? body.nearby_places;
-    const nearbyPlaces = Array.isArray(nearbyPlacesInput) ? nearbyPlacesInput : [];
-    const checkInTime = this.optionalString(body.checkInTime ?? body.check_in_time);
-    const checkOutTime = this.optionalString(body.checkOutTime ?? body.check_out_time);
+    const nearbyPlaces = Array.isArray(nearbyPlacesInput)
+      ? nearbyPlacesInput
+      : [];
+    const checkInTime = this.optionalString(
+      body.checkInTime ?? body.check_in_time,
+    );
+    const checkOutTime = this.optionalString(
+      body.checkOutTime ?? body.check_out_time,
+    );
     const cancellationPolicyCode =
       this.optionalString(
         body.cancellationPolicyCode ?? body.cancellation_policy_code,
@@ -2643,7 +2649,10 @@ export class PartnersService {
     this.invalidatePublicTransportCache();
     return {
       ...company,
-      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      short_description: localizedTextFromMap(
+        descriptions.short_description,
+        '',
+      ),
       full_description: localizedTextFromMap(descriptions.full_description, ''),
     };
   }
@@ -2771,7 +2780,10 @@ export class PartnersService {
     this.invalidatePublicTransportCache();
     return {
       ...company,
-      short_description: localizedTextFromMap(descriptions.short_description, ''),
+      short_description: localizedTextFromMap(
+        descriptions.short_description,
+        '',
+      ),
       full_description: localizedTextFromMap(descriptions.full_description, ''),
     };
   }
@@ -2851,11 +2863,9 @@ export class PartnersService {
     const shortDescriptions: Record<string, string> = {};
     const fullDescriptions: Record<string, string> = {};
     for (const language of ['uz', 'ru', 'en'] as const) {
-      const shortDescription = translationValue(
-        language,
-        'short_description',
-        ['shortDescription'],
-      );
+      const shortDescription = translationValue(language, 'short_description', [
+        'shortDescription',
+      ]);
       const fullDescription = translationValue(language, 'description', [
         'fullDescription',
         'full_description',
@@ -2870,7 +2880,14 @@ export class PartnersService {
            short_description = EXCLUDED.short_description,
            description = EXCLUDED.description,
            updated_at = EXCLUDED.updated_at`,
-        [randomUUID(), companyId, language, shortDescription, fullDescription, now],
+        [
+          randomUUID(),
+          companyId,
+          language,
+          shortDescription,
+          fullDescription,
+          now,
+        ],
       );
     }
     return {
@@ -3945,6 +3962,42 @@ export class PartnersService {
   ) {
     const booking = (await this.booking(actor, id)) as Record<string, unknown>;
     const now = new Date().toISOString();
+
+    if (booking['type'] === 'bus') {
+      const plateOrName = this.requiredString(
+        body.roomNumber ?? body.room_number,
+        'VEHICLE_IDENTIFIER_REQUIRED',
+        'Mashina/avtobus raqami yoki nomi kiritilishi kerak',
+      );
+
+      const [vehicle] = await this.pg.query<{ id: string }>(
+        `SELECT v.id::text
+         FROM vehicles v
+         JOIN bus_companies bc ON bc.id = v.company_id
+         WHERE bc.partner_organization_id = $1::uuid
+           AND (v.plate_number = $2 OR v.name = $2)
+         LIMIT 1`,
+        [booking['partner_organization_id'], plateOrName],
+      );
+
+      if (!vehicle) {
+        throw new NotFoundException({
+          code: 'VEHICLE_NOT_AVAILABLE',
+          message: 'Tanlangan mashina topilmadi',
+        });
+      }
+
+      const result = await this.pg.query(
+        `UPDATE bookings
+         SET vehicle_id = $1, updated_at = $2
+         WHERE id = $3
+         RETURNING *`,
+        [vehicle.id, now, id],
+      );
+
+      return result[0];
+    }
+
     const hotelId = this.requiredString(
       booking['hotel_id'],
       'HOTEL_REQUIRED',
@@ -4758,7 +4811,7 @@ export class PartnersService {
         message: "entityType 'room' yoki 'vehicle' bo'lishi kerak",
       });
     }
-    const entityType = entityTypeRaw as 'room' | 'vehicle';
+    const entityType = entityTypeRaw;
     const entityId = this.requiredString(
       body.entityId,
       'PROMOTION_ENTITY_ID_REQUIRED',

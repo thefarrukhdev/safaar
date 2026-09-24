@@ -17,6 +17,7 @@ import {
 import { formatSum } from "@/lib/money";
 import type { RestaurantDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import { createRestaurantBookingAction } from "@/lib/services/booking/actions";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Modal } from "@/components/ui/Modal";
 import type { CatalogDict } from "@/i18n/dictionaries";
@@ -93,28 +94,28 @@ export function RestaurantBookingSection({
     setLoading(true);
 
     try {
-      const { api } = await import("@/lib/api");
-      const booking = await api.bookings.createHotelBooking({
-        hotelId: restaurant.id,
-        roomId: selectedTableId || restaurant.id,
-        checkIn: date,
-        checkOut: date,
+      const res = await createRestaurantBookingAction({
+        restaurantId: restaurant.id,
+        tableId: selectedTableId || restaurant.id,
+        date: date,
         slotTime: slotTime,
         guests: guests,
         totalPrice: totalAmount,
         guestName,
         guestPhone,
         guestEmail,
-        source: "web-user",
         paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
         agreeTerms,
       });
 
-      const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
-      setSuccessBookingId(bookingId);
-      setShowBookingModal(false);
+      if (res.ok && res.bookingId) {
+        setSuccessBookingId(res.bookingId);
+        setShowBookingModal(false);
+      } else {
+        setErrorMsg(res.error || bDict.error || "Xatolik yuz berdi");
+      }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
+      setErrorMsg(bDict.error || "Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }

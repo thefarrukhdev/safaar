@@ -3050,7 +3050,7 @@ describe('PartnersService.createPromotion (regression: "SAFAAR — IMPLEMENT THE
     });
 
     expect(result.entityType).toBe('vehicle');
-    const ownershipCall = pg.query.mock.calls[0] as [string, unknown[]];
+    const ownershipCall = queryCallsOf(pg)[0];
     expect(String(ownershipCall[0])).toContain('vehicles');
     expect(String(ownershipCall[0])).toContain('bus_companies');
   });
@@ -3070,5 +3070,198 @@ describe('PartnersService.createPromotion (regression: "SAFAAR — IMPLEMENT THE
         endDate: '2026-10-11',
       }),
     ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('PartnersService.assignRoom (regression: "BACKEND BUG AUDIT" — bus/transport bookings have hotel_id = null by design, but assignRoom unconditionally required it, so POST /partners/bookings/:id/assign-room always returned 400 HOTEL_REQUIRED for any bus booking, with no way to assign a vehicle)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('hotel booking: existing hotel-room assignment still works unchanged', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'booking-1',
+          type: 'hotel',
+          partner_organization_id: 'org-1',
+          hotel_id: 'hotel-1',
+        },
+      ]) // this.booking()
+      .mockResolvedValueOnce([
+        { id: 'room-1', room_type_id: 'rt-1', code: '101' },
+      ]) // hotel_rooms lookup
+      .mockResolvedValueOnce([
+        { id: 'booking-1', price_snapshot: { room_id: 'room-1' } },
+      ]); // UPDATE ... RETURNING
+
+    const result = await service.assignRoom(actor, 'booking-1', {
+      roomNumber: '101',
+    });
+
+    expect(result).toEqual({
+      id: 'booking-1',
+      price_snapshot: { room_id: 'room-1' },
+    });
+    const roomLookupCall = queryCallsOf(pg)[1];
+    expect(String(roomLookupCall[0])).toContain('FROM hotel_rooms');
+    expect(roomLookupCall[1]).toEqual(['hotel-1', '101']);
+  });
+
+  it('bus booking + matching plate_number: booking.vehicle_id updated, success returned', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'booking-2',
+          type: 'bus',
+          partner_organization_id: 'org-1',
+          hotel_id: null,
+        },
+      ])
+      .mockResolvedValueOnce([{ id: 'vehicle-1' }]) // vehicle lookup, scoped to org-1
+      .mockResolvedValueOnce([{ id: 'booking-2', vehicle_id: 'vehicle-1' }]); // UPDATE ... RETURNING
+
+    const result = await service.assignRoom(actor, 'booking-2', {
+      roomNumber: '01A123AA',
+    });
+
+    expect(result).toEqual({ id: 'booking-2', vehicle_id: 'vehicle-1' });
+
+    const vehicleLookupCall = queryCallsOf(pg)[1];
+    expect(String(vehicleLookupCall[0])).toContain('FROM vehicles');
+    expect(String(vehicleLookupCall[0])).toContain('JOIN bus_companies');
+    expect(vehicleLookupCall[1]).toEqual(['org-1', '01A123AA']);
+
+    const updateCall = queryCallsOf(pg)[2];
+    expect(String(updateCall[0])).toContain('UPDATE bookings');
+    expect(String(updateCall[0])).toContain('vehicle_id');
+    expect(updateCall[1]?.[0]).toBe('vehicle-1');
+    expect(updateCall[1]?.[2]).toBe('booking-2');
+  });
+
+  it('bus booking + matching vehicle name (not plate): success', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'booking-3',
+          type: 'bus',
+          partner_organization_id: 'org-1',
+          hotel_id: null,
+        },
+      ])
+      .mockResolvedValueOnce([{ id: 'vehicle-2' }])
+      .mockResolvedValueOnce([{ id: 'booking-3', vehicle_id: 'vehicle-2' }]);
+
+    const result = await service.assignRoom(actor, 'booking-3', {
+      roomNumber: 'Comfort Bus',
+    });
+
+    expect(result).toEqual({ id: 'booking-3', vehicle_id: 'vehicle-2' });
+  });
+
+  it('bus booking + vehicle belonging to another partner: VEHICLE_NOT_AVAILABLE, no cross-partner assignment', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'booking-4',
+          type: 'bus',
+          partner_organization_id: 'org-1',
+          hotel_id: null,
+        },
+      ])
+      .mockResolvedValueOnce([]); // vehicle lookup scoped to org-1 finds nothing (vehicle really belongs to org-2)
+
+    await expect(
+      service.assignRoom(actor, 'booking-4', { roomNumber: '01B999BB' }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'VEHICLE_NOT_AVAILABLE' },
+    });
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('UPDATE bookings'),
+    );
+    expect(updateCall).toBeUndefined();
+  });
+
+  it('bus booking + unknown identifier: VEHICLE_NOT_AVAILABLE', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'booking-5',
+          type: 'bus',
+          partner_organization_id: 'org-1',
+          hotel_id: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      service.assignRoom(actor, 'booking-5', { roomNumber: 'DOES-NOT-EXIST' }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'VEHICLE_NOT_AVAILABLE' },
+    });
+  });
+
+  it('bus booking + missing roomNumber/room_number: VEHICLE_IDENTIFIER_REQUIRED', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'booking-6',
+        type: 'bus',
+        partner_organization_id: 'org-1',
+        hotel_id: null,
+      },
+    ]);
+
+    await expect(
+      service.assignRoom(actor, 'booking-6', {}),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'VEHICLE_IDENTIFIER_REQUIRED' },
+    });
+
+    const vehicleLookupCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('FROM vehicles'),
+    );
+    expect(vehicleLookupCall).toBeUndefined();
+  });
+
+  it('restaurant booking: falls through to the existing (pre-existing, unchanged) hotel-room branch — documented here rather than silently altered by this fix', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'booking-7',
+        type: 'restaurant',
+        partner_organization_id: 'org-1',
+        hotel_id: null,
+      },
+    ]);
+
+    await expect(
+      service.assignRoom(actor, 'booking-7', { roomNumber: '5' }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'HOTEL_REQUIRED' },
+    });
+
+    const vehicleLookupCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('FROM vehicles'),
+    );
+    expect(vehicleLookupCall).toBeUndefined();
   });
 });

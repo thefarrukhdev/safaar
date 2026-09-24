@@ -967,6 +967,72 @@ describe('AdminService frontend action endpoints', () => {
       });
       expect(cacheMock.del).not.toHaveBeenCalled();
       expect(cacheMock.delByPattern).toHaveBeenCalledWith('cms:*');
+      expect(cacheMock.delByPattern).not.toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
+      expect(cacheMock.delByPattern).not.toHaveBeenCalledWith(
+        'catalog:restaurants:*',
+      );
+    });
+
+    it('attractions mutation (regression: "BACKEND BUG AUDIT" — catalog:attractions:* is a separate cache-key prefix from cms:*, so admin edits never invalidated the public attractions cache) busts both cms:* and catalog:attractions:*', async () => {
+      const attractionRow = {
+        ...destinationRow,
+        type: 'attraction',
+        slug: 'chorsu-bazaar',
+      };
+
+      pgMock.query.mockResolvedValueOnce([attractionRow]);
+      await service.cmsCreate('attractions', { title: 'Chorsu bozori' });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('cms:*');
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
+      expect(cacheMock.del).not.toHaveBeenCalledWith('catalog:destinations');
+
+      cacheMock.delByPattern.mockClear();
+      pgMock.query.mockResolvedValueOnce([attractionRow]);
+      await service.cmsUpdate('attractions', attractionRow.id, {
+        title: 'Chorsu',
+      });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('cms:*');
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
+
+      cacheMock.delByPattern.mockClear();
+      pgMock.query.mockResolvedValueOnce([attractionRow]);
+      await service.cmsAction('attractions', attractionRow.id, 'publish');
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
+
+      cacheMock.delByPattern.mockClear();
+      pgMock.query.mockResolvedValueOnce([attractionRow]);
+      await service.cmsTranslation('attractions', attractionRow.id, {
+        title: 'Chorsu',
+      });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
+    });
+
+    it('restaurants mutation busts both cms:* and catalog:restaurants:* (same cache-key architecture/defect as attractions)', async () => {
+      const restaurantRow = {
+        ...destinationRow,
+        type: 'restaurant',
+        slug: 'plov-center',
+      };
+
+      pgMock.query.mockResolvedValueOnce([restaurantRow]);
+      await service.cmsCreate('restaurants', { title: 'Plov Center' });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('cms:*');
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith(
+        'catalog:restaurants:*',
+      );
+      expect(cacheMock.delByPattern).not.toHaveBeenCalledWith(
+        'catalog:attractions:*',
+      );
     });
   });
 

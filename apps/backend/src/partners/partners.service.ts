@@ -3962,6 +3962,42 @@ export class PartnersService {
   ) {
     const booking = (await this.booking(actor, id)) as Record<string, unknown>;
     const now = new Date().toISOString();
+
+    if (booking['type'] === 'bus') {
+      const plateOrName = this.requiredString(
+        body.roomNumber ?? body.room_number,
+        'VEHICLE_IDENTIFIER_REQUIRED',
+        'Mashina/avtobus raqami yoki nomi kiritilishi kerak',
+      );
+
+      const [vehicle] = await this.pg.query<{ id: string }>(
+        `SELECT v.id::text
+         FROM vehicles v
+         JOIN bus_companies bc ON bc.id = v.company_id
+         WHERE bc.partner_organization_id = $1::uuid
+           AND (v.plate_number = $2 OR v.name = $2)
+         LIMIT 1`,
+        [booking['partner_organization_id'], plateOrName],
+      );
+
+      if (!vehicle) {
+        throw new NotFoundException({
+          code: 'VEHICLE_NOT_AVAILABLE',
+          message: 'Tanlangan mashina topilmadi',
+        });
+      }
+
+      const result = await this.pg.query(
+        `UPDATE bookings
+         SET vehicle_id = $1, updated_at = $2
+         WHERE id = $3
+         RETURNING *`,
+        [vehicle.id, now, id],
+      );
+
+      return result[0];
+    }
+
     const hotelId = this.requiredString(
       booking['hotel_id'],
       'HOTEL_REQUIRED',

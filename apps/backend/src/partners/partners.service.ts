@@ -29,6 +29,11 @@ import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
 import { assertPublicHttpUrl } from '../common/ssrf-guard';
 import { isSlotWithinOperatingHours } from '../common/operating-hours';
+import {
+  PROMOTION_RETURNING_SQL,
+  toPromotionApiShape,
+  type PromotionRow,
+} from '../common/promotion';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
 
@@ -4667,6 +4672,163 @@ export class PartnersService {
       { idempotencyKey: `partner-webhook-delivery:${deliveryId}:${now}` },
     );
     return delivery;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Promotions (xona/mashina uchun vaqtinchalik chegirma taklifi — admin
+  // tasdig'idan keyin e'lon qilinadi). Ilgari `web-partner/promotions.ts`da
+  // butunlay brauzer-xotira mock edi ("SAFAAR — IMPLEMENT THE TWO CONFIRMED
+  // BACKEND GAPS" auditi).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * `entityId` haqiqatan ham shu hamkor tashkilotiga tegishli ekanini
+   * tekshiradi — boshqa hamkorning xonasi/mashinasi uchun chegirma
+   * yaratishning oldini oladi (task talabi). `entityType==='room'` bo'lsa
+   * `hotel_rooms -> hotels.partner_organization_id`, `'vehicle'` bo'lsa
+   * `vehicles -> bus_companies.partner_organization_id` orqali tekshiradi
+   * — ikkalasi ham mavjud egalik zanjiri, yangi mexanizm emas.
+   */
+  private async assertPromotionEntityOwnership(
+    organizationId: string,
+    entityType: 'room' | 'vehicle',
+    entityId: string,
+  ): Promise<void> {
+    const [owned] =
+      entityType === 'room'
+        ? await this.pg.query<{ id: string }>(
+            `SELECT hr.id::text FROM hotel_rooms hr
+             JOIN hotels h ON h.id = hr.hotel_id
+             WHERE hr.id = $1 AND h.partner_organization_id = $2`,
+            [entityId, organizationId],
+          )
+        : await this.pg.query<{ id: string }>(
+            `SELECT v.id::text FROM vehicles v
+             JOIN bus_companies bc ON bc.id = v.company_id
+             WHERE v.id = $1 AND bc.partner_organization_id = $2`,
+            [entityId, organizationId],
+          );
+    if (!owned) {
+      throw new NotFoundException({
+        code: 'PROMOTION_ENTITY_NOT_FOUND',
+        message:
+          entityType === 'room'
+            ? 'Xona topilmadi yoki sizning tashkilotingizga tegishli emas'
+            : 'Mashina topilmadi yoki sizning tashkilotingizga tegishli emas',
+      });
+    }
+  }
+
+  async createPromotion(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
+    const organizationId = this.organizationId(actor);
+
+    const entityTypeRaw = this.requiredString(
+      body.entityType,
+      'PROMOTION_ENTITY_TYPE_REQUIRED',
+      'Obyekt turini tanlang',
+    );
+    if (entityTypeRaw !== 'room' && entityTypeRaw !== 'vehicle') {
+      throw new BadRequestException({
+        code: 'PROMOTION_ENTITY_TYPE_INVALID',
+        message: "entityType 'room' yoki 'vehicle' bo'lishi kerak",
+      });
+    }
+    const entityType = entityTypeRaw as 'room' | 'vehicle';
+    const entityId = this.requiredString(
+      body.entityId,
+      'PROMOTION_ENTITY_ID_REQUIRED',
+      'Obyektni tanlang',
+    );
+    const entityName = this.requiredString(
+      body.entityName,
+      'PROMOTION_ENTITY_NAME_REQUIRED',
+      "Obyekt nomi ko'rsatilishi shart",
+    );
+
+    const oldPriceSum = this.requiredNonNegativeNumber(
+      body.oldPriceSum,
+      'PROMOTION_OLD_PRICE_INVALID',
+      "Eski narx noto'g'ri",
+    );
+    const newPriceSum = this.requiredNonNegativeNumber(
+      body.newPriceSum,
+      'PROMOTION_NEW_PRICE_INVALID',
+      "Yangi narx noto'g'ri",
+    );
+    if (newPriceSum >= oldPriceSum) {
+      throw new BadRequestException({
+        code: 'PROMOTION_PRICE_INVALID',
+        message: "Yangi narx eski narxdan kichik bo'lishi kerak",
+      });
+    }
+    const discountPercent = this.requiredPositiveInteger(
+      body.discountPercent,
+      'PROMOTION_DISCOUNT_INVALID',
+      "Chegirma foizi noto'g'ri",
+    );
+    if (discountPercent > 99) {
+      throw new BadRequestException({
+        code: 'PROMOTION_DISCOUNT_INVALID',
+        message: "Chegirma foizi 99 dan katta bo'lishi mumkin emas",
+      });
+    }
+
+    const startDate = this.requiredString(
+      body.startDate,
+      'PROMOTION_START_DATE_REQUIRED',
+      'Boshlanish sanasini kiriting',
+    );
+    const endDate = this.requiredString(
+      body.endDate,
+      'PROMOTION_END_DATE_REQUIRED',
+      'Tugash sanasini kiriting',
+    );
+    const startMs = Date.parse(startDate);
+    const endMs = Date.parse(endDate);
+    if (
+      !Number.isFinite(startMs) ||
+      !Number.isFinite(endMs) ||
+      endMs <= startMs
+    ) {
+      throw new BadRequestException({
+        code: 'PROMOTION_DATES_INVALID',
+        message: "startDate/endDate sanalari noto'g'ri",
+      });
+    }
+
+    await this.assertPromotionEntityOwnership(
+      organizationId,
+      entityType,
+      entityId,
+    );
+
+    const now = new Date().toISOString();
+    const [promotion] = await this.pg.query<PromotionRow>(
+      `INSERT INTO promotions (
+         id, partner_organization_id, entity_type, entity_id, entity_name,
+         old_price_sum, new_price_sum, discount_percent, start_date, end_date,
+         status, created_at, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date, $10::date, 'pending_review', $11, $11)
+       RETURNING ${PROMOTION_RETURNING_SQL}`,
+      [
+        randomUUID(),
+        organizationId,
+        entityType,
+        entityId,
+        entityName,
+        oldPriceSum,
+        newPriceSum,
+        discountPercent,
+        startDate,
+        endDate,
+        now,
+      ],
+    );
+    return toPromotionApiShape(promotion);
   }
 
   // ---------------------------------------------------------------------------

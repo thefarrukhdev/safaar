@@ -178,6 +178,176 @@ describe('HotelsService.findAll', () => {
       expect(sql).not.toContain('po.type = $1');
     },
   );
+
+  describe('check_in/check_out/guests/amenities filters (regression: "SAFAAR — IMPLEMENT THE TWO CONFIRMED BACKEND GAPS" — frontend already sent these 4 params, findAllFresh() silently ignored all of them)', () => {
+    it('check_in/check_out adds a room-availability EXISTS check, excluding cancelled/expired/completed bookings and closed inventory dates', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ check_in: '2026-10-01', check_out: '2026-10-05' });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('EXISTS (SELECT 1 FROM hotel_rooms r WHERE');
+      expect(sql).toContain('room_inventory');
+      expect(sql).toContain('ri.closed = true');
+      expect(sql).toContain("NOT IN ('cancelled', 'expired', 'completed')");
+      expect(sql).toContain('b.check_in <');
+      expect(sql).toContain('total_inventory >');
+      expect(params).toContain('2026-10-01');
+      expect(params).toContain('2026-10-05');
+    });
+
+    it('rejects check_out <= check_in with a 400', async () => {
+      await expect(
+        service.findAll({ check_in: '2026-10-05', check_out: '2026-10-01' }),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_DATES_INVALID' },
+      });
+      expect(pg.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed check_in/check_out date', async () => {
+      await expect(
+        service.findAll({ check_in: 'not-a-date', check_out: '2026-10-05' }),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_DATES_INVALID' },
+      });
+    });
+
+    it('rejects when only one of check_in/check_out is supplied', async () => {
+      await expect(
+        service.findAll({ check_in: '2026-10-01' }),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('does not add the availability EXISTS clause when no dates/guests are supplied (regression safety)', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({});
+
+      const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).not.toContain('EXISTS (SELECT 1 FROM hotel_rooms r WHERE');
+    });
+
+    it('guests adds a max_adults capacity check on hotel_rooms', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ guests: '3' });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('r.max_adults >=');
+      expect(params).toContain(3);
+    });
+
+    it.each(['0', '-1', 'abc', '2.5'])(
+      'rejects an invalid guests=%s',
+      async (guests) => {
+        await expect(service.findAll({ guests })).rejects.toMatchObject({
+          status: 400,
+          response: { code: 'SEARCH_GUESTS_INVALID' },
+        });
+      },
+    );
+
+    it('amenities=wifi adds a hotel_amenities match', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ amenities: 'wifi' });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('hotel_amenities');
+      expect(sql).toContain('unnest($');
+      expect(sql).toContain('a.code = required_code');
+      expect(params).toContainEqual(['wifi']);
+    });
+
+    it('amenities=wifi,pool requires ALL supplied codes (AND semantics), not any one of them', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ amenities: 'wifi,pool' });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      // relational-division pattern: NOT EXISTS a required code the hotel lacks
+      expect(sql).toContain('NOT EXISTS');
+      expect(params).toContainEqual(['wifi', 'pool']);
+    });
+
+    it('blank amenities param adds no amenity filter', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ amenities: '' });
+
+      const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).not.toContain('hotel_amenities');
+    });
+
+    it('applies check_in/check_out + guests + amenities together, alongside existing filters (combined query)', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({
+        type: 'dacha',
+        city_id: 'city-1',
+        stars: '4',
+        min_rating: '3',
+        check_in: '2026-10-01',
+        check_out: '2026-10-05',
+        guests: '2',
+        amenities: 'wifi,parking',
+      });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      // existing filters untouched
+      expect(sql).toContain('po.type = $1');
+      expect(sql).toContain('h.city_id = $');
+      expect(sql).toContain('h.stars = $');
+      expect(sql).toContain('h.rating_average >= $');
+      // new filters all present together
+      expect(sql).toContain('r.max_adults >=');
+      expect(sql).toContain('room_inventory');
+      expect(sql).toContain('hotel_amenities');
+      expect(params).toEqual(
+        expect.arrayContaining([
+          'dacha',
+          'city-1',
+          4,
+          3,
+          2,
+          '2026-10-01',
+          '2026-10-05',
+          ['wifi', 'parking'],
+        ]),
+      );
+    });
+  });
 });
 
 describe('HotelsService.findOne', () => {

@@ -2221,4 +2221,130 @@ describe('AdminService frontend action endpoints', () => {
       expect(pgMock.query.mock.calls[0]?.[1]).toEqual(['b-1', 'published']);
     });
   });
+
+  describe('listPromotions / approvePromotion / rejectPromotion (regression: "SAFAAR — IMPLEMENT THE TWO CONFIRMED BACKEND GAPS" — web-admin/admin-api.ts previously returned 2 hardcoded fake promotion records, unconnected to anything a partner actually submitted)', () => {
+    const promotionId = '00000000-0000-0000-0000-0000000000f1';
+    const persistedRow = {
+      id: promotionId,
+      partner_organization_id: 'org-1',
+      entity_type: 'room',
+      entity_id: 'room-1',
+      entity_name: 'Xona: 101',
+      old_price_sum: 1500000,
+      new_price_sum: 1200000,
+      discount_percent: 20,
+      start_date: '2026-10-01',
+      end_date: '2026-10-10',
+      status: 'pending_review',
+      reviewed_at: null,
+      reviewed_by: null,
+      created_at: '2026-09-24T00:00:00Z',
+      updated_at: '2026-09-24T00:00:00Z',
+    };
+
+    it('listPromotions returns real persisted records, joined with partnerId/partnerName, matching the existing PartnerPromotion[] contract', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          ...persistedRow,
+          partner_id: 'org-1',
+          partner_name: 'Hilton Tashkent',
+        },
+      ]);
+
+      const result = await service.listPromotions();
+
+      expect(result).toEqual([
+        {
+          id: promotionId,
+          partnerId: 'org-1',
+          partnerName: 'Hilton Tashkent',
+          entityId: 'room-1',
+          entityType: 'room',
+          entityName: 'Xona: 101',
+          oldPriceSum: 1500000,
+          newPriceSum: 1200000,
+          discountPercent: 20,
+          startDate: '2026-10-01',
+          endDate: '2026-10-10',
+          status: 'pending_review',
+          createdAt: '2026-09-24T00:00:00Z',
+        },
+      ]);
+    });
+
+    it('approvePromotion transitions pending_review -> published, records the reviewing admin, and audit-logs the decision', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ ...persistedRow, status: 'published' }]) // UPDATE ... RETURNING
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.approvePromotion(actor, promotionId);
+
+      expect(result.status).toBe('published');
+      const updateCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('UPDATE promotions'),
+      );
+      expect(updateCall).toBeDefined();
+      expect(updateCall![1]).toEqual([
+        promotionId,
+        'published',
+        expect.any(String),
+        actor.id,
+      ]);
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![1]?.[3]).toBe('promotion.approve');
+    });
+
+    it('rejectPromotion transitions pending_review -> rejected', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ ...persistedRow, status: 'rejected' }])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.rejectPromotion(actor, promotionId);
+
+      expect(result.status).toBe('rejected');
+      const updateCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('UPDATE promotions'),
+      );
+      expect(updateCall![1]).toEqual([
+        promotionId,
+        'rejected',
+        expect.any(String),
+        actor.id,
+      ]);
+    });
+
+    it('approving an already-decided promotion is rejected, not silently re-applied (repeated-call safety)', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([]) // UPDATE ... WHERE status = 'pending_review' -> 0 rows
+        .mockResolvedValueOnce([{ status: 'published' }]); // fallback lookup
+
+      await expect(
+        service.approvePromotion(actor, promotionId),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    it('rejecting an already-rejected promotion is rejected the same way (idempotent-safe)', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ status: 'rejected' }]);
+
+      await expect(
+        service.rejectPromotion(actor, promotionId),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    it('approving a non-existent promotion returns 404, not 409', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([]) // UPDATE -> 0 rows
+        .mockResolvedValueOnce([]); // fallback lookup -> not found
+
+      await expect(
+        service.approvePromotion(actor, promotionId),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+  });
 });

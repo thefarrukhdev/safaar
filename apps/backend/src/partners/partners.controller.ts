@@ -733,4 +733,12 @@ export class PartnersController {
   ) {
     return this.partnersService.retryWebhookDelivery(actor, deliveryId);
   }
+
+  @Post('promotions')
+  createPromotion(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.createPromotion(actor, body);
+  }
 }

@@ -33,6 +33,11 @@ import {
   UzumCheckoutError,
   UzumCheckoutProvider,
 } from '../payments/providers/uzum-checkout.provider';
+import {
+  PROMOTION_RETURNING_SQL,
+  toPromotionApiShape,
+  type PromotionRow,
+} from '../common/promotion';
 
 type DbRow = Record<string, unknown>;
 
@@ -5552,5 +5557,97 @@ export class AdminService {
 
   providerTest(provider: string) {
     return { provider, ok: true, checked_at: new Date().toISOString() };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Promotions — hamkor taklif qilgan xona/mashina chegirmalarini ko'rib
+  // chiqish. Ilgari `web-admin/admin-api.ts`da 2 ta qattiq yozilgan
+  // (hardcoded) soxta yozuv qaytardi ("SAFAAR — IMPLEMENT THE TWO
+  // CONFIRMED BACKEND GAPS" auditi).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * `web-admin/admin-api.ts`ning `getPartnerPromotions(): Promise<PartnerPromotion[]>`
+   * shartnomasi bilan bir xil — TO'G'RIDAN-TO'G'RI massiv qaytaradi
+   * (`{items, total}` kabi pagination o'rami YO'Q, chunki frontend hech
+   * qanday pagination parametri yubormaydi/kutmaydi).
+   */
+  async listPromotions() {
+    const rows = await this.postgres.query<
+      PromotionRow & { partner_id: string; partner_name: string | null }
+    >(
+      `SELECT p.id::text, p.partner_organization_id::text AS partner_id,
+              COALESCE(po.brand_name, po.legal_name, 'Hamkor') AS partner_name,
+              p.entity_type, p.entity_id::text, p.entity_name,
+              p.old_price_sum::float8, p.new_price_sum::float8, p.discount_percent,
+              p.start_date::text, p.end_date::text, p.status::text,
+              p.reviewed_at, p.reviewed_by::text, p.created_at, p.updated_at
+       FROM promotions p
+       JOIN partner_organizations po ON po.id = p.partner_organization_id
+       ORDER BY p.created_at DESC
+       LIMIT 200`,
+    );
+    return rows.map((row) => ({
+      ...toPromotionApiShape(row),
+      partnerId: row.partner_id,
+      partnerName: row.partner_name ?? 'Hamkor',
+    }));
+  }
+
+  /**
+   * `pending_review -> published|rejected` — faqat shu bitta yo'nalishda,
+   * faqat `pending_review`dan. Bitta shartli `UPDATE ... WHERE status =
+   * 'pending_review'` atomik ravishda takroriy/eskirgan qarorlarning
+   * oldini oladi (poyga holati xavfsiz — alohida tranzaksiya SHART emas,
+   * `updateBusCompany()`dagi bir xil naqsh).
+   */
+  private async decidePromotion(
+    actor: RequestActor | undefined,
+    id: string,
+    decision: 'published' | 'rejected',
+  ) {
+    const now = new Date().toISOString();
+    const [promotion] = await this.postgres.query<PromotionRow>(
+      `UPDATE promotions
+       SET status = $2::"PromotionStatus", reviewed_at = $3, reviewed_by = $4::uuid, updated_at = $3
+       WHERE id = $1::uuid AND status = 'pending_review'::"PromotionStatus"
+       RETURNING ${PROMOTION_RETURNING_SQL}`,
+      [id, decision, now, adminActorUuid(actor)],
+    );
+    if (!promotion) {
+      const [existing] = await this.postgres.query<{ status: string }>(
+        `SELECT status::text FROM promotions WHERE id = $1::uuid`,
+        [id],
+      );
+      if (!existing) {
+        throw new NotFoundException({
+          code: 'PROMOTION_NOT_FOUND',
+          message: 'Chegirma topilmadi',
+        });
+      }
+      throw new ConflictException({
+        code: 'PROMOTION_ALREADY_DECIDED',
+        message: `Bu chegirma allaqachon "${existing.status}" holatida — qayta o'zgartirib bo'lmaydi`,
+      });
+    }
+
+    await this.auditChange(
+      decision === 'published' ? 'promotion.approve' : 'promotion.reject',
+      actor,
+      'promotion',
+      id,
+      { status: 'pending_review' },
+      { status: decision },
+    );
+    this.invalidateAdminCache();
+    return toPromotionApiShape(promotion);
+  }
+
+  approvePromotion(actor: RequestActor | undefined, id: string) {
+    return this.decidePromotion(actor, id, 'published');
+  }
+
+  rejectPromotion(actor: RequestActor | undefined, id: string) {
+    return this.decidePromotion(actor, id, 'rejected');
   }
 }

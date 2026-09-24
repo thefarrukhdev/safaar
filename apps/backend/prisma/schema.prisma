@@ -304,6 +304,7 @@ model PartnerOrganization {
   webhooks      PartnerWebhookEndpoint[]
   ledgerEntries PartnerLedgerEntry[]
   documents     PartnerDocument[]
+  promotions    Promotion[]
 
   @@index([status])
   @@index([cityId, status])
@@ -722,6 +723,61 @@ model RoomInventory {
   @@unique([roomId, date])
   @@index([date])
   @@map("room_inventory")
+}
+
+enum PromotionStatus {
+  pending_review
+  published
+  rejected
+}
+
+/**
+ * Hamkor (bus/rent_car yoki hotel-turi) taklif qilgan vaqtinchalik chegirma
+ * — xona (`hotel_rooms`) yoki mashina (`vehicles`) narxiga. Ilgari bu
+ * butunlay frontend mock edi (`web-partner/promotions.ts`dagi `let
+ * mockPromotions = []` — faqat brauzer xotirasida, admin tomoni esa 2 ta
+ * qattiq yozilgan (hardcoded) soxta yozuv qaytarardi; ikkalasi bir-biriga
+ * ulanmagan edi).
+ *
+ * `entityType`/`entityId` — `MediaFile.ownerType`/`ownerId` bilan bir xil
+ * polimorfik naqsh (haqiqiy FK emas, chunki "room" va "vehicle" ikki
+ * mutlaqo boshqa jadval) — `entityType` qiymatlari frontend bilan bir xil:
+ * "room" | "vehicle".
+ *
+ * `entityName` — frontendning o'zi hisoblab yuboradigan ko'rsatiladigan
+ * nom (masalan "Xona: 101" yoki "01A123AA (Cobalt)") — qayta hisoblash
+ * shart emas, admin jadvali buni to'g'ridan-to'g'ri ko'rsatadi.
+ *
+ * `status` qiymatlari — AYNAN web-partner/web-admin UI kutgan uchta holat
+ * (`pending_review`/`published`/`rejected`) — `HotelStatus`dagi bir xil
+ * so'zlar, lekin ALOHIDA enum (bu loyihada har bir domen o'z status
+ * enumiga ega — qarang `ReviewStatus`, `RefundStatus`, ...).
+ *
+ * `reviewedAt`/`reviewedBy` — `Hotel.reviewedAt`/`reviewedBy` bilan bir
+ * xil naqsh (real FK yo'q, faqat audit uchun UUID).
+ */
+model Promotion {
+  id                    String          @id @default(uuid()) @db.Uuid
+  partnerOrganizationId String          @map("partner_organization_id") @db.Uuid
+  entityType            String          @map("entity_type") @db.VarChar(32)
+  entityId              String          @map("entity_id") @db.Uuid
+  entityName            String          @map("entity_name") @db.VarChar(255)
+  oldPriceSum           Decimal         @map("old_price_sum") @db.Decimal(18, 2)
+  newPriceSum           Decimal         @map("new_price_sum") @db.Decimal(18, 2)
+  discountPercent       Int             @map("discount_percent")
+  startDate             DateTime        @map("start_date") @db.Date
+  endDate               DateTime        @map("end_date") @db.Date
+  status                PromotionStatus @default(pending_review)
+  reviewedAt            DateTime?       @map("reviewed_at") @db.Timestamptz
+  reviewedBy            String?         @map("reviewed_by") @db.Uuid
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  partner PartnerOrganization @relation(fields: [partnerOrganizationId], references: [id])
+
+  @@index([partnerOrganizationId, status])
+  @@index([status, createdAt])
+  @@map("promotions")
 }
 
 /**

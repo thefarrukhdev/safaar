@@ -2660,3 +2660,199 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
     expect(result.request?.contactPerson).toBe('Legacy Hotel LLC');
   });
 });
+
+describe('PartnersService.createPromotion (regression: "SAFAAR — IMPLEMENT THE TWO CONFIRMED BACKEND GAPS" — web-partner/promotions.ts previously kept `let mockPromotions = []` in browser memory only, no backend at all)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  const validRoomInput = {
+    entityType: 'room',
+    entityId: 'room-1',
+    entityName: 'Xona: 101',
+    oldPriceSum: 1500000,
+    newPriceSum: 1200000,
+    discountPercent: 20,
+    startDate: '2026-10-01',
+    endDate: '2026-10-10',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('creates a promotion for a room owned by the authenticated partner organization', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'room-1' }]) // ownership check (hotel_rooms -> hotels)
+      .mockResolvedValueOnce([
+        {
+          id: 'promo-1',
+          partner_organization_id: 'org-1',
+          entity_type: 'room',
+          entity_id: 'room-1',
+          entity_name: 'Xona: 101',
+          old_price_sum: 1500000,
+          new_price_sum: 1200000,
+          discount_percent: 20,
+          start_date: '2026-10-01',
+          end_date: '2026-10-10',
+          status: 'pending_review',
+          reviewed_at: null,
+          reviewed_by: null,
+          created_at: '2026-09-24T00:00:00Z',
+          updated_at: '2026-09-24T00:00:00Z',
+        },
+      ]); // INSERT ... RETURNING
+
+    const result = await service.createPromotion(actor, validRoomInput);
+
+    expect(result).toEqual({
+      id: 'promo-1',
+      entityId: 'room-1',
+      entityType: 'room',
+      entityName: 'Xona: 101',
+      oldPriceSum: 1500000,
+      newPriceSum: 1200000,
+      discountPercent: 20,
+      startDate: '2026-10-01',
+      endDate: '2026-10-10',
+      status: 'pending_review',
+      createdAt: '2026-09-24T00:00:00Z',
+    });
+
+    const insertCall = pg.query.mock.calls.find(([sql]) =>
+      String(sql).includes('INSERT INTO promotions'),
+    );
+    expect(insertCall).toBeDefined();
+    expect(insertCall![1]).toEqual([
+      expect.any(String),
+      'org-1',
+      'room',
+      'room-1',
+      'Xona: 101',
+      1500000,
+      1200000,
+      20,
+      '2026-10-01',
+      '2026-10-10',
+      expect.any(String),
+    ]);
+  });
+
+  it('rejects when no authenticated partner organization is present', async () => {
+    await expect(
+      service.createPromotion(undefined, validRoomInput),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects creating a promotion for a room that belongs to a different partner organization', async () => {
+    pg.query.mockResolvedValueOnce([]); // ownership check finds nothing for org-1
+
+    await expect(
+      service.createPromotion(actor, validRoomInput),
+    ).rejects.toMatchObject({ status: 404 });
+
+    const insertCall = pg.query.mock.calls.find(([sql]) =>
+      String(sql).includes('INSERT INTO promotions'),
+    );
+    expect(insertCall).toBeUndefined();
+  });
+
+  it('rejects when newPriceSum is not lower than oldPriceSum', async () => {
+    await expect(
+      service.createPromotion(actor, { ...validRoomInput, newPriceSum: 1500000 }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it("rejects an entityType other than 'room'/'vehicle'", async () => {
+    await expect(
+      service.createPromotion(actor, { ...validRoomInput, entityType: 'hotel' }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('rejects discountPercent above 99', async () => {
+    await expect(
+      service.createPromotion(actor, { ...validRoomInput, discountPercent: 100 }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('rejects an invalid date range (endDate <= startDate)', async () => {
+    await expect(
+      service.createPromotion(actor, {
+        ...validRoomInput,
+        startDate: '2026-10-10',
+        endDate: '2026-10-01',
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('creates a promotion for a vehicle owned by the authenticated partner organization (bus/rent_car)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'vehicle-1' }]) // ownership check (vehicles -> bus_companies)
+      .mockResolvedValueOnce([
+        {
+          id: 'promo-2',
+          partner_organization_id: 'org-1',
+          entity_type: 'vehicle',
+          entity_id: 'vehicle-1',
+          entity_name: '01A123AA (Cobalt)',
+          old_price_sum: 400000,
+          new_price_sum: 300000,
+          discount_percent: 25,
+          start_date: '2026-10-01',
+          end_date: '2026-10-11',
+          status: 'pending_review',
+          reviewed_at: null,
+          reviewed_by: null,
+          created_at: '2026-09-24T00:00:00Z',
+          updated_at: '2026-09-24T00:00:00Z',
+        },
+      ]);
+
+    const result = await service.createPromotion(actor, {
+      entityType: 'vehicle',
+      entityId: 'vehicle-1',
+      entityName: '01A123AA (Cobalt)',
+      oldPriceSum: 400000,
+      newPriceSum: 300000,
+      discountPercent: 25,
+      startDate: '2026-10-01',
+      endDate: '2026-10-11',
+    });
+
+    expect(result.entityType).toBe('vehicle');
+    const ownershipCall = pg.query.mock.calls[0];
+    expect(String(ownershipCall[0])).toContain('vehicles');
+    expect(String(ownershipCall[0])).toContain('bus_companies');
+  });
+
+  it('rejects creating a promotion for a vehicle that belongs to a different partner organization', async () => {
+    pg.query.mockResolvedValueOnce([]); // ownership check finds nothing for org-1
+
+    await expect(
+      service.createPromotion(actor, {
+        entityType: 'vehicle',
+        entityId: 'vehicle-99',
+        entityName: 'Unknown',
+        oldPriceSum: 400000,
+        newPriceSum: 300000,
+        discountPercent: 25,
+        startDate: '2026-10-01',
+        endDate: '2026-10-11',
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});

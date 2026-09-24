@@ -897,4 +897,28 @@ export class AdminController {
   providerTest(@Param('provider') provider: string) {
     return this.adminService.providerTest(provider);
   }
+
+  @Get('promotions')
+  @Permissions(Permission.PartnersRead)
+  promotions() {
+    return this.adminService.listPromotions();
+  }
+
+  @Post('promotions/:id/approve')
+  @Permissions(Permission.PartnersWrite)
+  approvePromotion(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.approvePromotion(actor, id);
+  }
+
+  @Post('promotions/:id/reject')
+  @Permissions(Permission.PartnersWrite)
+  rejectPromotion(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.rejectPromotion(actor, id);
+  }
 }

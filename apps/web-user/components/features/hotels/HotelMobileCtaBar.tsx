@@ -23,7 +23,9 @@ export function HotelMobileCtaBar({
   className,
   locale,
 }: HotelMobileCtaBarProps) {
-  const isHidden = useIsTargetHidden(targetId);
+  const isOriginalCtaHidden = useIsTargetHidden(targetId);
+  const isRoomsHidden = useIsTargetHidden(roomsTargetId, "0px", 0);
+  const showSticky = isOriginalCtaHidden && isRoomsHidden;
 
   const handleAction = () => {
     const el = document.getElementById(roomsTargetId);
@@ -36,10 +38,10 @@ export function HotelMobileCtaBar({
 
   return (
     <div
-      aria-hidden={!isHidden}
+      aria-hidden={!showSticky}
       className={cn(
         "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-900/[0.08] shadow-float px-4 py-3 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
-        isHidden
+        showSticky
           ? "translate-y-0 opacity-100"
           : "translate-y-full opacity-0 pointer-events-none",
         className

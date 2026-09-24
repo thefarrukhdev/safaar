@@ -19,7 +19,7 @@ import {
 import { useRoomTypes, useCreateRoomType, useUpdateRoomType } from "../../../_hooks/use-room-types";
 import { useRooms, useCreateRoom } from "../../../_hooks/use-rooms";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { getPartnerLabels, isRestaurant, isDacha } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, isRestaurant, isDacha, hasBuses } from "../../../_lib/utils/partner-labels";
 import {
   CANCELLATION_POLICY_INFO,
   CancellationPolicy,
@@ -55,7 +55,8 @@ export function RulesEditor({
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);
   const dacha = isDacha(partnerType);
-  
+  const isBus = hasBuses(partnerType);
+
   const { data: roomTypes } = useRoomTypes();
   const roomType = roomTypes[0];
   const createRoomType = useCreateRoomType();
@@ -134,7 +135,7 @@ export function RulesEditor({
     <Drawer
       open={open}
       onClose={onClose}
-      title={dacha ? "Xonalar, narx va qoidalar" : "Uy qoidalari"}
+      title={dacha ? "Xonalar, narx va qoidalar" : isBus ? "Ijara qoidalari" : "Uy qoidalari"}
       description={dacha ? "Dacha narxi, sig'imi, ish vaqtlari va bekor qilish siyosati." : "Ish vaqtlari, bekor qilish siyosati va qo'shimcha to'lovlar."}
       size="lg"
       footer={

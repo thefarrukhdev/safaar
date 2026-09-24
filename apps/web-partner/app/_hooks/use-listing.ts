@@ -155,6 +155,7 @@ export function useUpdateListingLocation() {
         address: values.address,
         latitude: values.latitude,
         longitude: values.longitude,
+        nearbyPlaces: values.nearbyPlaces,
       }, token).then(toBusListing);
     }
     return partners.updateListingLocation(hotelId!, values, token).then(toListing);
@@ -162,9 +163,19 @@ export function useUpdateListingLocation() {
 }
 
 export function useUpdateListingRules() {
-  return useListingMutation<ListingRulesDraft>((hotelId, token, values) =>
-    partners.updateListingRules(hotelId!, values, token).then(toListing),
-  );
+  return useListingMutation<ListingRulesDraft>((hotelId, token, values, isBus) => {
+    if (isBus) {
+      const currentListing = useDataStore.getState().listing;
+      return partners.updateBusCompany({
+        name: currentListing.name,
+        checkInTime: values.checkInTime,
+        checkOutTime: values.checkOutTime,
+        cancellationPolicyCode: values.cancellationPolicy,
+        extraFees: values.extraFees,
+      }, token).then(toBusListing);
+    }
+    return partners.updateListingRules(hotelId!, values, token).then(toListing);
+  });
 }
 
 export function useUpdateListingAmenities() {

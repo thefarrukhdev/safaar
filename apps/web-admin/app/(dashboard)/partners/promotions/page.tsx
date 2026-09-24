@@ -30,17 +30,30 @@ export default function PartnerPromotionsPage() {
   const handleDecision = async (id: string, decision: 'approve' | 'reject') => {
     setDecisionId(`${decision}:${id}`);
     try {
-      if (decision === 'approve') {
-        await AdminApi.approvePartnerPromotion(id);
-        toast.success('Chegirma muvaffaqiyatli tasdiqlandi!');
-        setPromotions(promotions.map(p => p.id === id ? { ...p, status: 'published' } : p));
+      const updated =
+        decision === 'approve'
+          ? await AdminApi.approvePartnerPromotion(id)
+          : await AdminApi.rejectPartnerPromotion(id);
+      toast.success(
+        decision === 'approve' ? 'Chegirma muvaffaqiyatli tasdiqlandi!' : 'Chegirma rad etildi!',
+      );
+      // Row is updated from the real backend response, not a local guess.
+      setPromotions((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (error: any) {
+      const code = error?.response?.data?.error?.code;
+      const backendMessage = error?.response?.data?.error?.message;
+      if (error?.response?.status === 404) {
+        toast.error('Chegirma topilmadi — ro\'yxat allaqachon eskirgan bo\'lishi mumkin.');
+      } else if (code === 'PROMOTION_ALREADY_DECIDED') {
+        toast.error(backendMessage || 'Bu chegirma allaqachon ko\'rib chiqilgan.');
+        // Re-sync with the backend so the stale row doesn't keep showing
+        // the now-wrong "Kutilmoqda" action buttons.
+        AdminApi.getPartnerPromotions().then(setPromotions).catch(() => {});
+      } else if (error?.response?.status === 401 || error?.response?.status === 403) {
+        toast.error('Bu amal uchun ruxsatingiz yo\'q.');
       } else {
-        await AdminApi.rejectPartnerPromotion(id);
-        toast.success('Chegirma rad etildi!');
-        setPromotions(promotions.map(p => p.id === id ? { ...p, status: 'rejected' } : p));
+        toast.error(backendMessage || "Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
       }
-    } catch {
-      toast.error("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
     } finally {
       setDecisionId(null);
     }

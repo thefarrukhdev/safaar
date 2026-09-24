@@ -1099,6 +1099,27 @@ export interface PartnerPromotion {
   createdAt: string;
 }
 
+function toPartnerPromotion(row: ApiRecord): PartnerPromotion {
+  return {
+    id: String(row.id ?? ''),
+    partnerId: String(row.partnerId ?? ''),
+    partnerName: String(row.partnerName ?? ''),
+    entityId: String(row.entityId ?? ''),
+    entityType: row.entityType === 'vehicle' ? 'vehicle' : 'room',
+    entityName: String(row.entityName ?? ''),
+    oldPriceSum: Number(row.oldPriceSum ?? 0),
+    newPriceSum: Number(row.newPriceSum ?? 0),
+    discountPercent: Number(row.discountPercent ?? 0),
+    startDate: String(row.startDate ?? ''),
+    endDate: String(row.endDate ?? ''),
+    status:
+      row.status === 'published' || row.status === 'rejected'
+        ? row.status
+        : 'pending_review',
+    createdAt: String(row.createdAt ?? ''),
+  };
+}
+
 export const AdminApi = {
   // Media Upload
   uploadMedia: async (file: File) => {
@@ -2293,52 +2314,22 @@ export const AdminApi = {
   // getCmsEntries/updateCmsEntryTranslations/updateCmsEntrySeo above
   // (verified live against the QA backend this session).
   //
-  // 2026-09-19: was a frontend-only mock (no backend route at all) —
-  // MOCK: Chegirmalarni tasdiqlash uchun (Backend tayyor emas)
+  // 2026-09-24: real backend (commit b7ee632d) — GET /admin/promotions,
+  // POST /admin/promotions/:id/approve|reject. Field names already match
+  // `PartnerPromotion` exactly (see backend's `toPromotionApiShape()`).
   getPartnerPromotions: async (): Promise<PartnerPromotion[]> => {
-    // Kutilayotgan API: /admin/promotions
-    return [
-      {
-        id: "promo-1",
-        partnerId: "partner-1",
-        partnerName: "Hilton Tashkent",
-        entityId: "room-101",
-        entityType: "room",
-        entityName: "Xona: 101",
-        oldPriceSum: 1500000,
-        newPriceSum: 1200000,
-        discountPercent: 20,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 86400000 * 5).toISOString(),
-        status: "pending_review",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "promo-2",
-        partnerId: "partner-2",
-        partnerName: "AvtoRent",
-        entityId: "car-99",
-        entityType: "vehicle",
-        entityName: "01A123AA (Cobalt)",
-        oldPriceSum: 400000,
-        newPriceSum: 300000,
-        discountPercent: 25,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 86400000 * 10).toISOString(),
-        status: "published",
-        createdAt: new Date().toISOString(),
-      }
-    ];
+    const { data } = await apiClient.get('/admin/promotions');
+    return unknownItems(data).map((row) => toPartnerPromotion(asRecord(row)));
   },
 
-  approvePartnerPromotion: async (id: string): Promise<void> => {
-    // MOCK: await apiClient.post(`/admin/promotions/${id}/approve`);
-    return Promise.resolve();
+  approvePartnerPromotion: async (id: string): Promise<PartnerPromotion> => {
+    const { data } = await apiClient.post(`/admin/promotions/${id}/approve`);
+    return toPartnerPromotion(asRecord(data));
   },
 
-  rejectPartnerPromotion: async (id: string): Promise<void> => {
-    // MOCK: await apiClient.post(`/admin/promotions/${id}/reject`);
-    return Promise.resolve();
+  rejectPartnerPromotion: async (id: string): Promise<PartnerPromotion> => {
+    const { data } = await apiClient.post(`/admin/promotions/${id}/reject`);
+    return toPartnerPromotion(asRecord(data));
   },
 
   toggleListingFeatured: async (

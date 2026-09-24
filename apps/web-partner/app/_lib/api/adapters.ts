@@ -161,6 +161,11 @@ export interface BackendBusCompany {
   address?: string;
   latitude?: number;
   longitude?: number;
+  nearby_places?: unknown;
+  check_in_time?: string;
+  check_out_time?: string;
+  cancellation_policy_code?: string;
+  extra_fees?: unknown;
   rating_average?: number;
   reviews_count?: number;
 }
@@ -179,20 +184,20 @@ export function toBusListing(bus: BackendBusCompany): Listing {
             ? ListingStatus.HIDDEN
             : ListingStatus.DRAFT,
     address: bus.address ?? '',
-    city: '', 
+    city: '',
     latitude: bus.latitude,
     longitude: bus.longitude,
     stars: 0,
-    checkInTime: '',
-    checkOutTime: '',
+    checkInTime: bus.check_in_time ?? '',
+    checkOutTime: bus.check_out_time ?? '',
     amenities: [],
     photos: [],
-    nearby: [],
-    cancellationPolicy: CancellationPolicy.MODERATE,
+    nearby: parseNearbyPlaces(bus.nearby_places),
+    cancellationPolicy: normalizeCancellationPolicy(bus.cancellation_policy_code),
     smokingAllowed: false,
     petsAllowed: false,
     childrenAllowed: true,
-    extraFees: [],
+    extraFees: parseExtraFees(bus.extra_fees),
   };
 }
 

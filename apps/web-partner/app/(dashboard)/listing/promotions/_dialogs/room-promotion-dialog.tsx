@@ -10,7 +10,7 @@ import { Button } from "../../../../_components/ui/button";
 import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 
-import { promotions } from "../../../../_lib/api/endpoints/promotions";
+import { promotions, type Promotion } from "../../../../_lib/api/endpoints/promotions";
 import { useRooms } from "../../../../_hooks/use-rooms";
 import { useVehicles } from "../../../../_hooks/use-vehicles";
 import { useAuthStore } from "../../../../_stores/auth-store";
@@ -33,11 +33,12 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (created: Promotion) => void;
 }
 
 export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const isBus = hasBuses(partnerType);
 
   const { data: rooms = [] } = useRooms();
@@ -107,21 +108,24 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
       const option = activeOptions.find((o) => o.id === values.entityId);
       const entityName = option ? option.label : "Noma'lum obyekt";
 
-      await promotions.submitPromotion({
-        entityId: values.entityId,
-        entityName,
-        entityType,
-        oldPriceSum: values.oldPriceSum,
-        newPriceSum: values.newPriceSum,
-        discountPercent: values.discountPercent,
-        startDate: values.startDate,
-        endDate: values.endDate,
-      });
+      const created = await promotions.submitPromotion(
+        {
+          entityId: values.entityId,
+          entityName,
+          entityType,
+          oldPriceSum: values.oldPriceSum,
+          newPriceSum: values.newPriceSum,
+          discountPercent: values.discountPercent,
+          startDate: values.startDate,
+          endDate: values.endDate,
+        },
+        accessToken,
+      );
       toast.success("Chegirma taklifi yuborildi.");
-      onSuccess();
+      onSuccess(created);
       onClose();
     } catch (err) {
-      toast.error("Xatolik yuz berdi");
+      toast.error(err instanceof Error ? err.message : "Xatolik yuz berdi");
     }
   };
 

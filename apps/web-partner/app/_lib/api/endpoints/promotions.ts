@@ -1,4 +1,4 @@
-// Mock API until backend provides real endpoint
+import { request } from '../client';
 
 export interface PromotionDraft {
   entityId: string; // roomId or vehicleId
@@ -13,7 +13,6 @@ export interface PromotionDraft {
 
 export interface Promotion {
   id: string;
-  hotelId: string;
   entityId: string;
   entityName: string;
   entityType: "room" | "vehicle";
@@ -26,39 +25,28 @@ export interface Promotion {
   createdAt: string;
 }
 
-let mockPromotions: Promotion[] = [];
-
 export const promotions = {
   /**
-   * TODO: Backend dev API yaratgach `apiClient.post(...)` orqali ulash kerak
+   * `POST /partners/promotions` — real backend (2026-09-24, backend commit
+   * b7ee632d). Field names match the backend contract exactly (see
+   * `apps/backend/src/common/promotion.ts`'s `toPromotionApiShape()`), no
+   * transformation needed.
    */
   submitPromotion: async (draft: PromotionDraft, token?: string): Promise<Promotion> => {
-    // MOCK:
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const newPromo: Promotion = {
-      id: "mock-promo-" + Date.now(),
-      hotelId: "mock-hotel-id",
-      entityId: draft.entityId,
-      entityName: draft.entityName,
-      entityType: draft.entityType,
-      oldPriceSum: draft.oldPriceSum,
-      newPriceSum: draft.newPriceSum,
-      discountPercent: draft.discountPercent,
-      startDate: draft.startDate,
-      endDate: draft.endDate,
-      status: "pending_review",
-      createdAt: new Date().toISOString(),
-    };
-    mockPromotions.unshift(newPromo);
-    return newPromo;
+    return request<Promotion>('/partners/promotions', {
+      method: 'POST',
+      body: draft,
+      token,
+    });
   },
 
   /**
-   * TODO: Backend dev API yaratgach ulash
+   * `GET /partners/promotions` — real backend (2026-09-24, backend
+   * "COMPLETE PARTNER PROMOTIONS RELOAD PERSISTENCE"). Server resolves the
+   * partner organization from the JWT itself, not from a client-supplied
+   * id — no `hotelId`/org param needed or accepted here.
    */
-  getPromotions: async (hotelId: string, token?: string): Promise<Promotion[]> => {
-    // MOCK:
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return [...mockPromotions];
+  getPromotions: async (token?: string): Promise<Promotion[]> => {
+    return request<Promotion[]>('/partners/promotions', { token });
   },
 };

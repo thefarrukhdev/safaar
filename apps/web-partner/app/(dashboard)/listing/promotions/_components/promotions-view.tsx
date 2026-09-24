@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Tag } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../../../../_components/ui/button";
 import { PageHeader } from "../../../../_components/layout/page-header";
 import { EmptyState, LoadingState } from "../../../../_components/ui/empty-state";
@@ -12,29 +13,38 @@ import { useAuthStore } from "../../../../_stores/auth-store";
 import { Badge } from "../../../../_components/ui/badge";
 
 export function PromotionsView() {
-  const hotelId = useAuthStore((s) => s.user?.organizationId || "mock-hotel-id");
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const [data, setData] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const loadPromotions = async () => {
     try {
       setLoading(true);
-      const res = await promotions.getPromotions(hotelId);
+      setLoadError(false);
+      const res = await promotions.getPromotions(accessToken);
       setData(res);
     } catch (e) {
       console.error(e);
+      setLoadError(true);
+      toast.error("Chegirmalarni yuklashda xatolik yuz berdi");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPromotions();
-  }, [hotelId]);
+  }, [accessToken]);
 
-  const handleAdded = () => {
-    loadPromotions();
+  // Prepend the REAL POST response for immediate feedback. A full page
+  // reload re-fetches from GET /partners/promotions (now real) and shows
+  // the true persisted list — deliberately never both prepend AND re-fetch
+  // in the same flow, so a just-created row can never appear twice.
+  const handleAdded = (created: Promotion) => {
+    setData((prev) => [created, ...prev]);
   };
 
   return (
@@ -56,6 +66,17 @@ export function PromotionsView() {
       <div className="flex flex-col gap-10">
         {loading ? (
           <LoadingState title="Chegirmalar yuklanmoqda..." />
+        ) : loadError ? (
+          <EmptyState
+            icon={<Tag className="w-12 h-12 text-[var(--muted-foreground)]" />}
+            title="Chegirmalarni yuklab bo'lmadi"
+            description="Server bilan bog'lanishda xatolik yuz berdi. Qayta urinib ko'ring."
+            action={
+              <Button variant="outline" onClick={() => loadPromotions()}>
+                Qayta urinish
+              </Button>
+            }
+          />
         ) : data.length === 0 ? (
           <EmptyState
             icon={<Tag className="w-12 h-12 text-[var(--muted-foreground)]" />}

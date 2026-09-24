@@ -112,23 +112,23 @@ export default function AttractionsMap({
   const defaultCenter: [number, number] = [41.2995, 69.2401];
   const isDark = resolvedTheme === "dark";
   
-  const tileUrl = isDark
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+  // CARTO now requires API keys, so we use standard OpenStreetMap.
+  // For dark mode, we use a CSS filter trick on the tiles.
+  const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
     <div className="h-full w-full relative z-0">
       <MapContainer
         center={defaultCenter}
         zoom={12}
-        className="h-full w-full"
+        className={`h-full w-full ${isDark ? 'map-dark-mode' : ''}`}
         scrollWheelZoom={true}
         zoomControl={false}
       >
         <ZoomControl position="topright" />
         
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">Carto</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={tileUrl}
         />
         
@@ -201,6 +201,11 @@ export default function AttractionsMap({
         }
         .leaflet-control-zoom a:hover {
           background-color: ${isDark ? '#334155' : '#f8fafc'} !important;
+        }
+        
+        /* Magic CSS trick to make standard OpenStreetMap Dark Mode! */
+        .map-dark-mode .leaflet-tile-pane {
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
       `}} />
     </div>

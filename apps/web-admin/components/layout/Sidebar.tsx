@@ -109,6 +109,7 @@ const NAV_PERMISSION_BY_HREF: Record<string, string> = {
   "/cms": "cms:read",
   "/cms/banners": "cms:read",
   "/cms/destinations": "cms:read",
+  "/cms/attractions": "cms:read",
   "/cms/offers": "cms:read",
   "/cms/news": "cms:read",
   "/cms/pages": "cms:read",

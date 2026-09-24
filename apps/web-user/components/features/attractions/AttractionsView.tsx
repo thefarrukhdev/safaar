@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Map, X, SlidersHorizontal, Search, Compass, Sparkles, LayoutGrid, MapPin } from "lucide-react";
 import { gsap } from "gsap";
 import { AttractionCard } from "@/components/attractions/AttractionCard";
@@ -201,6 +202,11 @@ function BottomSheet({
 }
 
 // ─── MAIN VIEW ────────────────────────────────────────────────────────────────
+const AttractionsMap = dynamic(() => import("./AttractionsMap"), {
+  ssr: false,
+  loading: () => <MapPlaceholder dict={{} as any} />
+});
+
 export function AttractionsView({
   dict,
   items,
@@ -299,7 +305,7 @@ export function AttractionsView({
       {/* ── RIGHT: Sticky Map Panel (Desktop) ──────────────────── */}
       <div className="hidden w-1/2 overflow-hidden border-l border-slate-200/70 dark:border-slate-800 md:flex md:flex-col">
         <div className="sticky top-0 h-full">
-          <MapPlaceholder dict={dict} />
+          <AttractionsMap attractions={filtered} />
         </div>
       </div>
 

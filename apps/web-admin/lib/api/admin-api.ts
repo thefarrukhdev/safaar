@@ -39,9 +39,11 @@ import {
   CmsEntry,
   CmsEntrySeo,
   CmsDestination,
+  CmsAttraction,
 } from '../../types/admin';
 import { BookingStatus } from '@safaar/types';
 import apiClient from './client';
+import Cookies from "js-cookie";
 
 export interface AdminNotification {
   id: string;
@@ -1083,6 +1085,61 @@ function cmsDestinationPayload(
   return payload;
 }
 
+function toCmsAttraction(row: ApiRecord): CmsAttraction {
+  const meta = asRecord(row.metadata);
+  return {
+    id: asString(row.id),
+    name: localizedText(row.title_i18n ?? row.title, 'Attraksion'),
+    cityName: localizedText(meta.cityName ?? meta.city_name, ''),
+    categoryKey: asString(meta.categoryKey ?? meta.category_key),
+    description: localizedText(row.body_i18n ?? row.body, ''),
+    rating: asNumber(meta.rating),
+    latitude: meta.latitude ? asNumber(meta.latitude) : undefined,
+    longitude: meta.longitude ? asNumber(meta.longitude) : undefined,
+    imageUrl: asString(row.imageUrl ?? row.image_url ?? meta.imageUrl ?? meta.image_url),
+    bestTimeToVisit: localizedText(meta.bestTimeToVisit ?? meta.best_time_to_visit, ''),
+    priceDefault: asNumber(meta.priceDefault ?? meta.price_default),
+    workingHours: localizedText(meta.workingHours ?? meta.working_hours, ''),
+    isActive:
+      typeof row.isActive === 'boolean'
+        ? row.isActive
+        : asString(row.status) === 'published' ||
+          asString(row.status) === 'active',
+    order: asNumber(row.order ?? meta.order ?? meta.sortOrder),
+  };
+}
+
+function cmsAttractionPayload(
+  attr: Omit<CmsAttraction, 'id'> | Partial<CmsAttraction>,
+) {
+  const payload: Record<string, unknown> = {};
+  if (attr.name !== undefined) {
+    payload.slug = attr.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '');
+    payload.title = { uz: attr.name, ru: attr.name, en: attr.name };
+  }
+  if (attr.description !== undefined) {
+    payload.body = { uz: attr.description, ru: attr.description, en: attr.description };
+  }
+
+  const metadata: Record<string, unknown> = {};
+  if (attr.cityName !== undefined) metadata.city_name = { uz: attr.cityName, ru: attr.cityName, en: attr.cityName };
+  if (attr.categoryKey !== undefined) metadata.category_key = attr.categoryKey;
+  if (attr.rating !== undefined) metadata.rating = attr.rating;
+  if (attr.latitude !== undefined) metadata.latitude = attr.latitude;
+  if (attr.longitude !== undefined) metadata.longitude = attr.longitude;
+  if (attr.imageUrl !== undefined) metadata.imageUrl = attr.imageUrl;
+  if (attr.bestTimeToVisit !== undefined) metadata.best_time_to_visit = { uz: attr.bestTimeToVisit, ru: attr.bestTimeToVisit, en: attr.bestTimeToVisit };
+  if (attr.priceDefault !== undefined) metadata.price_default = attr.priceDefault;
+  if (attr.workingHours !== undefined) metadata.working_hours = { uz: attr.workingHours, ru: attr.workingHours, en: attr.workingHours };
+  if (attr.order !== undefined) metadata.order = attr.order;
+
+  if (Object.keys(metadata).length > 0) payload.metadata = metadata;
+  return payload;
+}
+
 export interface PartnerPromotion {
   id: string;
   partnerId: string;
@@ -1747,10 +1804,27 @@ export const AdminApi = {
   uploadImage: async (file: File): Promise<{ id: string; url: string }> => {
     const formData = new FormData();
     formData.set('file', file);
-    const { data } = await apiClient.post('/uploads/images', formData, {
-      headers: { 'Content-Type': undefined },
+    
+    const token = typeof window !== 'undefined' ? Cookies.get("admin_token") : undefined;
+    const baseURL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL 
+      ? process.env.NEXT_PUBLIC_API_URL 
+      : '/api/backend';
+      
+    const res = await fetch(`${baseURL}/uploads/images`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
     });
-    return { id: asString(data.id), url: asString(data.url) };
+    
+    if (!res.ok) {
+      throw new Error("Rasm yuklashda xatolik yuz berdi");
+    }
+    
+    const payload = await res.json();
+    const data = payload.data || payload;
+    return { id: String(data.id), url: String(data.url) };
   },
 
   // CMS
@@ -1928,6 +2002,52 @@ export const AdminApi = {
 
   deleteCmsDestination: async (id: string): Promise<void> => {
     await apiClient.post(`/admin/cms/destinations/${id}/archive`);
+  },
+
+  getCmsAttractions: async (): Promise<CmsAttraction[]> => {
+    const { data } = await apiClient.get('/admin/cms/attractions');
+    return unknownItems(data)
+      .map((row) => toCmsAttraction(asRecord(row)))
+      .sort((a, b) => a.order - b.order);
+  },
+
+  createCmsAttraction: async (
+    attraction: Omit<CmsAttraction, 'id'>,
+  ): Promise<CmsAttraction> => {
+    const { data } = await apiClient.post(
+      '/admin/cms/attractions',
+      cmsAttractionPayload(attraction),
+    );
+    if (attraction.isActive) {
+      await apiClient.post(`/admin/cms/attractions/${data.id}/publish`);
+      return AdminApi.getCmsAttractions().then(
+        (items) =>
+          items.find((item) => item.id === data.id) ??
+          toCmsAttraction(asRecord(data)),
+      );
+    }
+    return toCmsAttraction(asRecord(data));
+  },
+
+  updateCmsAttraction: async (
+    id: string,
+    attraction: Partial<CmsAttraction>,
+  ): Promise<CmsAttraction> => {
+    const { data } = await apiClient.patch(
+      `/admin/cms/attractions/${id}`,
+      cmsAttractionPayload(attraction),
+    );
+    if (typeof attraction.isActive === 'boolean') {
+      const action = await apiClient.post(
+        `/admin/cms/attractions/${id}/${attraction.isActive ? 'publish' : 'unpublish'}`,
+      );
+      return toCmsAttraction(asRecord(action.data));
+    }
+    return toCmsAttraction(asRecord(data));
+  },
+
+  deleteCmsAttraction: async (id: string): Promise<void> => {
+    await apiClient.post(`/admin/cms/attractions/${id}/archive`);
   },
 
   setCmsDestinationStatus: async (

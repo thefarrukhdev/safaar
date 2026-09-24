@@ -105,10 +105,14 @@ export interface BackendBooking {
   room_type_name?: string;
   room_type_id?: string;
   room_number?: string;
+  vehicle_id?: string;
+  vehicle_name?: string;
+  vehicle_plate_number?: string;
   price_snapshot?: {
     room_id?: string;
     room_type_id?: string;
     room_number?: string | null;
+    vehicle_id?: string;
     bed_id?: string;
     slot_time?: string;
   };
@@ -163,6 +167,11 @@ export interface BackendBusCompany {
   longitude?: number;
   rating_average?: number;
   reviews_count?: number;
+  nearby_places?: unknown;
+  cancellation_policy_code?: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  extra_fees?: unknown;
 }
 
 export function toBusListing(bus: BackendBusCompany): Listing {
@@ -183,16 +192,16 @@ export function toBusListing(bus: BackendBusCompany): Listing {
     latitude: bus.latitude,
     longitude: bus.longitude,
     stars: 0,
-    checkInTime: '',
-    checkOutTime: '',
+    checkInTime: bus.check_in_time ?? '',
+    checkOutTime: bus.check_out_time ?? '',
     amenities: [],
     photos: [],
-    nearby: [],
-    cancellationPolicy: CancellationPolicy.MODERATE,
+    nearby: parseNearbyPlaces(bus.nearby_places),
+    cancellationPolicy: normalizeCancellationPolicy(bus.cancellation_policy_code),
     smokingAllowed: false,
     petsAllowed: false,
     childrenAllowed: true,
-    extraFees: [],
+    extraFees: parseExtraFees(bus.extra_fees),
   };
 }
 
@@ -283,7 +292,7 @@ export function toReservation(booking: BackendBooking): ReservationView {
   const checkIn = booking.check_in ?? booking.item?.check_in ?? '';
   const checkOut = booking.check_out ?? booking.item?.check_out ?? '';
   const roomTypeId =
-    booking.room_type_id ?? booking.price_snapshot?.room_type_id ?? '';
+    booking.room_type_id ?? booking.price_snapshot?.room_type_id ?? booking.vehicle_id ?? booking.price_snapshot?.vehicle_id ?? '';
   const fullName =
     booking.guest_name ||
     booking.customer_name ||
@@ -301,9 +310,9 @@ export function toReservation(booking: BackendBooking): ReservationView {
       email: booking.guest_email ?? booking.user_email ?? '',
     },
     roomTypeId,
-    roomTypeName: booking.room_type_name ?? '',
+    roomTypeName: booking.room_type_name || booking.vehicle_name || '',
     roomNumber:
-      booking.room_number ?? booking.price_snapshot?.room_number ?? undefined,
+      booking.room_number ?? booking.price_snapshot?.room_number ?? booking.vehicle_plate_number ?? undefined,
     bedId: booking.price_snapshot?.bed_id,
     slotTime: normalizeSlotTime(
       booking.slot_time ??

@@ -37,6 +37,8 @@ export interface AttractionCatalogView {
   rating: number;
   imageUrl: string;
   bestTimeToVisit: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface RestaurantCatalogView {
@@ -158,6 +160,8 @@ interface RawAttraction {
   rating?: number;
   imageUrl?: string;
   bestTimeToVisit?: LocalizedValue;
+  latitude?: number | string;
+  longitude?: number | string;
 }
 
 interface RawRestaurant {
@@ -288,6 +292,8 @@ export const catalogService = {
       rating: Number(item.rating ?? 0),
       imageUrl: item.imageUrl ?? "",
       bestTimeToVisit: pickLocale(item.bestTimeToVisit, locale),
+      latitude: item.latitude != null ? Number(item.latitude) : undefined,
+      longitude: item.longitude != null ? Number(item.longitude) : undefined,
     }));
   },
 

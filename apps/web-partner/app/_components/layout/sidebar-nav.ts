@@ -12,6 +12,7 @@ import {
   Route,
   Ticket,
   UtensilsCrossed,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 import { getPartnerLabels } from "../../_lib/utils/partner-labels";
@@ -48,7 +49,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Sotuv",
-        items: [{ label: "Kompaniya e'loni", href: "/listing", icon: Megaphone }],
+        items: [
+          { label: "Kompaniya e'loni", href: "/listing", icon: Megaphone },
+          { label: "Chegirmalarim", href: "/listing/promotions", icon: Tag }
+        ],
       },
       {
         title: "Operatsion",
@@ -81,7 +85,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Sotuv",
-        items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
+        items: [
+          { label: labels.listingTitle, href: "/listing", icon: Megaphone },
+          { label: "Chegirmalarim", href: "/listing/promotions", icon: Tag }
+        ],
       },
       {
         title: "Operatsion",
@@ -114,7 +121,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Sotuv",
-        items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
+        items: [
+          { label: labels.listingTitle, href: "/listing", icon: Megaphone },
+          { label: "Chegirmalarim", href: "/listing/promotions", icon: Tag }
+        ],
       },
       {
         title: "Operatsion",
@@ -147,7 +157,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Sotuv",
-        items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
+        items: [
+          { label: labels.listingTitle, href: "/listing", icon: Megaphone },
+          { label: "Chegirmalarim", href: "/listing/promotions", icon: Tag }
+        ],
       },
       {
         title: "Operatsion",
@@ -179,7 +192,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
     },
     {
       title: "Sotuv",
-      items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
+      items: [
+        { label: labels.listingTitle, href: "/listing", icon: Megaphone },
+        { label: "Chegirmalarim", href: "/listing/promotions", icon: Tag }
+      ],
     },
     {
       title: "Operatsion",

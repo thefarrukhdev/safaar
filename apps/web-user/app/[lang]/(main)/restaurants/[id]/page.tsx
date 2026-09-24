@@ -9,6 +9,7 @@ import { MapPin, Phone, Star, Clock, Utensils } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
 import { getDictionary } from "@/i18n/dictionaries";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,10 @@ export default async function RestaurantDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
-  const dict = await getDictionary(locale, "restaurants");
+  const [dict, session] = await Promise.all([
+    getDictionary(locale, "restaurants"),
+    getSession()
+  ]);
   let restaurant;
   try {
     restaurant = await getRestaurant(id, locale);

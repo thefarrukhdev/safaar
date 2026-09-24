@@ -26,9 +26,11 @@ import {
 export function RestaurantBookingSection({
   dict,
   restaurant,
+  isLoggedIn = false,
 }: {
   restaurant: RestaurantDetailView;
   dict: CatalogDict["restaurants"];
+  isLoggedIn?: boolean;
 }) {
   const params = useParams<{ lang?: string }>();
   const router = useRouter();
@@ -124,7 +126,7 @@ export function RestaurantBookingSection({
         `/${locale}/booking/${booking.id}?payment=pending&provider=${paymentMethod}${guestTokenParam}`,
       );
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
+      setErrorMsg(bDict.error || "Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }
@@ -345,19 +347,30 @@ export function RestaurantBookingSection({
               </span>
             </label>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
-            >
-              {loading
-                ? paymentMethod === "cash"
-                  ? (bDict.processingCash || "Bron tasdiqlanmoqda...")
-                  : (bDict.processingPayment || "To'lov sahifasiga o'tilmoqda...")
-                : paymentMethod === "cash"
-                ? (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")
-                : `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`}
-            </Button>
+            {!isLoggedIn ? (
+              <Link href={`/${locale}/login?next=/${locale}/restaurants/${restaurant.id}`} className="w-full block">
+                <Button
+                  type="button"
+                  className="w-full bg-slate-900 font-extrabold text-white hover:bg-slate-800 py-3 shadow-md dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  {bDict.loginToBook || "Bron qilish uchun tizimga kiring"}
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
+              >
+                {loading
+                  ? paymentMethod === "cash"
+                    ? (bDict.processingCash || "Bron tasdiqlanmoqda...")
+                    : (bDict.processingPayment || "To'lov sahifasiga o'tilmoqda...")
+                  : paymentMethod === "cash"
+                  ? (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")
+                  : `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`}
+              </Button>
+            )}
           </form>
         </div>
       </Modal>

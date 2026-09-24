@@ -34,6 +34,9 @@ export function HotelFilters({
       ? "resorts"
       : "hotels"
   );
+  const [amenities, setAmenities] = useState<string[]>(searchParams.getAll("amenities"));
+  const [paymentType, setPaymentType] = useState<string | undefined>(searchParams.get("payment_type") ?? undefined);
+
 
   const push = useCallback(
     (params: URLSearchParams) => {
@@ -49,9 +52,15 @@ export function HotelFilters({
     if (searchQuery) params.set("search", searchQuery); else params.delete("search");
     if (stars) params.set("stars", stars); else params.delete("stars");
     if (priceRange < 2000000) params.set("max_price", String(priceRange)); else params.delete("max_price");
+    
+    params.delete("amenities");
+    amenities.forEach(a => params.append("amenities", a));
+    
+    if (paymentType) params.set("payment_type", paymentType); else params.delete("payment_type");
+    
     push(params);
     setOpen(false);
-  }, [searchParams, searchQuery, stars, priceRange, push]);
+  }, [searchParams, searchQuery, stars, priceRange, push, amenities, paymentType]);
 
   const reset = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -216,17 +225,13 @@ export function HotelFilters({
                     value={amenity.id}
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     onChange={(e) => {
-                      const params = new URLSearchParams(searchParams.toString());
-                      const current = params.getAll("amenities");
                       if (e.target.checked) {
-                        params.append("amenities", amenity.id);
+                        setAmenities(prev => [...prev, amenity.id]);
                       } else {
-                        params.delete("amenities");
-                        current.filter((a) => a !== amenity.id).forEach((a) => params.append("amenities", a));
+                        setAmenities(prev => prev.filter(a => a !== amenity.id));
                       }
-                      push(params);
                     }}
-                    checked={searchParams.getAll("amenities").includes(amenity.id)}
+                    checked={amenities.includes(amenity.id)}
                   />
                   <span>{amenity.name}</span>
                 </span>
@@ -253,15 +258,13 @@ export function HotelFilters({
                     value={ptype.id}
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     onChange={(e) => {
-                      const params = new URLSearchParams(searchParams.toString());
                       if (e.target.checked) {
-                        params.set("payment_type", ptype.id);
+                        setPaymentType(ptype.id);
                       } else {
-                        params.delete("payment_type");
+                        setPaymentType(undefined);
                       }
-                      push(params);
                     }}
-                    checked={searchParams.get("payment_type") === ptype.id}
+                    checked={paymentType === ptype.id}
                   />
                   <span>{ptype.name}</span>
                 </span>

@@ -170,3 +170,49 @@ export async function validatePromoAction(code: string) {
     };
   }
 }
+
+export async function createRestaurantBookingAction(input: {
+  restaurantId: string;
+  tableId: string;
+  date: string;
+  slotTime: string;
+  guests: number;
+  totalPrice: number;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
+  paymentMethod: "uzcard" | "cash";
+  agreeTerms: boolean;
+}): Promise<{ ok: boolean; bookingId?: string; error?: string }> {
+  if (!input.agreeTerms) {
+    return { ok: false, error: "TERMS_NOT_ACCEPTED" };
+  }
+
+  const session = await getSession();
+
+  try {
+    const booking = await api.bookings.createHotelBooking(
+      {
+        hotelId: input.restaurantId,
+        roomId: input.tableId || input.restaurantId,
+        checkIn: input.date,
+        checkOut: input.date,
+        slotTime: input.slotTime,
+        guests: input.guests,
+        totalPrice: input.totalPrice,
+        guestName: input.guestName,
+        guestPhone: input.guestPhone,
+        guestEmail: input.guestEmail,
+        source: "web-user",
+        paymentMethod: input.paymentMethod,
+        agreeTerms: input.agreeTerms,
+      },
+      session ? { token: session.accessToken } : undefined
+    );
+
+    const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
+    return { ok: true, bookingId };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : "Xatolik yuz berdi" };
+  }
+}

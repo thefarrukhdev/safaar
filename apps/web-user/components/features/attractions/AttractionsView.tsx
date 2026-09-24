@@ -218,6 +218,7 @@ export function AttractionsView({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const categories = useMemo(
     () => [
@@ -295,6 +296,7 @@ export function AttractionsView({
                   item={item}
                   categoryLabel={dict.categories?.[item.categoryKey] ?? item.categoryDefault}
                   index={index}
+                  onHover={(hovering) => setHoveredId(hovering ? item.id : null)}
                 />
               ))}
             </div>
@@ -305,7 +307,7 @@ export function AttractionsView({
       {/* ── RIGHT: Sticky Map Panel (Desktop) ──────────────────── */}
       <div className="hidden w-1/2 overflow-hidden border-l border-slate-200/70 dark:border-slate-800 md:flex md:flex-col">
         <div className="sticky top-0 h-full">
-          <AttractionsMap attractions={filtered} />
+          <AttractionsMap attractions={filtered} hoveredId={hoveredId} />
         </div>
       </div>
 

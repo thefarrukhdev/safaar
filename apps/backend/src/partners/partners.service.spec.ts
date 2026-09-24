@@ -2661,6 +2661,159 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
   });
 });
 
+describe('PartnersService.listPromotions (regression: "SAFAAR — COMPLETE PARTNER PROMOTIONS RELOAD PERSISTENCE" — no GET /partners/promotions existed at all, so a page reload could never restore a partner\'s own promotion list)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('returns only the authenticated partner organization\'s promotions, newest first', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'promo-2',
+        partner_organization_id: 'org-1',
+        entity_type: 'vehicle',
+        entity_id: 'vehicle-1',
+        entity_name: '01A999TT',
+        old_price_sum: 400000,
+        new_price_sum: 300000,
+        discount_percent: 25,
+        start_date: '2026-11-01',
+        end_date: '2026-11-11',
+        status: 'published',
+        reviewed_at: '2026-09-24T00:00:00Z',
+        reviewed_by: 'admin-1',
+        created_at: '2026-09-24T10:00:00Z',
+        updated_at: '2026-09-24T10:00:00Z',
+      },
+      {
+        id: 'promo-1',
+        partner_organization_id: 'org-1',
+        entity_type: 'room',
+        entity_id: 'room-1',
+        entity_name: 'Xona: 101',
+        old_price_sum: 1500000,
+        new_price_sum: 1200000,
+        discount_percent: 20,
+        start_date: '2026-10-01',
+        end_date: '2026-10-10',
+        status: 'pending_review',
+        reviewed_at: null,
+        reviewed_by: null,
+        created_at: '2026-09-24T09:00:00Z',
+        updated_at: '2026-09-24T09:00:00Z',
+      },
+    ]);
+
+    const result = await service.listPromotions(actor);
+
+    expect(result).toEqual([
+      {
+        id: 'promo-2',
+        entityId: 'vehicle-1',
+        entityType: 'vehicle',
+        entityName: '01A999TT',
+        oldPriceSum: 400000,
+        newPriceSum: 300000,
+        discountPercent: 25,
+        startDate: '2026-11-01',
+        endDate: '2026-11-11',
+        status: 'published',
+        createdAt: '2026-09-24T10:00:00Z',
+      },
+      {
+        id: 'promo-1',
+        entityId: 'room-1',
+        entityType: 'room',
+        entityName: 'Xona: 101',
+        oldPriceSum: 1500000,
+        newPriceSum: 1200000,
+        discountPercent: 20,
+        startDate: '2026-10-01',
+        endDate: '2026-10-10',
+        status: 'pending_review',
+        createdAt: '2026-09-24T09:00:00Z',
+      },
+    ]);
+
+    const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('WHERE partner_organization_id = $1');
+    expect(sql).toContain('ORDER BY created_at DESC');
+    // Never filters by anything the caller controls other than their own
+    // JWT-derived organizationId — no partner-supplied org id is honored.
+    expect(params).toEqual(['org-1']);
+  });
+
+  it('rejects when there is no authenticated partner organization', async () => {
+    await expect(service.listPromotions(undefined)).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('a different partner organization only ever queries with its own id (cross-tenant isolation by construction)', async () => {
+    pg.query.mockResolvedValueOnce([]);
+    const otherActor: RequestActor = { ...actor, organizationId: 'org-2' };
+
+    await service.listPromotions(otherActor);
+
+    const [, params] = pg.query.mock.calls[0] as [string, unknown[]];
+    expect(params).toEqual(['org-2']);
+  });
+
+  it('returns an empty array (not null/undefined) when the partner has no promotions', async () => {
+    pg.query.mockResolvedValueOnce([]);
+
+    const result = await service.listPromotions(actor);
+
+    expect(result).toEqual([]);
+  });
+
+  it('preserves all three status values verbatim', async () => {
+    pg.query.mockResolvedValueOnce(
+      ['pending_review', 'published', 'rejected'].map((status, i) => ({
+        id: `promo-${i}`,
+        partner_organization_id: 'org-1',
+        entity_type: 'room',
+        entity_id: `room-${i}`,
+        entity_name: `Xona: ${i}`,
+        old_price_sum: 100000,
+        new_price_sum: 90000,
+        discount_percent: 10,
+        start_date: '2026-10-01',
+        end_date: '2026-10-10',
+        status,
+        reviewed_at: null,
+        reviewed_by: null,
+        created_at: '2026-09-24T00:00:00Z',
+        updated_at: '2026-09-24T00:00:00Z',
+      })),
+    );
+
+    const result = await service.listPromotions(actor);
+
+    expect(result.map((p) => p.status)).toEqual([
+      'pending_review',
+      'published',
+      'rejected',
+    ]);
+  });
+});
+
 describe('PartnersService.createPromotion (regression: "SAFAAR — IMPLEMENT THE TWO CONFIRMED BACKEND GAPS" — web-partner/promotions.ts previously kept `let mockPromotions = []` in browser memory only, no backend at all)', () => {
   let service: PartnersService;
   let pg: { query: jest.Mock };

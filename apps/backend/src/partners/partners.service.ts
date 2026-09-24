@@ -4719,6 +4719,28 @@ export class PartnersService {
     }
   }
 
+  /**
+   * `GET /partners/promotions` — faqat AYNAN shu hamkor tashkilotining
+   * chegirmalari (`partner_organization_id` bo'yicha filtrlangan — boshqa
+   * hamkorning yozuvi hech qachon qaytmaydi). `admin.service.ts`ning
+   * `listPromotions()`i bilan bir xil `PROMOTION_RETURNING_SQL`/
+   * `toPromotionApiShape()`dan foydalanadi, lekin admin versiyasidan farqli
+   * ravishda `partnerId`/`partnerName` YO'Q (hamkor o'zining tashkiloti
+   * ekanini allaqachon biladi) — frontendning mavjud `Promotion` (emas
+   * `PartnerPromotion`) shakli bilan mos.
+   */
+  async listPromotions(actor: RequestActor | undefined) {
+    const organizationId = this.organizationId(actor);
+    const rows = await this.pg.query<PromotionRow>(
+      `SELECT ${PROMOTION_RETURNING_SQL}
+       FROM promotions
+       WHERE partner_organization_id = $1
+       ORDER BY created_at DESC`,
+      [organizationId],
+    );
+    return rows.map(toPromotionApiShape);
+  }
+
   async createPromotion(
     actor: RequestActor | undefined,
     body: Record<string, unknown>,

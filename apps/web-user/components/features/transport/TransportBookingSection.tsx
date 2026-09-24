@@ -16,6 +16,7 @@ import {
 import { formatSum } from "@/lib/money";
 import type { TransportDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { createVehicleBookingAction } from "@/lib/services/booking/actions";
 
 function daysBetween(checkIn: string, checkOut: string): number {
@@ -182,28 +183,28 @@ export function TransportBookingSection({
         <form onSubmit={handleOpenModal} className="mt-5 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}</label>
-              <input
-                type="date"
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}
+              </label>
+              <DatePicker
+                locale={locale as "uz" | "ru" | "en"}
+                label=""
                 value={checkIn}
+                onChange={setCheckIn}
                 min={today}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}</label>
-              <input
-                type="date"
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}
+              </label>
+              <DatePicker
+                locale={locale as "uz" | "ru" | "en"}
+                label=""
                 value={checkOut}
+                onChange={setCheckOut}
                 min={checkIn || today}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                required
               />
             </div>
           </div>

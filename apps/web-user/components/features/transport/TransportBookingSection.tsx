@@ -244,13 +244,16 @@ export function TransportBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.emailOptional || "Email (ixtiyoriy)"}</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {bDict.emailLabel || "Email"} {!isLoggedIn && <span className="text-red-500">*</span>}
+              </label>
               <input
                 type="email"
                 placeholder={bDict.emailPlaceholder || "ali@example.com"}
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                required={!isLoggedIn}
               />
             </div>
           </div>

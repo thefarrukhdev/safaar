@@ -10,6 +10,7 @@ import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
+import { ReviewsList } from "@/components/features/reviews/ReviewsList";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 
@@ -45,10 +46,12 @@ export default async function TransportDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
-  const [dict, favDict, session] = await Promise.all([
+  const [dict, favDict, session, reviewsDict, reviews] = await Promise.all([
     getDictionary(locale, "transport"),
     getDictionary(locale, "favorites"),
-    getSession()
+    getSession(),
+    getDictionary(locale, "reviews"),
+    api.reviews.getBusCompanyReviews(id).catch(() => []),
   ]);
   let transport;
   try {
@@ -150,6 +153,21 @@ export default async function TransportDetailPage({
             <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
               {((dict as any).detail?.rentalDescription || "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.").replace("{company}", transport.companyName || "Hamkor").replace("{name}", transport.name)}
             </p>
+          </section>
+
+          <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {reviewsDict.title || "Sharhlar"}
+            </h2>
+            <ReviewsList 
+              reviews={reviews} 
+              dict={reviewsDict} 
+              locale={locale} 
+              targetId={id}
+              targetType="bus_company"
+              authed={!!session}
+              token={session?.accessToken}
+            />
           </section>
         </div>
 

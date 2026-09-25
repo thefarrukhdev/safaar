@@ -316,7 +316,8 @@ export default async function Page({
               dict={reviewsDict} 
 
               locale={locale} 
-              hotelId={hotel.id}
+              targetId={hotel.id}
+              targetType="hotel"
               authed={!!session}
               token={session?.accessToken}
             />

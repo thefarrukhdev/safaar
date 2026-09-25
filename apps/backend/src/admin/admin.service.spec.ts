@@ -1568,6 +1568,14 @@ describe('AdminService frontend action endpoints', () => {
       expect(String(sql)).toContain('limit 10 offset 10');
     });
 
+    it('reviewsList admin uchun reply_body/replied_at ni SELECT qiladi (regression: "REVIEW PARTNER REPLY PERSISTENCE" — moderator hamkor javobini ko`rishi kerak)', async () => {
+      pgMock.query.mockResolvedValueOnce([]);
+      await service.reviewsList({});
+      const [sql] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('r.reply_body');
+      expect(String(sql)).toContain('r.replied_at');
+    });
+
     it("reviewModerate('publish') sets status=published and writes old/new audit", async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: reviewId, status: 'pending_review' }]) // SELECT existing

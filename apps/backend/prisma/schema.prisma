@@ -325,6 +325,7 @@ model PartnerUser {
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
 
   organization PartnerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviewReplies Review[]
 
   @@unique([organizationId, email])
   @@index([email])
@@ -1217,10 +1218,14 @@ model Review {
   photos    Json         @default("[]")
   body      String?
   status    ReviewStatus @default(published)
+  replyBody String?      @map("reply_body")
+  replyBy   String?      @map("reply_by") @db.Uuid
+  repliedAt DateTime?    @map("replied_at") @db.Timestamptz
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partnerUser PartnerUser? @relation(fields: [replyBy], references: [id], onDelete: SetNull)
 
   @@index([targetType, targetId, status])
   @@index([status, createdAt])

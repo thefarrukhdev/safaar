@@ -2401,6 +2401,8 @@ export class AdminService {
           r.photos,
           r.body,
           r.status::text,
+          r.reply_body,
+          r.replied_at,
           r.created_at,
           r.updated_at
         from reviews r

@@ -18,7 +18,7 @@ import type { Locale } from "@/i18n/config";
 import type { AuthDict } from "@/i18n/dictionaries";
 
 function passwordStrength(pw: string): { label: string; level: number; color: string } {
-  if (!pw) return { label: "", level: 0, color: "bg-zinc-800" };
+  if (!pw) return { label: "", level: 0, color: "bg-slate-200" };
   let level = 0;
   if (pw.length >= 8) level += 1;
   if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) level += 1;
@@ -279,7 +279,7 @@ export default function ModernRegisterForm({
                   <div className="flex flex-col gap-1 mt-2">
                     <div className="flex gap-1">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength.level ? strength.color : "bg-zinc-800"}`} />
+                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength.level ? strength.color : "bg-slate-200"}`} />
                       ))}
                     </div>
                     <p className="text-xs font-medium text-slate-500">{strength.label}</p>
@@ -288,7 +288,7 @@ export default function ModernRegisterForm({
               </div>
 
               <label className="flex items-start gap-3 text-sm mt-4">
-                <input type="checkbox" name="agreeTerms" required className="mt-1 bg-zinc-900 border-zinc-700 rounded text-blue-600 focus:ring-blue-500/50 focus:ring-offset-zinc-900" />
+                <input type="checkbox" name="agreeTerms" required className="mt-1 bg-white border-slate-300 rounded text-primary-600 focus:ring-primary-500/50 focus:ring-offset-white" />
                 <span className="text-slate-500 text-xs">
                   Men <Link href={`/${locale}/terms`} target="_blank" className="text-primary-600 hover:underline">Ommaviy Oferta (Foydalanish shartlari)</Link> bilan tanishib chiqdim va ularga roziman.
                 </span>

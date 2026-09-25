@@ -41,15 +41,13 @@ export class ReviewsController {
     return this.reviewsService.list(query);
   }
 
-  // Sharh qoldirish ATAYLAB login talab qilmaydi (mahsulot qarori —
-  // mehmon bron qila olgani kabi sharh ham qoldira oladi). `@Roles`
-  // yo'qligi RolesGuard'da "auth ixtiyoriy" degani: token bo'lsa actor
-  // baribir aniqlanadi, bo'lmasa guest sifatida davom etiladi.
-  // Precedent: POST /bookings/hotel (bookings.controller.ts:38-39).
-  // Mehmonda dedupe identifikatori yo'q, shuning uchun suiiste'mol
-  // faqat shu qat'iyroq limit bilan cheklanadi — global 120/min o'rniga
-  // 5/min/IP.
+  // Sharh qoldirish LOGIN talab qiladi (mahsulot qarori o'zgardi —
+  // guest sharh yozolmaydi; "BACKEND — REVIEW CREATION AUTH REQUIRED"
+  // topshirig'i). `@Roles(Role.USER)` bo'lmasa RolesGuard token yo'q/
+  // yaroqsiz bo'lganda standart 401 AUTH_TOKEN_INVALID qaytaradi —
+  // request reviewsService.create()ga yetib bormaydi, DB'ga yozilmaydi.
   @Post()
+  @Roles(Role.USER)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   create(
     @CurrentActor() actor: RequestActor | undefined,

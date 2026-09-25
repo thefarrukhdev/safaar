@@ -65,15 +65,20 @@ export default function ModernRegisterForm({
   const [showPassword, setShowPassword] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/[^\d\s+]/g, "");
+    let val = e.target.value.replace(/[^\d+]/g, "");
+
     if (!val.startsWith("+998")) {
-      val = "+998 " + val.replace(/\+998/g, "").trim();
+      val = "+998";
     }
-    // Prevent deleting +998 completely
-    if (val.trim() === "+99" || val.trim() === "+9" || val.trim() === "+") {
-      val = "+998 ";
-    }
-    setPhone(val);
+
+    const digits = val.replace(/\D/g, "").slice(3);
+    let formatted = "+998";
+    if (digits.length > 0) formatted += " " + digits.slice(0, 2);
+    if (digits.length > 2) formatted += " " + digits.slice(2, 5);
+    if (digits.length > 5) formatted += " " + digits.slice(5, 7);
+    if (digits.length > 7) formatted += " " + digits.slice(7, 9);
+
+    setPhone(formatted);
   };
 
   const [otpState, requestAction, sending] = useActionState<OtpState, FormData>(requestOtpAction, { ok: false });

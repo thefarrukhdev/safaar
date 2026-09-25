@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -60,6 +61,8 @@ const PUBLIC_REVIEW_COLUMNS = `
     )
   END AS author_name,
   (r.booking_id IS NOT NULL) AS verified,
+  r.reply_body,
+  r.replied_at,
   r.created_at,
   r.updated_at
 `;
@@ -372,6 +375,15 @@ export class ReviewsService {
     return { ...review, status: 'hidden', updated_at: now };
   }
 
+  /**
+   * Sharh — hamkor javobi. `reviews.reply_body/reply_by/replied_at`ga
+   * haqiqatan YOZILADI (avval faqat xotiradagi obyekt qaytarilardi va
+   * hech qachon saqlanmasdi — reload'dan keyin yo'qolardi).
+   *
+   * BITTA hamkor javobi/sharh (thread emas) — mavjud
+   * `promotions.reviewed_at/reviewed_by` bitta-qarorli naqshiga mos.
+   * Ikkinchi javob urinishi jim ustidan yozilmaydi — 409 qaytaradi.
+   */
   async reply(
     actor: RequestActor | undefined,
     id: string,
@@ -380,14 +392,42 @@ export class ReviewsService {
     const currentActor = this.requireActor(actor);
     const review = await this.assertReview(id);
     await this.assertPartnerCanReply(currentActor, review);
-    const reply = {
-      id: randomUUID(),
-      review_id: id,
-      partner_user_id: currentActor.id,
-      body: String(body.body ?? ''),
-      created_at: new Date().toISOString(),
+
+    if (review['reply_body'] !== null && review['reply_body'] !== undefined) {
+      throw new ConflictException({
+        code: 'REVIEW_ALREADY_REPLIED',
+        message: 'Bu sharhga allaqachon javob berilgan',
+      });
+    }
+
+    const replyBody = String(body.body ?? '').trim();
+    if (!replyBody) {
+      throw new BadRequestException({
+        code: 'REVIEW_REPLY_BODY_REQUIRED',
+        message: 'Javob matni bo‘sh bo‘lishi mumkin emas',
+      });
+    }
+
+    const repliedAt = new Date().toISOString();
+    const [updated] = await this.pg.query<{
+      id: string;
+      reply_body: string;
+      reply_by: string;
+      replied_at: string;
+    }>(
+      `UPDATE reviews
+       SET reply_body = $1, reply_by = $2, replied_at = $3, updated_at = $3
+       WHERE id = $4
+       RETURNING id::text, reply_body, reply_by::text, replied_at`,
+      [replyBody, currentActor.id, repliedAt, id],
+    );
+
+    return {
+      review_id: updated.id,
+      partner_user_id: updated.reply_by,
+      body: updated.reply_body,
+      created_at: updated.replied_at,
     };
-    return reply;
   }
 
   private async assertReview(id: string) {

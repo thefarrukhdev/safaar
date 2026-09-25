@@ -503,6 +503,7 @@ export class HotelsService {
          r.target_type, r.target_id::text, r.rating::float8,
          r.cleanliness::float8, r.staff::float8, r.location::float8,
          r.value_for_money::float8, r.photos, r.body, r.status::text,
+         r.reply_body, r.replied_at,
          r.created_at, r.updated_at, u.first_name, u.last_name
        FROM reviews r
        LEFT JOIN users u ON u.id = r.user_id

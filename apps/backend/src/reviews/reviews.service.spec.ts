@@ -469,4 +469,177 @@ describe('ReviewsService', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------
+  // reply() — hamkor javobi endi haqiqatan `reviews.reply_body/reply_by/
+  // replied_at`ga yoziladi (regression: "BACKEND BUG FIX — REVIEW PARTNER
+  // REPLY PERSISTENCE" — avval faqat xotiradagi obyekt qaytarilardi va
+  // reload'dan keyin yo'qolardi).
+  // ---------------------------------------------------------------------
+  describe('reply() — hamkor javobi endi haqiqatan saqlanadi', () => {
+    const REVIEW_ID = 'review-reply-1';
+
+    function partnerActor(overrides: Partial<RequestActor> = {}): RequestActor {
+      return {
+        id: 'partner-user-1',
+        actorType: 'partner',
+        role: Role.PARTNER,
+        roles: [Role.PARTNER],
+        organizationId: 'org-1',
+        ...overrides,
+      };
+    }
+
+    function publishedReview(overrides: Record<string, unknown> = {}) {
+      return {
+        id: REVIEW_ID,
+        user_id: 'user-1',
+        booking_id: BOOKING_ID,
+        target_type: 'hotel',
+        target_id: HOTEL_ID,
+        status: 'published',
+        reply_body: null,
+        ...overrides,
+      };
+    }
+
+    it("PARTNER o'z tashkilotiga tegishli sharhga javob yozganda, UPDATE reviews so'rovi reply_body/reply_by/replied_at ni haqiqiy qiymatlar bilan yozadi (xotiradagi obyekt EMAS)", async () => {
+      const actor = partnerActor();
+      pgMock.query
+        .mockResolvedValueOnce([publishedReview()]) // assertReview
+        .mockResolvedValueOnce([{ partner_organization_id: 'org-1' }]) // assertPartnerCanReply
+        .mockResolvedValueOnce([
+          {
+            id: REVIEW_ID,
+            reply_body: 'Rahmat!',
+            reply_by: actor.id,
+            replied_at: '2026-09-25T10:00:00.000Z',
+          },
+        ]); // UPDATE ... RETURNING
+
+      const result = await service.reply(actor, REVIEW_ID, { body: 'Rahmat!' });
+
+      const updateCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).toLowerCase().includes('update reviews'),
+      );
+      expect(updateCall).toBeDefined();
+      const [sql, params] = updateCall!;
+      expect(String(sql)).toContain('reply_body');
+      expect(String(sql)).toContain('reply_by');
+      expect(String(sql)).toContain('replied_at');
+      // reply_by = joriy PARTNER aktyorining haqiqiy id'si (partner_users.id,
+      // chunki RequestActor.id partner login uchun aynan shu jadvaldan keladi).
+      expect((params as unknown[])[1]).toBe(actor.id);
+      expect((params as unknown[])[3]).toBe(REVIEW_ID);
+
+      // Javob DB'dan qaytgan (RETURNING) qiymatlar asosida qurilgan.
+      expect(result).toEqual({
+        review_id: REVIEW_ID,
+        partner_user_id: actor.id,
+        body: 'Rahmat!',
+        created_at: '2026-09-25T10:00:00.000Z',
+      });
+    });
+
+    it("saqlangan javob keyingi list() o'qishida reply_body/replied_at sifatida qaytadi (haqiqiy saqlanganini tasdiqlaydi), lekin ichki reply_by (hamkor id) ommaviy ro'yxatga chiqmaydi", async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          id: REVIEW_ID,
+          reply_body: 'Rahmat, tashrifingiz uchun!',
+          replied_at: '2026-09-25T10:00:00.000Z',
+          status: 'published',
+        },
+      ]);
+
+      const [row] = await service.list({
+        target_type: 'hotel',
+        target_id: HOTEL_ID,
+      });
+
+      expect((row as Record<string, unknown>).reply_body).toBe(
+        'Rahmat, tashrifingiz uchun!',
+      );
+      expect((row as Record<string, unknown>).replied_at).toBe(
+        '2026-09-25T10:00:00.000Z',
+      );
+
+      const [sql] = pgMock.query.mock.calls[0];
+      expect(String(sql)).toContain('r.reply_body');
+      expect(String(sql)).toContain('r.replied_at');
+      expect(String(sql)).not.toContain('reply_by');
+    });
+
+    it('ikkinchi javob urinishi 409 REVIEW_ALREADY_REPLIED bilan rad etiladi va UPDATE chaqirilmaydi', async () => {
+      const actor = partnerActor();
+      pgMock.query
+        .mockResolvedValueOnce([
+          publishedReview({ reply_body: 'Avvalgi javob' }),
+        ]) // assertReview
+        .mockResolvedValueOnce([{ partner_organization_id: 'org-1' }]); // assertPartnerCanReply
+
+      await expect(
+        service.reply(actor, REVIEW_ID, { body: 'Yangi javob' }),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'REVIEW_ALREADY_REPLIED' },
+      });
+
+      const updateCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).toLowerCase().includes('update reviews'),
+      );
+      expect(updateCall).toBeUndefined();
+    });
+
+    it('actor=undefined (login qilmagan) 401 bilan rad etiladi, so`rov yuborilmaydi', async () => {
+      await expect(
+        service.reply(undefined, REVIEW_ID, { body: 'Salom' }),
+      ).rejects.toMatchObject({ status: 401 });
+      expect(pgMock.query).not.toHaveBeenCalled();
+    });
+
+    it('boshqa tashkilotning hamkori javob yoza olmaydi (403 REVIEW_REPLY_FORBIDDEN, cross-partner isolation)', async () => {
+      const actor = partnerActor({
+        id: 'partner-user-2',
+        organizationId: 'org-2',
+      });
+      pgMock.query
+        .mockResolvedValueOnce([publishedReview()]) // assertReview
+        .mockResolvedValueOnce([{ partner_organization_id: 'org-1' }]); // bron org-1'ga tegishli, aktyor org-2
+
+      await expect(
+        service.reply(actor, REVIEW_ID, { body: 'Yozishga urinish' }),
+      ).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'REVIEW_REPLY_FORBIDDEN' },
+      });
+
+      const updateCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).toLowerCase().includes('update reviews'),
+      );
+      expect(updateCall).toBeUndefined();
+    });
+
+    it("mavjud bo'lmagan sharh id'siga javob 404 qaytaradi", async () => {
+      const actor = partnerActor();
+      pgMock.query.mockResolvedValueOnce([]); // assertReview hech narsa topmaydi
+
+      await expect(
+        service.reply(actor, 'no-such-review', { body: 'Salom' }),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+
+    it("bo'sh javob matni 400 REVIEW_REPLY_BODY_REQUIRED bilan rad etiladi", async () => {
+      const actor = partnerActor();
+      pgMock.query
+        .mockResolvedValueOnce([publishedReview()])
+        .mockResolvedValueOnce([{ partner_organization_id: 'org-1' }]);
+
+      await expect(
+        service.reply(actor, REVIEW_ID, { body: '   ' }),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'REVIEW_REPLY_BODY_REQUIRED' },
+      });
+    });
+  });
 });

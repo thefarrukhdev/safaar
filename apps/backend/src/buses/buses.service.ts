@@ -269,6 +269,8 @@ export class BusesService {
                 )
               END AS author_name,
               (r.booking_id IS NOT NULL) AS verified,
+              r.reply_body,
+              r.replied_at,
               r.created_at,
               r.updated_at
        FROM reviews r

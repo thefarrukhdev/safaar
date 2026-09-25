@@ -1,26 +1,38 @@
-import { formatSum } from '@/lib/money';
+import { formatSum } from "@/lib/money";
+
 import type { HotelDetailDict } from '@/i18n/dictionaries';
 
 export function HotelBookingWidget({
   minPriceSum,
-  checkInTime,
-  checkOutTime,
+  checkIn,
+  checkOut,
   dict,
   locale,
 }: {
   minPriceSum: number;
-  checkInTime?: string | null;
-  checkOutTime?: string | null;
+  checkIn?: string | null;
+  checkOut?: string | null;
   dict: HotelDetailDict;
   locale: string;
 }) {
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(d);
+    } catch (e) {
+      return null;
+    }
+  };
+
   return (
     <aside className="flex h-fit flex-col gap-5 rounded-xl border border-slate-900/[0.08] bg-white p-6 shadow-float lg:sticky lg:top-24">
       <div>
         <p className="flex items-end gap-1.5 text-3xl font-black tracking-tight text-slate-900">
-          {formatSum(minPriceSum, locale)}
+          {minPriceSum > 0 ? new Intl.NumberFormat('ru-RU').format(minPriceSum) : '0'}
           <span className="mb-1 text-base font-normal text-slate-500">
-            {dict.perNight}
+            {locale === 'ru' ? 'сум' : locale === 'en' ? 'UZS' : "so'm"} / {dict.perNight}
           </span>
         </p>
       </div>
@@ -29,11 +41,11 @@ export function HotelBookingWidget({
         <div className="flex border-b border-slate-900/[0.08]">
           <div className="flex flex-1 flex-col border-r border-slate-900/[0.08] p-3">
             <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkIn}</span>
-            <span className="text-sm text-slate-500">{checkInTime || dict.booking.addDate}</span>
+            <span className="text-sm text-slate-500">{formatDate(checkIn) || dict.booking.addDate}</span>
           </div>
           <div className="flex flex-1 flex-col p-3">
             <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkOut}</span>
-            <span className="text-sm text-slate-500">{checkOutTime || dict.booking.addDate}</span>
+            <span className="text-sm text-slate-500">{formatDate(checkOut) || dict.booking.addDate}</span>
           </div>
         </div>
         <div className="flex flex-col p-3">

@@ -186,25 +186,11 @@ export default async function Page({
         </div>
 
         {/* Gallery */}
-        <div id="photos" className="relative">
+        <div id="photos">
           <HotelGallery images={hotel.images} alt={hotel.name} />
-
-        {/* Favorite Button - gallery ustida o'ng burchak */}
-        <div className="absolute right-4 top-4 z-10">
-          <FavoriteButton
-            targetType="hotel"
-            targetId={hotel.id}
-            initialFavoriteId={favoriteId}
-            authed={!!session}
-            loginHref={`/${locale}/login?next=${encodeURIComponent(
-              `/${locale}/hotels/${slug}`,
-            )}`}
-            dict={favDict}
-          />
         </div>
-      </div>
 
-      <header className="flex flex-col gap-4 pb-2">
+      <header className="flex flex-col gap-4 pb-2 pt-2">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
@@ -218,7 +204,17 @@ export default async function Page({
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <FavoriteButton
+                targetType="hotel"
+                targetId={hotel.id}
+                initialFavoriteId={favoriteId}
+                authed={!!session}
+                loginHref={`/${locale}/login?next=${encodeURIComponent(
+                  `/${locale}/hotels/${slug}`,
+                )}`}
+                dict={favDict}
+              />
               {hotel.stars > 0 && (
                 <span className="text-xl tracking-widest text-amber-500 drop-shadow-sm">
                   {'★'.repeat(hotel.stars)}
@@ -331,8 +327,8 @@ export default async function Page({
 
         <HotelBookingWidget
           minPriceSum={hotel.minPriceSum}
-          checkInTime={hotel.checkInTime}
-          checkOutTime={hotel.checkOutTime}
+          checkIn={one(sp.check_in) ?? one(sp.checkIn)}
+          checkOut={one(sp.check_out) ?? one(sp.checkOut)}
           dict={dict}
           locale={locale}
         />

@@ -55,10 +55,16 @@ describe('ReviewsService', () => {
   });
 
   // ---------------------------------------------------------------------
-  // 1 & 2. Guest (actor=undefined) sharh yoza oladi, INSERT'da
-  //        author_type='GUEST' va user_id=NULL yoziladi.
+  // 1 & 2. create()ning ICHKI xatti-harakati actor=undefined bilan
+  //        to'g'ridan-to'g'ri chaqirilganda: INSERT'da author_type='GUEST'
+  //        va user_id=NULL yoziladi. DIQQAT: bu servis-darajasidagi himoya
+  //        EMAS — haqiqiy HTTP orqali endi bunga yetib bo'lmaydi, chunki
+  //        POST /reviews `@Roles(Role.USER)` bilan himoyalangan (2026-09-25
+  //        SAFAAR — "review yozish faqat login qilgan user uchun";
+  //        haqiqiy 401-rad etish uchun qarang
+  //        reviews.controller.integration.spec.ts).
   // ---------------------------------------------------------------------
-  describe('mehmon (guest) sharh yaratish — auth SHART emas (talab #1, #2)', () => {
+  describe('ReviewsService.create() ICHKI (unit) xatti-harakati actor=undefined bilan — real API himoyasi emas, qarang controller integration spec', () => {
     it('actor=undefined bo`lganda create() xato TASHLAMAYDI', async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: HOTEL_ID }]) // assertTargetExists

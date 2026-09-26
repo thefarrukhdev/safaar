@@ -98,3 +98,117 @@ npm run test           # barcha testlar
    faqat o'qish (egasi backend dev).
 
 Tafsilotlar uchun har bir app'ning o'z `AGENTS.md` fayliga qarang.
+
+---
+
+## Graphify + Verifikatsiya kontrakti (barcha agentlar uchun majburiy)
+
+Bu bo'lim `.claude/agents/*.md`dagi 12 ta specialist va `safaar-engineering-lead`
+orkestratori uchun **umumiy, yagona** qatlam. Har bir agent buni allaqachon
+"Start of every task: 1. Read the root `AGENTS.md`" qadami orqali o'qiydi —
+shuning uchun bu qoidalar 13 ta faylning hech birini alohida tahrirlamasdan
+avtomatik kuchga kiradi.
+
+### Graphify nima va chegarasi
+
+`graphify-out/graph.json` — kod bo'yicha AST-asoslangan bilim grafigi
+(node/edge, community-cluster, god-nodes). U **faqat navigatsiya/qidiruv
+yordamchisi**: qaysi fayl/funksiya qayerga bog'langanini tezroq topish uchun.
+U **hech qachon** haqiqat manbai emas va quyidagilarni **hech qachon**
+qila olmaydi:
+- Kodni o'zgartirish yoki generatsiya qilish (faqat `graphify update`/`add`
+  orqali o'z-o'zini AST darajasida yangilaydi — bu ham READ-ONLY, kod
+  fayllariga tegmaydi, faqat gitignored `graphify-out/`ni yozadi).
+- Test natijasi yoki production holatini bildirish.
+- Hozirgi joriy kod holatini kafolatlash (quyida — nega).
+
+**Qamrov:** `.graphify_root = .` (butun monorepo — backend + barcha 3
+frontend + packages). Kanonik joy: repo root'dagi **yagona** `graphify-out/`.
+
+**2026-09-25 tuzatilgan arxitektura muammosi:** Ilgari ikkita mustaqil,
+bir-biridan farqli graph instance mavjud edi — `graphify-out/` (repo root) va
+`apps/backend/graphify-out/` (nested) — chunki `.githooks/post-commit` va
+`.githooks/post-checkout` detached rebuild'ni `cwd=os.getcwd()` bilan
+ishga tushirar edi, ya'ni `git commit`/`git checkout` qaysi papkadan
+chaqirilgan bo'lsa, relative `graphify-out/` o'sha yerda yaratilar edi.
+Tuzatildi: har ikkala hook endi `git rev-parse --show-toplevel`ni hisoblab,
+detached rebuild jarayonini har doim repo root'dan ishga tushiradi
+(`GRAPHIFY_REPO_ROOT` orqali) — natijada invocation `cwd`dan qat'i nazar
+har doim bitta, bir xil kanonik grafik yangilanadi. Eskirgan nested
+`apps/backend/graphify-out/` (gitignored, regenerable) o'chirildi.
+
+### Majburiy dalil zanjiri (evidence chain)
+
+Har qanday "bu ishlaydi" yoki "bu mavjud" da'vosi quyidagi zanjirdan o'tishi
+kerak — bosqichlar **avtomatik ravishda PASS'ga olib kelmaydi**, har biri
+alohida dalil:
+
+1. **Graphify discovery** — `graphify query/path/explain` bilan orientatsiya
+   (qaysi fayl/funksiya tegishli ekanini tezroq topish uchun).
+2. **Source verification** — Graphify ko'rsatgan joyni **haqiqiy faylni
+   o'qib** tasdiqlash. Bu bosqich **hech qachon** o'tkazib yuborilmaydi.
+3. **Test verification** — tegishli mavjud testlarni ishga tushirish (yoki
+   yangi minimal test yozib ishga tushirish), natijani real terminal
+   chiqishi bilan ko'rsatish.
+4. **Runtime verification** — faqat kerak bo'lsa va xavfsiz bo'lsa (masalan
+   production'da allaqachon tasdiqlangan holatni qayta tekshirish); yangi
+   production yozuvlar yoki o'ylab topilgan credential bilan HECH QACHON.
+5. **Final status** — pastdagi 5 holatdan biri, aniq sabab bilan.
+
+### 8 ta qat'iy qoida
+
+1. Graphify natijasi **yolg'iz o'zi hech qachon PASS'ni oqlay olmaydi**.
+2. Manba (source) va Graphify orasida ziddiyat topilsa — **manbaga ishoning**,
+   grafikni "eskirgan bo'lishi mumkin" deb belgilang (`GRAPH_STALE = TRUE`),
+   jim o'tib ketmang.
+3. "Dalil yo'q" = "PASS yo'q". Hech qanday holatda taxmin bilan PASS berilmaydi.
+4. Graphify "topilmadi" degani "kodda yo'q" degani emas — ayniqsa frontend
+   uchun (qamrov tashqarisida bo'lishi mumkin).
+5. Har bir PASS/PARTIAL/FAIL da'vosi kamida bitta real fayl:qator yoki real
+   test/terminal chiqishiga bog'langan bo'lishi kerak.
+6. Grafik holati (`built_at_commit`) joriy `git rev-parse HEAD`dan orqada
+   qolgan bo'lsa (`git merge-base --is-ancestor <built_at_commit> HEAD`),
+   va farq oralig'ida (`git log <built_at_commit>..HEAD --name-only`) siz
+   tekshirayotgan sohaga tegishli fayllar o'zgargan bo'lsa — bu aniq
+   `GRAPH_STALE = TRUE` holati, buni report'da ochiq yozing.
+7. `graphify update`dan boshqa hech qanday Graphify buyrug'i kod fayllariga
+   yozmaydi/o'zgartirmaydi — bu qat'iy READ-ONLY qatlam.
+8. 12 ta agent uchun 12 ta alohida/raqobatdosh graph instance yaratmang —
+   yagona umumiy `graphify-out/` (repo root) dan foydalaning.
+
+### Dalil ierarxiyasi (avtomatik cascade EMAS)
+
+Eng ishonchlidan kamroq ishonchliga: **Production runtime tekshiruvi >
+mavjud test natijasi (yangi ishga tushirilgan) > to'g'ridan-to'g'ri source
+o'qish > Graphify query natijasi**. Yuqori daraja past darajani
+**almashtirmaydi** — masalan test o'tgani source'ni o'qimaslik uchun bahona
+emas, Graphify orientatsiyasi source o'qishni almashtirmaydi. Bu shunchaki
+qaysi dalil ziddiyat holatida ustunroq ekanini ko'rsatadi (qoida 2).
+
+### Status ta'riflari
+
+- **PASS** — to'liq dalil zanjiri (kamida source + test) tasdiqlagan, hech
+  qanday ziddiyat yo'q.
+- **PARTIAL** — bir qismi tasdiqlangan (masalan backend to'liq ishlaydi va
+  tekshirilgan), lekin boshqa qismi (masalan frontend UI) yo'q/tugallanmagan
+  — bu FAIL emas, chunki mavjud qism haqiqatan ishlaydi, lekin to'liq PASS
+  ham emas.
+- **UNVERIFIED** — kod mavjud ko'rinadi, lekin dalil zanjirini to'liq
+  yurita olmadingiz (masalan test yo'q, ishga tushirib bo'lmadi, runtime
+  tekshiruvi xavfli/ruxsatsiz bo'lgani uchun o'tkazilmadi). "Balki ishlaydi"
+  degani emas — "hali bilmayman" degani.
+- **BLOCKED** — tekshiruvni davom ettirish uchun ruxsat/credential/muhit
+  yetishmayapti (masalan production yozuv huquqi kerak, lekin berilmagan).
+- **FAIL** — dalil aniq ziddiyatni yoki ishlamaslikni ko'rsatdi.
+
+### Report format (har bir agent report'ida majburiy sub-bo'lim)
+
+```
+## VERIFICATION
+- Graphify discovery: <query/path/explain qilingan savol va topilgan joy, yoki "N/A — qamrovdan tashqarida">
+- GRAPH_STALE: <TRUE/FALSE — built_at_commit vs HEAD taqqoslash natijasi>
+- Source verification: <fayl:qator, real o'qilgan tasdiq>
+- Test verification: <qaysi test, natija (pass/fail soni), yoki "N/A — sabab">
+- Runtime verification: <bajarildimi, natija, yoki "N/A — sabab">
+- Status: <PASS|PARTIAL|UNVERIFIED|BLOCKED|FAIL>
+```

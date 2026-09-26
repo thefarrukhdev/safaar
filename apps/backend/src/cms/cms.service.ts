@@ -109,7 +109,7 @@ export class CmsService {
         SELECT 
           p.id, p.entity_type, p.entity_name as name, 
           p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
-          h.slug as hotel_slug, hc.name as hotel_city_name, h.name as hotel_name,
+          h.slug as hotel_slug, hc.name as hotel_city_name, 
           (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.visibility = 'public' LIMIT 1) as hotel_image,
           bc.id as bus_company_id, bc.name as bus_company_name,
           (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.visibility = 'public' LIMIT 1) as bus_image
@@ -124,7 +124,7 @@ export class CmsService {
       
       return rows.map(row => {
         const isRoom = row.entity_type === 'room';
-        const titleStr = isRoom ? (row.hotel_name || row.name) : (row.bus_company_name || row.name);
+        const titleStr = isRoom ? (row.name) : (row.bus_company_name || row.name);
         const cityObj = isRoom && row.hotel_city_name ? objectValue(row.hotel_city_name) : {};
         return {
           id: row.id,

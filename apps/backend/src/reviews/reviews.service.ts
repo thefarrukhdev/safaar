@@ -34,6 +34,28 @@ const TARGET_EXISTS_SQL: Record<ReviewTargetType, string> = {
 };
 
 /**
+ * Sharh muallifi ismini hisoblovchi YAGONA CASE ifodasi — mehmon uchun
+ * `guest_name` (bo'lmasa "Mehmon"), autentifikatsiyalangan user uchun
+ * `users.first_name`/`last_name` (bo'lmasa "Mijoz"). `PUBLIC_REVIEW_COLUMNS`
+ * (GET) va `ReviewsService.create()` (POST javobi) IKKALASI HAM shu bitta
+ * ifodadan foydalanadi — ikkinchi, mustaqil ism-formatlash qoidasi
+ * YARATILMAYDI, shu sabab POST javobi refreshdan keyingi GET javobi bilan
+ * har doim bir xil ismni ko'rsatadi (oldin POST hech qanday author_name
+ * qaytarmagani uchun frontend "Mehmon"ga tushib qolardi — autentifikatsiya
+ * qilingan userlar uchun ham).
+ */
+const AUTHOR_NAME_CASE_SQL = `
+  CASE
+    WHEN r.author_type = 'GUEST'
+      THEN coalesce(nullif(trim(coalesce(r.guest_name, '')), ''), 'Mehmon')
+    ELSE coalesce(
+      nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''),
+      'Mijoz'
+    )
+  END
+`;
+
+/**
  * Ommaviy sharh ro'yxatida qaytariladigan ustunlar. ATAYLAB `SELECT *` EMAS:
  * jadvalga yangi ustun qo'shilganda (masalan `guest_name`) u avtomatik
  * ommaviy API'ga chiqib ketmasligi kerak. `user_id`, `u.phone`, `u.email`
@@ -52,14 +74,7 @@ const PUBLIC_REVIEW_COLUMNS = `
   r.body,
   r.status::text,
   r.author_type,
-  CASE
-    WHEN r.author_type = 'GUEST'
-      THEN coalesce(nullif(trim(coalesce(r.guest_name, '')), ''), 'Mehmon')
-    ELSE coalesce(
-      nullif(trim(coalesce(u.first_name, '') || ' ' || coalesce(u.last_name, '')), ''),
-      'Mijoz'
-    )
-  END AS author_name,
+  ${AUTHOR_NAME_CASE_SQL} AS author_name,
   (r.booking_id IS NOT NULL) AS verified,
   r.reply_body,
   r.replied_at,
@@ -206,10 +221,25 @@ export class ReviewsService {
       ],
     );
 
+    // Bir marta joylashtirilgan ismni ANIQ GET javobi ishlatayotgan bilan
+    // bir xil `AUTHOR_NAME_CASE_SQL`dan olamiz — POST javobi refreshdan
+    // keyingi GET javobi bilan doim mos ism ko'rsatishi uchun (avval POST
+    // umuman author_name qaytarmagani sabab frontend "Mehmon"ga tushardi).
+    const [{ author_name: authorName }] = await this.pg.query<{
+      author_name: string;
+    }>(
+      `SELECT ${AUTHOR_NAME_CASE_SQL} AS author_name
+       FROM reviews r
+       LEFT JOIN users u ON u.id = r.user_id
+       WHERE r.id = $1`,
+      [id],
+    );
+
     return {
       id,
       user_id: actor?.id ?? null,
       author_type: authorType,
+      author_name: authorName,
       guest_name: guestName,
       booking_id: booking?.id ?? null,
       target_type: targetType,

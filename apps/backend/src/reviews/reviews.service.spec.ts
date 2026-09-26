@@ -68,7 +68,8 @@ describe('ReviewsService', () => {
     it('actor=undefined bo`lganda create() xato TASHLAMAYDI', async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: HOTEL_ID }]) // assertTargetExists
-        .mockResolvedValueOnce([]); // INSERT
+        .mockResolvedValueOnce([]) // INSERT
+        .mockResolvedValueOnce([{ author_name: 'Mehmon' }]); // author_name lookup
 
       await expect(
         service.create(undefined, guestDto()),
@@ -76,13 +77,19 @@ describe('ReviewsService', () => {
         author_type: 'GUEST',
         user_id: null,
         status: 'pending_review',
+        // Mehmon xatti-harakati o'zgarmadi — bu fix faqat autentifikatsiya
+        // qilingan USER uchun author_name'ni to'g'irlaydi, lekin bir xil
+        // AUTHOR_NAME_CASE_SQL mehmon uchun ham ishlatilgani sababli shu
+        // yerda ham to'g'ri natija berishini tasdiqlaymiz.
+        author_name: 'Mehmon',
       });
     });
 
     it("INSERT so'rovi author_type='GUEST' va user_id=NULL ni REAL parametr massividagi to'g'ri pozitsiyada yozadi", async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: HOTEL_ID }])
-        .mockResolvedValueOnce([]);
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ author_name: 'Mehmon' }]);
 
       await service.create(undefined, guestDto());
 
@@ -108,7 +115,8 @@ describe('ReviewsService', () => {
     it('dto obyektiga qo`lda user_id qo`shilsa ham (whitelist chetlab o`tilgan holat simulyatsiyasi), INSERT baribir NULL yozadi', async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: HOTEL_ID }])
-        .mockResolvedValueOnce([]);
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ author_name: 'Mehmon' }]);
 
       const spoofedDto = guestDto({ user_id: 'attacker-controlled-id' });
       await service.create(undefined, spoofedDto);
@@ -130,12 +138,14 @@ describe('ReviewsService', () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: HOTEL_ID }]) // assertTargetExists
         .mockResolvedValueOnce([]) // resolveVerifiedBooking (booking_id yo'q, mos bron topilmadi)
-        .mockResolvedValueOnce([]); // INSERT
+        .mockResolvedValueOnce([]) // INSERT
+        .mockResolvedValueOnce([{ author_name: 'Haqiqiy Foydalanuvchi' }]); // author_name lookup
 
       const dto = guestDto({ user_id: 'someone-elses-id' });
       const result = await service.create(actor, dto);
 
       expect(result.user_id).toBe('real-authenticated-user-id');
+      expect(result.author_name).toBe('Haqiqiy Foydalanuvchi');
       const insertCall = pgMock.query.mock.calls.find(([sql]) =>
         String(sql).toLowerCase().includes('insert into reviews'),
       );
@@ -461,7 +471,8 @@ describe('ReviewsService', () => {
           },
         ])
         .mockResolvedValueOnce([]) // assertNoDuplicateReview
-        .mockResolvedValueOnce([]); // INSERT
+        .mockResolvedValueOnce([]) // INSERT
+        .mockResolvedValueOnce([{ author_name: 'Haqiqiy Foydalanuvchi' }]); // author_name lookup
 
       const dto = guestDto({
         target_type: 'bus_company',
@@ -472,6 +483,7 @@ describe('ReviewsService', () => {
       await expect(service.create(actor, dto)).resolves.toMatchObject({
         status: 'published',
         target_type: 'bus_company',
+        author_name: 'Haqiqiy Foydalanuvchi',
       });
     });
   });

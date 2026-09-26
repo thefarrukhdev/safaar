@@ -1,4 +1,4 @@
-// Mock API until backend provides real endpoint
+import { request } from '../client';
 
 export interface PromotionDraft {
   entityId: string; // roomId or vehicleId
@@ -26,39 +26,19 @@ export interface Promotion {
   createdAt: string;
 }
 
-let mockPromotions: Promotion[] = [];
-
 export const promotions = {
-  /**
-   * TODO: Backend dev API yaratgach `apiClient.post(...)` orqali ulash kerak
-   */
   submitPromotion: async (draft: PromotionDraft, token?: string): Promise<Promotion> => {
-    // MOCK:
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const newPromo: Promotion = {
-      id: "mock-promo-" + Date.now(),
-      hotelId: "mock-hotel-id",
-      entityId: draft.entityId,
-      entityName: draft.entityName,
-      entityType: draft.entityType,
-      oldPriceSum: draft.oldPriceSum,
-      newPriceSum: draft.newPriceSum,
-      discountPercent: draft.discountPercent,
-      startDate: draft.startDate,
-      endDate: draft.endDate,
-      status: "pending_review",
-      createdAt: new Date().toISOString(),
-    };
-    mockPromotions.unshift(newPromo);
-    return newPromo;
+    return request<Promotion>('/partners/promotions', {
+      method: 'POST',
+      body: draft,
+      token,
+    });
   },
 
-  /**
-   * TODO: Backend dev API yaratgach ulash
-   */
   getPromotions: async (hotelId: string, token?: string): Promise<Promotion[]> => {
-    // MOCK:
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return [...mockPromotions];
+    return request<Promotion[]>('/partners/promotions', {
+      method: 'GET',
+      token,
+    });
   },
 };

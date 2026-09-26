@@ -13,14 +13,16 @@ import { Badge } from "../../../../_components/ui/badge";
 
 export function PromotionsView() {
   const hotelId = useAuthStore((s) => s.user?.organizationId || "mock-hotel-id");
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const [data, setData] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const loadPromotions = async () => {
+    if (!accessToken) return;
     try {
       setLoading(true);
-      const res = await promotions.getPromotions(hotelId);
+      const res = await promotions.getPromotions(hotelId, accessToken);
       setData(res);
     } catch (e) {
       console.error(e);
@@ -30,8 +32,9 @@ export function PromotionsView() {
   };
 
   useEffect(() => {
+    if (!accessToken) return;
     loadPromotions();
-  }, [hotelId]);
+  }, [hotelId, accessToken]);
 
   const handleAdded = () => {
     loadPromotions();

@@ -38,6 +38,7 @@ interface Props {
 
 export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const isBus = hasBuses(partnerType);
 
   const { data: rooms = [] } = useRooms();
@@ -116,7 +117,7 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
         discountPercent: values.discountPercent,
         startDate: values.startDate,
         endDate: values.endDate,
-      });
+      }, accessToken);
       toast.success("Chegirma taklifi yuborildi.");
       onSuccess();
       onClose();

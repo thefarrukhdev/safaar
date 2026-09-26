@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { InputHTMLAttributes } from "react";
-import { Search } from "lucide-react";
+import { useState, type InputHTMLAttributes } from "react";
+import { Search, Eye, EyeOff } from "lucide-react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -20,7 +20,11 @@ export default function Input({
   id,
   ...rest
 }: InputProps) {
+  const [showPassword, setShowPassword] = useState(false);
   const inputId = id ?? label?.toLowerCase().replace(/ /g, "-");
+  
+  const isPassword = rest.type === "password";
+  const inputType = isPassword ? (showPassword ? "text" : "password") : rest.type;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -44,11 +48,22 @@ export default function Input({
             "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)]",
             "transition-all duration-150",
             (icon ?? isSearch) ? "pl-9" : undefined,
+            isPassword ? "pr-10" : undefined,
             error && "border-[var(--danger)] focus:ring-[var(--danger)]/20",
             className
           )}
           {...rest}
+          type={inputType}
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] dark:hover:text-white focus:outline-none"
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
       </div>
       {error && <span className="text-xs text-[var(--danger)]">{error}</span>}
     </div>

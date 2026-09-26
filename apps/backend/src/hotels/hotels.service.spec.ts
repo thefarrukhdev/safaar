@@ -404,6 +404,7 @@ describe('HotelsService.findOne', () => {
     pg: jest.Mocked<PostgresService>,
     roomRows: Record<string, unknown>[],
     roomTranslationRows: Record<string, unknown>[] = [],
+    roomPromotionRows: Record<string, unknown>[] = [],
   ) {
     pg.query
       .mockResolvedValueOnce([HOTEL_ROW]) // hotel
@@ -411,7 +412,8 @@ describe('HotelsService.findOne', () => {
       .mockResolvedValueOnce([]) // media_files
       .mockResolvedValueOnce([]) // hotel_amenities
       .mockResolvedValueOnce(roomRows) // hotel_rooms + room_types
-      .mockResolvedValueOnce(roomTranslationRows); // hotel_room_translations
+      .mockResolvedValueOnce(roomTranslationRows) // hotel_room_translations
+      .mockResolvedValueOnce(roomPromotionRows); // active promotions (per room)
   }
 
   function makeService() {
@@ -453,8 +455,8 @@ describe('HotelsService.findOne', () => {
     expect(translationSql).toContain('FROM hotel_room_translations');
     expect(translationSql).toContain('room_id = ANY($1::uuid[])');
     expect(translationParams).toEqual([['room-1']]);
-    // One query per resource type, not per room — 6 total regardless of room count.
-    expect(pg.query.mock.calls.length).toBe(6);
+    // One query per resource type, not per room — 7 total regardless of room count.
+    expect(pg.query.mock.calls.length).toBe(7);
   });
 
   it('a hotel with zero rooms skips the room-names query entirely (no wasted round-trip)', async () => {
@@ -596,6 +598,69 @@ describe('HotelsService.findOne', () => {
 
     expect(result.rooms).toEqual([]);
   });
+
+  /**
+   * "SAFAAR — DISCOUNT/OFFER FLOW FULL AUDIT + FIX": admin-approved
+   * (`published`) promotions previously had nowhere to surface publicly.
+   * `loadActiveRoomPromotions()` attaches one by `entity_id` match — the
+   * SQL itself already restricts to `status='published'` and the current
+   * date range (see hotels.service.ts), so a room with no matching row
+   * here (expired/future/pending/rejected) correctly gets `promotion: null`.
+   */
+  it('a room with an active published promotion gets its discount attached; a room with none gets null', async () => {
+    const { service, pg } = makeService();
+    mockFindOneQueries(
+      pg,
+      [
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-std',
+          code: 'STD-1',
+          base_occupancy: 2,
+          max_adults: 2,
+          max_children: 1,
+          total_inventory: 5,
+          base_price: 550000,
+          status: 'active',
+          room_type_name: { uz: 'Standart' },
+        },
+        {
+          id: 'room-2',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-dlx',
+          code: 'DLX-1',
+          base_occupancy: 3,
+          max_adults: 3,
+          max_children: 1,
+          total_inventory: 2,
+          base_price: 820000,
+          status: 'active',
+          room_type_name: { uz: 'Deluxe' },
+        },
+      ],
+      [],
+      [
+        {
+          entity_id: 'room-1',
+          old_price_sum: 550000,
+          new_price_sum: 440000,
+          discount_percent: 20,
+          end_date: '2026-12-31',
+        },
+      ],
+    );
+
+    const result = await service.findOne('hotel-one');
+
+    expect(result.rooms.find((r) => r.id === 'room-1')?.promotion).toEqual({
+      old_price_sum: 550000,
+      new_price_sum: 440000,
+      discount_percent: 20,
+      end_date: '2026-12-31',
+    });
+    expect(result.rooms.find((r) => r.id === 'room-2')?.promotion).toBeNull();
+  });
 });
 
 describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
@@ -620,12 +685,14 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
           room_type_name: { uz: 'Standart' },
         },
       ])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([]) // hotel_room_translations
+      .mockResolvedValueOnce([]); // active promotions
 
     const rooms = await service.rooms('hotel-1');
 
     expect(rooms).toHaveLength(1);
     expect(rooms[0].name).toEqual({ uz: 'Standart', ru: null, en: null });
     expect(rooms[0].base_price).toBe(550000);
+    expect(rooms[0].promotion).toBeNull();
   });
 });

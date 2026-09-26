@@ -405,6 +405,9 @@ export class HotelsService {
     const roomNames = await this.loadRoomNames(
       roomRows.map((r: Record<string, unknown>) => String(r.id)),
     );
+    const roomPromotions = await this.loadActiveRoomPromotions(
+      roomRows.map((r: Record<string, unknown>) => String(r.id)),
+    );
 
     return roomRows.map((r: Record<string, unknown>) => {
       const roomTypeName = localized(r.room_type_name);
@@ -426,8 +429,70 @@ export class HotelsService {
         base_price: Number(r.base_price),
         status: r.status,
         available: Number(r.total_inventory),
+        promotion: roomPromotions.get(String(r.id)) ?? null,
       };
     });
+  }
+
+  /**
+   * Admin tomonidan tasdiqlangan (`published`) va joriy sanada amal
+   * qiladigan (`start_date <= bugun <= end_date`) chegirmalarni xona
+   * id'lari bo'yicha batched yuklaydi (N+1 yo'q). FAQAT ko'rsatish
+   * (marketing badge) uchun — `decidePromotion()` `hotel_rooms.base_price`
+   * ustuniga hech qachon tegmaydi, shuning uchun bron narxi bu yerdan
+   * MUSTAQIL: chegirma bandini ko'rsatish real bron summasini o'zgartirmaydi.
+   */
+  private async loadActiveRoomPromotions(roomIds: string[]): Promise<
+    Map<
+      string,
+      {
+        old_price_sum: number;
+        new_price_sum: number;
+        discount_percent: number;
+        end_date: string;
+      }
+    >
+  > {
+    const promotions = new Map<
+      string,
+      {
+        old_price_sum: number;
+        new_price_sum: number;
+        discount_percent: number;
+        end_date: string;
+      }
+    >();
+    if (roomIds.length === 0) {
+      return promotions;
+    }
+
+    const rows = await this.pg.query<{
+      entity_id: string;
+      old_price_sum: number;
+      new_price_sum: number;
+      discount_percent: number;
+      end_date: string;
+    }>(
+      `SELECT entity_id::text, old_price_sum::float8, new_price_sum::float8,
+              discount_percent, end_date::text
+       FROM promotions
+       WHERE entity_type = 'room'
+         AND entity_id = ANY($1::uuid[])
+         AND status = 'published'::"PromotionStatus"
+         AND start_date <= CURRENT_DATE
+         AND end_date >= CURRENT_DATE`,
+      [roomIds],
+    );
+
+    for (const row of rows) {
+      promotions.set(row.entity_id, {
+        old_price_sum: Number(row.old_price_sum),
+        new_price_sum: Number(row.new_price_sum),
+        discount_percent: Number(row.discount_percent),
+        end_date: row.end_date,
+      });
+    }
+    return promotions;
   }
 
   /**

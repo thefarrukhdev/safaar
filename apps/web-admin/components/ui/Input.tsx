@@ -25,7 +25,7 @@ export default function Input({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-[var(--text-secondary)]">
+        <label htmlFor={inputId} className="text-sm font-medium text-[var(--text-secondary)] dark:text-slate-300">
           {label}
         </label>
       )}
@@ -39,7 +39,7 @@ export default function Input({
           id={inputId}
           className={cn(
             "w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)]",
-            "bg-white text-[var(--text-primary)]",
+            "bg-white dark:bg-slate-900 text-[var(--text-primary)] dark:text-white",
             "placeholder:text-[var(--text-muted)]",
             "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)]",
             "transition-all duration-150",

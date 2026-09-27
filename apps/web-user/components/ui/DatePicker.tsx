@@ -28,9 +28,16 @@ const UZ_MONTHS = [
   "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr",
 ];
 
+const UZ_MONTHS_SHORT = [
+  "Yan", "Fev", "Mar", "Apr", "May", "Iyn",
+  "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek",
+];
+
+const UZ_WEEKDAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
+
 /** Locale → BCP-47 xarita (Intl uchun). */
 const INTL_LOCALE: Record<string, string> = {
-  uz: "ru-RU",
+  uz: "ru-RU", // Intl default fallback for 'uz' is sometimes buggy on older browsers/Node, but we override manually below
   ru: "ru-RU",
   en: "en-US",
 };
@@ -101,12 +108,15 @@ export function DatePicker({
   }, [locale, intlLocale, view]);
 
   const weekdays = useMemo(() => {
+    if (locale === "uz") {
+      return UZ_WEEKDAYS;
+    }
     const fmt = new Intl.DateTimeFormat(intlLocale, { weekday: "short" });
     const base = new Date(2024, 0, 1);
     return Array.from({ length: 7 }, (_, i) =>
       fmt.format(new Date(base.getFullYear(), base.getMonth(), base.getDate() + i)),
     );
-  }, [intlLocale]);
+  }, [locale, intlLocale]);
 
   const days = useMemo(() => {
     const year = view.getFullYear();
@@ -121,13 +131,17 @@ export function DatePicker({
     return cells;
   }, [view]);
 
-  const displayValue = selected
-    ? new Intl.DateTimeFormat(intlLocale, {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(selected)
-    : null;
+  const displayValue = useMemo(() => {
+    if (!selected) return null;
+    if (locale === "uz") {
+      return `${selected.getDate()}-${UZ_MONTHS_SHORT[selected.getMonth()]}. ${selected.getFullYear()} y.`;
+    }
+    return new Intl.DateTimeFormat(intlLocale, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(selected);
+  }, [selected, locale, intlLocale]);
 
   const todayISO = toISO(startOfDay(new Date()));
 
@@ -174,7 +188,7 @@ export function DatePicker({
           <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-xl border border-slate-200 bg-card p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0 animate-in fade-in zoom-in-95 duration-100">
             {/* Mobile Header with Close Button */}
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 md:hidden">
-              <span className="text-xs font-bold text-slate-800 dark:text-white">Sanani tanlang</span>
+              <span className="text-xs font-bold text-slate-800 dark:text-white">{placeholder}</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

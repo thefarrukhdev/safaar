@@ -122,6 +122,7 @@ type LocalizedValue = Localized | string | undefined;
 
 interface RawCatalogItem {
   id: string;
+  code?: string;
   name: Localized;
 }
 
@@ -210,7 +211,9 @@ async function fetchCatalog(
   } as any);
   const items = camelizeKeys<RawCatalogItem[]>(raw);
   return (items ?? []).map((item) => ({
-    id: item.id,
+    // Hotel amenities arrays use `code` (e.g. "hotel_2") not UUID — expose
+    // code as `id` so downstream `amenityName[code]` lookups resolve correctly.
+    id: item.code ?? item.id,
     name: pickLocale(item.name, locale),
   }));
 }

@@ -6,7 +6,7 @@ import { checkoutTranslations } from "./i18n";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { ShieldCheck, CheckCircle2 } from "lucide-react";
-import { createRestaurantBookingAction } from "@/lib/services/booking/actions";
+import { createRestaurantBookingAction, createVehicleBookingAction } from "@/lib/services/booking/actions";
 
 export function UnifiedCheckoutClient() {
   const searchParams = useSearchParams();
@@ -23,10 +23,12 @@ export function UnifiedCheckoutClient() {
   const slotTime = searchParams.get("slotTime") || "";
   const guests = Number(searchParams.get("guests")) || 2;
 
+  const isNoCardType = type === "restaurant" || type === "transport";
+
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("+998");
   const [guestEmail, setGuestEmail] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">(type === "restaurant" ? "cash" : "card");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">(isNoCardType ? "cash" : "card");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpire, setCardExpire] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -36,7 +38,7 @@ export function UnifiedCheckoutClient() {
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (type === "restaurant") {
+    if (type === "restaurant" || type === "transport") {
       setPaymentMethod("cash");
     }
   }, [type]);
@@ -71,9 +73,25 @@ export function UnifiedCheckoutClient() {
         } else {
           setErrorMsg(res.error || t.error);
         }
+      } else if (type === "transport") {
+        const res = await createVehicleBookingAction({
+          vehicleId: entityId,
+          checkIn,
+          checkOut,
+          guestName,
+          guestPhone,
+          guestEmail,
+          paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
+        });
+
+        if (res.ok && res.bookingId) {
+          setSuccessBookingId(res.bookingId);
+        } else {
+          setErrorMsg(res.error || t.error);
+        }
       } else {
-        // Fallback or implementation for hotel/vehicle (future)
-        setErrorMsg("Only restaurant booking is fully implemented in this demo.");
+        // Fallback or implementation for hotel (future)
+        setErrorMsg("Only restaurant and transport bookings are fully implemented in this demo.");
       }
     } catch (err) {
       setErrorMsg(t.error);
@@ -161,7 +179,7 @@ export function UnifiedCheckoutClient() {
             <section>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{t.paymentMethod}</h2>
               
-              {type === "restaurant" ? (
+              {isNoCardType ? (
                 <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
                   <ShieldCheck className="h-5 w-5 shrink-0 text-amber-600" />
                   <p>{t.cashNote}</p>
@@ -284,10 +302,12 @@ export function UnifiedCheckoutClient() {
               </div>
             )}
 
-            <div className="flex justify-between pb-1">
-              <span className="font-semibold">{t.guests}:</span>
-              <span>{guests}</span>
-            </div>
+            {type !== "transport" && (
+              <div className="flex justify-between pb-1">
+                <span className="font-semibold">{t.guests}:</span>
+                <span>{guests}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

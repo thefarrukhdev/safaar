@@ -1,5 +1,5 @@
-import { bookingTranslations } from "./i18n";
 "use client";
+import { bookingTranslations } from "./i18n";
 
 import { useState } from "react";
 import Link from "next/link";

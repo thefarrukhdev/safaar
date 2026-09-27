@@ -163,16 +163,29 @@ type MapContentProps = Pick<
 
 function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoundsChange }: MapContentProps) {
   const map = useMap();
-  const [tileUrl, setTileUrl] = useState("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png");
-  
+  // Carto now requires an API key — use free OpenStreetMap tiles instead.
+  // For dark mode, use the tile.openstreetmap.fr/hot style which is still free.
+  const [isDark, setIsDark] = useState(false);
+
   // Set theme once mounted
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    if (isDark) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTileUrl("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png");
-    }
+    const dark = document.documentElement.classList.contains("dark");
+    setIsDark(dark);
+
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, []);
+
+  const tileUrl = isDark
+    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+  const attribution = isDark
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   
   // Fit bounds when items change
   useEffect(() => {
@@ -189,7 +202,7 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
     <>
       <TileLayer
         url={tileUrl}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        attribution={attribution}
         maxZoom={19}
       />
       <ZoomControl position="bottomright" />

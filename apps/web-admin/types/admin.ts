@@ -589,6 +589,23 @@ export interface CmsDestination {
   order: number;
 }
 
+export interface CmsAttraction {
+  id: string;
+  name: string;
+  cityName: string;
+  categoryKey: string;
+  description: string;
+  rating: number;
+  latitude?: number;
+  longitude?: number;
+  imageUrl: string;
+  bestTimeToVisit?: string;
+  priceDefault?: number;
+  workingHours?: string;
+  isActive: boolean;
+  order: number;
+}
+
 /* ────────────────────────────────────────────
    Catalog
    ──────────────────────────────────────────── */

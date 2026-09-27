@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "./generated/prisma"
+  provider        = "prisma-client"
+  output          = "./generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -174,6 +175,7 @@ model User {
   supportTickets SupportTicket[]
   chatRooms      ChatRoom[]
   analyticsEvents AnalyticsEvent[]
+  media_files    MediaFile? @relation(fields: [avatarMediaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([status, createdAt])
   @@index([deletedAt, createdAt])
@@ -208,11 +210,15 @@ model AuthSession {
   replacedByJti String?  @map("replaced_by_jti") @db.VarChar(128)
   ipAddress    String?   @map("ip_address") @db.VarChar(64)
   userAgent    String?   @map("user_agent")
-  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
   lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  role             String    @default("user") @db.VarChar(64)
+  roles            String[]  @default(["user"])
+  organizationId   String?   @map("organization_id")
+  refreshExpiresAt BigInt?   @map("refresh_expires_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -522,6 +528,7 @@ model MediaFile {
   isCover     Boolean   @default(false) @map("is_cover")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
+  users       User[]
 
   @@index([ownerType, ownerId])
   @@map("media_files")
@@ -606,6 +613,8 @@ model Hotel {
   @@index([status, createdAt])
   @@index([status, ratingAverage])
   @@index([status, stars])
+  @@index([featured], where: raw("(featured = true)"))
+  @@index([submittedBy], where: raw("(submitted_by IS NOT NULL)"))
   @@map("hotels")
 }
 
@@ -1010,6 +1019,8 @@ model Booking {
   @@index([type, status, createdAt])
   @@index([hotelId, createdAt])
   @@index([tripId, createdAt])
+  @@index([roomId, checkIn], where: raw("(room_id IS NOT NULL)"))
+  @@index([vehicleId, checkIn], where: raw("(vehicle_id IS NOT NULL)"))
   @@map("bookings")
 }
 
@@ -1479,6 +1490,7 @@ model CmsEntry {
   @@index([type, status, createdAt])
   @@index([type, latitude, longitude])
   @@index([publishedAt])
+  @@index([slug], map: "cms_entries_public_pages_slug_idx", where: raw("(((type)::text = 'page'::text) AND ((status)::text = ANY ((ARRAY['published'::character varying, 'active'::character varying])::text[])))"))
   @@map("cms_entries")
 }
 

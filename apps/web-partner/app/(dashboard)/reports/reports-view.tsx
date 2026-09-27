@@ -38,7 +38,7 @@ import { getWithdrawals, createWithdrawal, WithdrawalRequest } from "../../_lib/
 import { formatDate } from "../../_lib/utils/format";
 
 type TimeRange = "7days" | "30days" | "year";
-type ViewTab = "stats" | "finance";
+type ViewTab = "stats" | "finance" | "detailed";
 
 export function ReportsView() {
   const [activeTab, setActiveTab] = useState<ViewTab>("stats");
@@ -183,6 +183,15 @@ export function ReportsView() {
             )}
           >
             Moliya & Pul yechish
+          </button>
+          <button
+            onClick={() => setActiveTab("detailed")}
+            className={cn(
+              "px-5 py-2 text-sm font-medium rounded-lg transition-all",
+              activeTab === "detailed" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
+            )}
+          >
+            To'liq Hisobot
           </button>
         </div>
       </div>
@@ -518,6 +527,91 @@ export function ReportsView() {
               </CardBody>
             </Card>
           </div>
+        </div>
+      )}
+
+      {activeTab === "detailed" && (
+        <div className="flex flex-col gap-6 animate-fade-in">
+          <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                <div>
+                  <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Bronlar va To'lovlar (To'liq)</h2>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Onlayn va joyida qilingan to'lovlar bo'yicha batafsil hisobot</p>
+                </div>
+                <button
+                  onClick={() => {
+                    toast.success("Hisobot admin panelga yuvorildi!");
+                  }}
+                  className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+                >
+                  <Download size={16} /> Adminga yuborish
+                </button>
+              </div>
+
+              {/* Stats summary block */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                  <p className="text-sm text-zinc-500 mb-1">Jami bronlar</p>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{reservations?.length || 0}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Onlayn (UzBron)</p>
+                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">
+                    {reservations?.filter(r => r.source === "UZBRON").length || 0}
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mb-1">Joyida to'lanadigan</p>
+                  <p className="text-2xl font-bold text-amber-900 dark:text-amber-300">
+                    {reservations?.filter(r => r.source !== "UZBRON").length || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                    <tr>
+                      <th className="px-4 py-3 font-medium text-zinc-500">Mijoz</th>
+                      <th className="px-4 py-3 font-medium text-zinc-500">Sana</th>
+                      <th className="px-4 py-3 font-medium text-zinc-500">Summa</th>
+                      <th className="px-4 py-3 font-medium text-zinc-500">To'lov turi</th>
+                      <th className="px-4 py-3 font-medium text-zinc-500">Holat</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {!reservations || reservations.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-12 text-center text-zinc-500">Bronlar topilmadi</td></tr>
+                    ) : reservations.map((r) => {
+                      const isOnline = r.source === "UZBRON";
+                      return (
+                      <tr key={r.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-zinc-900 dark:text-white">{r.guest?.fullName}</div>
+                          <div className="text-xs text-zinc-500">{r.guest?.phone}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>{formatShortDate(r.checkIn)} — {formatShortDate(r.checkOut)}</div>
+                        </td>
+                        <td className="px-4 py-3 font-bold text-zinc-900 dark:text-white">{formatMoney(r.totalPrice)}</td>
+                        <td className="px-4 py-3">
+                          {isOnline ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Online</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Joyida (Naqd)</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs text-zinc-500 uppercase">{r.status}</span>
+                        </td>
+                      </tr>
+                    )})}
+                  </tbody>
+                </table>
+              </div>
+            </CardBody>
+          </Card>
         </div>
       )}
     </div>

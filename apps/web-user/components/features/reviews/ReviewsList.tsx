@@ -41,14 +41,16 @@ export function ReviewsList({
   reviews: initialReviews,
   dict,
   locale,
-  hotelId,
+  targetId,
+  targetType,
   authed,
   token,
 }: {
   reviews: ReviewView[];
   dict: ReviewsDict;
   locale: Locale;
-  hotelId?: string;
+  targetId?: string;
+  targetType: "hotel" | "bus_company" | "restaurant" | "attraction";
   authed?: boolean;
   token?: string;
 }) {
@@ -62,7 +64,7 @@ export function ReviewsList({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hotelId || !token) return;
+    if (!targetId || !token) return;
     
     setIsSubmitting(true);
     try {
@@ -72,8 +74,8 @@ export function ReviewsList({
       }
       
       const newReview = await api.reviews.createReview({
-        targetType: "hotel",
-        targetId: hotelId,
+        targetType,
+        targetId,
         rating,
         body,
         photos: uploadedPhotos.length > 0 ? uploadedPhotos : undefined,
@@ -164,7 +166,7 @@ export function ReviewsList({
           </div>
         )}
 
-        {authed && hotelId && !isFormOpen && (
+        {authed && targetId && !isFormOpen && (
           <Button onClick={() => setIsFormOpen(true)} variant="secondary" className="border-slate-200 text-slate-900">
             {dict.writeReview}
           </Button>

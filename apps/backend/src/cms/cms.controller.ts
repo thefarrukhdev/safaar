@@ -12,7 +12,7 @@ export class CmsController {
 
   @Get('cms/offers')
   offers() {
-    return this.cmsService.collection('offers');
+    return this.cmsService.offers();
   }
 
   @Get('cms/promo-bar')

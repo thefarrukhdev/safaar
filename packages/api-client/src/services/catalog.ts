@@ -37,6 +37,8 @@ export interface AttractionCatalogView {
   rating: number;
   imageUrl: string;
   bestTimeToVisit: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface RestaurantCatalogView {
@@ -158,6 +160,8 @@ interface RawAttraction {
   rating?: number;
   imageUrl?: string;
   bestTimeToVisit?: LocalizedValue;
+  latitude?: number | string;
+  longitude?: number | string;
 }
 
 interface RawRestaurant {
@@ -200,7 +204,10 @@ async function fetchCatalog(
   path: string,
   locale: Locale,
 ): Promise<Array<{ id: string; name: string }>> {
-  const raw = await rawApi.get<unknown>(path, { next: { revalidate: 3600 } } as any);
+  const tag = path.includes("cities") ? "cities" : "amenities";
+  const raw = await rawApi.get<unknown>(path, { 
+    next: { revalidate: 3600, tags: ["catalog", tag] } 
+  } as any);
   const items = camelizeKeys<RawCatalogItem[]>(raw);
   return (items ?? []).map((item) => ({
     id: item.id,
@@ -221,7 +228,9 @@ export const catalogService = {
 
   /** `GET /catalog/destinations` — bosh sahifa uchun mashhur shaharlar (CMS Destinations). */
   async getPopularCities(locale: Locale): Promise<PopularCityView[]> {
-    const raw = await rawApi.get<unknown>("/catalog/destinations");
+    const raw = await rawApi.get<unknown>("/catalog/destinations", {
+      next: { revalidate: 3600, tags: ["catalog", "destinations"] },
+    } as any);
     const items = camelizeKeys<any[]>(raw);
     return (items ?? []).map((item) => {
       const title = item.title ?? {};
@@ -288,6 +297,8 @@ export const catalogService = {
       rating: Number(item.rating ?? 0),
       imageUrl: item.imageUrl ?? "",
       bestTimeToVisit: pickLocale(item.bestTimeToVisit, locale),
+      latitude: item.latitude != null ? Number(item.latitude) : undefined,
+      longitude: item.longitude != null ? Number(item.longitude) : undefined,
     }));
   },
 

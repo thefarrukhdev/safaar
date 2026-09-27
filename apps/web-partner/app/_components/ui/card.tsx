@@ -10,7 +10,7 @@ export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--border-light)] bg-white transition-all duration-200",
+        "rounded-lg border border-[var(--border-light)] bg-[var(--surface)] transition-all duration-200",
         "relative overflow-hidden",
         interactive &&
         "hover:border-[var(--border)]",

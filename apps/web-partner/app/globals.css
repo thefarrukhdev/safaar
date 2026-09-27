@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* next-themes class strategiyasini Tailwind v4'ga ulash. */
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (.dark &);
 
 /* UzBron Hamkor Kabineti — brending */
 @theme {

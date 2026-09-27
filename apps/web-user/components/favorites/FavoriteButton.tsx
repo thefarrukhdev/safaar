@@ -22,7 +22,7 @@ export function FavoriteButton({
   loginHref,
   dict,
 }: {
-  targetType: "hotel" | "bus";
+  targetType: "hotel" | "bus" | "restaurant" | "transport" | "attraction";
   targetId: string;
   initialFavoriteId: string | null;
   authed: boolean;

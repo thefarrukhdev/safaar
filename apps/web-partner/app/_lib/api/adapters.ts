@@ -105,10 +105,14 @@ export interface BackendBooking {
   room_type_name?: string;
   room_type_id?: string;
   room_number?: string;
+  vehicle_id?: string;
+  vehicle_name?: string;
+  vehicle_plate_number?: string;
   price_snapshot?: {
     room_id?: string;
     room_type_id?: string;
     room_number?: string | null;
+    vehicle_id?: string;
     bed_id?: string;
     slot_time?: string;
   };
@@ -288,7 +292,7 @@ export function toReservation(booking: BackendBooking): ReservationView {
   const checkIn = booking.check_in ?? booking.item?.check_in ?? '';
   const checkOut = booking.check_out ?? booking.item?.check_out ?? '';
   const roomTypeId =
-    booking.room_type_id ?? booking.price_snapshot?.room_type_id ?? '';
+    booking.room_type_id ?? booking.price_snapshot?.room_type_id ?? booking.vehicle_id ?? booking.price_snapshot?.vehicle_id ?? '';
   const fullName =
     booking.guest_name ||
     booking.customer_name ||
@@ -306,9 +310,9 @@ export function toReservation(booking: BackendBooking): ReservationView {
       email: booking.guest_email ?? booking.user_email ?? '',
     },
     roomTypeId,
-    roomTypeName: booking.room_type_name ?? '',
+    roomTypeName: booking.room_type_name || booking.vehicle_name || '',
     roomNumber:
-      booking.room_number ?? booking.price_snapshot?.room_number ?? undefined,
+      booking.room_number ?? booking.price_snapshot?.room_number ?? booking.vehicle_plate_number ?? undefined,
     bedId: booking.price_snapshot?.bed_id,
     slotTime: normalizeSlotTime(
       booking.slot_time ??

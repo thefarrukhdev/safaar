@@ -133,7 +133,8 @@ describe('ReviewsController (integration, real HTTP) — POST /reviews endi logi
       .mockResolvedValueOnce([]) // RolesGuard.assertActorAllowed: SELECT status FROM users
       .mockResolvedValueOnce([{ id: HOTEL_ID }]) // assertTargetExists
       .mockResolvedValueOnce([]) // resolveVerifiedBooking — mos tasdiqlangan bron topilmadi
-      .mockResolvedValueOnce([]); // INSERT INTO reviews
+      .mockResolvedValueOnce([]) // INSERT INTO reviews
+      .mockResolvedValueOnce([{ author_name: 'Haqiqiy Foydalanuvchi' }]); // author_name lookup
 
     const response = await request(app.getHttpServer())
       .post('/reviews')
@@ -152,6 +153,10 @@ describe('ReviewsController (integration, real HTTP) — POST /reviews endi logi
       status: 'pending_review',
       target_type: 'hotel',
       target_id: HOTEL_ID,
+      // "SAFAAR — FIX REVIEW PENDING UX + AUTHOR NAME CONTRACT": POST javobi
+      // avval author_name'ni UMUMAN qaytarmagani sabab frontend har doim
+      // "Mehmon"ga tushib qolardi — hatto haqiqiy USER uchun ham.
+      author_name: 'Haqiqiy Foydalanuvchi',
     });
   });
 

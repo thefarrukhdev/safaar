@@ -34,6 +34,26 @@ export const reviewsService = {
     return mapReviews(raw);
   },
 
+  /** `GET /restaurants/:id/reviews` — restoran sharhlari. */
+  async getRestaurantReviews(restaurantId: string): Promise<ReviewView[]> {
+    if (!restaurantId) return [];
+    const raw = await rawApi.get<unknown>(
+      `/restaurants/${encodeURIComponent(restaurantId)}/reviews`,
+      { next: { revalidate: 60 } } as any,
+    );
+    return mapReviews(raw);
+  },
+
+  /** `GET /attractions/:id/reviews` — diqqatga sazovor joylar sharhlari. */
+  async getAttractionReviews(attractionId: string): Promise<ReviewView[]> {
+    if (!attractionId) return [];
+    const raw = await rawApi.get<unknown>(
+      `/attractions/${encodeURIComponent(attractionId)}/reviews`,
+      { next: { revalidate: 60 } } as any,
+    );
+    return mapReviews(raw);
+  },
+
   /** `POST /reviews` — sharh yaratish. */
   async createReview(data: { targetType: string; targetId: string; rating: number; body: string; photos?: string[] }, options?: { token?: string }): Promise<ReviewView> {
     const raw = await rawApi.post<unknown>(

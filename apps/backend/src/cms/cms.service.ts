@@ -101,7 +101,61 @@ export class CmsService {
   }
 
   async offers() {
-    return this.collection('offers');
+    const cmsOffers = await this.collection('offers');
+    
+    // Note: Cache this query as well to avoid DB hammering
+    let promos: any[] = [];
+    try {
+      promos = await this.cache.getOrSet('cms:promotions:active', 300, async () => {
+        const rows = await this.postgres.query(`
+          SELECT 
+            p.id, p.entity_type, p.entity_name as name, 
+            p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
+            h.slug as hotel_slug, hc.name as hotel_city_name, 
+            (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.visibility = 'public' LIMIT 1) as hotel_image,
+            bc.id as bus_company_id, bc.name as bus_company_name,
+            (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.visibility = 'public' LIMIT 1) as bus_image
+          FROM promotions p
+          LEFT JOIN hotel_rooms hr ON p.entity_type = 'room' AND p.entity_id = hr.id
+          LEFT JOIN hotels h ON hr.hotel_id = h.id
+          LEFT JOIN cities hc ON h.city_id = hc.id
+          LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
+          LEFT JOIN bus_companies bc ON v.company_id = bc.id
+          WHERE p.status IN ('published', 'approved')
+        `);
+        
+        return rows.map(row => {
+          const isRoom = row.entity_type === 'room';
+          const titleStr = isRoom ? (row.name) : (row.bus_company_name || row.name);
+          const cityObj = isRoom && row.hotel_city_name ? objectValue(row.hotel_city_name) : {};
+          return {
+            id: row.id,
+            type: 'offer',
+            slug: isRoom ? `hotels/${row.hotel_slug}` : `transport/${row.bus_company_id}`,
+            title: { uz: titleStr, ru: titleStr, en: titleStr },
+            name: titleStr,
+            title_text: titleStr,
+            name_text: titleStr,
+            body: {},
+            body_text: '',
+            content: '',
+            status: row.status,
+            metadata: {},
+            old_price: Number(row.old_price_sum) || 0,
+            new_price: Number(row.new_price_sum) || 0,
+            discount_percent: Number(row.discount_percent) || 0,
+            ends_at: row.end_date,
+            image_url: isRoom ? row.hotel_image : row.bus_image,
+            city_name: cityObj,
+          };
+        });
+      });
+    } catch (e) {
+      console.error('Failed to fetch promos:', e);
+      promos = [];
+    }
+
+    return [...cmsOffers, ...promos];
   }
 
   async promoBar() {

@@ -16,6 +16,8 @@ import {
 import { formatSum } from "@/lib/money";
 import type { TransportDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { createVehicleBookingAction } from "@/lib/services/booking/actions";
 
 function daysBetween(checkIn: string, checkOut: string): number {
   const start = Date.parse(checkIn);
@@ -28,11 +30,12 @@ import type { CatalogDict } from "@/i18n/dictionaries";
 
 export function TransportBookingSection({
   dict,
-
   transport,
+  isLoggedIn = false,
 }: {
   transport: TransportDetailView;
-  dict: CatalogDict["transport"];
+  dict: any;
+  isLoggedIn?: boolean;
 }) {
   const params = useParams<{ lang?: string }>();
   const locale = params?.lang || "uz";
@@ -114,8 +117,7 @@ export function TransportBookingSection({
     setLoading(true);
 
     try {
-      const { api } = await import("@/lib/api");
-      const booking = await api.bookings.createVehicleBooking({
+      const res = await createVehicleBookingAction({
         vehicleId: transport.id,
         checkIn,
         checkOut,
@@ -125,9 +127,11 @@ export function TransportBookingSection({
         paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
       });
 
-      const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
+      if (!res.ok) {
+        throw new Error(res.error || bDict.error || "Xatolik yuz berdi");
+      }
 
-      setSuccessBookingId(bookingId);
+      setSuccessBookingId(res.bookingId as string);
       setShowPaymentModal(false);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : (bDict.error || "Xatolik yuz berdi"));
@@ -179,28 +183,28 @@ export function TransportBookingSection({
         <form onSubmit={handleOpenModal} className="mt-5 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}</label>
-              <input
-                type="date"
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}
+              </label>
+              <DatePicker
+                locale={locale as "uz" | "ru" | "en"}
+                label=""
                 value={checkIn}
+                onChange={setCheckIn}
                 min={today}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}</label>
-              <input
-                type="date"
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}
+              </label>
+              <DatePicker
+                locale={locale as "uz" | "ru" | "en"}
+                label=""
                 value={checkOut}
+                onChange={setCheckOut}
                 min={checkIn || today}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                required
               />
             </div>
           </div>
@@ -240,13 +244,16 @@ export function TransportBookingSection({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{bDict.emailOptional || "Email (ixtiyoriy)"}</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {bDict.emailLabel || "Email"} {!isLoggedIn && <span className="text-red-500">*</span>}
+              </label>
               <input
                 type="email"
                 placeholder={bDict.emailPlaceholder || "ali@example.com"}
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                required={!isLoggedIn}
               />
             </div>
           </div>

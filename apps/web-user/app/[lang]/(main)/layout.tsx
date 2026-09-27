@@ -36,9 +36,13 @@ export default async function MainLayout({
 
   return (
     <RealtimeProvider accessToken={session?.accessToken ?? null}>
-      <PromoBarLive initialConfig={promoConfig} locale={locale} />
-      <SiteHeader locale={locale} dict={common} authed={!!session} />
-      <div className="flex flex-1 flex-col bg-slate-100/60 dark:bg-slate-950">{children}</div>
+      <div className="fixed top-0 left-0 right-0 z-50 flex flex-col">
+        <div className="relative z-50">
+          <PromoBarLive initialConfig={promoConfig} locale={locale} />
+        </div>
+        <SiteHeader locale={locale} dict={common} authed={!!session} />
+      </div>
+      <div className="flex flex-1 flex-col bg-slate-100/60 dark:bg-slate-950 pt-[92px] md:pt-[100px]">{children}</div>
       <SiteFooter locale={locale} dict={common} />
       <LiveSupportWidget dict={common.chat} />
     </RealtimeProvider>

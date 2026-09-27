@@ -155,8 +155,17 @@ export function useUpdateListingLocation() {
         address: values.address,
         latitude: values.latitude,
         longitude: values.longitude,
-        nearbyPlaces: values.nearbyPlaces,
-      }, token).then(toBusListing);
+        nearby_places: values.nearbyPlaces,
+      }, token).then((bus) => {
+        const updated = toBusListing(bus);
+        return {
+          ...currentListing,
+          address: updated.address || currentListing.address,
+          latitude: updated.latitude || currentListing.latitude,
+          longitude: updated.longitude || currentListing.longitude,
+          nearby: bus.nearby_places !== undefined ? updated.nearby : currentListing.nearby,
+        };
+      });
     }
     return partners.updateListingLocation(hotelId!, values, token).then(toListing);
   });
@@ -168,11 +177,20 @@ export function useUpdateListingRules() {
       const currentListing = useDataStore.getState().listing;
       return partners.updateBusCompany({
         name: currentListing.name,
-        checkInTime: values.checkInTime,
-        checkOutTime: values.checkOutTime,
-        cancellationPolicyCode: values.cancellationPolicy,
-        extraFees: values.extraFees,
-      }, token).then(toBusListing);
+        check_in_time: values.checkInTime,
+        check_out_time: values.checkOutTime,
+        cancellation_policy_code: values.cancellationPolicy,
+        extra_fees: values.extraFees,
+      }, token).then((bus) => {
+        const updated = toBusListing(bus);
+        return {
+          ...currentListing,
+          checkInTime: bus.check_in_time !== undefined ? updated.checkInTime : currentListing.checkInTime,
+          checkOutTime: bus.check_out_time !== undefined ? updated.checkOutTime : currentListing.checkOutTime,
+          cancellationPolicy: bus.cancellation_policy_code !== undefined ? updated.cancellationPolicy : currentListing.cancellationPolicy,
+          extraFees: bus.extra_fees !== undefined ? updated.extraFees : currentListing.extraFees,
+        };
+      });
     }
     return partners.updateListingRules(hotelId!, values, token).then(toListing);
   });

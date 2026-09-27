@@ -12,8 +12,9 @@ import { useReservations, useAssignRoom } from "../../_hooks/use-reservations";
 import { RoomStatus, type ReservationView, type Room, type RoomType } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 import { useAuthStore } from "../../_stores/auth-store";
-import { getPartnerLabels, isRestaurant } from "../../_lib/utils/partner-labels";
+import { getPartnerLabels, isRestaurant, hasBuses } from "../../_lib/utils/partner-labels";
 import { DEFAULT_SLOT_DURATION_MINUTES, toMinutes } from "../../_lib/utils/time-slots";
+import { useVehicles } from "../../_hooks/use-vehicles";
 
 interface Props {
   open: boolean;
@@ -29,7 +30,8 @@ export function AssignRoomDialog({
   reservation,
   onAssigned,
 }: Props) {
-  const { data: rooms } = useRooms();
+  const { data: roomsData } = useRooms();
+  const { data: vehiclesData } = useVehicles();
   const { data: roomTypes } = useRoomTypes();
   const { data: reservations } = useReservations();
   const assignRoom = useAssignRoom();
@@ -39,6 +41,23 @@ export function AssignRoomDialog({
   const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
   const floorCap = labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1);
   const restaurant = isRestaurant(partnerType);
+  const isTransport = hasBuses(partnerType);
+
+  const rooms = useMemo(() => {
+    if (isTransport) {
+      return vehiclesData.map(v => ({
+        id: v.id,
+        number: v.plateNumber || v.name,
+        floor: 1,
+        roomTypeId: v.id, 
+        roomTypeName: v.name,
+        isListed: v.status === 'active',
+        nightlyPrice: v.pricePerDay,
+        status: RoomStatus.VACANT_CLEAN
+      } as Room));
+    }
+    return roomsData;
+  }, [roomsData, vehiclesData, isTransport]);
 
   /**
    * Room.status faqat "hozir jismonan band"ni bildiradi — kecha/vaqt-slot
@@ -47,7 +66,11 @@ export function AssignRoomDialog({
    * tekshiramiz (restoranda vaqt-slot, boshqalarida sana oralig'i bo'yicha).
    */
   const isRoomAvailable = (room: Room): boolean => {
-    if (!reservation || room.roomTypeId !== reservation.roomTypeId) return false;
+    if (!reservation) return false;
+    
+    // Har doim, shu jumladan transport uchun ham, bron qilingan "roomType" (avtomobil ID)
+    // bilan tanlanayotgan avtomobil IDsi ustma-ust tushishi kerak.
+    if (room.roomTypeId !== reservation.roomTypeId) return false;
 
     const hasConflict = reservations.some((r) => {
       if (r.id === reservation.id || r.roomNumber !== room.number) return false;
@@ -75,9 +98,10 @@ export function AssignRoomDialog({
     // Restoranda stol holati faqat "hozir band o'tirilgan"ni bildiradi, kunlik
     // vaqt-slotlarni emas — shuning uchun faqat ta'mirdagi stollarni chetlab
     // o'tamiz. Boshqalarida odatiy uy xo'jaligi holati talab qilinadi.
-    return restaurant
-      ? room.status !== RoomStatus.OUT_OF_SERVICE && room.status !== RoomStatus.BLOCKED
-      : room.status === RoomStatus.VACANT_CLEAN;
+    if (restaurant || isTransport) {
+      return room.status !== RoomStatus.OUT_OF_SERVICE && room.status !== RoomStatus.BLOCKED;
+    }
+    return room.status === RoomStatus.VACANT_CLEAN;
   };
 
   const availableRoomsCount = useMemo(() => {

@@ -172,7 +172,7 @@ export default function ModernLoginForm({
                       name="password"
                       type={showPassword ? "text" : "password"}
                       required
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all shadow-inner"
+                      className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all shadow-inner"
                       placeholder="••••••••"
                     />
                     <button

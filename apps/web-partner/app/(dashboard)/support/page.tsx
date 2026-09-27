@@ -82,7 +82,7 @@ export default function SupportPage() {
         description="Safaar ma'muriyati bilan bevosita bog'lanish. Barcha savollaringizni shu yerda yozishingiz mumkin."
       />
 
-      <div className="relative mb-6 mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm">
+      <div className="relative mb-6 mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
         <div className="flex flex-col gap-1 border-b border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
@@ -148,7 +148,7 @@ export default function SupportPage() {
                       className={`rounded-2xl p-3.5 text-[15px] leading-relaxed shadow-sm md:p-4 ${
                         isPartner
                           ? "rounded-tr-sm bg-brand-600 text-white"
-                          : "rounded-tl-sm border border-[var(--border)] bg-white text-[var(--text-primary)]"
+                          : "rounded-tl-sm border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]"
                       }`}
                     >
                       {message.body}
@@ -160,13 +160,13 @@ export default function SupportPage() {
           )}
         </div>
 
-        <div className="border-t border-[var(--border)] bg-white p-4">
+        <div className="border-t border-[var(--border)] bg-[var(--surface)] p-4">
           <form onSubmit={handleSendMessage} className="flex items-center gap-3">
             <Input
               value={newMessageText}
               onChange={(event) => setNewMessageText(event.target.value)}
               placeholder="Xabar yozing..."
-              className="h-[52px] w-full rounded-full border border-[var(--border)] bg-[var(--surface-muted)] pl-6 pr-14 text-sm focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500"
+              className="h-[52px] w-full rounded-full border border-[var(--border)] bg-[var(--surface-muted)] pl-6 pr-14 text-sm focus:border-brand-500 focus:bg-[var(--surface)] focus:ring-1 focus:ring-brand-500"
             />
             <Button
               type="submit"

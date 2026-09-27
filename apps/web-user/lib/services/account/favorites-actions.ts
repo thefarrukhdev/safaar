@@ -22,7 +22,7 @@ export interface FavoriteResult {
 }
 
 export async function addFavoriteAction(
-  targetType: "hotel" | "bus",
+  targetType: "hotel" | "bus" | "restaurant" | "transport" | "attraction",
   targetId: string,
 ): Promise<FavoriteResult> {
   const session = await getSession();

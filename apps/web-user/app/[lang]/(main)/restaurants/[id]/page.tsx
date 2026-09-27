@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Clock, Utensils } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
+import { ReviewsList } from "@/components/features/reviews/ReviewsList";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 
@@ -43,9 +44,11 @@ export default async function RestaurantDetailPage({
   const { lang, id } = await params;
   const locale = isLocale(lang) ? lang : "uz";
 
-  const [dict, session] = await Promise.all([
+  const [dict, session, reviewsDict, reviews] = await Promise.all([
     getDictionary(locale, "restaurants"),
-    getSession()
+    getSession(),
+    getDictionary(locale, "reviews"),
+    api.reviews.getRestaurantReviews(id).catch(() => []),
   ]);
   let restaurant;
   try {
@@ -164,7 +167,20 @@ export default async function RestaurantDetailPage({
             </section>
           )}
 
-          
+          <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {reviewsDict.title || "Sharhlar"}
+            </h2>
+            <ReviewsList 
+              reviews={reviews} 
+              dict={reviewsDict} 
+              locale={locale} 
+              targetId={id}
+              targetType="restaurant"
+              authed={!!session}
+              token={session?.accessToken}
+            />
+          </section>
         </div>
 
         <aside className="lg:sticky lg:top-24">

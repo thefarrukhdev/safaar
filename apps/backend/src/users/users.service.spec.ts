@@ -2,6 +2,7 @@ import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import type { JobQueueService } from '../infrastructure/job-queue.service';
 import type { PostgresService } from '../infrastructure/postgres.service';
+import type { UploadsService } from '../uploads/uploads.service';
 import { UsersService } from './users.service';
 
 type QueryCall = [sql: string, params?: readonly unknown[]];
@@ -24,6 +25,7 @@ describe('UsersService contact-matched guest booking history', () => {
     service = new UsersService(
       pg as unknown as PostgresService,
       { add: jest.fn() } as unknown as JobQueueService,
+      { create: jest.fn() } as unknown as UploadsService,
     );
   });
 
@@ -163,6 +165,7 @@ describe('UsersService favorites', () => {
     service = new UsersService(
       pg as unknown as PostgresService,
       { add: jest.fn() } as unknown as JobQueueService,
+      { create: jest.fn() } as unknown as UploadsService,
     );
   });
 
@@ -286,6 +289,119 @@ describe('UsersService favorites', () => {
     ).rejects.toMatchObject({
       status: 401,
     });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('UsersService avatar upload (MEDIA_NOT_FOUND regression)', () => {
+  let service: UsersService;
+  let pg: { query: jest.Mock };
+  let uploads: { create: jest.Mock };
+
+  const actor: RequestActor = {
+    id: 'user-1',
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  const uploadedFile = {
+    buffer: Buffer.from('fake-image-bytes'),
+    originalname: 'avatar.jpg',
+    mimetype: 'image/jpeg',
+    size: 1024,
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    uploads = { create: jest.fn() };
+    service = new UsersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+      uploads as unknown as UploadsService,
+    );
+  });
+
+  it(
+    "regression: a real multipart file upload (web-user's actual request shape) " +
+      'persists media via UploadsService instead of throwing MEDIA_NOT_FOUND',
+    async () => {
+      uploads.create.mockResolvedValueOnce({
+        id: 'media-123',
+        owner_id: 'user-1',
+        url: 'https://cdn.example.com/image/media-123.jpg',
+      });
+      pg.query.mockResolvedValueOnce([
+        {
+          id: 'user-1',
+          avatar_media_id: 'media-123',
+          avatar_url: 'https://cdn.example.com/image/media-123.jpg',
+        },
+      ]);
+
+      const result = await service.setAvatar(actor, {}, uploadedFile);
+
+      expect(uploads.create).toHaveBeenCalledWith(
+        actor,
+        'image',
+        {},
+        uploadedFile,
+      );
+      // The DB write must use the media id UploadsService actually created,
+      // scoped to the authenticated actor — never a client-supplied id.
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('avatar_media_id = $1');
+      expect(params).toEqual(['media-123', expect.any(String), 'user-1']);
+      expect(result).toMatchObject({
+        avatar_media_id: 'media-123',
+        avatar_url: 'https://cdn.example.com/image/media-123.jpg',
+      });
+    },
+  );
+
+  it('still supports the media_id JSON contract when no file is attached (e.g. a future presign flow)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'media-999' }])
+      .mockResolvedValueOnce([
+        { id: 'user-1', avatar_media_id: 'media-999', avatar_url: null },
+      ]);
+
+    await service.setAvatar(actor, { media_id: 'media-999' });
+
+    expect(uploads.create).not.toHaveBeenCalled();
+    const [ownershipSql, ownershipParams] = pg.query.mock.calls[0] as [
+      string,
+      unknown[],
+    ];
+    expect(ownershipSql).toContain('owner_id = $2');
+    expect(ownershipParams).toEqual(['media-999', 'user-1']);
+  });
+
+  it('rejects with MEDIA_NOT_FOUND when neither a file nor a media_id is provided', async () => {
+    await expect(service.setAvatar(actor, {})).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'MEDIA_NOT_FOUND' },
+    });
+    expect(uploads.create).not.toHaveBeenCalled();
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it("rejects with MEDIA_NOT_FOUND when a media_id does not belong to the actor (can't attach another user's media)", async () => {
+    pg.query.mockResolvedValueOnce([]);
+
+    await expect(
+      service.setAvatar(actor, { media_id: 'someone-elses-media' }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'MEDIA_NOT_FOUND' },
+    });
+  });
+
+  it('rejects anonymous avatar upload before touching storage or the database', async () => {
+    await expect(
+      service.setAvatar(undefined, {}, uploadedFile),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(uploads.create).not.toHaveBeenCalled();
     expect(pg.query).not.toHaveBeenCalled();
   });
 });

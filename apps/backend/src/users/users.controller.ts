@@ -7,12 +7,16 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '@safaar/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
+import type { UploadedFile as UploadedFilePayload } from '../uploads/uploads.service';
 import { UsersService } from './users.service';
 import { SetAvatarDto, UpdateProfileDto } from './dto/user.dto';
 
@@ -36,11 +40,15 @@ export class UsersController {
   }
 
   @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   uploadAvatar(
     @CurrentActor() actor: RequestActor | undefined,
     @Body() body: SetAvatarDto,
+    @UploadedFile() file?: UploadedFilePayload,
   ) {
-    return this.usersService.setAvatar(actor, body);
+    return this.usersService.setAvatar(actor, body, file);
   }
 
   @Delete('avatar')

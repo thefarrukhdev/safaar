@@ -86,7 +86,7 @@ export function CheckoutForm({
       setPromoDiscount({ type: res.data.discount_type, value: Number(res.data.discount_value) });
     } else {
       setPromoDiscount(null);
-      setPromoError(res.error || "Promo kod noto'g'ri yoki muddati tugagan");
+      setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
     }
     setPromoLoading(false);
   };
@@ -277,7 +277,7 @@ export function CheckoutForm({
               <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-3 rounded-full active:scale-[0.97]">{dict.applyPromo}</Button>
             </div>
             {promoError && <span className="text-xs text-red-500 mt-1">{promoError}</span>}
-            {promoDiscount && <span className="text-xs text-green-600 mt-1">Chegirma qo'llanildi: {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
+            {promoDiscount && <span className="text-xs text-green-600 mt-1">{(dict as any).promoApplied || "Chegirma qo'llanildi:"} {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
           </label>
         </div>
 

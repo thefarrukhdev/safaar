@@ -29,6 +29,7 @@
   "specialRequestsPlaceholder": "Напишите, если у вас есть дополнительные пожелания к отелю...",
   "promoCode": "Промокод (при наличии)",
   "applyPromo": "Применить",
+  "promoApplied": "Скидка применена:",
   "agreeTermsPrefix": "Я согласен с условиями ",
   "termsLink": "Публичной оферты",
   "agreeTermsSuffix": ".",

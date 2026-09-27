@@ -40,7 +40,7 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
     id: "card",
     name: "Karta orqali to'lash",
     subtitle: "Uzcard, Humo, Visa va Mastercard",
-    badges: ["3D-Secure xavfsizlik"],
+    badges: [],
     type: "local_card",
     dictKey: "local_card" as any,
     colorTheme: CARD_THEME,

@@ -121,7 +121,7 @@ export class CmsService {
           LEFT JOIN cities hc ON h.city_id = hc.id
           LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
           LEFT JOIN bus_companies bc ON v.company_id = bc.id
-          WHERE p.status IN ('approved', 'active')
+          WHERE p.status = 'published'
         `);
         
         return rows.map(row => {
@@ -152,28 +152,7 @@ export class CmsService {
       });
     } catch (e) {
       console.error('Failed to fetch promos:', e);
-      promos = [
-        {
-          id: 'error-debug',
-          type: 'offer',
-          slug: 'hotels/error',
-          title: { uz: String(e.message), ru: String(e.message), en: String(e.message) },
-          name: String(e.message),
-          title_text: String(e.message),
-          name_text: String(e.message),
-          body: {},
-          body_text: '',
-          content: '',
-          status: 'published',
-          metadata: {},
-          old_price: 9999,
-          new_price: 9999,
-          discount_percent: 0,
-          ends_at: null,
-          image_url: null,
-          city_name: { uz: 'Error City' },
-        }
-      ];
+      promos = [];
     }
 
     return [...cmsOffers, ...promos];

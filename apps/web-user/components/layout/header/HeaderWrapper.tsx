@@ -39,7 +39,7 @@ export function HeaderWrapper(props: HeaderProps) {
       <header
         data-transparent={isTransparent}
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 group/header",
+          "sticky top-0 left-0 right-0 z-50 w-full transition-all duration-300 group/header",
           isTransparent
             ? "bg-transparent border-transparent"
             : "bg-white/95 backdrop-blur-md border-b border-slate-900/[0.08] dark:bg-slate-950/95 dark:border-slate-800",
@@ -70,8 +70,6 @@ export function HeaderWrapper(props: HeaderProps) {
           </div>
         </div>
       </header>
-      {/* Spacer div to prevent content from hiding under the fixed header. On the home page, we want the transparent header to float over the hero image, so we hide the spacer. */}
-      {!isHome && <div className="h-14 md:h-16 w-full shrink-0 pointer-events-none" />}
     </>
   );
 }

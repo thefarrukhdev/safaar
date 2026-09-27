@@ -67,6 +67,10 @@ export class RolesGuard implements CanActivate {
       Boolean(requiredRoles?.length) || Boolean(requiredPermissions?.length);
 
     const request = context.switchToHttp().getRequest<HttpRequestWithActor>();
+    const authorizationHeader = Array.isArray(request.headers.authorization)
+      ? request.headers.authorization[0]
+      : request.headers.authorization;
+    const presentedAuthorization = Boolean(authorizationHeader?.trim());
     const resolved = request.user ?? buildActorFromHeaders(request.headers);
 
     if (!authRequired) {
@@ -77,17 +81,20 @@ export class RolesGuard implements CanActivate {
       // `CurrentActor()` doim `undefined` ko'rar, bron `user_id`si NULL
       // yozilardi. Endi token bo'lsa (va yaroqli/faol bo'lsa) actor
       // baribir aniqlanadi va `request.user`ga biriktiriladi — lekin bu
-      // marshrutda auth SHART emasligi sababli, token yo'q/yaroqsiz/
-      // sessiya bekor qilingan/hisob bloklangan bo'lsa QATTIQ xato
-      // qaytarilmaydi, shunchaki anonim (guest) sifatida davom etiladi.
+      // marshrutda auth SHART emasligi sababli token YO'QLIGI guest sifatida
+      // davom etadi. Lekin client Authorization header yuborgan bo'lsa, uni
+      // jim tashlab guestga aylantirish mumkin emas: revoked/bloklangan token
+      // bilan yuborilgan authenticated niyat boshqa user_id ostida bron
+      // yaratib qo'yishi mumkin.
       if (resolved) {
-        try {
-          await this.assertSessionActive(resolved);
-          await this.assertActorAllowed(resolved, request);
-          request.user = resolved;
-        } catch {
-          // yaroqsiz/bloklangan/faol bo'lmagan actor — guest sifatida davom etadi
-        }
+        await this.assertSessionActive(resolved);
+        await this.assertActorAllowed(resolved, request);
+        request.user = resolved;
+      } else if (presentedAuthorization) {
+        throw new UnauthorizedException({
+          code: 'AUTH_TOKEN_INVALID',
+          message: 'Sessiya topilmadi yoki token yaroqsiz',
+        });
       }
       return true;
     }

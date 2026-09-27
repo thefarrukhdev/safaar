@@ -121,7 +121,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       firstName: ' Laziz ',
       lastName: ' Shakarov ',
       email: 'LAZIZ@EXAMPLE.COM ',
-      phone: ' +998901234567 ',
+      phone: '90 123 45 67',
     });
 
     expect(result.booking.user_id).toBeNull();
@@ -175,6 +175,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(authedActor, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      user_id: 'attacker-controlled-user-id',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -185,6 +186,62 @@ describe('BookingsService.createHotel guest checkout', () => {
     // EMAS (ishlab chiqarilmasligi ham kerak, keraksiz cache yozuvi
     // qoldirmaslik uchun).
     expect(result.guestAccessToken).toBeUndefined();
+  });
+
+  it('rejects an anonymous booking when the guest name is missing', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_email: 'guest@example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_NAME_REQUIRED' },
+    });
+  });
+
+  it('rejects an anonymous booking with no phone or email', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_CONTACT_REQUIRED' },
+    });
+  });
+
+  it('rejects malformed guest contact before creating inventory or payment rows', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+        guest_phone: '123',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_PHONE_INVALID' },
+    });
+    expect(pg.transaction).not.toHaveBeenCalled();
   });
 
   it('confirms a cash-payment booking immediately instead of leaving it pending forever (regression: cash bookings had no path to confirmed and would auto-expire)', async () => {
@@ -210,6 +267,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -252,6 +311,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -293,6 +354,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -331,6 +394,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -392,6 +457,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
@@ -425,6 +491,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({
@@ -462,6 +529,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       check_in: '2026-08-10',
       check_out: '2026-08-12',
       rooms: 1,
+      guest_name: 'Test Guest',
       guest_email: 'guest@example.com',
     });
 
@@ -495,6 +563,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       check_in: '2026-08-10',
       check_out: '2026-08-12',
       rooms: 1,
+      guest_name: 'Test Guest',
       guest_email: 'guest@example.com',
     });
 
@@ -522,6 +591,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
@@ -633,6 +703,8 @@ describe('BookingsService.createHotel guest checkout', () => {
       await service.createHotel(undefined, {
         hotel_id: 'hotel-1',
         agree_terms: true,
+        guest_name: 'Test Guest',
+        guest_email: 'guest@example.com',
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -726,11 +798,13 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
       check_in: '2026-08-10',
       slot_time: '19:00',
       guest_name: 'Laziz',
+      guest_email: 'laziz@example.com',
     });
 
     expect(result.booking.type).toBe('restaurant');
     expect(result.booking.check_out).toBe('2026-08-10');
     expect(result.booking.slot_time).toBe('19:00');
+    expect(result.booking.guest_email).toBe('laziz@example.com');
 
     const conflictCall = pg.query.mock.calls[2];
     expect(String(conflictCall[0])).toContain('90 minutes');
@@ -791,6 +865,8 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '19:00',
+        guest_name: 'Test Guest',
+        guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
   });
@@ -831,6 +907,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
       check_in: '2026-08-10',
       slot_time: slotTime,
       guest_name: 'Laziz',
+      guest_email: 'laziz@example.com',
     });
 
   describe("yarim tundan o'tuvchi ish vaqti 07:01 -> 01:53 (production: Osh markazi)", () => {
@@ -959,6 +1036,39 @@ describe('BookingsService.createBus (regression: BUG-04 seat double-selling)', (
     expect(result.booking.trip_id).toBe('trip-1');
     expect(result.booking.user_id).toBe('user-1');
     expect(pg.transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('guest avtobus bronini user_id=NULL va guest access token bilan yaratadi', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { id: 'trip-1', company_id: 'company-1', base_price: '50000' },
+      ])
+      .mockResolvedValueOnce([
+        { partner_organization_id: 'partner-1', commission_rate: 12 },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'seat-1', seat_code: '12A', status: 'available', price: '50000' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createBus(undefined, {
+      trip_id: 'trip-1',
+      seats: ['12A'],
+      firstName: 'Laziz',
+      lastName: 'Shakarov',
+      phone: '90 123 45 67',
+    });
+
+    expect(result.booking).toMatchObject({
+      user_id: null,
+      guest_name: 'Laziz Shakarov',
+      guest_phone: '+998901234567',
+    });
+    expect(result.guestAccessToken).toEqual(expect.any(String));
   });
 
   it("o'rindiq allaqachon band bo'lsa SEAT_NOT_AVAILABLE bilan rad etadi va bron yaratmaydi (tranzaksiya ichida qulflangan holatni ko'radi)", async () => {

@@ -551,6 +551,7 @@ describe('AuthService email and OAuth', () => {
     );
     const updateCall = queryCallsOf(linkTransaction)[3];
     expect(updateCall[0]).not.toMatch(/password_hash/i);
+    expect(updateCall[0]).toContain('lower(email) = lower($2)');
   });
 
   it('completeOAuthRegistration rejects an expired/invalid registration token', async () => {
@@ -1545,6 +1546,43 @@ describe('AuthService demo-mode OTP (ENABLE_DEMO_AUTH — SMS/email provider unc
         challenge_id: result.challenge_id,
       }),
     ).resolves.toBeDefined();
+  });
+
+  it('persists phone_verified_at when a user proves phone ownership with OTP', async () => {
+    const challenge = otpStore.create('+998901234567', 'user_login');
+    const code = otpStore.getDeliveryCode(challenge.id)!;
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'user-verified-by-otp',
+          phone: '+998901234567',
+          status: 'active',
+          preferred_language: 'uz',
+          bonus_balance: 0,
+          first_name: null,
+          last_name: null,
+          email: null,
+          phone_verified_at: null,
+          last_login_at: null,
+          created_at: '2026-09-01T00:00:00.000Z',
+          updated_at: '2026-09-01T00:00:00.000Z',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    jest.spyOn(authSessionStore, 'create').mockResolvedValue({} as never);
+
+    const result = await service.verifyUserOtp({
+      phone: '+998901234567',
+      code,
+      challenge_id: challenge.id,
+    });
+
+    const [updateSql, updateParams] = queryCallsOf(pg)[1];
+    expect(updateSql).toContain('phone_verified_at = $1');
+    expect(updateParams).toEqual([expect.any(String), 'user-verified-by-otp']);
+    expect(
+      typeof (result.user as Record<string, unknown>)['phone_verified_at'],
+    ).toBe('string');
   });
 
   it('sendPartnerOtp behaves the same way (fails off, dev_code on)', async () => {
@@ -2751,5 +2789,34 @@ describe('AuthService.completeProfile — Terms of Service acceptance (2026-09-1
     const [, updateParams] = queryCallsOf(pg)[2];
     expect(updateParams![7]).toBe('2026-01-01T00:00:00.000Z'); // preserved
     expect(updateParams![8]).toBe('2026-01-01'); // preserved
+  });
+
+  it('clears stale phone/email verification when completeProfile changes either identity value', async () => {
+    const verifiedRow = {
+      ...baseUserRow,
+      phone_verified_at: '2026-09-01T00:00:00.000Z',
+      email: 'old@example.com',
+      email_verified_at: '2026-09-01T00:00:00.000Z',
+      terms_accepted_at: '2026-09-01T00:00:00.000Z',
+      terms_version: CURRENT_TERMS_VERSION,
+    };
+    pg.query
+      .mockResolvedValueOnce([verifiedRow])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.completeProfile(actor, {
+      phone: '+998901112233',
+      email: 'new@example.com',
+      agree_terms: true,
+    });
+
+    const [updateSql] = queryCallsOf(pg)[2];
+    expect(updateSql).toContain('phone_verified_at = CASE');
+    expect(updateSql).toContain('email_verified_at = CASE');
+    expect(result).toMatchObject({
+      phone_verified_at: null,
+      email_verified_at: null,
+    });
   });
 });

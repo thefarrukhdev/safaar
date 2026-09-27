@@ -78,14 +78,29 @@ describe('RolesGuard — optional-auth actor resolution (regression: guest-check
     expect(pg.query).not.toHaveBeenCalled();
   });
 
-  it('degrades to guest (no hard error) when the token belongs to a blocked user on an optional-auth route', async () => {
+  it('rejects a blocked user instead of silently degrading the request to guest on an optional-auth route', async () => {
     const token = userToken();
     pg.query.mockResolvedValueOnce([{ status: 'blocked' }]);
 
     const { context, request } = contextFor({
       authorization: `Bearer ${token}`,
     });
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+    await expect(guard.canActivate(context)).rejects.toMatchObject({
+      status: 403,
+      response: { code: 'USER_BLOCKED' },
+    });
+    expect(request.user).toBeUndefined();
+  });
+
+  it('rejects a presented invalid token instead of treating it as an anonymous request', async () => {
+    const { context, request } = contextFor({
+      authorization: 'Bearer definitely-not-a-valid-jwt',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toMatchObject({
+      status: 401,
+      response: { code: 'AUTH_TOKEN_INVALID' },
+    });
     expect(request.user).toBeUndefined();
   });
 

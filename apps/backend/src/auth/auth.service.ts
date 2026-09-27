@@ -18,6 +18,11 @@ import {
 } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import {
+  isValidEmail,
+  normalizeEmail,
+  normalizePhone,
+} from '../common/contact-normalization';
+import {
   PostgresService,
   type PostgresTransaction,
 } from '../infrastructure/postgres.service';
@@ -213,9 +218,11 @@ export class AuthService {
       const id = randomUUID();
       const now = new Date().toISOString();
       await this.pg.query(
-        `INSERT INTO users (id, phone, status, preferred_language, bonus_balance, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, phone, 'active', 'uz', 0, now, now],
+        `INSERT INTO users (
+           id, phone, status, preferred_language, bonus_balance,
+           phone_verified_at, last_login_at, created_at, updated_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $6, $6, $6)`,
+        [id, phone, 'active', 'uz', 0, now],
       );
       user = {
         id,
@@ -226,13 +233,25 @@ export class AuthService {
         first_name: null,
         last_name: null,
         email: null,
-        phone_verified_at: null,
-        last_login_at: null,
+        phone_verified_at: now,
+        last_login_at: now,
         created_at: now,
         updated_at: now,
       };
     } else {
-      user = rows[0];
+      const now = new Date().toISOString();
+      await this.pg.query(
+        `UPDATE users
+         SET phone_verified_at = $1, last_login_at = $1, updated_at = $1
+         WHERE id = $2`,
+        [now, rows[0]['id']],
+      );
+      user = {
+        ...rows[0],
+        phone_verified_at: now,
+        last_login_at: now,
+        updated_at: now,
+      };
     }
 
     return {
@@ -281,7 +300,8 @@ export class AuthService {
 
     const rows = await this.pg.query<DbRow>(
       `SELECT id::text, phone, status, preferred_language, bonus_balance,
-              first_name, last_name, email, password_hash, created_at, updated_at,
+              first_name, last_name, email, password_hash,
+              phone_verified_at, email_verified_at, created_at, updated_at,
               terms_accepted_at, terms_version
        FROM users
        WHERE id = $1
@@ -307,9 +327,7 @@ export class AuthService {
     const phone = phoneDigits
       ? this.normalizePhone(String(phoneInput))
       : rows[0]['phone'];
-    const email = body.email
-      ? String(body.email).toLowerCase()
-      : rows[0]['email'];
+    const email = body.email ? normalizeEmail(body.email) : rows[0]['email'];
     const preferredLanguage = ['uz', 'ru', 'en'].includes(
       String(body.preferred_language),
     )
@@ -366,7 +384,16 @@ export class AuthService {
       `UPDATE users
        SET first_name = $1, last_name = $2, phone = $3, email = $4,
            preferred_language = $5, password_hash = $6, updated_at = $7,
-           terms_accepted_at = $8, terms_version = $9
+           terms_accepted_at = $8, terms_version = $9,
+           phone_verified_at = CASE
+             WHEN phone IS DISTINCT FROM $3 THEN NULL
+             ELSE phone_verified_at
+           END,
+           email_verified_at = CASE
+             WHEN lower(btrim(COALESCE(email, ''))) IS DISTINCT FROM
+                  lower(btrim(COALESCE($4, ''))) THEN NULL
+             ELSE email_verified_at
+           END
        WHERE id = $10`,
       [
         firstName,
@@ -397,6 +424,12 @@ export class AuthService {
       last_name: lastName,
       phone,
       email,
+      phone_verified_at:
+        rows[0]['phone'] === phone ? rows[0]['phone_verified_at'] : null,
+      email_verified_at:
+        normalizeEmail(rows[0]['email']) === normalizeEmail(email)
+          ? rows[0]['email_verified_at']
+          : null,
       preferred_language: preferredLanguage,
       updated_at: now,
     };
@@ -698,7 +731,12 @@ export class AuthService {
         await transaction.query(
           `UPDATE users
            SET email = coalesce(email, $2),
-               email_verified_at = CASE WHEN $2 IS NOT NULL THEN coalesce(email_verified_at, $3) ELSE email_verified_at END,
+               email_verified_at = CASE
+                 WHEN $2 IS NOT NULL
+                   AND (email IS NULL OR lower(email) = lower($2))
+                   THEN coalesce(email_verified_at, $3)
+                 ELSE email_verified_at
+               END,
                first_name = coalesce(first_name, $4),
                last_name = coalesce(last_name, $5),
                terms_accepted_at = coalesce(terms_accepted_at, $3),
@@ -2610,17 +2648,14 @@ export class AuthService {
   }
 
   private normalizePhone(phone: string): string {
-    const digits = String(phone ?? '').replace(/\D/g, '');
-    return digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
+    return normalizePhone(phone);
   }
 
   private normalizeEmail(email: unknown): string {
-    return String(email ?? '')
-      .trim()
-      .toLowerCase();
+    return normalizeEmail(email);
   }
 
   private isValidEmail(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return isValidEmail(email);
   }
 }

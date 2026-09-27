@@ -19,6 +19,7 @@ import type { RestaurantDetailView } from "@safaar/api-client";
 import { Button } from "@/components/ui/Button";
 import { createRestaurantBookingAction } from "@/lib/services/booking/actions";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { TimePicker } from "@/components/ui/TimePicker";
 import { Modal } from "@/components/ui/Modal";
 import type { CatalogDict } from "@/i18n/dictionaries";
 
@@ -210,19 +211,13 @@ export function RestaurantBookingSection({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     {bDict.timeLabel || "Vaqt"}
                   </label>
-                  <div className="relative mt-1">
-                    <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="time"
-                      value={slotTime}
-                      onChange={(e) => setSlotTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      required
-                    />
-                  </div>
+                  <TimePicker
+                    value={slotTime}
+                    onChange={setSlotTime}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Users, Fuel, Luggage, Car, Building2 } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
+import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { ReviewsList } from "@/components/features/reviews/ReviewsList";
@@ -183,6 +184,20 @@ export default async function TransportDetailPage({
               targetType="bus_company"
               authed={!!session}
               token={session?.accessToken}
+            />
+          </section>
+
+          <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <DetailLocationSection 
+              title={(dict as any).detail?.location || "Olib ketish / Joylashuv"}
+              address={transport.cityName || "Noma'lum manzili"} 
+              latitude={transport.latitude} 
+              longitude={transport.longitude} 
+              itemName={transport.name}
+              itemImage={transport.imageUrl ?? undefined}
+              itemRating={transport.rating}
+              openInMapsText={(dict as any).detail?.openInMaps || "Google Maps'da ochish"}
+              noCoordsText={(dict as any).detail?.noCoordinates || "Xarita koordinatalari mavjud emas"}
             />
           </section>
         </div>

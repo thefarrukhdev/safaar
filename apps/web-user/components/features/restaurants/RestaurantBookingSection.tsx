@@ -366,28 +366,17 @@ export function RestaurantBookingSection({
               </span>
             </label>
 
-            {!isLoggedIn ? (
-              <Link href={`/${locale}/login?next=/${locale}/restaurants/${restaurant.id}`} className="w-full block">
-                <Button
-                  type="button"
-                  className="w-full bg-slate-900 font-extrabold text-white hover:bg-slate-800 py-3 shadow-md dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-                >
-                  {bDict.loginToBook || "Bron qilish uchun tizimga kiring"}
-                </Button>
-              </Link>
-            ) : (
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
-              >
-                {loading
-                  ? (bDict.processingPayment || "To'lov amalga oshirilmoqda...")
-                  : paymentMethod === "card"
-                  ? `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`
-                  : (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")}
-              </Button>
-            )}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
+            >
+              {loading
+                ? (bDict.processingPayment || "To'lov amalga oshirilmoqda...")
+                : paymentMethod === "card"
+                ? `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`
+                : (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")}
+            </Button>
           </form>
         </div>
       </Modal>

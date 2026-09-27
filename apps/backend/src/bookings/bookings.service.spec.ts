@@ -125,6 +125,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     });
 
     expect(result.booking.user_id).toBeNull();
+    expect(result.booking.status).toBe('pending');
     expect(result.booking.guest_name).toBe('Laziz Shakarov');
     expect(result.booking.guest_email).toBe('laziz@example.com');
     expect(result.booking.guest_phone).toBe('+998901234567');
@@ -145,6 +146,10 @@ describe('BookingsService.createHotel guest checkout', () => {
     // `GET /bookings/:id` guest uchun doim 401 bilan rad etaveradi.
     expect(result.guestAccessToken).toEqual(expect.any(String));
     expect(result.guestAccessToken!.length).toBeGreaterThan(20);
+    expect(result.payment).toMatchObject({
+      provider: 'click',
+      status: 'pending',
+    });
   });
 
   it('populates booking.user_id when an authenticated customer books (regression: guest-checkout guard was stripping the actor for everyone)', async () => {
@@ -186,6 +191,49 @@ describe('BookingsService.createHotel guest checkout', () => {
     // EMAS (ishlab chiqarilmasligi ham kerak, keraksiz cache yozuvi
     // qoldirmaslik uchun).
     expect(result.guestAccessToken).toBeUndefined();
+  });
+
+  it('keeps authenticated CASH booking ownership on the JWT actor', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const actor: RequestActor = {
+      id: 'user-cash',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+    const result = await service.createHotel(actor, {
+      hotel_id: 'hotel-1',
+      agree_terms: true,
+      user_id: 'spoofed-user',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      payment_method: 'cash',
+    });
+
+    expect(result.booking).toMatchObject({
+      user_id: 'user-cash',
+      status: 'confirmed',
+    });
+    expect(result.payment).toMatchObject({ status: 'awaiting_cash' });
   });
 
   it('rejects an anonymous booking when the guest name is missing', async () => {
@@ -244,6 +292,26 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(pg.transaction).not.toHaveBeenCalled();
   });
 
+  it('rejects a malformed guest email but accepts syntactically valid unverified contact without OTP', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+        guest_email: 'not-an-email',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_EMAIL_INVALID' },
+    });
+    expect(pg.transaction).not.toHaveBeenCalled();
+  });
+
   it('confirms a cash-payment booking immediately instead of leaving it pending forever (regression: cash bookings had no path to confirmed and would auto-expire)', async () => {
     pg.query
       .mockResolvedValueOnce([hotelRow])
@@ -277,6 +345,9 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     expect(result.booking.status).toBe('confirmed');
     expect(result.booking.confirmed_at).not.toBeNull();
+    expect(result.booking.user_id).toBeNull();
+    expect(result.booking.guest_name).toBe('Test Guest');
+    expect(result.booking.guest_email).toBe('guest@example.com');
     // `payment` endi `null` bo'lishi ham mumkin (0 UZS bron), lekin bu
     // testda summa 0 EMAS — qator yaratilishi SHART.
     expect(result.payment).not.toBeNull();

@@ -6,12 +6,6 @@ import {
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import {
-  isValidEmail,
-  isValidUzbekPhone,
-  normalizeEmail,
-  normalizePhone,
-} from '../common/contact-normalization';
-import {
   parsePagination,
   limitOffsetSql,
   type QueryLike,
@@ -78,16 +72,8 @@ export class UsersService {
       params.push(String(body.last_name));
     }
     if (body.email !== undefined) {
-      const emailParam = idx++;
-      sets.push(
-        `email_verified_at = CASE
-           WHEN lower(btrim(COALESCE(email, ''))) IS DISTINCT FROM $${emailParam}
-             THEN NULL
-           ELSE email_verified_at
-         END`,
-      );
-      sets.push(`email = $${emailParam}`);
-      params.push(normalizeEmail(body.email));
+      sets.push(`email = $${idx++}`);
+      params.push(String(body.email).toLowerCase());
     }
     sets.push(`updated_at = $${idx++}`);
     params.push(new Date().toISOString());
@@ -159,7 +145,6 @@ export class UsersService {
 
   async bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
     const currentActor = this.requireActor(actor);
-    await this.claimVerifiedGuestBookings(currentActor.id);
     const pagination = parsePagination(query, 'public', {
       defaultLimit: 20,
       allowedSortBy: ['created_at', 'updated_at', 'status'],
@@ -170,16 +155,60 @@ export class UsersService {
       ? pagination.sortBy
       : 'created_at';
 
-    const sql = `SELECT * FROM bookings WHERE user_id = $1 ORDER BY ${sortCol} ${orderDir} ${limitOffsetSql(pagination)}`;
+    const sql = `
+      SELECT b.*
+      FROM bookings b
+      JOIN users u ON u.id = $1 AND u.deleted_at IS NULL
+      WHERE b.user_id = $1
+         OR (
+           b.user_id IS NULL
+           AND (
+             (
+               NULLIF(regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g'), '') IS NOT NULL
+               AND regexp_replace(COALESCE(b.guest_phone, ''), '[^0-9]', '', 'g') =
+                   regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g')
+             )
+             OR
+             (
+               NULLIF(lower(btrim(COALESCE(u.email, ''))), '') IS NOT NULL
+               AND lower(btrim(COALESCE(b.guest_email, ''))) =
+                   lower(btrim(COALESCE(u.email, '')))
+             )
+           )
+         )
+      ORDER BY b.${sortCol} ${orderDir}
+      ${limitOffsetSql(pagination)}
+    `;
     return this.pg.query(sql, [currentActor.id]);
   }
 
   async booking(actor: RequestActor | undefined, id: string) {
     const currentActor = this.requireActor(actor);
-    await this.claimVerifiedGuestBookings(currentActor.id);
     const [booking] = await this.pg.query(
-      'SELECT * FROM bookings WHERE id = $1 AND user_id = $2',
-      [id, currentActor.id],
+      `SELECT b.*
+       FROM bookings b
+       JOIN users u ON u.id = $1 AND u.deleted_at IS NULL
+       WHERE b.id = $2
+         AND (
+           b.user_id = $1
+           OR (
+             b.user_id IS NULL
+             AND (
+               (
+                 NULLIF(regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g'), '') IS NOT NULL
+                 AND regexp_replace(COALESCE(b.guest_phone, ''), '[^0-9]', '', 'g') =
+                     regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g')
+               )
+               OR
+               (
+                 NULLIF(lower(btrim(COALESCE(u.email, ''))), '') IS NOT NULL
+                 AND lower(btrim(COALESCE(b.guest_email, ''))) =
+                     lower(btrim(COALESCE(u.email, '')))
+               )
+             )
+           )
+         )`,
+      [currentActor.id, id],
     );
 
     if (!booking) {
@@ -221,56 +250,6 @@ export class UsersService {
       currency: 'UZS',
       ledger,
     };
-  }
-
-  private async claimVerifiedGuestBookings(userId: string): Promise<void> {
-    const [user] = await this.pg.query<{
-      phone: string | null;
-      email: string | null;
-      phone_verified_at: string | null;
-      email_verified_at: string | null;
-    }>(
-      `SELECT phone, email, phone_verified_at, email_verified_at
-       FROM users
-       WHERE id = $1 AND deleted_at IS NULL AND status = 'active'
-       LIMIT 1`,
-      [userId],
-    );
-
-    if (!user) {
-      return;
-    }
-
-    const normalizedPhone = user.phone_verified_at
-      ? normalizePhone(user.phone)
-      : null;
-    const verifiedPhone =
-      normalizedPhone && isValidUzbekPhone(normalizedPhone)
-        ? normalizedPhone.replace(/\D/g, '')
-        : null;
-    const normalizedEmail = user.email_verified_at
-      ? normalizeEmail(user.email)
-      : null;
-    const verifiedEmail =
-      normalizedEmail && isValidEmail(normalizedEmail) ? normalizedEmail : null;
-
-    if (!verifiedPhone && !verifiedEmail) {
-      return;
-    }
-
-    await this.pg.query(
-      `UPDATE bookings
-       SET user_id = $1, updated_at = $2
-       WHERE user_id IS NULL
-         AND (
-           ($3::text IS NOT NULL AND
-             regexp_replace(COALESCE(guest_phone, ''), '[^0-9]', '', 'g') = $3)
-           OR
-           ($4::text IS NOT NULL AND
-             lower(btrim(COALESCE(guest_email, ''))) = $4)
-         )`,
-      [userId, new Date().toISOString(), verifiedPhone, verifiedEmail],
-    );
   }
 
   async favorites(actor: RequestActor | undefined, query: QueryLike = {}) {

@@ -38,6 +38,10 @@ import {
   toPromotionApiShape,
   type PromotionRow,
 } from '../common/promotion';
+import {
+  computeBookingReport,
+  computeBookingReportByPartner,
+} from '../reports/booking-reports.query';
 
 type DbRow = Record<string, unknown>;
 
@@ -2470,6 +2474,38 @@ export class AdminService {
       `,
       [id],
     );
+  }
+
+  /**
+   * `GET /admin/partner-reports` — `partner`/`organizationId` berilmasa
+   * BARCHA hamkorlar bo'yicha (domenlarga yig'ilgan) umumiy hisobot +
+   * har bir hamkor bo'yicha ajratilgan qator qaytadi; berilsa bitta
+   * hamkorga cheklangan hisobot. Agregatsiya mantiq
+   * `computeBookingReport()`/`computeBookingReportByPartner()`da — hamkor
+   * tomoni (`PartnersService.reports`) bilan bir xil, faqat bu yerda
+   * `organizationId` majburiy EMAS (admin barcha hamkorni ko'ra oladi).
+   */
+  async partnerReports(query: QueryLike = {}) {
+    const organizationId =
+      this.optionalQueryString(query, 'organizationId') ??
+      this.optionalQueryString(query, 'partner') ??
+      undefined;
+    const filters = {
+      organizationId,
+      from: this.optionalQueryString(query, 'from') ?? undefined,
+      to: this.optionalQueryString(query, 'to') ?? undefined,
+      domain: this.optionalQueryString(query, 'domain') ?? undefined,
+      paymentMethod:
+        this.optionalQueryString(query, 'paymentMethod') ??
+        this.optionalQueryString(query, 'payment_method') ??
+        undefined,
+      status: this.optionalQueryString(query, 'status') ?? undefined,
+    };
+    const [report, byPartner] = await Promise.all([
+      computeBookingReport(this.postgres, filters),
+      computeBookingReportByPartner(this.postgres, filters),
+    ]);
+    return { ...report, partners: byPartner };
   }
 
   async partnerAdjustment(

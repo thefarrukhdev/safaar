@@ -209,6 +209,14 @@ export class AdminController {
     return this.adminService.partnerLedger(id);
   }
 
+  @Get('partner-reports')
+  @Permissions(Permission.FinanceRead)
+  partnerReports(
+    @Query() query: Record<string, string | string[] | undefined>,
+  ) {
+    return this.adminService.partnerReports(query);
+  }
+
   @Get('rooms/:id/availability')
   @Permissions(Permission.AvailabilityRead)
   roomAvailabilityCalendar(

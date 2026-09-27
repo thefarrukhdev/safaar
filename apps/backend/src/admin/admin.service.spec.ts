@@ -2422,3 +2422,49 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 });
+
+describe('AdminService.partnerReports (GET /admin/partner-reports — unlike PartnersService.reports, organizationId is optional so admin can see all partners at once)', () => {
+  let service: AdminService;
+  let pg: { query: jest.Mock };
+
+  beforeEach(() => {
+    pg = { query: jest.fn().mockResolvedValue([]) };
+    service = new AdminService(
+      {} as unknown as AppCacheService,
+      { add: jest.fn() } as unknown as JobQueueService,
+      pg as unknown as PostgresService,
+      {} as unknown as EventsService,
+      {} as unknown as SmsService,
+      {} as unknown as UzumCheckoutProvider,
+    );
+  });
+
+  it('does not scope to any organization when no partner/organizationId filter is given (sees all partners)', async () => {
+    await service.partnerReports({});
+
+    const allSql = pg.query.mock.calls.map(([sql]) => String(sql));
+    expect(
+      allSql.every((sql) => !sql.includes('partner_organization_id =')),
+    ).toBe(true);
+    expect(
+      allSql.some((sql) => sql.includes('LEFT JOIN partner_organizations po')),
+    ).toBe(true);
+  });
+
+  it('scopes to a single partner when `partner` (or `organizationId`) query param is given', async () => {
+    await service.partnerReports({ partner: 'org-42' });
+
+    const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+    expect(String(sql)).toContain('b.partner_organization_id = $1::uuid');
+    expect(params).toEqual(['org-42']);
+  });
+
+  it('includes both the aggregated summary/domains AND the per-partner breakdown in the response', async () => {
+    const result = await service.partnerReports({});
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('domains');
+    expect(result).toHaveProperty('daily');
+    expect(result).toHaveProperty('partners');
+    expect(Array.isArray(result.partners)).toBe(true);
+  });
+});

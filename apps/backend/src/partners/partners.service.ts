@@ -36,6 +36,7 @@ import {
 } from '../common/promotion';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
+import { computeBookingReport } from '../reports/booking-reports.query';
 
 type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
 type PublicPartnerStatus =
@@ -4272,6 +4273,28 @@ export class PartnersService {
         amount: overview.pending_balance,
       },
     ];
+  }
+
+  /**
+   * `GET /partners/reports` — shu hamkorning bronlari domen (hotel/
+   * restaurant/bus/vehicle) bo'yicha yig'ma hisobot. Har doim
+   * `organizationId` bilan qat'iy cheklangan — boshqa hamkorning
+   * ma'lumoti hech qachon qaytmaydi. Agregatsiya mantiq
+   * `computeBookingReport()`da — admin tomoni (`AdminService.partnerReports`)
+   * bilan bir xil, ikkinchi mustaqil SQL YOZILMAYDI.
+   */
+  async reports(actor: RequestActor | undefined, query: QueryLike = {}) {
+    const organizationId = this.organizationId(actor);
+    return computeBookingReport(this.pg, {
+      organizationId,
+      from: this.optionalString(query.from) ?? undefined,
+      to: this.optionalString(query.to) ?? undefined,
+      domain: this.optionalString(query.domain) ?? undefined,
+      paymentMethod:
+        this.optionalString(query.paymentMethod ?? query.payment_method) ??
+        undefined,
+      status: this.optionalString(query.status) ?? undefined,
+    });
   }
 
   // ---------------------------------------------------------------------------

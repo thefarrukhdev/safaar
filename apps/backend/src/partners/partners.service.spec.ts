@@ -3414,3 +3414,65 @@ describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST
   });
 });
 
+describe("PartnersService.reports (GET /partners/reports — this partner's own booking/payment report, always scoped to organizationId)", () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn().mockResolvedValue([]) };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it("always scopes the report to the actor's own organizationId, never returning another partner's data", async () => {
+    await service.reports(actor, {});
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('b.partner_organization_id = $1::uuid');
+    expect(params).toEqual(['org-1']);
+  });
+
+  it('rejects with 401 when the actor has no organizationId, before touching the database', async () => {
+    await expect(
+      service.reports({ ...actor, organizationId: undefined }, {}),
+    ).rejects.toMatchObject({
+      status: 401,
+      response: { code: 'PARTNER_ORGANIZATION_REQUIRED' },
+    });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('forwards from/to/domain/status/paymentMethod query params to the aggregation layer', async () => {
+    await service.reports(actor, {
+      from: '2026-09-01',
+      to: '2026-09-30',
+      domain: 'hotel',
+      status: 'completed',
+      paymentMethod: 'cash',
+    });
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('b.created_at >= $2::timestamptz');
+    expect(String(sql)).toContain('b.created_at <= $3::timestamptz');
+    expect(String(sql)).toContain('b.payment_method::text = $4');
+    expect(String(sql)).toContain('b.status::text = $5');
+    expect(params).toEqual([
+      'org-1',
+      '2026-09-01T00:00:00.000Z',
+      '2026-09-30T00:00:00.000Z',
+      'cash',
+      'completed',
+      'hotel',
+    ]);
+  });
+});

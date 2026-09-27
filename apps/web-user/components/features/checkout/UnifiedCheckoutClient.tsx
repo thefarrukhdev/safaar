@@ -248,7 +248,7 @@ export function UnifiedCheckoutClient() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreeTerms}
               className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-4 text-base shadow-md"
             >
               {loading ? t.processing : t.submit}

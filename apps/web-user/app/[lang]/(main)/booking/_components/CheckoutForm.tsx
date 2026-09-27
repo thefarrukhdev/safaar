@@ -50,6 +50,7 @@ export function CheckoutForm({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("card" as any);
   const [isSmsLoading, setIsSmsLoading] = useState(false);
   const [showSmsModal, setShowSmsModal] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
@@ -297,10 +298,7 @@ export function CheckoutForm({
 
         <div className="mt-2 w-full">
           <label className="flex items-start gap-2 text-xs">
-            <input
-              type="checkbox"
-              name="agreeTerms"
-              required
+            <input type="checkbox" name="agreeTerms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required
               className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
             />
             <span className="text-slate-600 dark:text-slate-400 leading-tight">
@@ -320,7 +318,7 @@ export function CheckoutForm({
             size="lg"
             className="w-full rounded-full active:scale-[0.97]"
             loading={pending || isSmsLoading}
-            disabled={nights < 1}
+            disabled={nights < 1 || !agreeTerms}
           >
             {dict.payButton || dict.confirm}
           </Button>
@@ -331,7 +329,7 @@ export function CheckoutForm({
         total={total}
         dict={{ total: dict.total, payButton: dict.payButton }}
         pending={pending || isSmsLoading}
-        disabled={nights < 1}
+        disabled={nights < 1 || !agreeTerms}
         targetId="checkout-original-cta"
       />
 

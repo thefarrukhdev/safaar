@@ -65,7 +65,7 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
     if (visibleConfigs.length <= 1) return;
     const id = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % visibleConfigs.length);
-    }, 3500);
+    }, 5000);
     return () => clearInterval(id);
   // visibleConfigs.length is the only stable dep we need here
   // eslint-disable-next-line react-hooks/exhaustive-deps

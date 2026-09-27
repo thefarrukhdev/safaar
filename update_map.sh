@@ -1,3 +1,6 @@
+#!/bin/bash
+
+cat << 'INNER_EOF' > /home/farrukh/Projects/Work/Frontend/safaar/apps/web-user/components/features/map/MapContainer.tsx
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -78,12 +81,12 @@ function createPricePinIcon(
   return L.divIcon({
     className: "custom-leaflet-price-pin",
     html: `
-      <div style="position: absolute; transform: translate(-50%, -100%) ${transform}; transform-origin: bottom center; transition: all 0.2s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center; padding-bottom: 6px;">
+      <div style="position: absolute; transform: translate(-50%, -100%) ${transform}; transform-origin: bottom center; transition: all 0.2s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center;">
         <div style="position: relative; z-index: 10; display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; padding: 6px 12px; font-size: 12px; font-weight: 800; ${bgStyle}">
           <span class="${pulseClass}" style="width: 8px; height: 8px; border-radius: 9999px; background-color: ${dotColor}; display: inline-block;"></span>
           <span>${text}</span>
         </div>
-        <div style="position: absolute; bottom: 0; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid ${pointerColor}; z-index: 9;"></div>
+        <div style="position: absolute; bottom: -6px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid ${pointerColor}; z-index: 9;"></div>
       </div>
     `,
     iconSize: [0, 0],
@@ -310,3 +313,4 @@ export function MapContainer({
     </div>
   )
 }
+INNER_EOF

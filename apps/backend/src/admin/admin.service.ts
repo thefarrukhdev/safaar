@@ -437,6 +437,17 @@ function isForeignKeyViolation(error: unknown): boolean {
   return code === '23503' || code === '23001';
 }
 
+function slugifyName(value: string): string {
+  const slug = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'city';
+}
+
 function partnerTypeFromHotel(row: DbRow): string {
   const directType = String(row['partner_type'] ?? '').toLowerCase();
   if (directType) return directType;
@@ -4764,6 +4775,116 @@ export class AdminService {
       throw new NotFoundException({
         code: 'REGION_NOT_FOUND',
         message: 'Hudud topilmadi',
+      });
+    }
+    void this.cache.delByPattern('catalog:*');
+    return { id, deleted: true };
+  }
+
+  /**
+   * "Viloyat va Shaharlar" sahifasi haqiqatda faqat `regions` jadvalini
+   * boshqargan (pastdagi `regionCreate/Update/Delete`) — mustaqil `cities`
+   * yozish yo'li UMUMAN yo'q edi. Natijada admin "yangi shahar" deb
+   * kiritgan har qanday qator aslida `regions`ga tushib qolardi: admin
+   * ro'yxati o'zi yozgan jadvalini o'qigani uchun DARHOL yangilangandek
+   * ko'rinadi, lekin web-user shahar tanlagichi haqiqiy `cities`
+   * jadvalidan o'qiydi (`CatalogService.cities()`) — shu sabab hech qachon
+   * ko'rinmaydi. Bu yerdan boshlab `regions` bilan bir xil naqshda,
+   * lekin haqiqiy `cities` jadvaliga yozadigan CRUD qo'shiladi.
+   */
+  async cityCreate(body: Record<string, unknown>) {
+    const regionId = String(body.region_id ?? body.regionId ?? '').trim();
+    if (!regionId) {
+      throw new BadRequestException({
+        code: 'REGION_ID_REQUIRED',
+        message: 'Hudud (region_id) tanlanishi shart',
+      });
+    }
+    const name = this.localizedNameJson(body);
+    const nameRaw = body.name ?? body;
+    const uzName =
+      nameRaw && typeof nameRaw === 'object' && !Array.isArray(nameRaw)
+        ? String((nameRaw as Record<string, unknown>).uz ?? '')
+        : String(nameRaw ?? '');
+    const slug = `${slugifyName(uzName)}-${randomUUID().slice(0, 8)}`;
+
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `insert into cities (id, region_id, name, slug, created_at, updated_at)
+         values (gen_random_uuid(), $1::uuid, ($2)::jsonb, $3, now(), now())
+         returning id::text, region_id::text, name, slug, created_at, updated_at`,
+        [regionId, name, slug],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new BadRequestException({
+          code: 'REGION_NOT_FOUND',
+          message: 'Tanlangan hudud topilmadi',
+        });
+      }
+      throw error;
+    }
+    void this.cache.delByPattern('catalog:*');
+    return rows[0];
+  }
+
+  async cityUpdate(id: string, body: Record<string, unknown>) {
+    const regionId = String(body.region_id ?? body.regionId ?? '').trim();
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        regionId
+          ? `update cities set name = ($1)::jsonb, region_id = $2::uuid, updated_at = now()
+             where id = $3::uuid
+             returning id::text, region_id::text, name, slug, created_at, updated_at`
+          : `update cities set name = ($1)::jsonb, updated_at = now()
+             where id = $2::uuid
+             returning id::text, region_id::text, name, slug, created_at, updated_at`,
+        regionId
+          ? [this.localizedNameJson(body), regionId, id]
+          : [this.localizedNameJson(body), id],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new BadRequestException({
+          code: 'REGION_NOT_FOUND',
+          message: 'Tanlangan hudud topilmadi',
+        });
+      }
+      throw error;
+    }
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'CITY_NOT_FOUND',
+        message: 'Shahar topilmadi',
+      });
+    }
+    void this.cache.delByPattern('catalog:*');
+    return rows[0];
+  }
+
+  async cityDelete(id: string) {
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `delete from cities where id = $1::uuid returning id::text`,
+        [id],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictException({
+          code: 'CITY_IN_USE',
+          message:
+            "Bu shaharga mehmonxona yoki boshqa yozuvlar bog'langan, shuning uchun o'chirib bo'lmaydi.",
+        });
+      }
+      throw error;
+    }
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'CITY_NOT_FOUND',
+        message: 'Shahar topilmadi',
       });
     }
     void this.cache.delByPattern('catalog:*');

@@ -52,6 +52,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
       { label: "Chegirma arizalari", href: "/partners/promotions", icon: "Tag" },
       { label: "Ro'yxat", href: "/partners/list", icon: "List" },
       { label: "E'lonlar", href: "/partners/listings", icon: "Megaphone" },
+      { label: "Hamkor hisobotlari", href: "/partners/reports", icon: "FileSpreadsheet" },
     ],
   },
   {

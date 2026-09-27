@@ -96,6 +96,7 @@ const NAV_PERMISSION_BY_HREF: Record<string, string> = {
   "/partners/requests": "partners:read",
   "/partners/list": "partners:read",
   "/partners/listings": "partners:read",
+  "/partners/reports": "partners:read",
   "/bookings": "bookings:read",
   "/bookings/hotels": "bookings:read",
   "/bookings/restaurants": "bookings:read",

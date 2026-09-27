@@ -3265,3 +3265,152 @@ describe('PartnersService.assignRoom (regression: "BACKEND BUG AUDIT" — bus/tr
     expect(vehicleLookupCall).toBeUndefined();
   });
 });
+
+describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST /partners/bookings/:id/board (and /check-in, /complete) returned an unhandled 500 whenever `policy_snapshot` was not a JSON object; empirically confirmed against a real PostgreSQL 17 instance that `jsonb_set` throws "cannot set path in scalar" for a string/number value and "path element ... is not an integer" for an array value — COALESCE only substitutes for NULL, it never guarded against those cases)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+  const vehicleBookingRow = {
+    id: 'booking-1',
+    type: 'vehicle',
+    partner_organization_id: 'org-1',
+    hotel_id: null,
+    room_id: null,
+    price_snapshot: {},
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('board: the UPDATE sent to Postgres normalizes any non-object policy_snapshot to {} instead of relying on COALESCE (which only covers NULL)', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE ... jsonb_set
+      .mockResolvedValueOnce([
+        {
+          ...vehicleBookingRow,
+          policy_snapshot: { boarded_at: '2026-09-27T10:00:00.000Z' },
+        },
+      ]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'boarded');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('boarded_at'),
+    );
+    expect(updateCall).toBeDefined();
+    const [sql] = updateCall!;
+    expect(String(sql)).toContain("jsonb_typeof(policy_snapshot) = 'object'");
+    expect(String(sql)).not.toMatch(/jsonb_set\(COALESCE\(policy_snapshot/);
+  });
+
+  it('board: missing booking rejects with 404 BOOKING_EXPIRED, no UPDATE is attempted', async () => {
+    pg.query.mockResolvedValueOnce([]); // this.booking() finds nothing
+
+    await expect(
+      service.bookingStatus(actor, 'no-such-booking', 'boarded'),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'BOOKING_EXPIRED' },
+    });
+    expect(pg.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('board: booking belonging to another partner organization rejects with 403 BOOKING_FORBIDDEN, no UPDATE is attempted', async () => {
+    pg.query.mockResolvedValueOnce([
+      { ...vehicleBookingRow, partner_organization_id: 'org-2' },
+    ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).rejects.toMatchObject({
+      status: 403,
+      response: { code: 'BOOKING_FORBIDDEN' },
+    });
+    expect(pg.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('board: a genuine database error from the UPDATE is not silently swallowed — it propagates to the caller', async () => {
+    const dbError = Object.assign(new Error('cannot set path in scalar'), {
+      code: '22023',
+    });
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockRejectedValueOnce(dbError); // UPDATE ... jsonb_set fails for real
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).rejects.toBe(dbError);
+  });
+
+  it('board: repeated (idempotent) board requests on the same booking both succeed', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't1' } },
+      ])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't1' } },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't2' } },
+      ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).resolves.toBeDefined();
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).resolves.toBeDefined();
+  });
+
+  it('check-in: the checked_in_at UPDATE carries the same non-object-safe normalization as board', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE policy_snapshot checked_in_at
+      // no inventory query: hotel_id/room_id/bed_id all absent on vehicleBookingRow
+      .mockResolvedValueOnce([]) // UPDATE bookings SET status = 'confirmed'
+      .mockResolvedValueOnce([{ ...vehicleBookingRow, status: 'confirmed' }]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'checked_in');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('checked_in_at'),
+    );
+    expect(String(updateCall![0])).toContain(
+      "jsonb_typeof(policy_snapshot) = 'object'",
+    );
+  });
+
+  it('complete: the checked_out_at UPDATE carries the same non-object-safe normalization as board', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE policy_snapshot checked_out_at
+      .mockResolvedValueOnce([]) // UPDATE status = completed
+      .mockResolvedValueOnce([{ ...vehicleBookingRow, status: 'completed' }]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'completed');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('checked_out_at'),
+    );
+    expect(String(updateCall![0])).toContain(
+      "jsonb_typeof(policy_snapshot) = 'object'",
+    );
+  });
+});
+

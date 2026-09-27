@@ -4084,21 +4084,28 @@ export class PartnersService {
       sets.push(`status = $${paramIdx++}`);
       params.push(BookingStatus.CONFIRMED.toLowerCase());
       // Store operational timestamps in the booking policy snapshot.
+      // `policy_snapshot` iaan `jsonb_set()` faqat JSON OBYEKT ustida
+      // ishlaydi — agar ustun (eski/qo'lda yozilgan qator sabab) massiv,
+      // string yoki raqam bo'lib chiqsa, Postgres "cannot set path in
+      // scalar"/"path element ... is not an integer" bilan xato tashlaydi
+      // (production 500 — PARTNERS-BOARD-500 tasdiqlangan sabab). `CASE`
+      // buni bitta shu qatorning o'zida, boshqa bronlarga tegmasdan,
+      // xavfsiz '{}'ga normallashtiradi.
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'OCCUPIED', now);
     } else if (status === 'boarded') {
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{boarded_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{boarded_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
     } else if (status === 'completed') {
       sets.push(`status = $${paramIdx++}`);
       params.push(BookingStatus.COMPLETED.toLowerCase());
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'VACANT_DIRTY', now);

@@ -28,7 +28,7 @@ export default async function MainLayout({
   const { lang } = await params;
   const locale = (isLocale(lang) ? lang : "uz") as Locale;
 
-  const [common, session, promoConfig] = await Promise.all([
+  const [common, session, promoConfigs] = await Promise.all([
     getDictionary(locale, "common"),
     getSession(),
     getPromoBarConfig(locale),
@@ -38,7 +38,7 @@ export default async function MainLayout({
     <RealtimeProvider accessToken={session?.accessToken ?? null}>
       <div className="fixed top-0 left-0 right-0 z-50 flex flex-col">
         <div className="relative z-50">
-          <PromoBarLive initialConfig={promoConfig} locale={locale} />
+          <PromoBarLive initialConfigs={promoConfigs} locale={locale} />
         </div>
         <SiteHeader locale={locale} dict={common} authed={!!session} />
       </div>

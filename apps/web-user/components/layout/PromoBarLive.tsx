@@ -11,21 +11,21 @@ import { getPromoBarConfig, type PromoBarConfig } from "@/lib/promo";
  * yangilanadi (`promos.updated` WebSocket hodisasi orqali).
  */
 export function PromoBarLive({
-  initialConfig,
+  initialConfigs,
   locale,
 }: {
-  initialConfig: PromoBarConfig | null;
+  initialConfigs: PromoBarConfig[];
   locale: string;
 }) {
-  const [config, setConfig] = useState(initialConfig);
+  const [configs, setConfigs] = useState<PromoBarConfig[]>(initialConfigs);
 
   const refresh = useCallback(() => {
     getPromoBarConfig(locale)
-      .then(setConfig)
+      .then(setConfigs)
       .catch(() => {});
   }, [locale]);
 
   useRealtimeEvent("promos.updated", refresh, [refresh]);
 
-  return <PromoBar config={config} locale={locale} />;
+  return <PromoBar configs={configs} locale={locale} />;
 }

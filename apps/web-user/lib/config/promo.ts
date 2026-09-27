@@ -68,25 +68,24 @@ function promoDiscountText(promo: ActivePromo): string {
 }
 
 /**
- * Sayt tepasidagi banner: avval hozir amal qiladigan promo-kod bo'lsa
- * o'shani ko'rsatadi (amal qilish muddati tugasa keyingi sahifa
+ * Sayt tepasidagi banner: avval hozir amal qiladigan promo-kodlar bo'lsa
+ * ularning barchasini ko'rsatadi (amal qilish muddati tugasa keyingi sahifa
  * yuklanishida avtomatik yo'qoladi — chunki backend uni ro'yxatdan olib
  * tashlaydi). Aktiv promo-kod bo'lmasa, admin CMS'da qo'lda sozlagan
- * umumiy bannerga qaytadi.
+ * umumiy bannerga qaytadi. Hech narsa bo'lmasa bo'sh massiv qaytadi.
  */
-export async function getPromoBarConfig(locale: string): Promise<PromoBarConfig | null> {
+export async function getPromoBarConfig(locale: string): Promise<PromoBarConfig[]> {
   const activePromos = await getActivePromos();
-  const promo = activePromos[0];
 
-  if (promo && promo.code) {
-    return {
+  if (activePromos.length > 0) {
+    return activePromos.map((promo) => ({
       id: `promo-${promo.code}`,
       isActive: true,
       badge: "Aksiya",
       text: `Bron qilishda ${promoDiscountText(promo)} chegirma — ${promo.code} promokodi bilan!`,
       endsAt: promo.validUntil || null,
       isDismissible: true,
-    };
+    }));
   }
 
   try {
@@ -97,12 +96,12 @@ export async function getPromoBarConfig(locale: string): Promise<PromoBarConfig 
       next: { revalidate: 60 },
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return [];
 
     const data = await res.json();
-    if (!data) return null;
+    if (!data) return [];
 
-    return {
+    const cmsConfig: PromoBarConfig = {
       id: data.id,
       isActive: data.isActive ?? data.is_active ?? false,
       text: data.text,
@@ -112,7 +111,9 @@ export async function getPromoBarConfig(locale: string): Promise<PromoBarConfig 
       endsAt: data.endsAt ?? data.ends_at ?? null,
       isDismissible: data.isDismissible ?? data.is_dismissible ?? true,
     };
+
+    return [cmsConfig];
   } catch {
-    return null;
+    return [];
   }
 }

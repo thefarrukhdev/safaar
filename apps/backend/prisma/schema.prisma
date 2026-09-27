@@ -252,6 +252,7 @@ model AdminRecoveryCode {
 model Region {
   id        String   @id @default(uuid()) @db.Uuid
   name      Json
+  isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   cities    City[]
@@ -332,6 +333,7 @@ model Amenity {
   id         String         @id @default(uuid()) @db.Uuid
   code       String         @unique @db.VarChar(80)
   name       Json
+  isActive   Boolean        @default(true) @map("is_active")
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   hotelLinks HotelAmenity[]

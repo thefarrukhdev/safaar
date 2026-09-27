@@ -1,3 +1,5 @@
+import { Role } from '@safaar/types';
+import type { RequestActor } from '../common/actor';
 import { CatalogService } from './catalog.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -327,5 +329,133 @@ describe('CatalogService.transport', () => {
     expect(result.images).toEqual(['https://example.com/logo2.jpg']);
     expect(result.luggageCapacityBags).toBeNull();
     expect(result.plateNumber).toBeNull();
+  });
+});
+
+describe('CatalogService regions/cities/amenities active-state filtering', () => {
+  let service: CatalogService;
+  let cache: { getOrSet: jest.Mock };
+  let postgres: jest.Mocked<PostgresService>;
+
+  const adminActor: RequestActor = {
+    id: 'admin-1',
+    actorType: 'admin',
+    role: Role.ADMIN,
+    roles: [Role.ADMIN],
+  };
+  const superAdminActor: RequestActor = {
+    ...adminActor,
+    role: Role.SUPER_ADMIN,
+    roles: [Role.SUPER_ADMIN],
+  };
+  const userActor: RequestActor = {
+    id: 'user-1',
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  beforeEach(() => {
+    cache = {
+      getOrSet: jest
+        .fn()
+        .mockImplementation(
+          (_key: string, _ttl: number, fn: () => Promise<unknown>) => fn(),
+        ),
+    };
+    postgres = { query: jest.fn() } as unknown as jest.Mocked<PostgresService>;
+    service = new CatalogService(cache as unknown as AppCacheService, postgres);
+  });
+
+  it('regions(): anonymous/public callers only see active regions, cached under the public key', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await service.regions(undefined);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).toContain('where is_active = true');
+    expect((cache.getOrSet.mock.calls[0] as [string])[0]).toBe(
+      'catalog:regions',
+    );
+  });
+
+  it('regions(): a non-admin actor (e.g. a partner token accidentally present) still only sees active regions', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+    const partnerActor: RequestActor = {
+      id: 'partner-1',
+      actorType: 'partner',
+      role: Role.PARTNER,
+      roles: [Role.PARTNER],
+    };
+
+    await service.regions(partnerActor);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).toContain('where is_active = true');
+  });
+
+  it.each([
+    ['ADMIN', adminActor] as const,
+    ['SUPER_ADMIN', superAdminActor] as const,
+  ])(
+    'regions(): a real %s actor sees ALL regions (including inactive), cached under a separate admin key',
+    async (_label, actor) => {
+      postgres.query.mockResolvedValueOnce([]);
+
+      await service.regions(actor);
+
+      const [sql] = postgres.query.mock.calls[0] as [string];
+      expect(sql).not.toContain('where is_active = true');
+      expect((cache.getOrSet.mock.calls[0] as [string])[0]).toBe(
+        'catalog:regions:admin',
+      );
+    },
+  );
+
+  it('cities(): public callers only see cities whose parent region is active', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await service.cities(userActor);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).toContain(
+      'join regions r on r.id = c.region_id and r.is_active = true',
+    );
+  });
+
+  it('cities(): an admin actor sees all cities regardless of parent region state', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await service.cities(adminActor);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).not.toContain('is_active');
+    expect((cache.getOrSet.mock.calls[0] as [string])[0]).toBe(
+      'catalog:cities:admin',
+    );
+  });
+
+  it('amenities(): public callers only see active amenities', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await service.amenities(undefined);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).toContain('where is_active = true');
+    expect((cache.getOrSet.mock.calls[0] as [string])[0]).toBe(
+      'catalog:amenities',
+    );
+  });
+
+  it('amenities(): an admin actor sees all amenities (including inactive)', async () => {
+    postgres.query.mockResolvedValueOnce([]);
+
+    await service.amenities(adminActor);
+
+    const [sql] = postgres.query.mock.calls[0] as [string];
+    expect(sql).not.toContain('where is_active = true');
+    expect((cache.getOrSet.mock.calls[0] as [string])[0]).toBe(
+      'catalog:amenities:admin',
+    );
   });
 });

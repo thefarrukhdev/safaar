@@ -437,6 +437,13 @@ function isForeignKeyViolation(error: unknown): boolean {
   return code === '23503' || code === '23001';
 }
 
+// `undefined` — so'rovda umuman berilmagan (mavjud qiymat o'zgarishsiz
+// qoladi); `true`/`false` — admin ANIQ shu holatni so'ragan.
+function parseIsActive(body: Record<string, unknown>): boolean | undefined {
+  const raw = body.is_active ?? body.isActive;
+  return raw === undefined ? undefined : Boolean(raw);
+}
+
 function slugifyName(value: string): string {
   const slug = String(value ?? '')
     .trim()
@@ -4727,22 +4734,43 @@ export class AdminService {
   }
 
   async regionCreate(body: Record<string, unknown>) {
+    const isActive = parseIsActive(body) ?? true;
     const rows = await this.rows(
-      `insert into regions (id, name, created_at, updated_at)
-       values (gen_random_uuid(), ($1)::jsonb, now(), now())
-       returning id::text, name, created_at, updated_at`,
-      [this.localizedNameJson(body)],
+      `insert into regions (id, name, is_active, created_at, updated_at)
+       values (gen_random_uuid(), ($1)::jsonb, $2, now(), now())
+       returning id::text, name, is_active, created_at, updated_at`,
+      [this.localizedNameJson(body), isActive],
     );
     void this.cache.delByPattern('catalog:*');
     return rows[0];
   }
 
+  // `name` va `is_active` mustaqil ravishda ixtiyoriy — faqat
+  // `{is_active: false}` bilan chaqirilganda (ya'ni faqat faollik
+  // almashtirilganda) nom talab qilinmasligi/o'zgarmasligi kerak, aks
+  // holda oddiy toggle so'rovi `NAME_REQUIRED` bilan muvaffaqiyatsiz
+  // tugar edi.
   async regionUpdate(id: string, body: Record<string, unknown>) {
+    const sets: string[] = ['updated_at = now()'];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.name !== undefined || body.uz !== undefined) {
+      sets.push(`name = ($${idx++})::jsonb`);
+      params.push(this.localizedNameJson(body));
+    }
+    const isActive = parseIsActive(body);
+    if (isActive !== undefined) {
+      sets.push(`is_active = $${idx++}`);
+      params.push(isActive);
+    }
+    params.push(id);
+
     const rows = await this.rows(
-      `update regions set name = ($1)::jsonb, updated_at = now()
-       where id = $2::uuid
-       returning id::text, name, created_at, updated_at`,
-      [this.localizedNameJson(body), id],
+      `update regions set ${sets.join(', ')}
+       where id = $${idx}::uuid
+       returning id::text, name, is_active, created_at, updated_at`,
+      params,
     );
     if (!rows[0]) {
       throw new NotFoundException({
@@ -4902,13 +4930,14 @@ export class AdminService {
         message: 'Qulaylik kodi kiritilishi shart',
       });
     }
+    const isActive = parseIsActive(body) ?? true;
     let rows: DbRow[];
     try {
       rows = await this.rows(
-        `insert into amenities (id, code, name, created_at, updated_at)
-         values (gen_random_uuid(), $1, ($2)::jsonb, now(), now())
-         returning id::text, code, name, created_at, updated_at`,
-        [code, this.localizedNameJson(body)],
+        `insert into amenities (id, code, name, is_active, created_at, updated_at)
+         values (gen_random_uuid(), $1, ($2)::jsonb, $3, now(), now())
+         returning id::text, code, name, is_active, created_at, updated_at`,
+        [code, this.localizedNameJson(body), isActive],
       );
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -4923,12 +4952,29 @@ export class AdminService {
     return rows[0];
   }
 
+  // regionUpdate() bilan bir xil sabab: is_active'ni nomdan mustaqil
+  // ravishda toggle qilish imkonini beradi.
   async amenityUpdate(id: string, body: Record<string, unknown>) {
+    const sets: string[] = ['updated_at = now()'];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.name !== undefined || body.uz !== undefined) {
+      sets.push(`name = ($${idx++})::jsonb`);
+      params.push(this.localizedNameJson(body));
+    }
+    const isActive = parseIsActive(body);
+    if (isActive !== undefined) {
+      sets.push(`is_active = $${idx++}`);
+      params.push(isActive);
+    }
+    params.push(id);
+
     const rows = await this.rows(
-      `update amenities set name = ($1)::jsonb, updated_at = now()
-       where id = $2::uuid
-       returning id::text, code, name, created_at, updated_at`,
-      [this.localizedNameJson(body), id],
+      `update amenities set ${sets.join(', ')}
+       where id = $${idx}::uuid
+       returning id::text, code, name, is_active, created_at, updated_at`,
+      params,
     );
     if (!rows[0]) {
       throw new NotFoundException({

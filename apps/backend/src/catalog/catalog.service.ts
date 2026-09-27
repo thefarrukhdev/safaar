@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Role } from '@safaar/types';
+import type { RequestActor } from '../common/actor';
 import { parseGeoBounds } from '../common/geo-bounds';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
+
+function isCatalogAdmin(actor: RequestActor | undefined): boolean {
+  return actor?.role === Role.ADMIN || actor?.role === Role.SUPER_ADMIN;
+}
 
 type DbRow = Record<string, unknown>;
 type CatalogQuery = Record<string, string | string[] | undefined>;
@@ -73,31 +79,57 @@ export class CatalogService {
     private readonly postgres: PostgresService,
   ) {}
 
-  async regions() {
-    return this.cache.getOrSet('catalog:regions', 3600, async () => {
+  /**
+   * `GET /catalog/regions` bitta manzil ikkalasiga ham xizmat qiladi:
+   * web-admin'ning "Viloyat va Shaharlar" ro'yxati ham AYNAN shu ochiq
+   * (auth SHART emas) endpointni chaqiradi — alohida "admin list"
+   * marshruti yo'q. Shu sabab filtrlashni actor asosida qilamiz: admin
+   * o'z sessiya tokeni bilan (apiClient har doim Authorization
+   * qo'shadi) HAMMA yozuvni (is_active qat'i nazar) ko'radi — aks holda
+   * nofaol qilingan hududni qayta yoqib bo'lmas edi; ommaviy chaqiruv
+   * (web-user, token yo'q) faqat is_active=true ko'radi. Ikkala holat
+   * ham bir xil `catalog:*` naqshiga mos alohida keshda saqlanadi.
+   */
+  async regions(actor?: RequestActor) {
+    const admin = isCatalogAdmin(actor);
+    const cacheKey = admin ? 'catalog:regions:admin' : 'catalog:regions';
+    return this.cache.getOrSet(cacheKey, 3600, async () => {
       return this.postgres.query(`
-        select id::text, name, created_at, updated_at
+        select id::text, name, is_active, created_at, updated_at
         from regions
+        ${admin ? '' : 'where is_active = true'}
         order by name ->> 'uz'
       `);
     });
   }
 
-  async cities() {
-    return this.cache.getOrSet('catalog:cities', 3600, async () => {
+  /**
+   * Nofaol hududdagi shaharlar ham ommaviy ko'rinishdan yashiriladi
+   * (ierarxik katalogda ota-hudud yopilsa, uning shaharlari ham
+   * ko'rinmasligi kerak) — lekin shaharning o'zida alohida `is_active`
+   * ustuni YO'Q (vazifa faqat regions+amenities uchun so'ralgan).
+   */
+  async cities(actor?: RequestActor) {
+    const admin = isCatalogAdmin(actor);
+    const cacheKey = admin ? 'catalog:cities:admin' : 'catalog:cities';
+    return this.cache.getOrSet(cacheKey, 3600, async () => {
       return this.postgres.query(`
-        select id::text, region_id::text, name, created_at, updated_at
-        from cities
-        order by name ->> 'uz'
+        select c.id::text, c.region_id::text, c.name, c.created_at, c.updated_at
+        from cities c
+        ${admin ? '' : 'join regions r on r.id = c.region_id and r.is_active = true'}
+        order by c.name ->> 'uz'
       `);
     });
   }
 
-  async amenities() {
-    return this.cache.getOrSet('catalog:amenities', 3600, async () => {
+  async amenities(actor?: RequestActor) {
+    const admin = isCatalogAdmin(actor);
+    const cacheKey = admin ? 'catalog:amenities:admin' : 'catalog:amenities';
+    return this.cache.getOrSet(cacheKey, 3600, async () => {
       return this.postgres.query(`
-        select id::text, code, name, created_at, updated_at
+        select id::text, code, name, is_active, created_at, updated_at
         from amenities
+        ${admin ? '' : 'where is_active = true'}
         order by name ->> 'uz'
       `);
     });

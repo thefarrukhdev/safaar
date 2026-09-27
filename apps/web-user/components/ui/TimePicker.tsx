@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ReactNode } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,10 +8,14 @@ export function TimePicker({
   value,
   onChange,
   className,
+  label,
+  icon,
 }: {
   value: string;
   onChange: (time: string) => void;
   className?: string;
+  label?: string;
+  icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -54,12 +58,19 @@ export function TimePicker({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50"
+        className="group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
       >
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-slate-400" />
-          <span className="font-medium">{value || "19:00"}</span>
-        </div>
+        <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400">
+          {icon ?? <Clock className="h-4 w-4" />}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          {label && (
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+          )}
+          <span className="truncate text-xs font-bold text-slate-900 dark:text-white">
+            {value || "19:00"}
+          </span>
+        </span>
       </button>
 
       {open && (

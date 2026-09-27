@@ -121,7 +121,7 @@ export class CmsService {
           LEFT JOIN cities hc ON h.city_id = hc.id
           LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
           LEFT JOIN bus_companies bc ON v.company_id = bc.id
-          WHERE p.status = 'published'
+          WHERE p.status IN ('published', 'approved')
         `);
         
         return rows.map(row => {

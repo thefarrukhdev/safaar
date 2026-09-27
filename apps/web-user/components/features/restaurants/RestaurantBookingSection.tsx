@@ -1,3 +1,4 @@
+import { bookingTranslations } from "./i18n";
 "use client";
 
 import { useState } from "react";
@@ -57,7 +58,7 @@ export function RestaurantBookingSection({
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const bDict = (dict as any).booking || {};
+  const t = bookingTranslations[locale as keyof typeof bookingTranslations] || bookingTranslations.uz;
   const selectedTable = restaurant.tables.find((t) => t.id === selectedTableId);
   const totalAmount = selectedTable?.basePriceSum ?? 0;
 
@@ -85,11 +86,7 @@ export function RestaurantBookingSection({
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
-      setErrorMsg(bDict.acceptTermsError || "Ommaviy oferta shartlariga rozi bo'lishingiz kerak.");
-      return;
-    }
-    if (paymentMethod === "card" && (cardNumber.length < 19 || cardExpire.length < 5)) {
-      setErrorMsg(bDict.cardFormatError || "Karta ma'lumotlarini to'liq kiriting");
+      setErrorMsg(t.acceptTermsError);
       return;
     }
 
@@ -115,10 +112,10 @@ export function RestaurantBookingSection({
         setSuccessBookingId(res.bookingId);
         setShowBookingModal(false);
       } else {
-        setErrorMsg(res.error || bDict.error || "Xatolik yuz berdi");
+        setErrorMsg(res.error || t.error);
       }
     } catch (err: unknown) {
-      setErrorMsg(bDict.error || "Xatolik yuz berdi");
+      setErrorMsg(t.error);
     } finally {
       setLoading(false);
     }
@@ -128,21 +125,21 @@ export function RestaurantBookingSection({
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">{bDict.successTitle || "To'lov bajarildi va stol band qilindi!"}</h3>
-        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">{bDict.bookingId || "Bron ID:"}<span className="font-mono font-bold">{successBookingId}</span>
+        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">{t.successTitle}</h3>
+        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">{t.bookingId}<span className="font-mono font-bold">{successBookingId}</span>
         </p>
         <div className="mt-4 rounded-xl bg-emerald-100/60 p-3 text-left text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-          <p><strong>{bDict.restaurantLabel || "Restoran:"}</strong> {restaurant.name}</p>
-          <p><strong>{bDict.tableLabel || "Stol:"}</strong> {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}</p>
-          <p><strong>{bDict.dateTimeLabel || "Sana va vaqt:"}</strong> {date} ({slotTime})</p>
-          <p><strong>{bDict.clientLabel || "Mijoz:"}</strong> {guestName} ({guestPhone})</p>
-          <p><strong>{bDict.paymentMethodLabel || "To'lov usuli:"}</strong> {paymentMethod === "card" ? (bDict.cardPayment || "Karta orqali") : (bDict.cashPayment || "Naqd pul")}</p>
+          <p><strong>{t.restaurantLabel}</strong> {restaurant.name}</p>
+          <p><strong>{t.tableLabel}</strong> {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", t.table) : selectedTable?.name}</p>
+          <p><strong>{t.dateTimeLabel}</strong> {date} ({slotTime})</p>
+          <p><strong>{t.clientLabel}</strong> {guestName} ({guestPhone})</p>
+          <p><strong>{t.paymentMethodLabel}</strong> {t.cashPayment}</p>
         </div>
         <Button
           onClick={() => setSuccessBookingId(null)}
           variant="secondary"
           className="mt-6 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
-        >{bDict.newBooking || "Yangi bron qilish"}</Button>
+        >{t.newBooking}</Button>
       </div>
     );
   }
@@ -151,7 +148,7 @@ export function RestaurantBookingSection({
     <>
       <div id="booking-section" className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-          {(dict as any).detail?.availableTables || bDict.selectTable || "Stolni tanlang"}
+          {(dict as any).detail?.availableTables || t.selectTable}
         </h2>
         {restaurant.tables.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2">
@@ -163,7 +160,7 @@ export function RestaurantBookingSection({
                 className="flex flex-col rounded-xl border border-slate-200 p-4 text-left transition-all hover:bg-slate-50 hover:border-primary-300 dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:border-primary-700"
               >
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {tbl.name.startsWith("Stol") ? tbl.name.replace("Stol", bDict.table || "Stol") : tbl.name}
+                  {tbl.name.startsWith("Stol") ? tbl.name.replace("Stol", t.table) : tbl.name}
                 </span>
                 <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {tbl.capacity} kishilik
@@ -172,7 +169,7 @@ export function RestaurantBookingSection({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">{bDict.noTables || "Bo'sh stollar topilmadi"}</p>
+          <p className="text-sm text-slate-500">{t.noTables}</p>
         )}
       </div>
 
@@ -181,9 +178,9 @@ export function RestaurantBookingSection({
           <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
             <Utensils className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{bDict.title || "Stol bron qilish"}</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.title}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {restaurant.name} · {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", bDict.table || "Stol") : selectedTable?.name}
+                {restaurant.name} · {selectedTable?.name?.startsWith("Stol") ? selectedTable.name.replace("Stol", t.table) : selectedTable?.name}
               </p>
             </div>
           </div>
@@ -199,7 +196,7 @@ export function RestaurantBookingSection({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {bDict.dateLabel || "Sana"}
+                  {t.dateLabel}
                 </label>
                 <DatePicker
                   value={date}
@@ -212,7 +209,7 @@ export function RestaurantBookingSection({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {bDict.timeLabel || "Vaqt"}
+                    {t.timeLabel}
                   </label>
                   <TimePicker
                     value={slotTime}
@@ -221,7 +218,7 @@ export function RestaurantBookingSection({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {bDict.guestsLabel || "Mehmonlar"}
+                    {t.guestsLabel}
                   </label>
                   <select
                     value={guests}
@@ -230,7 +227,7 @@ export function RestaurantBookingSection({
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                       <option key={n} value={n}>
-                        {n} ta
+                        {n} {t.capacity}
                       </option>
                     ))}
                   </select>
@@ -242,7 +239,7 @@ export function RestaurantBookingSection({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {bDict.nameLabel || "Ism va familiya"}
+                  {t.nameLabel}
                 </label>
                 <input
                   type="text"
@@ -255,7 +252,7 @@ export function RestaurantBookingSection({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {bDict.phoneLabel || "Telefon raqam"}
+                  {t.phoneLabel}
                 </label>
                 <input
                   type="tel"
@@ -270,7 +267,7 @@ export function RestaurantBookingSection({
 
             {/* To'lov usuli olib tashlandi, har doim 'cash' orqali ishlaydi */}
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300 mt-2">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{bDict.cashNote || "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."}
+              <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{t.cashNote}
             </div>
 
             <label className="flex items-start gap-2 text-xs">
@@ -282,15 +279,14 @@ export function RestaurantBookingSection({
                 className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
               <span className="text-slate-600 dark:text-slate-400 leading-tight">
-                Men{" "}
+                {t.agreeTerms}{" "}
                 <Link
                   href={`/${locale}/terms`}
                   target="_blank"
                   className="font-semibold text-primary-600 hover:underline"
                 >
-                  Ommaviy Oferta
-                </Link>{" "}
-                shartlariga roziman.
+                  {t.termsLink}
+                </Link>.
               </span>
             </label>
 
@@ -300,8 +296,8 @@ export function RestaurantBookingSection({
               className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
             >
               {loading
-                ? (bDict.processingPayment || "So'rov yuborilmoqda...")
-                : (bDict.confirmBooking || "Stolni band qilish")}
+                ? (t.processing)
+                : (t.confirmBooking)}
             </Button>
           </form>
         </div>

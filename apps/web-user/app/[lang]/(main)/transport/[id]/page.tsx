@@ -5,7 +5,7 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { api, ApiRequestError } from "@/lib/api";
 import { BackButton } from "@/components/ui/BackButton";
 import { Badge } from "@/components/ui/Badge";
-import { MapPin, Phone, Star, Users, Fuel, Luggage, Car } from "lucide-react";
+import { MapPin, Phone, Star, Users, Fuel, Luggage, Car, Building2 } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
@@ -148,6 +148,22 @@ export default async function TransportDetailPage({
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-8">
+          {transport.companyName && (
+            <section className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
+                <Building2 className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {(dict as any).detail?.providedBy || "Taqdim etuvchi kompaniya"}
+                </p>
+                <p className="text-base font-bold text-slate-900 dark:text-white">
+                  {transport.companyName}
+                </p>
+              </div>
+            </section>
+          )}
+
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">{(dict as any).detail?.about || "Transport haqida"}</h2>
             <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">

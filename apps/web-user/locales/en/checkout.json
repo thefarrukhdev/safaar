@@ -62,10 +62,7 @@
     "cash": {
       "title": "Pay at Property (Cash / Terminal)",
       "desc": "No prepayment required. Pay at the front desk upon arrival",
-      "badges": [
-        "No prepayment",
-        "Flexible cancellation"
-      ]
+      "badges": []
     },
     "local_card": {
       "title": "National cards",

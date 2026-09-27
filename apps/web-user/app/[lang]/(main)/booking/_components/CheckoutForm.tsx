@@ -124,7 +124,7 @@ export function CheckoutForm({
       ref={formRef}
       onSubmit={handleOnSubmit}
       action={handleSubmitForm}
-      className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]"
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]"
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="hotelId" value={hotelId} />
@@ -245,7 +245,7 @@ export function CheckoutForm({
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-3 rounded-xl border border-slate-900/[0.08] bg-card p-5 lg:sticky lg:top-24 shadow-float">
+      <aside className="order-first lg:order-last flex h-fit flex-col gap-3 rounded-xl border border-slate-900/[0.08] bg-card p-5 lg:sticky lg:top-24 shadow-float">
         <h2 className="text-lg font-semibold">{dict.summary}</h2>
         <div>
           <p className="font-medium">{hotelName}</p>

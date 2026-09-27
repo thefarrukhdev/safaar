@@ -47,7 +47,7 @@ export function RestaurantBookingSection({
   const [guestEmail, setGuestEmail] = useState<string>("");
 
   const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("cash");
   const [cardNumber, setCardNumber] = useState<string>("");
   const [cardExpire, setCardExpire] = useState<string>("");
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
@@ -273,76 +273,9 @@ export function RestaurantBookingSection({
               </div>
             </div>
 
-            {/* Payment Info inside Modal */}
-            <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60 mt-2 border border-slate-100 dark:border-slate-800">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
-                <CreditCard className="w-4 h-4 text-primary-600" /> 
-                {bDict.modalTitle || "To'lovni amalga oshirish"}
-              </h4>
-              
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{bDict.paymentType || "To'lov usuli"}</label>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("card")}
-                  className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all ${
-                    paymentMethod === "card"
-                      ? "border-primary-600 bg-primary-50 text-primary-900 ring-2 ring-primary-500 dark:border-primary-500 dark:bg-primary-950/50 dark:text-white"
-                      : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <CreditCard className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />{bDict.bankCard || "Bank kartasi"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("cash")}
-                  className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all ${
-                    paymentMethod === "cash"
-                      ? "border-primary-600 bg-primary-50 text-primary-900 ring-2 ring-primary-500 dark:border-primary-500 dark:bg-primary-950/50 dark:text-white"
-                      : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <Banknote className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{bDict.cashOnSite || "Naqd (Joyida)"}
-                </button>
-              </div>
-
-              {paymentMethod === "card" && (
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-900">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardNumber || "Karta raqami (Uzcard / Humo / Visa)"}</label>
-                    <input
-                      type="text"
-                      placeholder="8600 0000 0000 0000"
-                      maxLength={19}
-                      value={cardNumber}
-                      onChange={(e) => handleCardNumberChange(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono tracking-wider text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">{bDict.cardExpire || "Amal qilish muddati (MM/YY)"}</label>
-                    <input
-                      type="text"
-                      placeholder="12/28"
-                      maxLength={5}
-                      value={cardExpire}
-                      onChange={(e) => handleCardExpireChange(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                    <Lock className="h-3 w-3 text-emerald-500" />{bDict.securePayment || "256-bit xavfsiz to'lov shifrlanishi"}
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === "cash" && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{bDict.cashNote || "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."}
-                </div>
-              )}
+            {/* To'lov usuli olib tashlandi, har doim 'cash' orqali ishlaydi */}
+            <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300 mt-2">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />{bDict.cashNote || "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."}
             </div>
 
             <label className="flex items-start gap-2 text-xs">
@@ -372,10 +305,8 @@ export function RestaurantBookingSection({
               className="w-full bg-primary-600 font-extrabold text-white hover:bg-primary-700 py-3 shadow-md"
             >
               {loading
-                ? (bDict.processingPayment || "To'lov amalga oshirilmoqda...")
-                : paymentMethod === "card"
-                ? `${totalAmount > 0 ? formatSum(totalAmount) : (bDict.freeBooking || "Bepul (Stol band etish)")} - ${bDict.confirmPayment || "To'lovni tasdiqlash"}`
-                : (bDict.confirmCash || "Bronni tasdiqlash (Naqd)")}
+                ? (bDict.processingPayment || "So'rov yuborilmoqda...")
+                : (bDict.confirmBooking || "Stolni band qilish")}
             </Button>
           </form>
         </div>

@@ -29,7 +29,7 @@ export default function Input({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-[var(--text-secondary)] dark:text-slate-300">
+        <label htmlFor={inputId} className="text-sm font-medium text-[var(--text-secondary)]">
           {label}
         </label>
       )}
@@ -43,7 +43,7 @@ export default function Input({
           id={inputId}
           className={cn(
             "w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)]",
-            "bg-white dark:bg-slate-900 text-[var(--text-primary)] dark:text-white",
+            "bg-white text-[var(--text-primary)]",
             "placeholder:text-[var(--text-muted)]",
             "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)]",
             "transition-all duration-150",
@@ -59,7 +59,7 @@ export default function Input({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] dark:hover:text-white focus:outline-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] focus:outline-none"
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>

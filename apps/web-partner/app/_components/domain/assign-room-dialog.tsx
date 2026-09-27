@@ -68,9 +68,10 @@ export function AssignRoomDialog({
   const isRoomAvailable = (room: Room): boolean => {
     if (!reservation) return false;
     
-    // Har doim, shu jumladan transport uchun ham, bron qilingan "roomType" (avtomobil ID)
-    // bilan tanlanayotgan avtomobil IDsi ustma-ust tushishi kerak.
-    if (room.roomTypeId !== reservation.roomTypeId) return false;
+    // Mehmonxona/Hostel/Restoran uchun bron qilingan xona turi bilan tanlanayotgan
+    // xona turi ustma-ust tushishi kerak. Transportda har bir avtomobil alohida
+    // tur hisoblangani uchun, boshqa mashinaga (masalan, boshqa Cobaltga) almashtirishga ruxsat beramiz.
+    if (!isTransport && room.roomTypeId !== reservation.roomTypeId) return false;
 
     const hasConflict = reservations.some((r) => {
       if (r.id === reservation.id || r.roomNumber !== room.number) return false;

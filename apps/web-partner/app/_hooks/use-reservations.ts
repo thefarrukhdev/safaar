@@ -147,7 +147,12 @@ export function useCheckIn() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await partners.checkIn(id, accessToken);
+      const partnerType = useAuthStore.getState().user?.partnerType;
+      if (partnerType === 'bus' || partnerType === 'rent_car') {
+        await partners.board(id, accessToken);
+      } else {
+        await partners.checkIn(id, accessToken);
+      }
       return id;
     },
     onSuccess: (id) => {

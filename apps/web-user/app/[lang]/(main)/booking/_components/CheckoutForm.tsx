@@ -233,9 +233,9 @@ export function CheckoutForm({
         <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
           <PaymentSelector
-            defaultValue="uzcard"
+            defaultValue="card"
             name="paymentMethod"
-            allow={["uzcard", "humo", "visa", "mastercard"]}
+            
             dict={dict.paymentMethods}
             onChange={setPaymentMethod}
           />

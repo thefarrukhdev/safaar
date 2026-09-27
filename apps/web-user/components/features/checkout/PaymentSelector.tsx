@@ -9,12 +9,7 @@ import type { CheckoutDict } from "@/i18n/dictionaries";
 // `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
 // orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
 // belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
-export type PaymentMethodId =
-  | "uzcard"
-  | "humo"
-  | "visa"
-  | "mastercard"
-  | "cash";
+export type PaymentMethodId = "uzcard" | "humo" | "visa" | "mastercard" | "cash" | "card";
 
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
@@ -42,7 +37,7 @@ const CARD_THEME = {
 
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
-    id: "card" as any,
+    id: "card",
     name: "Karta orqali to'lash",
     subtitle: "Uzcard, Humo, Visa va Mastercard",
     badges: ["3D-Secure xavfsizlik"],
@@ -76,7 +71,7 @@ export interface PaymentSelectorProps {
 }
 
 export function PaymentSelector({
-  defaultValue = "uzcard",
+  defaultValue = "card",
   name = "paymentMethod",
   onChange,
   dict,

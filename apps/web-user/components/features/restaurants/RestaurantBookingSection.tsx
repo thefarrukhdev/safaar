@@ -7,6 +7,7 @@ import type { RestaurantDetailView } from "@safaar/api-client";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 import type { CatalogDict } from "@/i18n/dictionaries";
 
 export function RestaurantBookingSection({
@@ -32,9 +33,16 @@ export function RestaurantBookingSection({
 
   const t = bookingTranslations[locale as keyof typeof bookingTranslations] || bookingTranslations.uz;
 
+
   const maxCapacity = restaurant.tables.length > 0 
     ? Math.max(...restaurant.tables.map(t => t.capacity)) 
     : 0;
+
+  const guestOptions = Array.from({ length: maxCapacity }, (_, i) => i + 1).map((n) => ({
+    value: String(n),
+    label: `${n} ${t.capacity}`,
+  }));
+
 
   const handleBookClick = () => {
     setErrorMsg(null);
@@ -91,17 +99,12 @@ export function RestaurantBookingSection({
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {t.guestsLabel}
               </label>
-              <select
-                value={guests}
-                onChange={(e) => setGuests(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              >
-                {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n} {t.capacity}
-                  </option>
-                ))}
-              </select>
+              <Select
+                value={String(guests)}
+                onChange={(val) => setGuests(Number(val))}
+                options={guestOptions}
+                placeholder={t.guestsLabel}
+              />
             </div>
           </div>
 

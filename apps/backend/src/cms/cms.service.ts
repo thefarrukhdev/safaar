@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { calculateRoomPrice } from '../common/room-pricing';
 
 type CmsRow = Record<string, unknown>;
 
@@ -102,15 +103,19 @@ export class CmsService {
 
   async offers() {
     const cmsOffers = await this.collection('offers');
-    
+
     // Note: Cache this query as well to avoid DB hammering
     let promos: any[] = [];
     try {
-      promos = await this.cache.getOrSet('cms:promotions:active', 300, async () => {
-        const rows = await this.postgres.query(`
+      promos = await this.cache.getOrSet(
+        'cms:promotions:active',
+        300,
+        async () => {
+          const rows = await this.postgres.query(`
           SELECT 
             p.id, p.entity_type, p.entity_name as name, 
             p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
+            hr.base_price::float8 as room_base_price,
             h.slug as hotel_slug, hc.name as hotel_city_name, 
             (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.visibility = 'public' LIMIT 1) as hotel_image,
             bc.id as bus_company_id, bc.name as bus_company_name,
@@ -125,33 +130,53 @@ export class CmsService {
             AND p.start_date <= CURRENT_DATE
             AND p.end_date >= CURRENT_DATE
         `);
-        
-        return rows.map(row => {
-          const isRoom = row.entity_type === 'room';
-          const titleStr = isRoom ? (row.name) : (row.bus_company_name || row.name);
-          const cityObj = isRoom && row.hotel_city_name ? objectValue(row.hotel_city_name) : {};
-          return {
-            id: row.id,
-            type: 'offer',
-            slug: isRoom ? `hotels/${row.hotel_slug}` : `transport/${row.bus_company_id}`,
-            title: { uz: titleStr, ru: titleStr, en: titleStr },
-            name: titleStr,
-            title_text: titleStr,
-            name_text: titleStr,
-            body: {},
-            body_text: '',
-            content: '',
-            status: row.status,
-            metadata: {},
-            old_price: Number(row.old_price_sum) || 0,
-            new_price: Number(row.new_price_sum) || 0,
-            discount_percent: Number(row.discount_percent) || 0,
-            ends_at: row.end_date,
-            image_url: isRoom ? row.hotel_image : row.bus_image,
-            city_name: cityObj,
-          };
-        });
-      });
+
+          return rows.map((row) => {
+            const isRoom = row.entity_type === 'room';
+            const roomPrice = isRoom
+              ? calculateRoomPrice(row.room_base_price, {
+                  id: String(row.id),
+                  entity_id: '',
+                  old_price_sum: Number(row.old_price_sum),
+                  new_price_sum: Number(row.new_price_sum),
+                  discount_percent: Number(row.discount_percent),
+                  end_date: String(row.end_date),
+                })
+              : null;
+            const titleStr = isRoom
+              ? row.name
+              : row.bus_company_name || row.name;
+            const cityObj =
+              isRoom && row.hotel_city_name
+                ? objectValue(row.hotel_city_name)
+                : {};
+            return {
+              id: row.id,
+              type: 'offer',
+              slug: isRoom
+                ? `hotels/${row.hotel_slug}`
+                : `transport/${row.bus_company_id}`,
+              title: { uz: titleStr, ru: titleStr, en: titleStr },
+              name: titleStr,
+              title_text: titleStr,
+              name_text: titleStr,
+              body: {},
+              body_text: '',
+              content: '',
+              status: row.status,
+              metadata: {},
+              old_price:
+                roomPrice?.basePrice ?? (Number(row.old_price_sum) || 0),
+              new_price:
+                roomPrice?.effectivePrice ?? (Number(row.new_price_sum) || 0),
+              discount_percent: Number(row.discount_percent) || 0,
+              ends_at: row.end_date,
+              image_url: isRoom ? row.hotel_image : row.bus_image,
+              city_name: cityObj,
+            };
+          });
+        },
+      );
     } catch (e) {
       console.error('Failed to fetch promos:', e);
       promos = [];

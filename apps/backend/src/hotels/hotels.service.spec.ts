@@ -659,7 +659,16 @@ describe('HotelsService.findOne', () => {
       discount_percent: 20,
       end_date: '2026-12-31',
     });
+    expect(result.rooms.find((r) => r.id === 'room-1')?.base_price).toBe(
+      550000,
+    );
+    expect(result.rooms.find((r) => r.id === 'room-1')?.effective_price).toBe(
+      440000,
+    );
     expect(result.rooms.find((r) => r.id === 'room-2')?.promotion).toBeNull();
+    expect(result.rooms.find((r) => r.id === 'room-2')?.effective_price).toBe(
+      820000,
+    );
   });
 });
 
@@ -693,6 +702,56 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
     expect(rooms).toHaveLength(1);
     expect(rooms[0].name).toEqual({ uz: 'Standart', ru: null, en: null });
     expect(rooms[0].base_price).toBe(550000);
+    expect(rooms[0].effective_price).toBe(550000);
     expect(rooms[0].promotion).toBeNull();
+  });
+
+  it('quotes an active 50% promotion from the server-derived room price', async () => {
+    const cache = { getOrSet: jest.fn() } as unknown as AppCacheService;
+    const pg = { query: jest.fn() } as unknown as jest.Mocked<PostgresService>;
+    const service = new HotelsService(cache, pg);
+
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-1',
+          code: 'STD-1',
+          base_occupancy: 2,
+          max_adults: 2,
+          max_children: 1,
+          total_inventory: 5,
+          base_price: 400000,
+          status: 'active',
+          room_type_name: { uz: 'Standart' },
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'promotion-1',
+          entity_id: 'room-1',
+          old_price_sum: 400000,
+          new_price_sum: 200000,
+          discount_percent: 50,
+          start_date: '2026-09-01',
+          end_date: '2026-10-31',
+        },
+      ]);
+
+    const quote = await service.quote('hotel-1', {
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-03',
+      rooms: 1,
+      total_amount: 1,
+    });
+
+    expect(quote.room.base_price).toBe(400000);
+    expect(quote.room.effective_price).toBe(200000);
+    expect(quote.subtotal).toBe(800000);
+    expect(quote.discount_amount).toBe(400000);
+    expect(quote.total_amount).toBe(400000);
   });
 });

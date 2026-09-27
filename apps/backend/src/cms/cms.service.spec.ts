@@ -266,6 +266,7 @@ describe('CmsService pages', () => {
             id: 'promo-room-1',
             entity_type: 'room',
             name: 'Standart xona',
+            room_base_price: '500000',
             old_price_sum: '500000',
             new_price_sum: '350000',
             discount_percent: 30,

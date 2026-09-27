@@ -4,6 +4,10 @@ import {
   type PostgresTransaction,
 } from '../infrastructure/postgres.service';
 import type { ValidatePromoDto } from './dto/promo.dto';
+import {
+  isSchool21Code,
+  loadActiveRoomPromotions,
+} from '../common/room-pricing';
 
 interface PromoRow {
   id: string;
@@ -80,6 +84,22 @@ export class PromosService {
       new Date(promo.valid_until).getTime() > Date.now() &&
       promo.used_count < promo.usage_limit,
     );
+
+    const roomId = body.room_id ?? body.roomId;
+    if (valid && roomId && isSchool21Code(code)) {
+      const activePromotions = await loadActiveRoomPromotions(this.pg, [
+        roomId,
+      ]);
+      if (activePromotions.has(roomId)) {
+        return {
+          code,
+          valid: false,
+          discount_type: null,
+          discount_value: 0,
+          reason: 'PROMO_STACKING_NOT_ALLOWED',
+        };
+      }
+    }
 
     return {
       code,

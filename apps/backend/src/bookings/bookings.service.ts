@@ -24,6 +24,12 @@ import {
 } from '../common/finance';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { isSlotWithinOperatingHours } from '../common/operating-hours';
+import {
+  activeRoomPromotionPredicate,
+  calculateRoomPrice,
+  isSchool21Code,
+  type ActiveRoomPromotion,
+} from '../common/room-pricing';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
@@ -63,6 +69,12 @@ interface HotelRoomRow {
   hotel_id: string;
   base_price: string | number;
   total_inventory: number;
+  promotion_id?: string | null;
+  promotion_old_price?: string | number | null;
+  promotion_new_price?: string | number | null;
+  promotion_discount_percent?: string | number | null;
+  promotion_start_date?: string | null;
+  promotion_end_date?: string | null;
 }
 
 interface TripRow {
@@ -505,7 +517,23 @@ export class BookingsService {
     // (`partners.service.ts createBooking`) allaqachon to'g'ri qo'llangan.
     const { booking, payment } = await this.pg.transaction(async (tx) => {
       const [room] = await tx.query<HotelRoomRow>(
-        "SELECT id, base_price, hotel_id, total_inventory FROM hotel_rooms WHERE id = $1 AND hotel_id = $2 AND status = 'active' FOR UPDATE",
+        `SELECT hr.id, hr.base_price, hr.hotel_id, hr.total_inventory,
+                ap.id::text AS promotion_id,
+                ap.old_price_sum::float8 AS promotion_old_price,
+                ap.new_price_sum::float8 AS promotion_new_price,
+                ap.discount_percent AS promotion_discount_percent,
+                ap.start_date::text AS promotion_start_date,
+                ap.end_date::text AS promotion_end_date
+         FROM hotel_rooms hr
+         LEFT JOIN LATERAL (
+           SELECT p.*
+           FROM promotions p
+           WHERE ${activeRoomPromotionPredicate('p', 'hr.id')}
+           ORDER BY p.updated_at DESC, p.created_at DESC
+           LIMIT 1
+         ) ap ON TRUE
+         WHERE hr.id = $1 AND hr.hotel_id = $2 AND hr.status = 'active'
+         FOR UPDATE OF hr`,
         [roomId, hotelId],
       );
 
@@ -591,14 +619,37 @@ export class BookingsService {
         });
       }
 
-      const subtotal = Number(room.base_price) * nights * rooms;
-      const discountAmount = promo
+      const partnerPromotion: ActiveRoomPromotion | null = room.promotion_id
+        ? {
+            id: room.promotion_id,
+            entity_id: room.id,
+            old_price_sum: Number(room.promotion_old_price),
+            new_price_sum: Number(room.promotion_new_price),
+            discount_percent: Number(room.promotion_discount_percent),
+            start_date: room.promotion_start_date ?? undefined,
+            end_date: String(room.promotion_end_date ?? ''),
+          }
+        : null;
+      const unitPrice = calculateRoomPrice(room.base_price, partnerPromotion);
+      const baseSubtotal = unitPrice.basePrice * nights * rooms;
+      const effectiveSubtotal = unitPrice.effectivePrice * nights * rooms;
+      const partnerDiscountAmount = baseSubtotal - effectiveSubtotal;
+
+      if (partnerPromotion && promo && isSchool21Code(promo.code)) {
+        throw new BadRequestException({
+          code: 'PROMO_STACKING_NOT_ALLOWED',
+          message: 'SCHOOL21 faol hamkor chegirmasi bilan birga qo‘llanilmaydi',
+        });
+      }
+
+      const promoDiscountAmount = promo
         ? calculatePromoDiscount(
-            subtotal,
+            effectiveSubtotal,
             promo.discount_type,
             promo.discount_value,
           )
         : 0;
+      const discountAmount = partnerDiscountAmount + promoDiscountAmount;
 
       if (promo) {
         const redeemed = await this.promosService.redeem(promo.code, tx);
@@ -619,7 +670,7 @@ export class BookingsService {
         partner_organization_id: hotel.partner_organization_id,
         payment_method: this.paymentMethod(dto.payment_method),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
-        subtotal,
+        subtotal: baseSubtotal,
         discount_amount: discountAmount,
         commission_rate_percent: resolvedCommissionRatePercent,
         hotel_id: hotel.id,
@@ -640,6 +691,15 @@ export class BookingsService {
           slot_time: isRestaurant ? slotTime : null,
           nights,
           rooms,
+          base_price_per_night: unitPrice.basePrice,
+          effective_price_per_night: unitPrice.effectivePrice,
+          partner_promotion: partnerPromotion
+            ? {
+                id: partnerPromotion.id,
+                discount_percent: partnerPromotion.discount_percent,
+                discount_amount: partnerDiscountAmount,
+              }
+            : null,
           adults: Number(dto.adults ?? dto.guests ?? 1),
           children: Number(dto.children ?? 0),
           promo_code: promo?.code ?? null,

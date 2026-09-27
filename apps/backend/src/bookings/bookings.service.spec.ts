@@ -483,6 +483,153 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.booking.commission_amount).toBe(18000);
   });
 
+  it('uses an active 50% partner promotion for booking/payment and ignores a spoofed client amount', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '400000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '400000',
+          promotion_new_price: '200000',
+          promotion_discount_percent: 50,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-10-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-03',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+      total_amount: 1,
+      totalPrice: 1,
+      price: 1,
+    });
+
+    expect(result.booking.subtotal).toBe(800000);
+    expect(result.booking.discount_amount).toBe(400000);
+    expect(result.booking.total_amount).toBe(400000);
+    expect(result.booking.price_snapshot).toMatchObject({
+      base_price_per_night: 400000,
+      effective_price_per_night: 200000,
+      partner_promotion: {
+        id: 'promotion-1',
+        discount_percent: 50,
+        discount_amount: 400000,
+      },
+    });
+    expect(result.payment).toMatchObject({ amount: 400000 });
+  });
+
+  it('rejects SCHOOL21 server-side when the room has an active partner promotion', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'SCHOOL21',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 21,
+    });
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '400000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '400000',
+          promotion_new_price: '200000',
+          promotion_discount_percent: 50,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-10-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-01',
+        check_out: '2026-10-03',
+        rooms: 1,
+        agree_terms: true,
+        guest_name: 'Guest',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'PROMO_STACKING_NOT_ALLOWED' },
+    });
+
+    expect(promos.redeem).not.toHaveBeenCalled();
+  });
+
+  it.each(['expired', 'future', 'pending_review', 'rejected'])(
+    'allows SCHOOL21 when a %s partner promotion is excluded by the authoritative room query',
+    async () => {
+      promos.validate.mockResolvedValueOnce({
+        code: 'SCHOOL21',
+        valid: true,
+        discount_type: 'percentage',
+        discount_value: 10,
+      });
+      pg.query
+        .mockResolvedValueOnce([hotelRow])
+        // The lateral SQL filters non-active rows, so no promotion columns
+        // are present regardless of which ineligible state caused exclusion.
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            hotel_id: 'hotel-1',
+            base_price: '100000',
+            total_inventory: 1,
+          },
+        ])
+        .mockResolvedValueOnce([{ booked_count: 0 }])
+        .mockResolvedValueOnce([{ blocked_count: 0 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-01',
+        check_out: '2026-10-03',
+        rooms: 1,
+        agree_terms: true,
+        guest_name: 'Guest',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      });
+
+      expect(result.booking.subtotal).toBe(200000);
+      expect(result.booking.discount_amount).toBe(20000);
+      expect(result.booking.total_amount).toBe(180000);
+      expect(promos.redeem).toHaveBeenCalledWith('SCHOOL21', expect.anything());
+    },
+  );
+
   it('rejects an invalid/expired promo code with 400 before touching inventory', async () => {
     promos.validate.mockResolvedValueOnce({
       code: 'EXPIRED',

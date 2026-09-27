@@ -16,6 +16,8 @@ export interface PromoBarConfig {
   linkText?: LocalizedString | string;
   endsAt?: string | null;
   isDismissible?: boolean;
+  /** The raw promo code string (e.g. "SCHOOL21") — shown as a copyable chip in the bar. */
+  promoCode?: string;
 }
 
 interface ActivePromo {
@@ -85,6 +87,7 @@ export async function getPromoBarConfig(locale: string): Promise<PromoBarConfig[
       text: `Bron qilishda ${promoDiscountText(promo)} chegirma — ${promo.code} promokodi bilan!`,
       endsAt: promo.validUntil || null,
       isDismissible: true,
+      promoCode: promo.code,
     }));
   }
 

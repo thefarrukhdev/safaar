@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Sparkles, X, ArrowRight } from "lucide-react";
+import { Sparkles, X, ArrowRight, Copy, Check } from "lucide-react";
 import { type PromoBarConfig, getLocalizedText } from "@/lib/promo";
 import { PromoShinyText } from "@/components/ui/PromoShinyText";
 
@@ -15,6 +15,7 @@ const emptySubscribe = () => () => {};
 
 export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
   const [now, setNow] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setNow(Date.now()), 0);
@@ -98,6 +99,14 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
     });
   };
 
+  const handleCopy = () => {
+    if (!config.promoCode) return;
+    navigator.clipboard.writeText(config.promoCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <div
       role="region"
@@ -119,6 +128,27 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
         )}
 
         <PromoShinyText className="line-clamp-1 drop-shadow-xs">{text}</PromoShinyText>
+
+        {config.promoCode && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Promokodni nusxa olish"
+            className="inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-white/10 px-2 py-0.5 font-mono text-[11px] font-bold tracking-widest text-amber-300 transition-all duration-200 hover:bg-white/20 hover:text-white focus:outline-none focus:ring-1 focus:ring-amber-400 active:scale-95"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3 text-green-400" aria-hidden />
+                <span className="text-green-400">Nusxalandi!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3" aria-hidden />
+                {config.promoCode}
+              </>
+            )}
+          </button>
+        )}
 
         {config.link && (
           <Link

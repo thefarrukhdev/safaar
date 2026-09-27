@@ -274,26 +274,41 @@ export class UsersService {
     const targetId = String(body.target_id ?? body.hotel_id ?? '');
     const createdAt = new Date().toISOString();
 
-    await this.pg.query(
-      'INSERT INTO favorites (id, user_id, target_type, target_id, created_at) VALUES ($1, $2, $3, $4, $5)',
+    // `(user_id, target_type, target_id)` unique — ikkinchi marta bosish
+    // (masalan stale client holati tufayli) avvalgi kod bilan xom 23505
+    // unique-violation'ga, demak umumiy 500'ga olib kelardi. Endi
+    // idempotent: mavjud qatorni ("no-op" UPDATE) qaytaradi, yangisini
+    // yaratmaydi — client doim bitta barqaror favorite id oladi.
+    const [favorite] = await this.pg.query<{
+      id: string;
+      user_id: string;
+      target_type: string;
+      target_id: string;
+      created_at: string;
+    }>(
+      `INSERT INTO favorites (id, user_id, target_type, target_id, created_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, target_type, target_id) DO UPDATE
+         SET target_type = EXCLUDED.target_type
+       RETURNING id, user_id, target_type, target_id, created_at`,
       [id, currentActor.id, targetType, targetId, createdAt],
     );
 
-    return {
-      id,
-      user_id: currentActor.id,
-      target_type: targetType,
-      target_id: targetId,
-      created_at: createdAt,
-    };
+    return favorite;
   }
 
   async deleteFavorite(actor: RequestActor | undefined, id: string) {
     const currentActor = this.requireActor(actor);
-    await this.pg.query(
-      'DELETE FROM favorites WHERE id = $1 AND user_id = $2',
+    const rows = await this.pg.query<{ id: string }>(
+      'DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id',
       [id, currentActor.id],
     );
+    if (rows.length === 0) {
+      throw new NotFoundException({
+        code: 'FAVORITE_NOT_FOUND',
+        message: 'Sevimli topilmadi',
+      });
+    }
     return { id, user_id: currentActor.id, deleted: true };
   }
 

@@ -146,3 +146,146 @@ describe('UsersService contact-matched guest booking history', () => {
     expect(params).toEqual([actor.id]);
   });
 });
+
+describe('UsersService favorites', () => {
+  let service: UsersService;
+  let pg: { query: jest.Mock };
+
+  const actorA: RequestActor = {
+    id: 'user-a',
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new UsersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it("lists only the authenticated user's favorites, scoped by user_id", async () => {
+    const rows = [
+      {
+        id: 'fav-1',
+        user_id: 'user-a',
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+        created_at: '2026-09-01T00:00:00.000Z',
+      },
+    ];
+    pg.query.mockResolvedValueOnce(rows);
+
+    await expect(service.favorites(actorA)).resolves.toEqual(rows);
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(sql).toContain('FROM favorites WHERE user_id = $1');
+    expect(params).toEqual(['user-a']);
+  });
+
+  it('rejects anonymous favorites list access before querying the database', async () => {
+    await expect(service.favorites(undefined)).rejects.toMatchObject({
+      status: 401,
+      response: { code: 'AUTH_TOKEN_INVALID' },
+    });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('persists a new favorite using the authenticated actor id, not a client-supplied user_id', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'fav-new',
+        user_id: 'user-a',
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+        created_at: '2026-09-01T00:00:00.000Z',
+      },
+    ]);
+
+    const result = await service.addFavorite(actorA, {
+      target_type: 'hotel',
+      target_id: 'hotel-1',
+      user_id: 'attacker-controlled-user-id',
+    });
+
+    expect(result).toMatchObject({ user_id: 'user-a', target_id: 'hotel-1' });
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(sql).toContain('INSERT INTO favorites');
+    expect(sql).toContain('ON CONFLICT (user_id, target_type, target_id)');
+    expect(params?.[1]).toBe('user-a');
+  });
+
+  it('is idempotent on a duplicate add — returns the existing row instead of a unique-constraint 500', async () => {
+    const existing = {
+      id: 'fav-existing',
+      user_id: 'user-a',
+      target_type: 'hotel',
+      target_id: 'hotel-1',
+      created_at: '2026-09-01T00:00:00.000Z',
+    };
+    pg.query.mockResolvedValueOnce([existing]);
+
+    await expect(
+      service.addFavorite(actorA, {
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+      }),
+    ).resolves.toEqual(existing);
+  });
+
+  it('rejects anonymous add-favorite before querying the database', async () => {
+    await expect(
+      service.addFavorite(undefined, {
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+      }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('removes a favorite owned by the authenticated user', async () => {
+    pg.query.mockResolvedValueOnce([{ id: 'fav-1' }]);
+
+    await expect(service.deleteFavorite(actorA, 'fav-1')).resolves.toEqual({
+      id: 'fav-1',
+      user_id: 'user-a',
+      deleted: true,
+    });
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(sql).toContain(
+      'DELETE FROM favorites WHERE id = $1 AND user_id = $2',
+    );
+    expect(params).toEqual(['fav-1', 'user-a']);
+  });
+
+  it('does not delete, and reports 404, when the favorite belongs to another user', async () => {
+    pg.query.mockResolvedValueOnce([]);
+
+    await expect(
+      service.deleteFavorite(actorA, 'someone-elses-favorite'),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'FAVORITE_NOT_FOUND' },
+    });
+  });
+
+  it('reports 404 (not a false success) for deleting a non-existent favorite', async () => {
+    pg.query.mockResolvedValueOnce([]);
+
+    await expect(
+      service.deleteFavorite(actorA, 'does-not-exist'),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('rejects anonymous delete-favorite before querying the database', async () => {
+    await expect(
+      service.deleteFavorite(undefined, 'fav-1'),
+    ).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+});

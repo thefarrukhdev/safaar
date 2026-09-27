@@ -126,6 +126,10 @@ interface RawHotel {
   longitude?: number;
   checkInTime?: string;
   checkOutTime?: string;
+  cancellation_policy_code?: string;
+  smoking_allowed?: boolean;
+  pets_allowed?: boolean;
+  children_allowed?: boolean;
   minPrice?: number;
   city?: RawCity;
   rooms?: RawRoom[];
@@ -172,6 +176,10 @@ export function toHotelDetail(raw: RawHotel, locale: Locale): HotelDetail {
     longitude: raw.longitude ?? 0,
     checkInTime: raw.checkInTime ?? "",
     checkOutTime: raw.checkOutTime ?? "",
+    cancellationPolicyCode: raw.cancellation_policy_code,
+    allowSmoking: raw.smoking_allowed,
+    allowPets: raw.pets_allowed,
+    allowChildren: raw.children_allowed,
     rooms: (raw.rooms ?? []).map((room) => toRoomView(room, locale)),
   };
 }

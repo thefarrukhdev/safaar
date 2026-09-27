@@ -36,6 +36,7 @@
   "nav": {
     "photos": "Фото",
     "amenities": "Удобства",
+    "rules": "Правила",
     "rooms": "Номера",
     "reviews": "Отзывы",
     "location": "Расположение"
@@ -60,5 +61,26 @@
     "mainViewAlt": "Основной вид",
     "photoCountSuffix": "фото",
     "allPhotos": "Все фотографии"
+  },
+  "rulesSection": {
+    "title": "Правила отеля",
+    "checkIn": "Время заезда (Check-in)",
+    "checkInFrom": "с {time}",
+    "checkOut": "Время выезда (Check-out)",
+    "checkOutUntil": "до {time}",
+    "cancellation": "Правила отмены",
+    "cancellation_FLEXIBLE": "Гибкие (Полный возврат)",
+    "cancellation_MODERATE": "Умеренные (При определенных условиях)",
+    "cancellation_STRICT": "Строгие (Без возврата или частично)",
+    "cancellation_NON_REFUNDABLE": "Невозвратный (Без возврата)",
+    "smoking": "Курение",
+    "smokingAllowed": "Курение разрешено",
+    "smokingNotAllowed": "Курение запрещено",
+    "pets": "Питомцы",
+    "petsAllowed": "Можно с питомцами",
+    "petsNotAllowed": "Без питомцев",
+    "children": "Дети",
+    "childrenAllowed": "Можно с детьми",
+    "childrenNotAllowed": "Только для взрослых"
   }
 }

@@ -322,6 +322,7 @@ export class HotelsService {
         h.address, h.latitude::float8, h.longitude::float8, h.stars,
         h.rating_average::float8, h.reviews_count, h.status::text,
         h.check_in_time, h.check_out_time,
+        h.cancellation_policy_code, h.smoking_allowed, h.pets_allowed, h.children_allowed,
         h.created_at, h.updated_at,
         ht.name, ht.description,
         c.name as city_name, c.region_id::text

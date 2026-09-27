@@ -13,6 +13,7 @@ import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { HotelBookingWidget } from '@/components/features/hotels/HotelBookingWidget';
 import { HotelAmenities } from '@/components/features/hotels/HotelAmenities';
+import { HotelRules } from '@/components/features/hotels/HotelRules';
 import { HotelStickyNav } from '@/components/features/hotels/HotelStickyNav';
 import { HotelLocation } from '@/components/features/hotels/HotelLocation';
 import { BackButton } from '@/components/ui/BackButton';
@@ -285,6 +286,18 @@ export default async function Page({
               />
             </section>
           )}
+
+          <section id="rules" className="scroll-mt-24 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <HotelRules 
+              checkInTime={hotel.checkInTime}
+              checkOutTime={hotel.checkOutTime}
+              cancellationPolicyCode={hotel.cancellationPolicyCode}
+              allowSmoking={hotel.allowSmoking}
+              allowPets={hotel.allowPets}
+              allowChildren={hotel.allowChildren}
+              dict={(dict as any).rulesSection}
+            />
+          </section>
 
           <section id="rooms" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <h2 className="text-2xl font-bold text-slate-900">

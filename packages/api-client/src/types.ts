@@ -45,6 +45,10 @@ export interface HotelDetail extends HotelListItem {
   longitude: number;
   checkInTime: string;
   checkOutTime: string;
+  cancellationPolicyCode?: string;
+  allowSmoking?: boolean;
+  allowPets?: boolean;
+  allowChildren?: boolean;
   rooms: RoomTypeView[];
 }
 

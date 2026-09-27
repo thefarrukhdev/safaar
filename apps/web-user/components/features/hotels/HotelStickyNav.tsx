@@ -14,6 +14,7 @@ export function HotelStickyNav({
     () => [
       { id: "photos", label: dict?.photos },
       { id: "amenities", label: dict?.amenities },
+      { id: "rules", label: dict?.rules },
       { id: "rooms", label: dict?.rooms },
       { id: "reviews", label: dict?.reviews },
       { id: "location", label: dict?.location },

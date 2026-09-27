@@ -208,4 +208,148 @@ describe('CmsService pages', () => {
       expect.any(Function),
     );
   });
+
+  /**
+   * Regression: PROMO-ENUM-500 — "Chegirmadagi takliflar" (bosh sahifa,
+   * `GET /cms/offers`) hamkor tomonidan yaratilib admin tomonidan
+   * tasdiqlangan (`decidePromotion` → `status = 'published'`) promotionni
+   * KO'RSATA OLMASDI: SQL `WHERE p.status IN ('published', 'approved')`
+   * edi, lekin `'approved'` `PromotionStatus` enumining haqiqiy a'zosi
+   * EMAS (faqat pending_review/published/rejected — admin bironta ham
+   * hech qachon `'approved'` yozmaydi, `decidePromotion()`ga qarang).
+   * Har safar promotions jadvalida BIRON BIR qator bo'lsa (status qanday
+   * bo'lishidan qat'i nazar — Postgres IN-list qiymatlarini ustun turiga
+   * qarab avval CAST qiladi), real Postgresda tasdiqlangan:
+   * `ERROR: invalid input value for enum "PromotionStatus": "approved"`.
+   * Bundan tashqari eski SQL sanalar oralig'ini UMUMAN tekshirmasdi —
+   * muddati o'tgan/hali boshlanmagan promotion ham abadiy ko'rinardi.
+   */
+  describe('offers() — promotions-backed deals (promotions jadvalidan)', () => {
+    const cmsOfferRow = {
+      id: 'cms-offer-1',
+      type: 'offer',
+      slug: 'static-cms-offer',
+      title: { uz: 'CMS orqali', ru: null, en: null },
+      body: { uz: null, ru: null, en: null },
+      status: 'published',
+      metadata: { oldPriceSum: 100000, newPriceSum: 90000 },
+      published_at: '2026-09-01T00:00:00.000Z',
+      created_at: '2026-09-01T00:00:00.000Z',
+      updated_at: '2026-09-01T00:00:00.000Z',
+    };
+
+    it("the promotions SQL no longer filters on the invalid 'approved' literal, and always scopes to the active date window", async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow]) // collection('offers')
+        .mockResolvedValueOnce([]); // promotions query
+
+      await service.offers();
+
+      const promotionsCall = postgres.query.mock.calls.find(([sql]) =>
+        String(sql).includes('FROM promotions'),
+      );
+      expect(promotionsCall).toBeDefined();
+      const [sql] = promotionsCall!;
+      expect(String(sql)).not.toContain("'approved'");
+      expect(String(sql)).toContain(
+        'p.status = \'published\'::"PromotionStatus"',
+      );
+      expect(String(sql)).toContain('p.start_date <= CURRENT_DATE');
+      expect(String(sql)).toContain('p.end_date >= CURRENT_DATE');
+    });
+
+    it('maps an approved-and-active hotel room promotion into a correct public deal (discount, prices, dates, entity info)', async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'promo-room-1',
+            entity_type: 'room',
+            name: 'Standart xona',
+            old_price_sum: '500000',
+            new_price_sum: '350000',
+            discount_percent: 30,
+            end_date: '2026-10-01',
+            status: 'published',
+            hotel_slug: 'grand-hotel',
+            hotel_city_name: { uz: 'Toshkent' },
+            hotel_image: 'https://cdn.example.com/hotel.jpg',
+            bus_company_id: null,
+            bus_company_name: null,
+            bus_image: null,
+          },
+        ]);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+      const promoDeal = result.find((r) => r.id === 'promo-room-1');
+
+      expect(promoDeal).toMatchObject({
+        slug: 'hotels/grand-hotel',
+        old_price: 500000,
+        new_price: 350000,
+        discount_percent: 30,
+        ends_at: '2026-10-01',
+        image_url: 'https://cdn.example.com/hotel.jpg',
+      });
+      expect((promoDeal!.title as Record<string, string>).uz).toBe(
+        'Standart xona',
+      );
+      expect(promoDeal!.city_name).toEqual({ uz: 'Toshkent' });
+    });
+
+    it('maps an approved-and-active vehicle (rent-a-car) promotion into a correct public deal', async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'promo-vehicle-1',
+            entity_type: 'vehicle',
+            name: 'Chevrolet Cobalt',
+            old_price_sum: '300000',
+            new_price_sum: '240000',
+            discount_percent: 20,
+            end_date: '2026-10-01',
+            status: 'published',
+            hotel_slug: null,
+            hotel_city_name: null,
+            hotel_image: null,
+            bus_company_id: 'bus-co-1',
+            bus_company_name: 'Afrosiyob',
+            bus_image: 'https://cdn.example.com/bus.jpg',
+          },
+        ]);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+      const promoDeal = result.find((r) => r.id === 'promo-vehicle-1');
+
+      expect(promoDeal).toMatchObject({
+        slug: 'transport/bus-co-1',
+        old_price: 300000,
+        new_price: 240000,
+        discount_percent: 20,
+        image_url: 'https://cdn.example.com/bus.jpg',
+      });
+      expect((promoDeal!.title as Record<string, string>).uz).toBe('Afrosiyob');
+    });
+
+    it('a real database error on the promotions query is logged and degrades to zero promo deals — it never fabricates a fake/error-shaped promotion card', async () => {
+      const dbError = Object.assign(
+        new Error('invalid input value for enum "PromotionStatus": "approved"'),
+        { code: '22P02' },
+      );
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockRejectedValueOnce(dbError);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+
+      // Faqat haqiqiy CMS 'offers' yozuvi qaytadi — na xato matni, na
+      // "Error City"/soxta chegirma kartochkasi hech qachon qo'shilmaydi.
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ id: 'cms-offer-1' });
+      expect(
+        result.some((r) => JSON.stringify(r).includes('invalid input value')),
+      ).toBe(false);
+    });
+  });
 });

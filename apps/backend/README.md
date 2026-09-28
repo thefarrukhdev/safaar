@@ -6,7 +6,7 @@ clients from one modular backend.
 ## Run
 
 ```bash
-npm run dev:backend
+pnpm run dev:backend
 ```
 
 Default local API prefix:
@@ -18,7 +18,7 @@ http://localhost:4000/v1
 Override with:
 
 ```bash
-API_PREFIX=v1 PORT=4000 npm run start:dev -w @safaar/backend
+API_PREFIX=v1 PORT=4000 pnpm run start:dev -w @safaar/backend
 ```
 
 ## Auth And Security
@@ -50,7 +50,7 @@ Admin and partner passwords are verified with Argon2id hashes. To generate a
 new hash:
 
 ```bash
-npm run security:hash-password -w @safaar/backend -- "new-password"
+pnpm run security:hash-password -w @safaar/backend -- "new-password"
 ```
 
 Payment webhooks in local/mock mode require
@@ -79,12 +79,12 @@ signature algorithms are implemented.
 ## Checks
 
 ```bash
-npm run build:types
-npm run prisma:validate -w @safaar/backend
-npm run lint -w @safaar/backend
-npm run build:backend
-npm run test:backend
-npm run test:e2e -w @safaar/backend
+pnpm run build:types
+pnpm run prisma:validate -w @safaar/backend
+pnpm run lint -w @safaar/backend
+pnpm run build:backend
+pnpm run test:backend
+pnpm run test:e2e -w @safaar/backend
 ```
 
 `test:e2e` opens a local test port; in restricted sandboxes it may need elevated
@@ -109,10 +109,10 @@ apps/backend/prisma/schema.prisma
 Useful commands:
 
 ```bash
-npm run prisma:validate -w @safaar/backend
-npm run prisma:generate -w @safaar/backend
-npm run prisma:migrate -w @safaar/backend
-npm run prisma:deploy -w @safaar/backend
+pnpm run prisma:validate -w @safaar/backend
+pnpm run prisma:generate -w @safaar/backend
+pnpm run prisma:migrate -w @safaar/backend
+pnpm run prisma:deploy -w @safaar/backend
 ```
 
 ## Docker

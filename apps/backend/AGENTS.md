@@ -59,7 +59,7 @@ Bu paket frontend va backend o'rtasidagi **yagona haqiqat manbai**. Qoidalar:
 2. Turni o'zgartirsang — bu **buzuvchi o'zgartirish (breaking change)** bo'lishi
    mumkin. Maydon olib tashlash yoki nomini o'zgartirish 3 frontend'ni buzadi.
    Avval qo'shimcha (optional) sifatida qo'sh, keyin migratsiya qil.
-3. O'zgartirgandan keyin **`npm run build:types`** ni ishlat (dist yangilansin),
+3. O'zgartirgandan keyin **`pnpm run build:types`** ni ishlat (dist yangilansin),
    aks holda frontend eski turlarni ko'radi.
 4. Maxfiy maydonlarni (parol hash, ichki token) **turlarga qo'shma** — ular
    frontend'ga chiqib ketmasin.
@@ -75,10 +75,10 @@ Bu paket frontend va backend o'rtasidagi **yagona haqiqat manbai**. Qoidalar:
 ## Buyruqlar (shu papkadan)
 
 ```bash
-npm run start:dev   # watch rejimida → localhost:4000
-npm run build       # nest build
-npm run test        # jest
-npm run lint        # ESLint (--fix)
+pnpm run start:dev   # watch rejimida → localhost:4000
+pnpm run build       # nest build
+pnpm run test        # jest
+pnpm run lint        # ESLint (--fix)
 ```
 
 Health-check: `GET http://localhost:4000/api/health`
@@ -92,7 +92,7 @@ Health-check: `GET http://localhost:4000/api/health`
 3. **Xavfsizlik birinchi:** har bir himoyalangan endpoint'ga to'g'ri `@Roles`
    qo'y. Kirish ma'lumotlarini DTO + ValidationPipe bilan tekshir.
 4. **Test yoz** — yangi xizmat/endpoint uchun `*.spec.ts`.
-5. **Tekshir** — `npm run build` va `npm run test` yashil bo'lsin.
+5. **Tekshir** — `pnpm run build` va `pnpm run test` yashil bo'lsin.
 6. **Yangi npm paket** qo'shsang — aniq versiya, ishonchli manba.
 7. **Maxfiy ma'lumot** (.env, kalitlar) kodga yozma, javoblarga chiqarma.
 
@@ -121,15 +121,15 @@ git pull --rebase origin develop
 ### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
-npm run build:types                 # types o'zgargan bo'lsa MAJBURIY
-npm run test  -w @safaar/backend     # testlar o'tsin
-npm run build -w @safaar/backend     # build xatosiz
+pnpm run build:types                 # types o'zgargan bo'lsa MAJBURIY
+pnpm run test  -w @safaar/backend     # testlar o'tsin
+pnpm run build -w @safaar/backend     # build xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:
   > "Ish tayyor, build/test yashil. Commit + push qilishni tavsiya qilaman."
 
-> ⚠️ `@safaar/types`'ni o'zgartirgan bo'lsang — **`npm run build:types`** ni ishlat
+> ⚠️ `@safaar/types`'ni o'zgartirgan bo'lsang — **`pnpm run build:types`** ni ishlat
 > (dist yangilanadi), aks holda frontend'lar eski turlarni ko'radi. Buzuvchi
 > o'zgartirish bo'lsa — frontend dev'larni ogohlantir.
 

@@ -62,9 +62,9 @@ to'liq boshqaruv paneli. Faqat ichki xodimlar foydalanadi.
 ## Buyruqlar (shu papkadan)
 
 ```bash
-npm run dev      # → localhost:3002
-npm run build    # production build
-npm run lint     # ESLint
+pnpm run dev      # → localhost:3002
+pnpm run build    # production build
+pnpm run lint     # ESLint
 ```
 
 ## Backend bilan ishlash
@@ -81,7 +81,7 @@ npm run lint     # ESLint
 1. **Avval o'qi, keyin yoz** — mavjud tuzilma va Next.js 16 hujjatini ko'r.
 2. **Mavjud uslubga moslash**, keraksiz bog'liqlik qo'shma.
 3. **Kichik, aniq o'zgartirishlar** — ortiqcha "yaxshilash" qo'shma.
-4. **Tekshir** — `npm run build` va `npm run lint`, xatoni tuzat.
+4. **Tekshir** — `pnpm run build` va `pnpm run lint`, xatoni tuzat.
 5. **Xavfsizlik:** bu admin panel — maxfiy ma'lumot va ruxsatlar bilan ehtiyot bo'l.
 6. **Til:** O'zbek. Pul — so'm (UZS). Dark mode ixtiyoriy qo'llab-quvvatlanadi.
 
@@ -107,13 +107,13 @@ boshqaradigan release; lekin repo egasi (thefarrukhdev) ruxsat bersa, **sen `mai
 git checkout develop
 git pull --rebase origin develop
 ```
-`@safaar/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
+`@safaar/types` o'zgargan bo'lsa: `pnpm install && pnpm run build:types`.
 
 ### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
-npm run build -w @safaar/web-admin   # build xatosiz
-npm run lint  -w @safaar/web-admin   # lint xatosiz
+pnpm run build -w @safaar/web-admin   # build xatosiz
+pnpm run lint  -w @safaar/web-admin   # lint xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:

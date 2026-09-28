@@ -62,9 +62,9 @@ yerda mehmonxona va avtobus qidiradi, ko'radi va bron qiladi.
 ## Buyruqlar (shu papkadan)
 
 ```bash
-npm run dev      # → localhost:3000
-npm run build    # production build
-npm run lint     # ESLint
+pnpm run dev      # → localhost:3000
+pnpm run build    # production build
+pnpm run lint     # ESLint
 ```
 
 ## Backend bilan ishlash
@@ -85,7 +85,7 @@ npm run lint     # ESLint
    nima ishlatilayotganini ko'r. Keraksiz bog'liqlik qo'shma.
 3. **Kichik, aniq o'zgartirishlar.** Vazifa nima bo'lsa — shuni qil, ortiqcha
    "yaxshilash" qo'shma.
-4. **Tekshir.** O'zgartirishdan keyin `npm run build` va `npm run lint` ishlat,
+4. **Tekshir.** O'zgartirishdan keyin `pnpm run build` va `pnpm run lint` ishlat,
    xato bo'lsa tuzat.
 5. **Accessibility va semantik HTML** ga e'tibor ber.
 6. **Til:** UI matnlari O'zbek tilida. Pul — so'm (UZS), `toLocaleString("uz-UZ")`.
@@ -105,7 +105,7 @@ Sen shunchaki kod yozuvchi emas, **Senior Frontend Architect** sifatida fikrlays
 ### 2. Code Quality & Professional Mindset:
 - **Niyatni Aniq Biling (Reasoning First):** Har bir o'zgarish yoki yangi komponent yaratishdan oldin uning arxitekturadagi o'rni va foydasini tushunib yoz.
 - **Strict TypeScript (Zero `any`):** Turlarni `@safaar/types`'dan ol yoki aniq interface yoz. Hech qachon `any` yoki `ts-ignore` ishlatma.
-- **Zero Warnings Standard:** Ishni yakunlashdan oldin `npm run lint` va `npm run build` noldan (0 warning, 0 error) yashil bo'lishi shart.
+- **Zero Warnings Standard:** Ishni yakunlashdan oldin `pnpm run lint` va `pnpm run build` noldan (0 warning, 0 error) yashil bo'lishi shart.
 - **Mobile-First & UI Excellence:** Har bir UI interfeys responsive, zamonaviy gradientlar, glassmorphism va silliq animationlar bilan Wow-effekt beradigan darajada bo'lsin.
 
 ---
@@ -130,13 +130,13 @@ boshqaradigan release; lekin repo egasi (thefarrukhdev) ruxsat bersa, **sen `mai
 git checkout develop
 git pull --rebase origin develop
 ```
-`@safaar/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
+`@safaar/types` o'zgargan bo'lsa: `pnpm install && pnpm run build:types`.
 
 ### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
-npm run build -w @safaar/web-user   # build xatosiz
-npm run lint  -w @safaar/web-user   # lint xatosiz
+pnpm run build -w @safaar/web-user   # build xatosiz
+pnpm run lint  -w @safaar/web-user   # lint xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:

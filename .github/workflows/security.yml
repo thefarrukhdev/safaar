@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: ppnpm install --frozen-lockfile
       - name: pnpm audit (Warning Only)
         run: |
           pnpm audit || echo "::warning::Kritik zaifliklar topildi. Ularni iloji boricha tezroq to'g'rilash tavsiya etiladi."

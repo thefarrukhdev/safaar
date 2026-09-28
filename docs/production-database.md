@@ -160,7 +160,7 @@ in `public`** and **no `_prisma_migrations` table** — the schema was applied b
 `prisma db push` or a SQL restore, not by `prisma migrate deploy`. Consequently:
 
 - `prisma migrate status` reports "no migration history" / drift against prod.
-- `npm run prisma:deploy` (`prisma migrate deploy`) run against prod **will fail**
+- `pnpm run prisma:deploy` (`prisma migrate deploy`) run against prod **will fail**
   (objects already exist).
 
 **Schema drift vs. the 31 migration files in `apps/backend/prisma/migrations/`:

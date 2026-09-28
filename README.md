@@ -58,21 +58,21 @@ Loyiha kompyuteringizda ishlashi uchun `Node.js` (v20+) va `Docker` o'rnatilgan 
 
 **1. Kutubxonalarni o'rnatish:**
 ```bash
-npm install
+pnpm install
 ```
 
 **2. Tiplarni (Types) generatsiya qilish:**
 ```bash
-npm run build:types
+pnpm run build:types
 ```
 
 **3. Ilovalarni ishga tushirish:**
 Siz o'zingizga kerakli qismni alohida yoki hammasini bittada yurgizishingiz mumkin:
 ```bash
-npm run dev:user      # Faqat Mijozlar sayti (localhost:3000)
-npm run dev:partner   # Faqat Hamkorlar kabineti (localhost:3001)
-npm run dev:admin     # Faqat Admin panel (localhost:3002)
-npm run dev:backend   # Faqat Backend API (localhost:4000)
+pnpm run dev:user      # Faqat Mijozlar sayti (localhost:3000)
+pnpm run dev:partner   # Faqat Hamkorlar kabineti (localhost:3001)
+pnpm run dev:admin     # Faqat Admin panel (localhost:3002)
+pnpm run dev:backend   # Faqat Backend API (localhost:4000)
 ```
 
 **4. Backend Infra (Docker):**

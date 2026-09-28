@@ -11,7 +11,7 @@ quyidagi tuzilma va chegaralarga **qat'iy** rioya qilsin.
 ## Loyiha haqida
 
 **Safaar** — O'zbekiston bo'ylab mehmonxonalarni bron qilish platformasi
-(Agoda'ga o'xshash). Bitta npm workspace monorepo: 3 ta mustaqil frontend +
+(Agoda'ga o'xshash). Bitta pnpm workspace monorepo: 3 ta mustaqil frontend +
 1 ta backend API + umumiy turlar paketi.
 
 ```

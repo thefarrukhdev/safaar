@@ -578,7 +578,7 @@ route allaqachon bor — offline fallback uchun ishlatish mumkin.
 
 | Nima | Natija |
 |---|---|
-| `npm run build:types && build -w @safaar/api-client && build -w @safaar/web-user` | ✅ PASS |
+| `pnpm run build:types && build -w @safaar/api-client && build -w @safaar/web-user` | ✅ PASS |
 | `tsc --noEmit` (`apps/web-user`) | ✅ PASS |
 | `eslint` (o'zgargan fayllar) | ✅ PASS |
 | F2: lokal prod `curl /sw.js` | ✅ `200`, `content-type: application/javascript` |

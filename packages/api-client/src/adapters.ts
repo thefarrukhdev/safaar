@@ -104,11 +104,14 @@ interface RawCity {
 interface RawRoom {
   id: string;
   name: Localized;
-  basePrice: number;
+  basePrice?: number;
+  base_price?: number;
+  effective_price?: number;
   baseOccupancy?: number;
   maxAdults?: number;
   totalInventory?: number;
   available?: number;
+  promotion?: any;
 }
 
 interface RawHotel {
@@ -156,10 +159,16 @@ export function toHotelListItem(raw: RawHotel, locale: Locale): HotelListItem {
 }
 
 function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
+  // `effective_price` is the discounted final price, `base_price` is the original price.
+  const basePriceSum = Number(raw.base_price ?? raw.basePrice ?? 0);
+  const priceSum = raw.effective_price !== undefined ? Number(raw.effective_price) : basePriceSum;
+  const discountAmount = basePriceSum - priceSum;
+
   return {
     id: raw.id,
     name: pickLocale(raw.name, locale),
-    priceSum: Number(raw.basePrice ?? 0),
+    priceSum,
+    ...(discountAmount > 0 && { basePriceSum, discountAmount }),
     capacity: raw.baseOccupancy ?? raw.maxAdults ?? 1,
     available: raw.available ?? raw.totalInventory ?? 0,
   };

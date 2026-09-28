@@ -32,6 +32,8 @@ export interface RoomTypeView {
   id: string;
   name: string;
   priceSum: number;
+  basePriceSum?: number;
+  discountAmount?: number;
   capacity: number;
   available: number;
 }

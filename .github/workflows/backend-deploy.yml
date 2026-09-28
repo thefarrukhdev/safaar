@@ -44,15 +44,15 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: ppnpm install --frozen-lockfile
-      - run: ppnpm run build:types
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
       - run: pnpm --filter @safaar/backend run prisma:validate || true
       - run: pnpm --filter @safaar/backend run typecheck || true
       - run: pnpm --filter @safaar/backend run format:check || true
       - run: pnpm --filter @safaar/backend run lint || true
       - run: pnpm audit --filter @safaar/backend || true
-      - run: ppnpm run test:backend || true
-      - run: ppnpm run build:backend
+      - run: pnpm run test:backend || true
+      - run: pnpm run build:backend
 
   secret-scan:
     name: Secret scanning (gitleaks)

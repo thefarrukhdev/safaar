@@ -58,13 +58,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: ppnpm install --frozen-lockfile
-      - run: ppnpm run build:types
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
       - run: pnpm --filter @safaar/backend run prisma:validate || true
       - run: pnpm --filter @safaar/backend run format:check || true
       - run: pnpm --filter @safaar/backend run lint || true
-      - run: ppnpm run test:backend || true
-      - run: ppnpm run build:backend
+      - run: pnpm run test:backend || true
+      - run: pnpm run build:backend
 
   # 3) Frontend tekshiruvlari
   frontend:
@@ -78,8 +78,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: ppnpm install --frozen-lockfile
-      - run: ppnpm run build:types
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
       # Frontend loyihalarini to'liq build va lint qilib tekshiramiz
       - run: pnpm exec turbo run lint build --filter="./apps/web-*"
 

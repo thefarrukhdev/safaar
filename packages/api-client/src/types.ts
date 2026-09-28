@@ -23,6 +23,8 @@ export interface HotelListItem {
   rating: number;
   reviewsCount: number;
   minPriceSum: number;
+  baseMinPriceSum?: number;
+  discountAmount?: number;
   imageUrl?: string;
   latitude?: number;
   longitude?: number;

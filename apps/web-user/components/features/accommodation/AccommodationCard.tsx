@@ -43,7 +43,16 @@ export function AccommodationCard({
 
   const perNight = labels.perNight ?? DEFAULT_PER_NIGHT[locale] ?? "kecha";
   const price = hotel.minPriceSum > 0 ? hotel.minPriceSum : undefined;
+  const oldPrice = hotel.baseMinPriceSum && hotel.discountAmount && hotel.discountAmount > 0 ? hotel.baseMinPriceSum : undefined;
+  const discountPercent = oldPrice && hotel.discountAmount ? Math.round((hotel.discountAmount / oldPrice) * 100) : 0;
+  
   const actionLabel = locale === "ru" ? "Подробнее" : locale === "en" ? "Details" : "Batafsil";
+
+  const discountBadge = discountPercent > 0 ? (
+    <span className="inline-flex items-center rounded-md bg-red-600 px-2 py-1 text-xs font-bold text-white shadow-sm">
+      -{discountPercent}%
+    </span>
+  ) : undefined;
 
   return (
     <UniversalCard
@@ -54,7 +63,8 @@ export function AccommodationCard({
       location={hotel.cityName}
       tags={amenityPills}
       href={`/${locale}/hotels/${hotel.slug}`}
-      price={price ? { amount: price, period: `1 ${perNight}` } : undefined}
+      topLeft={discountBadge}
+      price={price ? { amount: price, oldAmount: oldPrice, period: `1 ${perNight}` } : undefined}
       locale={locale}
       actionLabel={actionLabel}
     />

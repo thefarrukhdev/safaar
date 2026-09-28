@@ -134,11 +134,20 @@ interface RawHotel {
   pets_allowed?: boolean;
   children_allowed?: boolean;
   minPrice?: number;
+  min_price?: number;
+  baseMinPrice?: number;
+  base_min_price?: number;
+  discountAmount?: number;
+  discount_amount?: number;
   city?: RawCity;
   rooms?: RawRoom[];
 }
 
 function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
+  const baseMinPriceSum = raw.base_min_price ?? raw.baseMinPrice;
+  const minPriceSum = Number(raw.min_price ?? raw.minPrice ?? 0);
+  const discountAmount = raw.discount_amount ?? raw.discountAmount ?? (baseMinPriceSum ? baseMinPriceSum - minPriceSum : 0);
+
   return {
     id: raw.id,
     slug: raw.slug,
@@ -147,7 +156,8 @@ function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
     stars: raw.stars ?? 0,
     rating: raw.ratingAverage ?? 0,
     reviewsCount: raw.reviewsCount ?? 0,
-    minPriceSum: Number(raw.minPrice ?? 0),
+    minPriceSum,
+    ...(baseMinPriceSum && discountAmount > 0 && { baseMinPriceSum, discountAmount }),
     imageUrl: raw.images?.[0],
     latitude: raw.latitude,
     longitude: raw.longitude,

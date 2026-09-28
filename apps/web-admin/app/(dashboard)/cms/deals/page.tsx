@@ -137,7 +137,7 @@ export default function DealsPage() {
         setItems(items.map((t) => (t.id === updated.id ? updated : t)));
         toast.success("Taklif yangilandi");
       } else {
-        let created = await AdminApi.createCmsOffer(payload as any);
+        const created = await AdminApi.createCmsOffer(payload as any);
         if (isActive) {
            await AdminApi.setCmsOfferStatus(created.id, 'published');
            created.status = 'published';

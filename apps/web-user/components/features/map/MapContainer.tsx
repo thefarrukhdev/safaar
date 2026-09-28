@@ -231,11 +231,8 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
     updateVisibleCount();
   }, [updateVisibleCount]);
 
-  const tileUrl = isDark
-    ? "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
-    : "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png";
-
-  const attribution = '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
+  const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>';
   
   useEffect(() => {
     const validCoords = items.map(resolveItemCoords).filter(Boolean) as [number, number][];
@@ -253,6 +250,7 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
         url={tileUrl}
         attribution={attribution}
         maxZoom={19}
+        className={isDark ? "map-tiles-dark" : ""}
       />
       <CustomControls />
       <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] shadow-md dark:bg-slate-800 dark:text-blue-400 pointer-events-none">
@@ -297,6 +295,7 @@ export function MapContainer({
         .leaflet-popup-tip-container { display: none; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .leaflet-popup { animation: fadeInUp 0.2s ease; margin-bottom: 8px; }
+        .map-tiles-dark { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
       `}</style>
       <RLMapContainer center={firstCoords} zoom={zoom} zoomControl={false} style={{ height: "100%", width: "100%", zIndex: 0 }}>
         <MapContent 

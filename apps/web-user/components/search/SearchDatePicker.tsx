@@ -98,7 +98,7 @@ export function SearchDatePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-w-[220px] items-center gap-3 rounded-full bg-transparent px-4 py-3 text-left transition-colors duration-200 hover:bg-slate-900/[0.03]"
+        className="flex w-full min-w-[220px] items-center gap-3 md:rounded-full bg-transparent px-5 py-4 md:px-5 md:py-3 text-left transition-colors duration-200 hover:bg-slate-900/[0.03]"
       >
         <CalendarIcon className="h-5 w-5 text-primary-600" />
         <span className="flex flex-col">

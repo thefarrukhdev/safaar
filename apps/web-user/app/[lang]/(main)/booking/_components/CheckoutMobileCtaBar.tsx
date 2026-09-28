@@ -47,7 +47,7 @@ export function CheckoutMobileCtaBar({
           <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {resolvedTotalLabel}
           </span>
-          <span className="text-lg font-black text-slate-900 dark:text-white truncate">
+          <span className="text-xl font-bold text-slate-900 dark:text-white truncate">
             {formatSum(total)}
           </span>
         </div>
@@ -58,7 +58,7 @@ export function CheckoutMobileCtaBar({
           
           loading={pending}
           disabled={disabled}
-          className="shrink-0 font-extrabold bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-full active:scale-[0.97]"
+          className="shrink-0 font-bold px-6 py-6 text-base bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-xl active:scale-[0.98] transition-transform"
         >
           {resolvedButtonText}
         </Button>

@@ -43,10 +43,10 @@ export function CityPills({ destinations, locale }: CityPillsProps) {
   };
 
   return (
-    <div className="relative mx-auto mt-2 w-full max-w-6xl sm:mt-4">
+    <div className="relative mx-auto mt-3 w-full max-w-6xl sm:mt-5">
       <button
         onClick={() => scroll("left")}
-        className={`absolute left-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
+        className={`absolute left-0 sm:left-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-white/50 bg-white/80 backdrop-blur-md text-slate-900 shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="Chapga"
@@ -57,13 +57,13 @@ export function CityPills({ destinations, locale }: CityPillsProps) {
       {/* Pills track */}
       <div
         ref={trackRef}
-        className="flex items-center gap-2 overflow-x-auto px-12 py-2 scrollbar-none sm:justify-center"
+        className="flex items-center gap-2 overflow-x-auto px-6 sm:px-12 py-2 scrollbar-none sm:justify-center"
       >
         {destinations.map((dest) => (
           <Link
             key={dest.id}
             href={dest.link || `/${locale}/hotels?city_id=${encodeURIComponent(dest.slug)}`}
-            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-5 text-sm sm:text-[15px] font-medium text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/70 backdrop-blur-md px-5 text-sm sm:text-[15px] font-semibold text-slate-800 shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white hover:text-blue-700 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <span className="capitalize">{dest.name}</span>
           </Link>
@@ -72,7 +72,7 @@ export function CityPills({ destinations, locale }: CityPillsProps) {
 
       <button
         onClick={() => scroll("right")}
-        className={`absolute right-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-900/[0.08] active:scale-[0.97] active:bg-slate-900/[0.12]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
+        className={`absolute right-0 sm:right-2 top-1/2 z-20 -translate-y-1/2 flex size-9 items-center justify-center rounded-full border border-white/50 bg-white/80 backdrop-blur-md text-slate-900 shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100 ${
           canScrollRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-label="O'ngga"

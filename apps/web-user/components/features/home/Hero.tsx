@@ -3,7 +3,7 @@ import type { HomeDict } from "@/i18n/dictionaries";
 
 export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], children?: React.ReactNode, bannerUrl?: string }) {
   return (
-    <section className="relative flex min-h-[70vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-[92px] md:-mt-[100px]">
+    <section className="relative flex min-h-[70vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-[120px] md:-mt-[100px]">
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
@@ -22,7 +22,7 @@ export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], ch
       </div>
 
       {/* Hero Text */}
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-28 pb-12 text-center sm:px-6 lg:pt-36 lg:pb-16 flex-1 justify-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-48 pb-12 text-center sm:px-6 lg:pt-56 lg:pb-16 flex-1 justify-center">
         {/* H1 — Display scale: Manrope 900, tracking tight */}
         <h1
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-lg animate-in fade-in zoom-in-95 duration-700 delay-100"

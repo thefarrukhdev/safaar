@@ -64,9 +64,9 @@
   },
   "rulesSection": {
     "title": "Mehmonxona qoidalari",
-    "checkIn": "Olib kirish vaqti (Check-in)",
+    "checkIn": "Kirish vaqti (Check-in)",
     "checkInFrom": "{time} dan boshlab",
-    "checkOut": "Olib chiqish vaqti (Check-out)",
+    "checkOut": "Chiqish vaqti (Check-out)",
     "checkOutUntil": "{time} gacha",
     "cancellation": "Bekor qilish qoidasi",
     "cancellation_FLEXIBLE": "Moslashuvchan (Pulni to'liq qaytarish mumkin)",

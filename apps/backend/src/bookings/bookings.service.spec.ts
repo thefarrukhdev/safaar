@@ -1561,6 +1561,220 @@ describe('BookingsService.createVehicleRental (rent-a-car: date-range booking ag
 
     expect(pg.transaction).not.toHaveBeenCalled();
   });
+
+  /**
+   * "SAFAAR VEHICLE PROMOTION PRICING AUDIT" — ilgari bu yerda promotion
+   * UMUMAN hisobga olinmas edi: `subtotal = price_per_day * days`, hamkor
+   * chegirmasi qanchalik faol/tasdiqlangan bo'lishidan qat'i nazar mijoz
+   * TO'LIQ narxni to'lardi, ommaviy e'lon qilingan (`/cms/offers`) chegirmali
+   * narx bilan mos kelmasdi. Model: kunlik (per-day) stavka, xona bilan
+   * AYNAN bir xil "min(joriy narx, tasdiqlangan new_price_sum)" formula.
+   */
+  it('applies an active 20% vehicle promotion (500000 -> 400000/day) to a 3-day rental subtotal/payment and ignores a spoofed client amount', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ ...vehicleLookupRow, price_per_day: '500000' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'vehicle-1',
+          price_per_day: '500000',
+          promotion_id: 'vehicle-promotion-1',
+          promotion_old_price: '500000',
+          promotion_new_price: '400000',
+          promotion_discount_percent: 20,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([]) // conflict check (none)
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT booking_status_history
+      .mockResolvedValueOnce([]) // existing pending payment check
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    const result = await service.createVehicleRental(undefined, {
+      vehicle_id: 'vehicle-1',
+      check_in: '2027-08-20',
+      check_out: '2027-08-23',
+      firstName: 'Laziz',
+      lastName: 'Shakarov',
+      email: 'laziz@example.com',
+      phone: '+998901234567',
+      // Mijoz tomonidan yuborilgan har qanday narx maydoni — server buni
+      // hech qachon o'qimasligi kerak (DTO'da ham bunday maydon yo'q).
+      total_amount: 1,
+      totalPrice: 1,
+      price: 1,
+    });
+
+    expect(result.booking.subtotal).toBe(1500000); // 500000 * 3 kun (base)
+    expect(result.booking.discount_amount).toBe(300000);
+    expect(result.booking.total_amount).toBe(1200000); // 400000 * 3 kun
+    expect(result.booking.price_snapshot).toMatchObject({
+      days: 3,
+      price_per_day: 500000,
+      effective_price_per_day: 400000,
+      partner_promotion: {
+        id: 'vehicle-promotion-1',
+        discount_percent: 20,
+        discount_amount: 300000, // JAMI chegirma (kunlik 100000 x 3 kun)
+      },
+    });
+    expect(result.payment).toMatchObject({ amount: 1200000 });
+  });
+
+  it('charges the exact approved per-day promotion price when the stored percent rounds differently (150000 -> 140000 over 3 days)', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleLookupRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'vehicle-1',
+          price_per_day: '150000',
+          promotion_id: 'vehicle-promotion-2',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createVehicleRental(undefined, {
+      vehicle_id: 'vehicle-1',
+      check_in: '2027-08-20',
+      check_out: '2027-08-23',
+      guest_name: 'Test',
+      guest_email: 'test@example.com',
+      guest_phone: '+998901234567',
+    });
+
+    // Foizdan qayta hisoblansa: round(150000*0.93)=139500/kun -> 418500 jami
+    // (tasdiqlanmagan raqam). Tasdiqlangan ANIQ narx 140000/kun -> 420000.
+    expect(result.booking.subtotal).toBe(450000);
+    expect(result.booking.discount_amount).toBe(30000);
+    expect(result.booking.total_amount).toBe(420000);
+  });
+
+  it('never charges above the CURRENT price_per_day when it drops below the approved promotion price (base-price mutation, floats — not repriced at approval)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ ...vehicleLookupRow, price_per_day: '100000' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'vehicle-1',
+          // Promotion 150000 -> 140000 sifatida tasdiqlangan, lekin hamkor
+          // shu orada mashina narxini 100000 ga tushirgan.
+          price_per_day: '100000',
+          promotion_id: 'vehicle-promotion-3',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createVehicleRental(undefined, {
+      vehicle_id: 'vehicle-1',
+      check_in: '2027-08-20',
+      check_out: '2027-08-23',
+      guest_name: 'Test',
+      guest_email: 'test@example.com',
+      guest_phone: '+998901234567',
+    });
+
+    expect(result.booking.subtotal).toBe(300000); // 100000 * 3 kun
+    expect(result.booking.discount_amount).toBe(0);
+    expect(result.booking.total_amount).toBe(300000);
+  });
+
+  it.each(['expired', 'future', 'pending_review', 'rejected'])(
+    'a %s vehicle promotion is excluded by the authoritative query — full price_per_day is charged and SCHOOL21 is still allowed',
+    async () => {
+      promos.validate.mockResolvedValueOnce({
+        code: 'SCHOOL21',
+        valid: true,
+        discount_type: 'percentage',
+        discount_value: 10,
+      });
+      pg.query
+        .mockResolvedValueOnce([vehicleLookupRow])
+        // Lateral SQL joriy holatga mos kelmagan promotion'larni filtrlaydi
+        // — promotion ustunlari UMUMAN qaytmaydi, sabab qanday bo'lishidan
+        // qat'i nazar (muddati o'tgan/hali boshlanmagan/kutilmoqda/rad
+        // etilgan).
+        .mockResolvedValueOnce([{ id: 'vehicle-1', price_per_day: '150000' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.createVehicleRental(undefined, {
+        vehicle_id: 'vehicle-1',
+        check_in: '2027-08-20',
+        check_out: '2027-08-23',
+        guest_name: 'Test',
+        guest_email: 'test@example.com',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      });
+
+      expect(result.booking.subtotal).toBe(450000);
+      expect(result.booking.discount_amount).toBe(45000); // SCHOOL21 10%
+      expect(result.booking.total_amount).toBe(405000);
+      expect(promos.redeem).toHaveBeenCalledWith('SCHOOL21', expect.anything());
+    },
+  );
+
+  it('rejects SCHOOL21 server-side when the vehicle has an active partner promotion (anti-stacking, mirrors the room path)', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'SCHOOL21',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 21,
+    });
+    pg.query
+      .mockResolvedValueOnce([vehicleLookupRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'vehicle-1',
+          price_per_day: '500000',
+          promotion_id: 'vehicle-promotion-1',
+          promotion_old_price: '500000',
+          promotion_new_price: '400000',
+          promotion_discount_percent: 20,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([]); // conflict check (none)
+
+    await expect(
+      service.createVehicleRental(undefined, {
+        vehicle_id: 'vehicle-1',
+        check_in: '2027-08-20',
+        check_out: '2027-08-23',
+        guest_name: 'Test',
+        guest_email: 'test@example.com',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'PROMO_STACKING_NOT_ALLOWED' },
+    });
+
+    expect(promos.redeem).not.toHaveBeenCalled();
+  });
 });
 
 describe('BookingsService.cancel (regression: explicit cancellation never released bus seats)', () => {

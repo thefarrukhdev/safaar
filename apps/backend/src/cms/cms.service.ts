@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { calculateRoomPrice } from '../common/room-pricing';
+import { calculateVehiclePrice } from '../common/vehicle-pricing';
 
 type CmsRow = Record<string, unknown>;
 
@@ -112,12 +113,13 @@ export class CmsService {
         300,
         async () => {
           const rows = await this.postgres.query(`
-          SELECT 
-            p.id, p.entity_type, p.entity_name as name, 
+          SELECT
+            p.id, p.entity_type, p.entity_name as name,
             p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
             hr.base_price::float8 as room_base_price,
-            h.slug as hotel_slug, hc.name as hotel_city_name, 
+            h.slug as hotel_slug, hc.name as hotel_city_name,
             (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.visibility = 'public' LIMIT 1) as hotel_image,
+            v.price_per_day::float8 as vehicle_price_per_day,
             bc.id as bus_company_id, bc.name as bus_company_name,
             (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.visibility = 'public' LIMIT 1) as bus_image
           FROM promotions p
@@ -143,6 +145,24 @@ export class CmsService {
                   end_date: String(row.end_date),
                 })
               : null;
+            // Xona filialiga bir xil naqsh (yuqoridagi `roomPrice`): mashina
+            // uchun ham ommaviy e'lon qilingan narx joriy
+            // `vehicles.price_per_day`dan HECH QACHON oshmasligi kerak —
+            // ilgari bu yerda `vehicles` JOIN qilingan bo'lsa ham
+            // `price_per_day` UMUMAN o'qilmas edi, ya'ni hamkorning xom
+            // (tekshirilmagan) `new_price_sum`i to'g'ridan-to'g'ri ommaga
+            // ko'rsatilardi.
+            const vehiclePrice =
+              !isRoom && row.entity_type === 'vehicle'
+                ? calculateVehiclePrice(row.vehicle_price_per_day, {
+                    id: String(row.id),
+                    entity_id: '',
+                    old_price_sum: Number(row.old_price_sum),
+                    new_price_sum: Number(row.new_price_sum),
+                    discount_percent: Number(row.discount_percent),
+                    end_date: String(row.end_date),
+                  })
+                : null;
             const titleStr = isRoom
               ? row.name
               : row.bus_company_name || row.name;
@@ -166,9 +186,13 @@ export class CmsService {
               status: row.status,
               metadata: {},
               old_price:
-                roomPrice?.basePrice ?? (Number(row.old_price_sum) || 0),
+                roomPrice?.basePrice ??
+                vehiclePrice?.basePricePerDay ??
+                (Number(row.old_price_sum) || 0),
               new_price:
-                roomPrice?.effectivePrice ?? (Number(row.new_price_sum) || 0),
+                roomPrice?.effectivePrice ??
+                vehiclePrice?.effectivePricePerDay ??
+                (Number(row.new_price_sum) || 0),
               discount_percent: Number(row.discount_percent) || 0,
               ends_at: row.end_date,
               image_url: isRoom ? row.hotel_image : row.bus_image,

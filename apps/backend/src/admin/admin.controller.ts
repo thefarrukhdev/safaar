@@ -947,4 +947,17 @@ export class AdminController {
   ) {
     return this.adminService.rejectPromotion(actor, id);
   }
+
+  // Ruxsat AYNAN `approve`/`reject` bilan bir xil (`partners:write`) —
+  // chegirma arizasi bo'yicha qaror qabul qiladigan rol o'chirishni ham
+  // qila oladi, undan kengroq EMAS (`Role.ADMIN`ning o'zida `partners:write`
+  // yo'q, qarang `rolePermissions`).
+  @Delete('promotions/:id')
+  @Permissions(Permission.PartnersWrite)
+  deletePromotion(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.deletePromotion(actor, id);
+  }
 }

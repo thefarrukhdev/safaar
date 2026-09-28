@@ -1,3 +1,4 @@
+import { livePromotionPredicate } from './promotion';
 import {
   activeRoomPromotionPredicate,
   calculateRoomPrice,
@@ -160,6 +161,12 @@ describe('activeRoomPromotionPredicate — status/sana darvozasi o‘zgarmadi', 
   it('scopes to a single room when a room-id expression is supplied', () => {
     expect(activeRoomPromotionPredicate('p', 'hr.id')).toContain(
       'p.entity_id = hr.id',
+    );
+  });
+
+  it('is composed from the shared livePromotionPredicate(), so the pricing gate and the admin delete gate cannot drift apart', () => {
+    expect(activeRoomPromotionPredicate('p')).toContain(
+      livePromotionPredicate('p'),
     );
   });
 });

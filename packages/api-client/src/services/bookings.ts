@@ -1,3 +1,4 @@
+import type { BookingMessageView, CancelPreviewView } from "../types";
 import { rawApi } from '../client';
 import { camelizeKeys } from '../case';
 import { toBookingView } from '../adapters';
@@ -185,8 +186,8 @@ export const bookingsService = {
   },
 
   /** `POST /bookings/:id/cancel-preview` — bekor qilish jarimasini hisoblash. */
-  async cancelPreview(id: string, options?: { token?: string }): Promise<any> {
-    return rawApi.post<any>(`/bookings/${encodeURIComponent(id)}/cancel-preview`, {}, options);
+  async cancelPreview(id: string, options?: { token?: string }): Promise<CancelPreviewView> {
+    return rawApi.post<CancelPreviewView>(`/bookings/${encodeURIComponent(id)}/cancel-preview`, {}, options);
   },
 
   /** `POST /bookings/:id/cancel` — bronni bekor qilish. */
@@ -200,13 +201,13 @@ export const bookingsService = {
   },
 
   /** `GET /bookings/:id/messages` — chat xabarlari. */
-  async getMessages(id: string, options?: { token?: string }): Promise<any[]> {
-    return rawApi.get<any[]>(`/bookings/${encodeURIComponent(id)}/messages`, options);
+  async getMessages(id: string, options?: { token?: string }): Promise<BookingMessageView[]> {
+    return rawApi.get<BookingMessageView[]>(`/bookings/${encodeURIComponent(id)}/messages`, options);
   },
 
   /** `POST /bookings/:id/messages` — chatga xabar yuborish. */
-  async sendMessage(id: string, body: string, options?: { token?: string }): Promise<any> {
-    return rawApi.post<any>(
+  async sendMessage(id: string, body: string, options?: { token?: string }): Promise<BookingMessageView> {
+    return rawApi.post<BookingMessageView>(
       `/bookings/${encodeURIComponent(id)}/messages`,
       { body },
       options,

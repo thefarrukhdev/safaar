@@ -90,17 +90,17 @@ async function rawGet<T>(path: string, options?: RequestOptions): Promise<T> {
 
 export const refundsService = {
   async createRefund(input: CreateRefundInput, options?: RequestOptions): Promise<RefundResult> {
-    const raw = await rawPost<any>("/refunds", input, options);
+    const raw = await rawPost<unknown>("/refunds", input, options);
     return raw as RefundResult;
   },
 
   async getMyRefunds(options?: RequestOptions): Promise<RefundResult[]> {
-    const raw = await rawGet<any>("/me/refunds", options);
+    const raw = await rawGet<unknown>("/me/refunds", options);
     return raw as RefundResult[];
   },
 
   async getRefund(id: string, options?: RequestOptions): Promise<RefundResult> {
-    const raw = await rawGet<any>(`/refunds/${encodeURIComponent(id)}`, options);
+    const raw = await rawGet<unknown>(`/refunds/${encodeURIComponent(id)}`, options);
     return raw as RefundResult;
   },
 };

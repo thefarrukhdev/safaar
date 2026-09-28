@@ -2,6 +2,7 @@ import type {
   PostgresService,
   PostgresTransaction,
 } from '../infrastructure/postgres.service';
+import { livePromotionPredicate } from './promotion';
 
 export interface ActiveRoomPromotion {
   id?: string;
@@ -32,9 +33,7 @@ export function activeRoomPromotionPredicate(
 ): string {
   return `${alias}.entity_type = 'room'
     ${roomIdExpression ? `AND ${alias}.entity_id = ${roomIdExpression}` : ''}
-    AND ${alias}.status = 'published'::"PromotionStatus"
-    AND ${alias}.start_date <= CURRENT_DATE
-    AND ${alias}.end_date >= CURRENT_DATE`;
+    AND ${livePromotionPredicate(alias)}`;
 }
 
 /**

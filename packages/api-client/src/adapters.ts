@@ -111,7 +111,7 @@ interface RawRoom {
   maxAdults?: number;
   totalInventory?: number;
   available?: number;
-  promotion?: any;
+  promotion?: unknown;
 }
 
 interface RawHotel {
@@ -215,6 +215,8 @@ interface RawUser {
   preferredLanguage?: string;
   bonusBalance?: number;
   createdAt?: string;
+  avatarUrl?: string;
+  avatar_url?: string;
 }
 
 export function toProfileView(raw: RawUser): ProfileView {
@@ -229,7 +231,7 @@ export function toProfileView(raw: RawUser): ProfileView {
     lastName,
     fullName: fullName || (raw.phone ?? ""),
     email: raw.email ?? "",
-    avatarUrl: (raw as any).avatarUrl || (raw as any).avatar_url,
+    avatarUrl: raw.avatarUrl || raw.avatar_url,
     bonusBalanceSum: Number(raw.bonusBalance ?? 0),
     preferredLanguage: raw.preferredLanguage ?? "uz",
     status: raw.status ?? "active",

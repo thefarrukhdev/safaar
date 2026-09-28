@@ -19,7 +19,7 @@ export const reviewsService = {
   async getHotelReviews(hotelId: string): Promise<ReviewView[]> {
     const raw = await rawApi.get<unknown>(
       `/hotels/${encodeURIComponent(hotelId)}/reviews`,
-      { next: { revalidate: 60 } } as any,
+      { next: { revalidate: 60 } },
     );
     return mapReviews(raw);
   },
@@ -29,7 +29,7 @@ export const reviewsService = {
     if (!companyId) return [];
     const raw = await rawApi.get<unknown>(
       `/bus-companies/${encodeURIComponent(companyId)}/reviews`,
-      { next: { revalidate: 60 } } as any,
+      { next: { revalidate: 60 } },
     );
     return mapReviews(raw);
   },
@@ -39,7 +39,7 @@ export const reviewsService = {
     if (!restaurantId) return [];
     const raw = await rawApi.get<unknown>(
       `/restaurants/${encodeURIComponent(restaurantId)}/reviews`,
-      { next: { revalidate: 60 } } as any,
+      { next: { revalidate: 60 } },
     );
     return mapReviews(raw);
   },
@@ -49,7 +49,7 @@ export const reviewsService = {
     if (!attractionId) return [];
     const raw = await rawApi.get<unknown>(
       `/attractions/${encodeURIComponent(attractionId)}/reviews`,
-      { next: { revalidate: 60 } } as any,
+      { next: { revalidate: 60 } },
     );
     return mapReviews(raw);
   },
@@ -67,7 +67,7 @@ export const reviewsService = {
       },
       options,
     );
-    return toReviewView(camelizeKeys(raw) as any);
+    return toReviewView(camelizeKeys<Parameters<typeof toReviewView>[0]>(raw));
   },
 
   /** `POST /reviews/photos` — sharh uchun rasmlar yuklash. */
@@ -75,10 +75,10 @@ export const reviewsService = {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
     
-    const raw: any = await rawApi.post<unknown>("/reviews/photos", formData, {
+    const raw: unknown = await rawApi.post<unknown>("/reviews/photos", formData, {
       ...options,
       // let FormData set Content-Type
     });
-    return raw.urls ?? [];
+    return (raw as Record<string, string[]>).urls ?? [];
   },
 };

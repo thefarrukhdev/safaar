@@ -24,6 +24,31 @@ export interface PromotionRow {
   updated_at: string;
 }
 
+/**
+ * "Bu promotion AYNAN HOZIR kuchda (public narxga ta'sir qilmoqda)mi?" —
+ * `status = 'published'` VA bugungi sana `[start_date, end_date]` oralig'ida.
+ *
+ * Bu shart loyihada bir nechta o'qish yo'lida ishlatiladi
+ * (`room-pricing.ts:activeRoomPromotionPredicate()` -> hotel detail/rooms va
+ * booking narxlash; `cms.service.ts:offers()` -> ommaviy `/cms/offers`), shu
+ * sabab bitta joyda saqlanadi: agar bu shart bir joyda o'zgarib, boshqasida
+ * o'zgarmasa, "ommaviy ko'rinadigan chegirma" va "narxga ta'sir qiladigan
+ * chegirma" tushunchalari bir-biridan ajralib ketadi.
+ *
+ * `entity_type` bo'yicha TORAYTIRILMAGAN — `room` ham, `vehicle` ham
+ * `/cms/offers`da ko'rinadi, ya'ni "hozir kuchda" tushunchasi ikkala tur
+ * uchun ham amal qiladi.
+ *
+ * `alias` — faqat backend source'dagi statik SQL identifikatori; user input
+ * bu funksiyaga hech qachon uzatilmaydi.
+ */
+export function livePromotionPredicate(alias?: string): string {
+  const prefix = alias ? `${alias}.` : '';
+  return `${prefix}status = 'published'::"PromotionStatus"
+    AND ${prefix}start_date <= CURRENT_DATE
+    AND ${prefix}end_date >= CURRENT_DATE`;
+}
+
 export const PROMOTION_RETURNING_SQL = `id::text, partner_organization_id::text, entity_type,
               entity_id::text, entity_name,
               old_price_sum::float8, new_price_sum::float8, discount_percent,

@@ -75,12 +75,12 @@ export const hotelsService = {
         amenities: params.amenities?.join(","),
       },
       next: { revalidate: 60, tags: ["hotels", "search"] },
-    } as any);
+    });
 
     const data = camelizeKeys<RawListResponse | unknown[]>(raw);
     const items = Array.isArray(data) ? data : (data.items ?? []);
     const mapped = (items ?? []).map((item) =>
-      toHotelListItem(item as any, locale),
+      toHotelListItem(item as Parameters<typeof toHotelListItem>[0], locale),
     );
 
     return {
@@ -99,8 +99,8 @@ export const hotelsService = {
   async getHotel(locale: Locale, slugOrId: string): Promise<HotelDetail> {
     const raw = await rawApi.get<unknown>(`/hotels/${encodeURIComponent(slugOrId)}`, {
       next: { revalidate: 60, tags: ["hotels", `hotel-${slugOrId}`] },
-    } as any);
-    return toHotelDetail(camelizeKeys(raw) as any, locale);
+    });
+    return toHotelDetail(camelizeKeys<Parameters<typeof toHotelDetail>[0]>(raw), locale);
   },
 
   /** `GET /hotels/featured` — bosh sahifa uchun tanlangan mehmonxonalar. */

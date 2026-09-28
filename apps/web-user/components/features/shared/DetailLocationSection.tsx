@@ -24,17 +24,19 @@ export function DetailLocationSection({
   openInMapsText?: string;
   noCoordsText?: string;
 }) {
-  const hasCoordinates = typeof latitude === 'number' && typeof longitude === 'number' && !isNaN(latitude) && !isNaN(longitude);
+  const numLat = Number(latitude);
+  const numLng = Number(longitude);
+  const hasCoordinates = latitude != null && longitude != null && !isNaN(numLat) && !isNaN(numLng) && numLat !== 0 && numLng !== 0;
   
   const mapsUrl = hasCoordinates
-    ? `https://www.google.com/maps?q=${latitude},${longitude}`
+    ? `https://www.google.com/maps?q=${numLat},${numLng}`
     : `https://www.google.com/maps?q=${encodeURIComponent(address)}`;
 
   const mapItems: MapMarkerItem[] = hasCoordinates ? [
     {
       id: "1",
-      lat: latitude!,
-      lng: longitude!,
+      lat: numLat,
+      lng: numLng,
       name: itemName || address,
       address: address,
       imageUrl: itemImage,

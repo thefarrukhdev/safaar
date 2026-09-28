@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm run build:types && pnpm run build -w @safaar/api-client && pnpm run build -w @safaar/web-user",
+  "buildCommand": "cd ../.. && pnpm run build:types && pnpm --filter @safaar/api-client run build && pnpm --filter @safaar/web-user run build",
   "installCommand": "cd ../.. && pnpm install",
   "framework": "nextjs",
   "outputDirectory": ".next"

@@ -1,7 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "buildCommand": "pnpm install && pnpm run build -w @safaar/types && pnpm run prisma:generate -w @safaar/backend && pnpm run build:backend -w @safaar/backend"
+    "buildCommand": "pnpm install && pnpm --filter @safaar/types run build && pnpm --filter @safaar/backend run prisma:generate && pnpm --filter @safaar/backend run build:backend"
   },
   "deploy": {
     "startCommand": "cd apps/backend && pnpm prisma migrate deploy && NODE_OPTIONS='--no-network-family-autoselection' node dist/src/main.js",

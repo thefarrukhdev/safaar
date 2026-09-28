@@ -2,11 +2,7 @@
   "name": "safaar-monorepo",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "npm@11.17.0",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
+  "packageManager": "pnpm@10.12.2",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "build": "turbo build",
@@ -17,14 +13,14 @@
     "build:admin": "turbo build --filter=@safaar/web-admin",
     "dev": "turbo dev",
     "dev:types": "turbo dev --filter=@safaar/types",
-    "dev:backend": "npm run start:dev -w @safaar/backend",
+    "dev:backend": "pnpm --filter @safaar/backend run start:dev",
     "dev:user": "turbo dev --filter=@safaar/web-user",
     "dev:partner": "turbo dev --filter=@safaar/web-partner",
     "dev:admin": "turbo dev --filter=@safaar/web-admin",
     "lint": "turbo lint",
     "test": "turbo test",
     "test:backend": "turbo test --filter=@safaar/backend",
-    "format": "npm run format --workspaces --if-present"
+    "format": "pnpm -r --if-present run format"
   },
   "devDependencies": {
     "turbo": "^2.10.12"

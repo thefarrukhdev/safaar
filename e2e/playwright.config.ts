@@ -5,7 +5,7 @@ const CHROME_PATH =
 
 // Sukut bo'yicha HAQIQIY deploy qilingan production URL'lar — local mock
 // emas. Kerak bo'lsa E2E_*_URL orqali local dev serverlarga almashtirish
-// mumkin (masalan `E2E_USER_URL=http://localhost:3000 npx playwright test`).
+// mumkin (masalan `E2E_USER_URL=http://localhost:3000 pnpm playwright test`).
 const USER_URL = process.env.E2E_USER_URL || 'https://web-user-rho.vercel.app';
 const PARTNER_URL = process.env.E2E_PARTNER_URL || 'https://web-partner-khaki.vercel.app';
 const ADMIN_URL = process.env.E2E_ADMIN_URL || 'https://web-admin-phi-beige.vercel.app';

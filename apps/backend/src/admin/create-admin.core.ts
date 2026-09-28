@@ -49,7 +49,7 @@ export interface ParseResult {
 export const USAGE = `create-admin — SAFAAR admin_users uchun bitta yozuv qo'shadi (argon2id).
 
 Ishlatish:
-  npm run admin:create -w @safaar/backend -- --email <e> --role <r> [--full-name <n>] [--status <s>] [--dry-run]
+  pnpm run admin:create -w @safaar/backend -- --email <e> --role <r> [--full-name <n>] [--status <s>] [--dry-run]
 
 Majburiy:
   --email <email>          Yangi admin emaili (unikal bo'lishi shart).

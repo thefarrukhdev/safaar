@@ -15,7 +15,7 @@
  *  - DB'ga faqat `INSERT INTO admin_users` — UPDATE/DELETE/DDL yo'q.
  *
  * Ishlatish:
- *   npm run admin:create -w @safaar/backend -- --email a@b.uz --role admin --dry-run
+ *   pnpm run admin:create -w @safaar/backend -- --email a@b.uz --role admin --dry-run
  */
 import 'dotenv/config';
 import * as readlinePromises from 'node:readline/promises';

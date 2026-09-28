@@ -49,7 +49,7 @@ import { Hotel, Booking, Role } from "@safaar/types";
    qo'shma — ular frontend'ga chiqib ketadi.
 5. **O'zgartirgandan keyin build qil:**
    ```bash
-   npm run build      # tsc → dist/ (frontend/backend shuni o'qiydi)
+   pnpm run build      # tsc → dist/ (frontend/backend shuni o'qiydi)
    ```
    Buni qilmasang, iste'molchilar eski turlarni ko'radi.
 
@@ -58,14 +58,14 @@ import { Hotel, Booking, Role } from "@safaar/types";
 ## Buyruqlar
 
 ```bash
-npm run build    # tsc -p tsconfig.json → dist/
-npm run dev      # watch rejimi
-npm run clean    # dist/ ni o'chirish
+pnpm run build    # tsc -p tsconfig.json → dist/
+pnpm run dev      # watch rejimi
+pnpm run clean    # dist/ ni o'chirish
 ```
 
 ## Senior dev sifatida ish tartibi
 
 1. Turlarni **toza va izohli** yoz (JSDoc bilan). Bu hujjat vazifasini bajaradi.
 2. Nomlash izchil bo'lsin (`Dto` so'rovlar uchun, oddiy nom obyektlar uchun).
-3. Har o'zgartirishdan keyin `npm run build` — `dist/` yangilansin.
+3. Har o'zgartirishdan keyin `pnpm run build` — `dist/` yangilansin.
 4. Buzuvchi o'zgartirish bo'lsa — frontend dev'larni ogohlantir.

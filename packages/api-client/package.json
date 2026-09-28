@@ -25,7 +25,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@safaar/types": "*"
+    "@safaar/types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5"

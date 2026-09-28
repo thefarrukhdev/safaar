@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd ../.. && npm run build:types && npm run build -w @safaar/web-partner",
-  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && pnpm run build:types && pnpm run build -w @safaar/web-partner",
+  "installCommand": "cd ../.. && pnpm install",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }

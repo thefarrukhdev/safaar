@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -50,13 +51,15 @@ export default async function TransportPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <TransportView
-        dict={transportDict}
-        items={items}
-        locale={locale}
-        initialCheckIn={checkIn}
-        initialCheckOut={checkOut}
-      />
+      <Suspense fallback={<div className="flex h-[300px] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" /></div>}>
+        <TransportView
+          dict={transportDict}
+          items={items}
+          locale={locale}
+          initialCheckIn={checkIn}
+          initialCheckOut={checkOut}
+        />
+      </Suspense>
     </main>
   );
 }

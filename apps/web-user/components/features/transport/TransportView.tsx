@@ -1,18 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import { useQueryState, parseAsString } from "nuqs";
 import {
-  Car, ShieldCheck, Users, Search, Calendar, Minus, Plus, CreditCard, Clock,
+  Car, Search,
 } from "lucide-react";
 import type { TransportDict } from "@/i18n/dictionaries";
 import type { TransportItem } from "@/components/catalog/types";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Select } from "@/components/ui/Select";
-
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Button } from "@/components/ui/Button";
 import { UniversalCard } from "@/components/ui/UniversalCard";
 import type { Locale } from "@/i18n/config";
 
@@ -74,20 +73,14 @@ export function TransportView({
   initialCheckIn?: string;
   initialCheckOut?: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  // Using nuqs for URL-driven state
+  const [selectedCategory, setSelectedCategory] = useQueryState("category", parseAsString.withDefault("all"));
+  const [selectedCity, setSelectedCity] = useQueryState("city", parseAsString.withDefault("all"));
+  const [driverFilter, setDriverFilter] = useQueryState("driver", parseAsString.withDefault("all"));
+  const [checkIn, setCheckIn] = useQueryState("checkIn", parseAsString.withDefault(initialCheckIn));
+  const [checkOut, setCheckOut] = useQueryState("checkOut", parseAsString.withDefault(initialCheckOut));
+  const [sortBy, setSortBy] = useQueryState("sortBy", parseAsString.withDefault("default"));
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedCity, setSelectedCity] = useState<string>("all");
-  const [driverFilter, setDriverFilter] = useState<string>("all");
-  const [checkIn, setCheckIn] = useState(initialCheckIn);
-  const [checkOut, setCheckOut] = useState(initialCheckOut);
-  const [sortBy, setSortBy] = useState<string>("default");
-
-  // Backend (`vehicles`/`bus_companies`) faqat "rent a car" turidagi
-  // transportni beradi va hozircha hamma qator uchun categoryKey='transfer'
-  // qattiq yozilgan — shuning uchun boshqa kategoriyalar bo'sh natija
-  // qaytarishi mumkin. Bu haqiqiy (mock emas) filtr, faqat inventar cheklovi.
   const categories = useMemo(
     () => [
       { id: "all", label: dict.categories?.all ?? dict.allTypes },
@@ -121,23 +114,10 @@ export function TransportView({
     return sorted;
   }, [items, selectedCategory, selectedCity, driverFilter, sortBy]);
 
-
-
-  const handleClearFilters = () => {
-    setSelectedCategory("all");
-    setSelectedCity("all");
-    setDriverFilter("all");
-    setSortBy("default");
-    setCheckIn("");
-    setCheckOut("");
-    router.push(pathname);
-  };
-
   return (
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
-
-      {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+      {/* Header Banner */}
+      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl md:rounded-[32px] px-5 sm:px-8 md:px-12 shadow-sm">
         <Image
           src="/images/heroes/transport_hero.jpg"
           alt="Transport"
@@ -147,95 +127,122 @@ export function TransportView({
           sizes="100vw"
           quality={85}
         />
-        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute inset-0 bg-black/40" />
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
-          <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+          <h1 className="mb-2 text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
             {dict.title}
           </h1>
-          <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
+          <p className="text-sm sm:text-base font-medium leading-relaxed text-white/90 drop-shadow max-w-lg">
             {dict.subtitle}
           </p>
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="mb-6 sm:mb-10 -mx-3 sm:mx-0 overflow-x-auto pb-2 scrollbar-none">
-        <div className="flex gap-2 px-3 sm:px-0 sm:flex-wrap" style={{ minWidth: 'max-content' }}>
-          {categories.map((cat) => {
-            const isActive = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary-600 text-white shadow-sm"
-                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm hover:border-primary-300 hover:text-primary-700 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
-                }`}
-              >
-                {cat.label}
-              </button>
-            );
-          })}
+      {/* Unified Search Bar (Premium UI) */}
+      <div className="relative z-20 -mt-10 sm:-mt-14 mb-8 mx-auto w-full max-w-5xl">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center bg-white dark:bg-slate-900 rounded-3xl md:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] ring-1 ring-slate-200/50 dark:ring-white/10 p-2 md:p-3 gap-2 md:gap-0">
+          
+          {/* City */}
+          <div className="flex-1 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
+            <Select
+              value={selectedCity}
+              onChange={setSelectedCity}
+              options={[
+                { value: "all", label: dict.allCities },
+                ...cities.map((city) => ({ value: city, label: city })),
+              ]}
+              label="Qayerdan"
+              buttonClassName="border-transparent bg-transparent dark:bg-transparent shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
+              menuClassName="w-56 mt-4"
+            />
+          </div>
+
+          <div className="hidden md:block w-px h-12 bg-slate-200 dark:bg-slate-800" />
+
+          {/* Dates */}
+          <div className="flex-[1.5] flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors gap-2">
+            <div className="flex-1">
+              <DatePicker
+                locale={locale}
+                label="Olish sanasi"
+                value={checkIn}
+                onChange={(val) => {
+                  setCheckIn(val);
+                  if (!checkOut && val) setCheckOut(val);
+                }}
+                min={new Date().toISOString().slice(0, 10)}
+                className="w-full"
+                compact
+              />
+            </div>
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex-1">
+              <DatePicker
+                locale={locale}
+                label="Qaytarish sanasi"
+                value={checkOut}
+                onChange={setCheckOut}
+                min={checkIn || new Date().toISOString().slice(0, 10)}
+                className="w-full"
+                compact
+              />
+            </div>
+          </div>
+
+          <div className="hidden md:block w-px h-12 bg-slate-200 dark:bg-slate-800" />
+
+          {/* Driver */}
+          <div className="flex-1 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
+            <Select
+              value={driverFilter}
+              onChange={setDriverFilter}
+              options={[
+                { value: "all", label: dict.allDrivers },
+                { value: "with", label: dict.driverIncluded },
+                { value: "without", label: dict.withoutDriver },
+              ]}
+              label="Haydovchi"
+              buttonClassName="border-transparent bg-transparent dark:bg-transparent shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
+              menuClassName="w-56 mt-4"
+            />
+          </div>
+
+          {/* Search Button Indicator (Visual only as state is instant) */}
+          <div className="mt-2 md:mt-0 p-2 md:pl-2 md:pr-0">
+            <div className="w-full md:w-14 h-12 md:h-14 bg-primary-600 text-white rounded-2xl md:rounded-full flex items-center justify-center shadow-md">
+              <Search className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="md:hidden ml-2 font-bold text-sm">Izlash</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ═══ Inline Filters & Sorting ═══ */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200/50 dark:bg-slate-900 dark:ring-slate-800">
-        <div className="flex flex-wrap items-center gap-3">
-          <Select
-            value={selectedCity}
-            onChange={setSelectedCity}
-            options={[
-              { value: "all", label: dict.allCities },
-              ...cities.map((city) => ({ value: city, label: city })),
-            ]}
-            buttonClassName="w-40 bg-slate-50 dark:bg-slate-800 border-transparent rounded-lg h-11" className="w-40"
-          />
-          <div className="w-40">
-            <DatePicker
-              locale={locale}
-              label=""
-              value={checkIn}
-              onChange={(val) => {
-                setCheckIn(val);
-                const p = new URLSearchParams();
-                if (val) p.set("checkIn", val);
-                if (checkOut) p.set("checkOut", checkOut);
-                router.push(`/${locale}/transport?${p.toString()}`);
-              }}
-              min={new Date().toISOString().slice(0, 10)}
-            />
-          </div>
-          <div className="w-40">
-            <DatePicker
-              locale={locale}
-              label=""
-              value={checkOut}
-              onChange={(val) => {
-                setCheckOut(val);
-                const p = new URLSearchParams();
-                if (checkIn) p.set("checkIn", checkIn);
-                if (val) p.set("checkOut", val);
-                router.push(`/${locale}/transport?${p.toString()}`);
-              }}
-              min={checkIn || new Date().toISOString().slice(0, 10)}
-            />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        {/* Category Tabs */}
+        <div className="overflow-x-auto pb-2 scrollbar-none -mx-3 px-3 md:mx-0 md:px-0">
+          <div className="flex gap-2 min-w-max">
+            {categories.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-200 ${
+                    isActive
+                      ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm hover:border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Select
-            value={driverFilter}
-            onChange={setDriverFilter}
-            options={[
-              { value: "all", label: dict.allDrivers },
-              { value: "with", label: dict.driverIncluded },
-              { value: "without", label: dict.withoutDriver },
-            ]}
-            buttonClassName="w-40 bg-slate-50 dark:bg-slate-800 border-transparent rounded-lg h-11" className="w-40"
-          />
+        {/* Sort */}
+        <div className="w-48 shrink-0">
           <Select
             value={sortBy}
             onChange={setSortBy}
@@ -245,7 +252,7 @@ export function TransportView({
               { value: "price_desc", label: dict.sortPriceDesc },
               { value: "seats", label: dict.sortSeats },
             ]}
-            buttonClassName="w-48 bg-slate-50 dark:bg-slate-800 border-transparent rounded-lg h-11" className="w-48"
+            buttonClassName="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl h-11"
           />
         </div>
       </div>
@@ -256,13 +263,12 @@ export function TransportView({
           title={dict.noVehiclesAvailable ?? dict.noData}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((item) => (
             <TransportCard key={item.id} item={item} dict={dict} locale={locale} />
           ))}
         </div>
       )}
-
-      </main>
+    </main>
   );
 }

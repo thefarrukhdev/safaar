@@ -2306,12 +2306,20 @@ export class PartnersService {
       params.push(String(body.address));
     }
     if (body.latitude !== undefined) {
+      // Regression (PARTNERS-LOCATION-NULL-ISLAND): xom `Number(...)`
+      // bo'sh satr/probel/`null`ni `0`ga aylantirardi (`Number("")===0`),
+      // ya'ni bo'sh joylashuv jimgina (0,0) "Null Island"ga saqlanardi.
+      // `latitude`/`longitude` ustunlari NULL bo'lishi mumkin — bo'sh
+      // qiymat "joylashuv o'chirildi/hali belgilanmagan" deb NULLga
+      // tushishi kerak, `0`ga emas. Xuddi shu yordamchi funksiya allaqachon
+      // shu faylda boshqa joylarda (masalan avtobus kompaniyasi manzili
+      // uchun) ishlatiladi — shu bilan bir xil pattern.
       sets.push(`latitude = $${idx++}`);
-      params.push(Number(body.latitude));
+      params.push(this.parseOptionalDecimal(body.latitude));
     }
     if (body.longitude !== undefined) {
       sets.push(`longitude = $${idx++}`);
-      params.push(Number(body.longitude));
+      params.push(this.parseOptionalDecimal(body.longitude));
     }
     if (Array.isArray(body.nearbyPlaces) || Array.isArray(body.nearby_places)) {
       sets.push(`nearby_places = $${idx++}::jsonb`);
@@ -5066,16 +5074,21 @@ export class PartnersService {
   }
 
   /**
-   * `latitude`/`longitude` uchun: berilmagan/bo'sh/raqam bo'lmagan qiymatni
-   * `null`ga tushiradi — Postgres `NUMERIC` ustuniga `NaN` yozishga urinish
-   * (masalan `updateListingLocation()`dagi tekshiruvsiz `Number(...)` bilan
-   * bo'lgani kabi) DB darajasida xato beradi; bu yerda shunchaki jimgina
-   * e'tiborsiz qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega
-   * emas, shu bilan bir xil "best-effort" uslubda).
+   * `latitude`/`longitude` uchun: berilmagan/bo'sh (shu jumladan faqat
+   * probeldan iborat)/raqam bo'lmagan qiymatni `null`ga tushiradi —
+   * Postgres `NUMERIC` ustuniga `NaN`/`Infinity` yozishga urinish (masalan
+   * xom `Number(...)` bilan bo'lgani kabi — PARTNERS-LOCATION-NULL-ISLAND
+   * regressiyasi: bo'sh satr `Number("")===0` orqali jimgina (0,0) "Null
+   * Island"ga aylanardi) DB darajasida xato beradi yoki noto'g'ri `0`/`NaN`
+   * qiymatni jimgina yozib qo'yardi; bu yerda shunchaki e'tiborsiz
+   * qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega emas, shu
+   * bilan bir xil "best-effort" uslubda).
    */
   private parseOptionalDecimal(value: unknown): number | null {
-    if (value === undefined || value === null || value === '') return null;
-    const parsed = Number(value);
+    if (value === undefined || value === null) return null;
+    const normalized = typeof value === 'string' ? value.trim() : value;
+    if (normalized === '') return null;
+    const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : null;
   }
 

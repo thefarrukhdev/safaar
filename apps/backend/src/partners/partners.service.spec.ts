@@ -351,6 +351,99 @@ describe('PartnersService frontend action endpoints', () => {
     ]);
   });
 
+  describe('PartnersService.updateListingLocation (regression: PARTNERS-LOCATION-NULL-ISLAND — a raw `Number(body.latitude)`/`Number(body.longitude)` turned a blank/whitespace/null coordinate into `0` via `Number("")===0`, silently saving the listing at (0,0) "Null Island" instead of clearing it to NULL)', () => {
+    const findLocationUpdate = () =>
+      pgMock.query.mock.calls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('latitude = $'),
+      );
+
+    it('an empty-string latitude/longitude is stored as NULL, not 0 (Null Island)', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '',
+        longitude: '',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall).toBeDefined();
+      expect(updateCall?.[0]).toContain('longitude = $');
+      // params: [latitude, longitude, updated_at, id]
+      expect(updateCall?.[1]?.[0]).toBeNull();
+      expect(updateCall?.[1]?.[1]).toBeNull();
+    });
+
+    it('a whitespace-only latitude is stored as NULL, not 0', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '   ',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+    });
+
+    it('an explicit null latitude/longitude is stored as NULL', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: null,
+        longitude: null,
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+      expect(updateCall?.[1]?.[1]).toBeNull();
+    });
+
+    it('a non-numeric garbage string is stored as NULL instead of corrupting the column with NaN', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: 'abc',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+    });
+
+    it('a valid decimal coordinate is parsed and stored as a real number', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '41.3111',
+        longitude: '69.2797',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBe(41.3111);
+      expect(updateCall?.[1]?.[1]).toBe(69.2797);
+    });
+
+    it('numeric 0 is a legitimate coordinate and is preserved as 0, not dropped', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: 0,
+        longitude: 0,
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBe(0);
+      expect(updateCall?.[1]?.[1]).toBe(0);
+    });
+
+    it('an omitted latitude/longitude leaves the column untouched (no UPDATE emitted for it)', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        address: 'Yangi manzil',
+      });
+
+      expect(findLocationUpdate()).toBeUndefined();
+    });
+
+    it('rejects updating the location of a hotel belonging to another partner organization', async () => {
+      pgMock.query.mockResolvedValue([
+        { ...hotelRow, partner_organization_id: 'some-other-org' },
+      ]);
+
+      await expect(
+        service.updateListingLocation(actor, hotelId, { latitude: '41.3111' }),
+      ).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'HOTEL_FORBIDDEN' },
+      });
+    });
+  });
+
   it('rejects review submission until every listing section is complete', async () => {
     pgMock.query
       .mockResolvedValueOnce([hotelRow])

@@ -92,9 +92,9 @@ chore: bog'liqliklarni yangilash
 ## 4. Har bir o'zgartirishdan oldin (majburiy)
 
 ```bash
-npm run build    # o'z app'ingda — xatosiz bo'lsin
-npm run lint     # frontend uchun
-npm run test     # backend uchun
+pnpm run build    # o'z app'ingda — xatosiz bo'lsin
+pnpm run lint     # frontend uchun
+pnpm run test     # backend uchun
 ```
 Yashil bo'lmasa — PR ochma, avval tuzat.
 
@@ -104,7 +104,7 @@ Yashil bo'lmasa — PR ochma, avval tuzat.
 
 - API javob turlarini doim `@safaar/types`'dan import qil — qo'lda yozma.
 - Bu paketni faqat **backend dev** o'zgartiradi.
-- Backend yangi tur qo'shsa: `npm run build:types` (dist yangilanadi), keyin
+- Backend yangi tur qo'shsa: `pnpm run build:types` (dist yangilanadi), keyin
   frontend'da avtomatik paydo bo'ladi.
 
 ---
@@ -115,13 +115,13 @@ Yashil bo'lmasa — PR ochma, avval tuzat.
 git clone git@github.com:Startup-loyihalar/agoda_frontend_backend.git
 cd agoda_frontend_backend
 git checkout develop    # kundalik ish shu branch'da
-npm install             # bu git hook'larni ham AVTOMATIK o'rnatadi (pastga qara)
-npm run build:types     # MAJBURIY — birinchi shu
+pnpm install             # bu git hook'larni ham AVTOMATIK o'rnatadi (pastga qara)
+pnpm run build:types     # MAJBURIY — birinchi shu
 
-npm run dev:user        # yoki dev:partner / dev:admin / dev:backend
+pnpm run dev:user        # yoki dev:partner / dev:admin / dev:backend
 ```
 
-> `npm install` paytida `prepare` script ishlaydi va `core.hooksPath`ni
+> `pnpm install` paytida `prepare` script ishlaydi va `core.hooksPath`ni
 > `.githooks`ga sozlaydi — ya'ni pre-push himoyasi o'zi yoqiladi, qo'lda hech
 > narsa qilish shart emas.
 
@@ -167,8 +167,8 @@ git pull --rebase origin develop
 # 2) O'z papkangda ishla: apps/web-partner/... (sahifani yoz)
 
 # 3) Ishlaydiganini tekshir
-npm run lint -w @safaar/web-partner
-npm run build:partner
+pnpm run lint -w @safaar/web-partner
+pnpm run build:partner
 
 # 4) Commit qil (faqat o'z fayllaring)
 git add apps/web-partner/

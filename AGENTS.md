@@ -65,14 +65,14 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
 ## Umumiy buyruqlar (root'dan)
 
 ```bash
-npm install            # barcha workspace'larni o'rnatish
-npm run build:types    # @safaar/types ni birinchi build qilish (MAJBURIY birinchi)
-npm run dev:user       # web-user    → :3000
-npm run dev:partner    # web-partner → :3001
-npm run dev:admin      # web-admin   → :3002
-npm run dev:backend    # backend     → :4000
-npm run build          # types + barcha applar
-npm run test           # barcha testlar
+pnpm install            # barcha workspace'larni o'rnatish
+pnpm run build:types    # @safaar/types ni birinchi build qilish (MAJBURIY birinchi)
+pnpm run dev:user       # web-user    → :3000
+pnpm run dev:partner    # web-partner → :3001
+pnpm run dev:admin      # web-admin   → :3002
+pnpm run dev:backend    # backend     → :4000
+pnpm run build          # types + barcha applar
+pnpm run test           # barcha testlar
 ```
 
 ## Konvensiyalar (butun monorepo)

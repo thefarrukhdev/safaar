@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
-    "@safaar/types": "*",
+    "@safaar/types": "workspace:*",
     "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-query-devtools": "^5.101.1",
     "@tanstack/react-table": "^8.21.3",

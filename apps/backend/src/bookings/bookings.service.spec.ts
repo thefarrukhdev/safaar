@@ -537,6 +537,108 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.payment).toMatchObject({ amount: 400000 });
   });
 
+  /**
+   * "SAFAAR — PROMOTIONS BACKEND LOGIC AUDIT": hamkor 150 000 so'mlik xonaga
+   * ANIQ 140 000 so'm belgilaydi, frontend foizni `Math.round(6.666...) = 7`
+   * deb yuboradi. Ilgari bron/to'lov summasi foizdan qayta hisoblanib 139 500
+   * chiqardi — hamkor ham, admin ham tasdiqlamagan raqam. Endi bron ham,
+   * to'lov ham tasdiqlangan ANIQ narxni oladi.
+   */
+  it('charges the exact approved promotion price when the stored percent rounds differently', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '150000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-02',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+      total_price: 1,
+      totalPrice: 1,
+    });
+
+    expect(result.booking.subtotal).toBe(150000);
+    expect(result.booking.discount_amount).toBe(10000);
+    expect(result.booking.total_amount).toBe(140000);
+    expect(result.booking.price_snapshot).toMatchObject({
+      base_price_per_night: 150000,
+      effective_price_per_night: 140000,
+    });
+    expect(result.payment).toMatchObject({ amount: 140000 });
+  });
+
+  /**
+   * Promotion 150 000 -> 140 000 sifatida tasdiqlangan, keyin hamkor xona
+   * narxini 200 000 ga oshirdi. Ilgari mijozdan 200 000 - 7% = 186 000
+   * olinardi; endi tasdiqlangan 140 000 olinadi.
+   */
+  it('keeps charging the approved price after base_price is raised later', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '200000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-02',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+    });
+
+    expect(result.booking.subtotal).toBe(200000);
+    expect(result.booking.discount_amount).toBe(60000);
+    expect(result.booking.total_amount).toBe(140000);
+    expect(result.payment).toMatchObject({ amount: 140000 });
+  });
+
   it('rejects SCHOOL21 server-side when the room has an active partner promotion', async () => {
     promos.validate.mockResolvedValueOnce({
       code: 'SCHOOL21',

@@ -212,7 +212,7 @@ async function fetchCatalog(
   const tag = path.includes("cities") ? "cities" : "amenities";
   const raw = await rawApi.get<unknown>(path, { 
     next: { revalidate: 3600, tags: ["catalog", tag] } 
-  } as any);
+  });
   const items = camelizeKeys<RawCatalogItem[]>(raw);
   return (items ?? []).map((item) => ({
     // Hotel amenities arrays use `code` (e.g. "hotel_2") not UUID — expose
@@ -237,18 +237,18 @@ export const catalogService = {
   async getPopularCities(locale: Locale): Promise<PopularCityView[]> {
     const raw = await rawApi.get<unknown>("/catalog/destinations", {
       next: { revalidate: 3600, tags: ["catalog", "destinations"] },
-    } as any);
-    const items = camelizeKeys<any[]>(raw);
+    });
+    const items = camelizeKeys<Record<string, unknown>[]>(raw);
     return (items ?? []).map((item) => {
-      const title = item.title ?? {};
-      const metadata = item.metadata ?? {};
+      const title = (item.title as LocalizedValue) ?? {};
+      const metadata = (item.metadata as Record<string, unknown>) ?? {};
       return {
-        id: item.id,
-        name: pickLocale(title, locale) || item.slug || "",
-        slug: item.slug ?? "",
-        imageUrl: metadata.imageUrl ?? metadata.image_url ?? "",
+        id: String(item.id),
+        name: pickLocale(title, locale) || String(item.slug ?? ""),
+        slug: String(item.slug ?? ""),
+        imageUrl: String(metadata.imageUrl ?? metadata.image_url ?? ""),
         hotelCount: 0, // No longer directly available in CMS entries, but we can mock it or UI can hide it.
-        sortOrder: metadata.order ?? metadata.sortOrder ?? metadata.sort_order ?? 0,
+        sortOrder: Number(metadata.order ?? metadata.sortOrder ?? metadata.sort_order ?? 0),
       };
     });
   },
@@ -263,11 +263,11 @@ export const catalogService = {
   async getDestinations(locale: Locale): Promise<DestinationView[]> {
     const raw = await rawApi.get<unknown>("/catalog/destinations", {
       next: { revalidate: 300 },
-    } as any);
+    });
     const items = camelizeKeys<RawDestination[]>(raw);
     return (items ?? []).map((item) => ({
-      id: item.id,
-      slug: item.slug ?? "",
+      id: String(item.id),
+      slug: String(item.slug ?? ""),
       name: pickLocale(item.name, locale),
       imageUrl: item.imageUrl ?? "",
       link: item.link ?? null,
@@ -278,10 +278,10 @@ export const catalogService = {
   async getPartnersShowcase(): Promise<PartnerShowcaseView[]> {
     const raw = await rawApi.get<unknown>("/catalog/partners-showcase", {
       next: { revalidate: 3600 },
-    } as any);
+    });
     const items = camelizeKeys<RawPartnerShowcase[]>(raw);
     return (items ?? []).map((item) => ({
-      id: item.id,
+      id: String(item.id),
       companyName: item.companyName ?? "",
       logoUrl: item.logoUrl ?? "",
       type: item.type ?? "",
@@ -292,10 +292,10 @@ export const catalogService = {
   async getAttractions(locale: Locale): Promise<AttractionCatalogView[]> {
     const raw = await rawApi.get<unknown>("/catalog/attractions", {
       next: { revalidate: 3600 },
-    } as any);
+    });
     const items = camelizeKeys<RawAttraction[]>(raw);
     return (items ?? []).map((item) => ({
-      id: item.id,
+      id: String(item.id),
       name: pickLocale(item.name, locale),
       cityName: pickLocale(item.cityName, locale),
       categoryKey: item.categoryKey ?? "",
@@ -312,10 +312,10 @@ export const catalogService = {
   async getRestaurants(locale: Locale): Promise<RestaurantCatalogView[]> {
     const raw = await rawApi.get<unknown>("/catalog/restaurants", {
       cache: "no-store",
-    } as any);
+    });
     const items = camelizeKeys<RawRestaurant[]>(raw);
     return (items ?? []).map((item) => ({
-      id: item.id,
+      id: String(item.id),
       name: pickLocale(item.name, locale),
       cityName: pickLocale(item.cityName, locale),
       address: item.address ?? "",
@@ -332,51 +332,51 @@ export const catalogService = {
   async getRestaurant(idOrSlug: string, locale: Locale): Promise<RestaurantDetailView> {
     const raw = await rawApi.get<unknown>(`/restaurants/${encodeURIComponent(idOrSlug)}`, {
       cache: "no-store",
-    } as any);
-    const item = camelizeKeys<any>(raw);
+    });
+    const item = camelizeKeys<Record<string, unknown>>(raw);
     return {
-      id: item.id,
-      slug: item.slug ?? "",
-      name: pickLocale(item.name, locale),
-      description: pickLocale(item.description, locale),
-      cityName: pickLocale(item.city?.name ?? item.cityName, locale),
-      address: item.address ?? "",
+      id: String(item.id ?? ""),
+      slug: String(item.slug ?? ""),
+      name: pickLocale(item.name as LocalizedValue, locale),
+      description: pickLocale(item.description as LocalizedValue, locale),
+      cityName: pickLocale(((item.city as Record<string, unknown>)?.name as LocalizedValue) ?? (item.cityName as LocalizedValue), locale),
+      address: String(item.address ?? ""),
       latitude: item.latitude ? Number(item.latitude) : undefined,
       longitude: item.longitude ? Number(item.longitude) : undefined,
-      workingHours: item.workingHours ?? "",
-      checkInTime: item.checkInTime ?? "",
-      checkOutTime: item.checkOutTime ?? "",
-      phone: item.phone ?? "",
+      workingHours: String(item.workingHours ?? ""),
+      checkInTime: String(item.checkInTime ?? ""),
+      checkOutTime: String(item.checkOutTime ?? ""),
+      phone: String(item.phone ?? ""),
       rating: Number(item.rating ?? 0),
       reviewsCount: Number(item.reviewsCount ?? 0),
-      imageUrl: item.imageUrl ?? "",
+      imageUrl: String(item.imageUrl ?? ""),
       images: Array.isArray(item.images) ? item.images : [],
       tables: Array.isArray(item.tables)
-        ? item.tables.map((t: any) => ({
-            id: t.id,
-            code: t.code,
-            name: t.name ?? `Stol № ${t.code}`,
+        ? item.tables.map((t: Record<string, unknown>) => ({
+            id: String(t.id ?? ""),
+            code: String(t.code ?? ""),
+            name: t.name ? String(t.name) : `Stol № ${t.code}`,
             capacity: Number(t.capacity ?? 4),
             basePriceSum: Number(t.basePrice ?? 0),
           }))
         : [],
     };
-  },
+  }
 
-  async getTransports(
+  ,async getTransports(
     locale: Locale,
     options?: { checkIn?: string; checkOut?: string },
   ): Promise<TransportCatalogView[]> {
-    const searchParams: Record<string, string> = {};
-    if (options?.checkIn) searchParams.check_in = options.checkIn;
-    if (options?.checkOut) searchParams.check_out = options.checkOut;
+    const query: Record<string, string> = {};
+    if (options?.checkIn) query.check_in = options.checkIn;
+    if (options?.checkOut) query.check_out = options.checkOut;
     const raw = await rawApi.get<unknown>("/catalog/transports", {
       cache: "no-store",
-      searchParams,
-    } as any);
+      query,
+    });
     const items = camelizeKeys<RawTransport[]>(raw);
     return (items ?? []).map((item) => ({
-      id: item.id,
+      id: String(item.id),
       name: item.name ?? "",
       cityName: pickLocale(item.cityName, locale),
       categoryKey: item.categoryKey ?? "",
@@ -393,36 +393,36 @@ export const catalogService = {
       imageUrl: item.imageUrl ?? "",
       phone: item.phone ?? "",
     }));
-  },
+  }
 
-  async getTransport(id: string, locale: Locale): Promise<TransportDetailView> {
+  ,async getTransport(id: string, locale: Locale): Promise<TransportDetailView> {
     const raw = await rawApi.get<unknown>(`/catalog/transports/${encodeURIComponent(id)}`, {
       cache: "no-store",
-    } as any);
-    const item = camelizeKeys<any>(raw);
+    });
+    const item = camelizeKeys<Record<string, unknown>>(raw);
     return {
-      id: item.id,
-      name: item.name ?? "",
-      cityName: pickLocale(item.cityName, locale),
+      id: String(item.id ?? ""),
+      name: String(item.name ?? ""),
+      cityName: pickLocale(item.cityName as LocalizedValue, locale),
       latitude: item.latitude ? Number(item.latitude) : undefined,
       longitude: item.longitude ? Number(item.longitude) : undefined,
-      categoryKey: item.categoryKey ?? "",
-      categoryDefault: item.categoryDefault ?? "",
+      categoryKey: String(item.categoryKey ?? ""),
+      categoryDefault: String(item.categoryDefault ?? ""),
       seats: Number(item.seats ?? 0),
       hasDriver: Boolean(item.hasDriver),
-      fuelType: item.fuelType ?? "",
-      transmission: item.transmission ?? "",
+      fuelType: String(item.fuelType ?? ""),
+      transmission: String(item.transmission ?? ""),
       hasAc: Boolean(item.hasAc),
       luggageCapacityBags:
         item.luggageCapacityBags == null ? null : Number(item.luggageCapacityBags),
-      plateNumber: item.plateNumber ?? null,
+      plateNumber: item.plateNumber ? String(item.plateNumber) : null,
       pricePerDaySum: Number(item.pricePerDay ?? 0),
-      companyName: item.companyName ?? "",
+      companyName: String(item.companyName ?? ""),
       rating: Number(item.rating ?? 0),
       reviewsCount: Number(item.reviewsCount ?? 0),
-      phone: item.phone ?? "",
-      imageUrl: item.imageUrl ?? "",
-      images: Array.isArray(item.images) ? item.images : [],
+      phone: String(item.phone ?? ""),
+      imageUrl: String(item.imageUrl ?? ""),
+      images: Array.isArray(item.images) ? item.images.map(String) : [],
     };
   },
 };

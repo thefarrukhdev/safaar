@@ -210,7 +210,7 @@ export const cmsService = {
   async getBanners(locale: Locale): Promise<BannerView[]> {
     const raw = await rawApi.get<unknown>('/cms/banners', {
       next: { revalidate: 60 },
-    } as any);
+    });
     const items = camelizeKeys<RawBanner[]>(raw);
     return (items ?? [])
       .filter((item) => {
@@ -224,7 +224,7 @@ export const cmsService = {
   async getDeals(locale: Locale): Promise<DealView[]> {
     const raw = await rawApi.get<unknown>("/cms/offers", {
       next: { revalidate: 300 },
-    } as any);
+    });
     const items = camelizeKeys<RawDeal[]>(raw);
     return (items ?? [])
       .filter((item) => {
@@ -238,7 +238,7 @@ export const cmsService = {
   async getPage(locale: Locale, slug: string): Promise<CmsPageView> {
     const raw = await rawApi.get<unknown>(
       `/cms/pages/${encodeURIComponent(slug)}`,
-      { next: { revalidate: 3600, tags: ["cms", `page-${slug}`] } } as any,
+      { next: { revalidate: 3600, tags: ["cms", `page-${slug}`] } },
     );
     return toCmsPageView(camelizeKeys<RawCmsPage>(raw), locale);
   },
@@ -247,7 +247,7 @@ export const cmsService = {
   async getPublicStats(): Promise<PublicStatsView | null> {
     const raw = await rawApi.get<unknown>("/stats/public", {
       next: { revalidate: 3600 },
-    } as any);
+    });
     if (!raw) return null;
     const data = camelizeKeys<PublicStatsView>(raw);
     return {

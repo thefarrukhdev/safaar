@@ -185,3 +185,24 @@ export interface CmsPageView {
   /** Admin SEO panelida saqlangan xavfsizlashtirilgan (sanitized) maydonlar. */
   seo: CmsEntrySeoView;
 }
+
+export interface NotificationPreferencesView {
+  emailAlerts?: boolean;
+  smsAlerts?: boolean;
+  pushAlerts?: boolean;
+}
+
+export interface BookingMessageView {
+  id: string;
+  bookingId?: string;
+  senderType?: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface CancelPreviewView {
+  penaltyAmount?: number;
+  refundableAmount?: number;
+  freeCancellationDeadline?: string;
+  isFree?: boolean;
+}

@@ -162,7 +162,7 @@ export async function createBusBookingAction(
 export async function validatePromoAction(code: string) {
   try {
     const res = await api.promos.validate(code);
-    return { success: true, data: res as any };
+    return { success: true, data: res };
   } catch (error) {
     return {
       success: false,
@@ -238,7 +238,7 @@ export async function createVehicleBookingAction(input: {
         guestName: input.guestName,
         guestPhone: input.guestPhone,
         guestEmail: input.guestEmail,
-        paymentMethod: input.paymentMethod as any,
+        paymentMethod: input.paymentMethod,
       },
       options
     );

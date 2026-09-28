@@ -39,6 +39,8 @@ export async function generateMetadata({
   }
 }
 
+import { TransportRules } from "@/components/features/transport/TransportRules";
+
 export default async function TransportDetailPage({
   params,
 }: {
@@ -170,6 +172,10 @@ export default async function TransportDetailPage({
             <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
               {((dict as any).detail?.rentalDescription || "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.").replace("{company}", transport.companyName || "Hamkor").replace("{name}", transport.name)}
             </p>
+          </section>
+
+          <section id="rules" className="scroll-mt-24 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <TransportRules dict={(dict as any).rulesSection} />
           </section>
 
           <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">

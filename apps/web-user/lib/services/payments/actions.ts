@@ -27,7 +27,7 @@ export interface RetryPaymentState {
  */
 export async function previewPayment(
   bookingId: string,
-  provider: PaymentProvider,
+  provider: PaymentProvider | "card",
   guestToken?: string,
 ): Promise<{ error?: string; payment?: PaymentResult }> {
   if (!bookingId) {
@@ -38,9 +38,12 @@ export async function previewPayment(
     return { error: "AUTH_TOKEN_INVALID" };
   }
 
+  const normalizedProvider: PaymentProvider =
+    provider === "card" ? "uzcard" : provider;
+
   return safeAction<{ error?: string; payment?: PaymentResult }>(
     async () => {
-      const payment = await api.payments.createPaymentSession(bookingId, provider, {
+      const payment = await api.payments.createPaymentSession(bookingId, normalizedProvider, {
         token: session?.accessToken,
         guestToken,
       });
@@ -66,7 +69,12 @@ export async function createPaymentSessionAction(
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const bookingId = String(formData.get("bookingId") ?? "").trim();
-  const provider = (String(formData.get("paymentMethod") ?? "uzcard")) as PaymentProvider;
+  const rawProvider = String(
+    formData.get("provider") ?? formData.get("paymentMethod") ?? "uzcard",
+  ).trim();
+  const provider: PaymentProvider =
+    (rawProvider === "card" ? "uzcard" : (rawProvider as PaymentProvider)) ||
+    "uzcard";
   const guestToken = String(formData.get("guestToken") ?? "").trim() || undefined;
   const guestTokenParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
 

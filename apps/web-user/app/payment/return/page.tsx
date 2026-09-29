@@ -30,8 +30,9 @@ function PaymentReturnContent() {
     }
 
     const guestParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+    const redirectStatus = status === "success" ? "&status=confirmed" : "";
     const redirectPath = bookingId
-      ? `/${locale}/booking/${encodeURIComponent(bookingId)}?payment=${encodeURIComponent(status)}${guestParam}`
+      ? `/${locale}/booking/${encodeURIComponent(bookingId)}?payment=${encodeURIComponent(status)}${redirectStatus}${guestParam}`
       : `/${locale}`;
 
     // Agar iframe ichida EMAS, butun sahifa (REDIRECT rejimi) bo'lsa — darhol bron sahifasiga o'tamiz
@@ -57,8 +58,9 @@ function PaymentReturnContent() {
   }, [bookingId, status, guestToken, locale]);
 
   const guestParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+  const targetStatus = status === "success" ? "&status=confirmed" : "";
   const targetUrl = bookingId
-    ? `/${locale}/booking/${bookingId}?payment=${status}${guestParam}`
+    ? `/${locale}/booking/${bookingId}?payment=${status}${targetStatus}${guestParam}`
     : `/${locale}`;
 
   return (

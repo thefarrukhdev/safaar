@@ -21,9 +21,10 @@ import type { PaymentResult } from "@/lib/services/payments/payments";
 // YARATISHNING o'zida (`confirmCashBookingIfNeeded()`) ishlaydi — shu
 // sabab bu (retry/tanlash) bosqichida "cash"ni taklif qilish bron holatini
 // hech qachon to'g'ri yakunlamaydigan chalkash holatga olib kelardi.
-const ONLINE_METHODS: PaymentMethodId[] = ["uzcard", "humo", "visa", "mastercard"];
+const ONLINE_METHODS: PaymentMethodId[] = ["card"];
 
 const METHOD_LABELS: Record<string, string> = {
+  card: "Karta orqali",
   uzcard: "Uzcard",
   humo: "Humo",
   visa: "Visa",
@@ -46,6 +47,18 @@ function errorMessage(code?: string): string {
   return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.ERROR;
 }
 
+function isCardProvider(p?: string): boolean {
+  return (
+    !p ||
+    p === "card" ||
+    p === "uzcard" ||
+    p === "humo" ||
+    p === "visa" ||
+    p === "mastercard" ||
+    p === "uzum_checkout"
+  );
+}
+
 export function RetryPaymentForm({
   bookingId,
   locale,
@@ -59,8 +72,8 @@ export function RetryPaymentForm({
   guestToken?: string;
   bookingAmount: number;
 }) {
-  const [selected, setSelected] = useState<PaymentMethodId>(
-    ONLINE_METHODS.includes(initialProvider) ? initialProvider : "uzcard",
+  const [selected, setSelected] = useState<PaymentMethodId>(() =>
+    isCardProvider(initialProvider) ? "card" : (initialProvider ?? "card"),
   );
   const [preview, setPreview] = useState<PaymentResult | null>(null);
   const [previewError, setPreviewError] = useState<string | undefined>();
@@ -125,12 +138,11 @@ export function RetryPaymentForm({
         data &&
         typeof data === "object" &&
         (data.type === "SAFAAR_PAYMENT_RESULT" || data.type === "UZUM_PAYMENT_RESULT");
-      let isExpectedOrigin = false;
+      let isExpectedOrigin = event.origin === window.location.origin;
       try {
         if (preview?.paymentUrl) {
           const checkoutOrigin = new URL(preview.paymentUrl).origin;
-          isExpectedOrigin =
-            event.origin === checkoutOrigin || event.origin === window.location.origin;
+          isExpectedOrigin = isExpectedOrigin || event.origin === checkoutOrigin;
         }
       } catch {
         // ignore
@@ -189,7 +201,12 @@ export function RetryPaymentForm({
   // To'lov tizimida ro'yxatdan o'tgan buyurtma). Bu holda javobdagi `provider`
   // foydalanuvchi tanlagan bilan mos kelmaydi — buni aniq ko'rsatamiz,
   // xato deb yashirmaymiz (docs 3-bo'lim).
-  const providerMismatch = Boolean(preview && preview.provider !== selected);
+  const isCardMatch = selected === "card" && isCardProvider(preview?.provider);
+  const providerMismatch = Boolean(
+    preview &&
+      !isCardMatch &&
+      preview.provider !== selected,
+  );
   const busy = isPreviewing || isConfirming;
   const hasFee = Boolean(preview && preview.feeAmount > 0 && !providerMismatch);
 

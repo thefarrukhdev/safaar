@@ -248,10 +248,9 @@ export function UniversalCard({
   const actionNode = actionLabel ? (
     <span
       onClick={onActionClick ? (e) => { e.stopPropagation(); onActionClick(); } : undefined}
-      className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] sm:text-xs font-medium text-white transition-colors duration-200 ease-out hover:bg-blue-700 active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+      className="inline-flex items-center text-slate-400 group-hover:text-blue-600 transition-colors duration-200 ease-out"
     >
-      <span>{actionLabel}</span>
-      {actionIcon ?? <ChevronRight className="h-3.5 w-3.5 stroke-[3]" />}
+      {actionIcon ?? <ChevronRight className="h-5 w-5 stroke-[2.5]" />}
     </span>
   ) : null;
 

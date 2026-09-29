@@ -23,7 +23,7 @@ export function HotelRules({
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{dict.title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {checkInTime && (
           <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
             <Clock className="mt-0.5 h-5 w-5 text-slate-600 dark:text-slate-400" />

@@ -31,13 +31,13 @@ export function HotelAmenities({
   return (
     <section className="flex flex-col gap-6 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
       <h2 className="text-2xl font-bold text-slate-900">{typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}</h2>
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {visibleAmenities.map((id) => {
           const Icon = AMENITY_ICONS[id];
           return (
             <li
               key={id}
-              className="flex items-center gap-4 text-base text-slate-700"
+              className="flex items-center gap-4 text-sm sm:text-base text-slate-700"
             >
               {Icon && <Icon className="h-6 w-6 text-slate-700" strokeWidth={1.5} />}
               <span>{amenityName[id] ?? id}</span>

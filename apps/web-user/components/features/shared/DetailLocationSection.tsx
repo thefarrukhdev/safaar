@@ -69,15 +69,15 @@ export function DetailLocationSection({
           </a>
         </div>
         
-        <div className="w-full h-[400px]">
+        <div className="w-full h-[250px] sm:h-[400px]">
           {hasCoordinates ? (
             <InteractiveMapView 
               items={mapItems} 
-              className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800"
+              className="relative h-[250px] sm:h-[400px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800"
               zoom={14}
             />
           ) : (
-            <div className="flex h-[400px] w-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="flex h-[250px] sm:h-[400px] w-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 {noCoordsText}

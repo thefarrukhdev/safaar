@@ -75,7 +75,7 @@ export function RoomList({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 border-t border-slate-900/[0.08] pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
+            <div className="flex flex-col sm:flex-col items-stretch sm:items-end gap-4 border-t border-slate-900/[0.08] pt-3 sm:border-0 sm:pt-0">
               <div className="text-left sm:text-right flex flex-col items-start sm:items-end">
                 {room.basePriceSum && room.discountAmount && room.discountAmount > 0 && (
                   <div className="flex items-center gap-2 mb-0.5">
@@ -103,7 +103,7 @@ export function RoomList({
               ) : (
                 <Link
                   href={bookingHref(room.id)}
-                  className="inline-flex h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-5 text-sm font-medium text-white  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+                  className="inline-flex w-full sm:w-auto h-10 max-md:h-11 items-center justify-center gap-2 rounded-full border border-blue-700/50 bg-blue-600 px-5 text-sm font-medium text-white  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   {dict.book}
                 </Link>

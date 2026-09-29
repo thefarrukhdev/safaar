@@ -180,7 +180,7 @@ export default async function Page({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
       />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 sm:gap-6 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 lg:gap-8 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
         {/* Back Button */}
         <div className="w-full flex items-center">
           <BackButton />
@@ -237,7 +237,7 @@ export default async function Page({
 
       <HotelStickyNav dict={dict.nav} />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
+      <div className="grid grid-cols-1 gap-5 lg:gap-8 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-0">
           {/* Top Highlights */}
           <section className="flex flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
@@ -347,13 +347,15 @@ export default async function Page({
           </section>
         </div>
 
-        <HotelBookingWidget
-          minPriceSum={hotel.minPriceSum}
-          checkIn={one(sp.check_in) ?? one(sp.checkIn)}
-          checkOut={one(sp.check_out) ?? one(sp.checkOut)}
-          dict={dict}
-          locale={locale}
-        />
+        <div className="hidden lg:block">
+          <HotelBookingWidget
+            minPriceSum={hotel.minPriceSum}
+            checkIn={one(sp.check_in) ?? one(sp.checkIn)}
+            checkOut={one(sp.check_out) ?? one(sp.checkOut)}
+            dict={dict}
+            locale={locale}
+          />
+        </div>
       </div>
 
       <HotelMobileCtaBar

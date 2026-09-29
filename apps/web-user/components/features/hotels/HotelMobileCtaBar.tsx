@@ -40,7 +40,7 @@ export function HotelMobileCtaBar({
     <div
       aria-hidden={!showSticky}
       className={cn(
-        "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-900/[0.08] shadow-float px-4 py-3 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+        "fixed bottom-0 inset-x-0 z-50 w-full md:hidden bg-white border-t border-slate-900/[0.08] shadow-float px-4 pt-3 pb-safe transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
         showSticky
           ? "translate-y-0 opacity-100"
           : "translate-y-full opacity-0 pointer-events-none",

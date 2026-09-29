@@ -90,13 +90,17 @@ export function HotelGallery({
                     className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.02] motion-reduce:transition-none"
                     quality={isMain ? 85 : 75}
                   />
-                  {isLastVisible && shots.length > 1 && (
+                  {(isLastVisible || (isMain && shots.length > 1)) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsOpen(true);
                       }}
-                      className="absolute bottom-4 right-4 z-10 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-white/90 backdrop-blur px-5 text-sm font-medium text-slate-900 transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+                      className={cn(
+                        "absolute bottom-4 right-4 z-10 h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-white/90 backdrop-blur px-5 text-sm font-medium text-slate-900 transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100",
+                        isMain && !isLastVisible ? "flex sm:hidden" : "",
+                        isLastVisible && !isMain ? "hidden sm:flex" : "flex"
+                      )}
                     >
                       <Camera className="size-5" aria-hidden="true" />
                       <span>{shots.length} ta rasm</span>

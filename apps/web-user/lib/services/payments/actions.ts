@@ -107,3 +107,27 @@ export async function createPaymentSessionAction(
 
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${provider}${guestTokenParam}`);
 }
+
+/**
+ * To'lov holatini tekshirish action'i — modal/iframe ichida to'lov tugatilgach
+ * yoki polling davomida chaqiriladi.
+ */
+export async function checkPaymentStatusAction(
+  bookingId: string,
+  guestToken?: string,
+): Promise<{ status?: string; error?: string }> {
+  if (!bookingId) {
+    return { error: "INVALID_BOOKING" };
+  }
+  const session = await getSession();
+  return safeAction<{ status?: string; error?: string }>(
+    async () => {
+      const payment = await api.payments.getPaymentStatus(bookingId, {
+        token: session?.accessToken,
+        guestToken,
+      });
+      return { status: payment?.status };
+    },
+    { error: "ERROR" },
+  );
+}

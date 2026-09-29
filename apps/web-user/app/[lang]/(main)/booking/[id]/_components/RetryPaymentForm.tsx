@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useActionState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { createPaymentSessionAction, previewPayment, type RetryPaymentState } from "@/lib/payments/actions";
+import {
+  checkPaymentStatusAction,
+  createPaymentSessionAction,
+  previewPayment,
+  type RetryPaymentState,
+} from "@/lib/payments/actions";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -61,12 +66,93 @@ export function RetryPaymentForm({
   const [previewError, setPreviewError] = useState<string | undefined>();
   const [isPreviewing, startPreview] = useTransition();
   const [showIframe, setShowIframe] = useState(false);
+  const [isVerifyingStatus, setIsVerifyingStatus] = useState(false);
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollCount = useRef(0);
   const requestSeq = useRef(0);
 
   const [state, formAction, isConfirming] = useActionState<RetryPaymentState, FormData>(
     createPaymentSessionAction,
     {},
   );
+
+  useEffect(() => {
+    if (!showIframe) {
+      if (pollTimer.current) {
+        clearTimeout(pollTimer.current);
+        pollTimer.current = null;
+      }
+      return;
+    }
+
+    let active = true;
+
+    const stopPolling = () => {
+      if (pollTimer.current) {
+        clearTimeout(pollTimer.current);
+        pollTimer.current = null;
+      }
+    };
+
+    const checkStatus = async () => {
+      pollCount.current += 1;
+      const res = await checkPaymentStatusAction(bookingId, guestToken);
+      if (!active) return;
+      if (res.status === "paid") {
+        stopPolling();
+        setShowIframe(false);
+        const guestQuery = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+        window.location.href = `/${locale}/booking/${bookingId}?status=confirmed&payment=success${guestQuery}`;
+        return;
+      }
+      if (res.status === "failed") {
+        stopPolling();
+        setIsVerifyingStatus(false);
+        setPaymentStatusMessage("To'lov amalga oshmadi. Qayta urinib ko'ring yoki boshqa usulni tanlang.");
+        return;
+      }
+      if (pollCount.current < 40) {
+        pollTimer.current = setTimeout(checkStatus, 2500);
+      } else {
+        setIsVerifyingStatus(false);
+      }
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      const data = event.data;
+      const isReturnMessage =
+        data &&
+        typeof data === "object" &&
+        (data.type === "SAFAAR_PAYMENT_RESULT" || data.type === "UZUM_PAYMENT_RESULT");
+      let isExpectedOrigin = false;
+      try {
+        if (preview?.paymentUrl) {
+          const checkoutOrigin = new URL(preview.paymentUrl).origin;
+          isExpectedOrigin =
+            event.origin === checkoutOrigin || event.origin === window.location.origin;
+        }
+      } catch {
+        // ignore
+      }
+
+      if (isReturnMessage || isExpectedOrigin) {
+        setIsVerifyingStatus(true);
+        pollCount.current = 0;
+        stopPolling();
+        checkStatus();
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    pollTimer.current = setTimeout(checkStatus, 3000);
+
+    return () => {
+      active = false;
+      stopPolling();
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [showIframe, bookingId, guestToken, locale, preview?.paymentUrl]);
 
   const runPreview = (provider: PaymentMethodId) => {
     setPreviewError(undefined);
@@ -111,6 +197,8 @@ export function RetryPaymentForm({
     <form action={formAction} className="flex flex-col gap-4" onSubmit={(e) => {
       if (preview?.paymentUrl && !providerMismatch) {
         e.preventDefault();
+        setIsVerifyingStatus(false);
+        setPaymentStatusMessage(null);
         setShowIframe(true);
       }
     }}>
@@ -200,13 +288,35 @@ export function RetryPaymentForm({
       {showIframe && preview?.paymentUrl && (
         <Modal
           isOpen={showIframe}
-          onClose={() => setShowIframe(false)}
+          onClose={async () => {
+            setShowIframe(false);
+            setIsVerifyingStatus(false);
+            setPaymentStatusMessage(null);
+            const res = await checkPaymentStatusAction(bookingId, guestToken);
+            if (res.status === "paid") {
+              const guestQuery = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+              window.location.href = `/${locale}/booking/${bookingId}?status=confirmed&payment=success${guestQuery}`;
+            }
+          }}
           title={`To'lov (${METHOD_LABELS[selected] ?? selected})`}
+          maxWidth="max-w-xl"
         >
-          <div className="flex flex-col h-[70vh] sm:h-[600px] w-full min-w-[320px]">
+          <div className="flex flex-col h-[70vh] sm:h-[580px] w-full min-w-[320px]">
+            {isVerifyingStatus && (
+              <div className="mb-2 flex items-center justify-center gap-2 rounded-lg bg-blue-50 p-2.5 text-xs sm:text-sm font-medium text-blue-700 border border-blue-100 animate-pulse">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                To&apos;lov holati tekshirilmoqda...
+              </div>
+            )}
+            {paymentStatusMessage && (
+              <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 p-2.5 text-xs sm:text-sm text-amber-800 border border-amber-100">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                <span>{paymentStatusMessage}</span>
+              </div>
+            )}
             <iframe 
               src={preview.paymentUrl} 
-              className="w-full h-full border-0 rounded-xl"
+              className="w-full flex-1 border border-slate-200 rounded-xl"
               allow="payment"
             />
           </div>

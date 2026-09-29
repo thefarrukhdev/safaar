@@ -135,7 +135,7 @@ export function SearchBar({
     <div className="mx-auto w-full relative z-50">
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col rounded-full border border-slate-200 bg-white transition-all duration-200 ease-out focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center p-0 md:p-2 divide-y divide-slate-200 md:divide-y-0"
+        className="relative flex flex-col rounded-2xl md:rounded-full border border-slate-200 bg-white transition-all duration-200 ease-out focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center p-0 md:p-2 divide-y divide-slate-200 md:divide-y-0"
       >
         {/* 1. Shahar / Destinatsiya */}
         <div 

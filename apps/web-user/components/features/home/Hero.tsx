@@ -21,8 +21,8 @@ export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], ch
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         {/* Qatlam 3: Markaziy matn himoyasi — faqat matn bo'lagida (qorong'i EMAS, nozik) */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50" />
-        {/* Qatlam 4: Pastki oq gradient — silliq, uzun, bosqichli o'tish */}
-        <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white via-white/75 via-[55%] to-transparent" />
+        {/* Qatlam 4: Pastki oq gradient — silliq, uzun, bosqichli o'tish (search + pills qoplab oladi) */}
+        <div className="absolute inset-x-0 bottom-0 h-[32rem] bg-gradient-to-t from-white from-[30%] via-white/80 via-[50%] to-transparent" />
       </div>
 
       {/* Hero Text */}

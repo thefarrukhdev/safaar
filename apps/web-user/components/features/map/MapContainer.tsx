@@ -116,7 +116,7 @@ function CustomMarker({ item, isSelected, isHovered, onSelectItem, map }: { item
       <Popup maxWidth={280} minWidth={280} className="custom-popup" ref={popupRef}>
         <div className="flex flex-col min-w-[280px]">
           {item.imageUrl && (
-            <div className="relative h-[160px] w-full overflow-hidden rounded-t-xl bg-slate-100 dark:bg-slate-800">
+            <div className="relative h-[160px] w-full overflow-hidden rounded-t-xl bg-slate-100 ">
               <Image 
                 src={item.imageUrl} 
                 alt={item.name || ""}
@@ -125,24 +125,24 @@ function CustomMarker({ item, isSelected, isHovered, onSelectItem, map }: { item
                 sizes="(max-width: 768px) 100vw, 280px"
               />
               {item.rating !== undefined && (
-                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-white/95 px-2 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm dark:bg-slate-900/90 dark:text-white">
+                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-white/95 px-2 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm  ">
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                   {item.rating.toFixed(1)}
                 </div>
               )}
             </div>
           )}
-          <div className="flex flex-col p-4 bg-white dark:bg-slate-900">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white m-0 truncate">{item.name}</h3>
+          <div className="flex flex-col p-4 bg-white ">
+            <h3 className="text-sm font-bold text-slate-900  m-0 truncate">{item.name}</h3>
             {(item.cityName || item.address) && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 m-0 truncate">
+              <p className="mt-1 flex items-center gap-1 text-xs text-slate-500  m-0 truncate">
                 <MapPin className="h-3 w-3 shrink-0" />
                 {item.cityName ? item.cityName + (item.address ? " · " + item.address : "") : item.address}
               </p>
             )}
             {item.priceFormatted && (
               <p className="mt-3 text-base font-extrabold text-[#2563eb] m-0 flex items-baseline gap-1">
-                {item.priceFormatted} <span className="text-xs font-medium text-slate-400 dark:text-slate-500">/ kecha</span>
+                {item.priceFormatted} <span className="text-xs font-medium text-slate-400 ">/ kecha</span>
               </p>
             )}
             {item.linkUrl && (
@@ -163,14 +163,14 @@ function CustomControls() {
     <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomIn(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white   :bg-blue-600 :text-white"
         title="Zoom in"
       >
         <Plus className="h-5 w-5" />
       </button>
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomOut(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white   :bg-blue-600 :text-white"
         title="Zoom out"
       >
         <Minus className="h-5 w-5" />
@@ -253,7 +253,7 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
         className={isDark ? "map-tiles-dark" : ""}
       />
       <CustomControls />
-      <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] shadow-md dark:bg-slate-800 dark:text-blue-400 pointer-events-none">
+      <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] shadow-md   pointer-events-none">
         {visibleCount} ta mehmonxona
       </div>
       {items.map((item: MapMarkerItem) => {
@@ -283,7 +283,7 @@ export function MapContainer({
   onBoundsChange,
   center = [41.2995, 69.2401],
   zoom = 12,
-  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-2xl dark:border-slate-700/60 bg-slate-100 dark:bg-slate-900",
+  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-2xl  bg-slate-100 ",
 }: MapContainerProps) {
   const firstCoords = items.map(resolveItemCoords).find(c => c) ?? center;
   

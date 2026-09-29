@@ -169,9 +169,9 @@ export async function AccommodationPage({
       <div className="flex flex-col gap-3">
         {total === 0 && (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-2 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-2 ">
               <div className="flex items-baseline gap-3">
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900  sm:text-3xl">
                   {title}
                 </h1>
                 <span aria-live="polite" className="text-xs font-bold text-slate-400 sm:text-sm">
@@ -192,9 +192,9 @@ export async function AccommodationPage({
             <HotelFilters dict={{ filters: dict.filters, types: dict.types, starOptions: dict.starOptions, amenityOptions: dict.amenityOptions, paymentOptions: dict.paymentOptions }} sortSelect={null} />
           </Suspense>
           <section aria-label={dict.title}>
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <p className="font-medium text-slate-700 dark:text-slate-200">{dict.empty}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{dict.emptyHint}</p>
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 py-16 text-center shadow-sm  ">
+              <p className="font-medium text-slate-700 ">{dict.empty}</p>
+              <p className="text-sm text-slate-500 ">{dict.emptyHint}</p>
               <Link href={clearedHref}>
                 <Button variant="secondary">{dict.clearFilters}</Button>
               </Link>
@@ -224,7 +224,7 @@ export async function AccommodationPage({
           }
           headerTitle={
             <div key="headerTitle" className="flex items-baseline gap-3">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900  sm:text-3xl">
                 {title}
               </h1>
               <span aria-live="polite" className="text-xs font-bold text-slate-400 sm:text-sm">

@@ -60,20 +60,20 @@ export function SettingsForm({
     <div className="flex flex-col gap-10">
       <form onSubmit={handlePreferences} className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{dict.notificationPrefs || "Notification Preferences"}</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Bizdan keladigan bildirishnomalarni boshqaring.</p>
+          <h3 className="text-lg font-bold text-slate-900 ">{dict.notificationPrefs || "Notification Preferences"}</h3>
+          <p className="text-sm text-slate-500 ">Bizdan keladigan bildirishnomalarni boshqaring.</p>
         </div>
         
         <div className="flex flex-col gap-4">
-          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-slate-100  hover:bg-slate-50 :bg-slate-900/50 transition-colors">
             <input
               type="checkbox"
               name="emailAlerts"
               defaultChecked={preferences?.emailAlerts}
-              className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 dark:border-slate-700 dark:bg-slate-900"
+              className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600  "
             />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900  flex items-center gap-2">
                 <Bell className="h-4 w-4 text-slate-400" />
                 {dict.emailAlerts || "Email Alerts"}
               </span>
@@ -81,15 +81,15 @@ export function SettingsForm({
             </div>
           </label>
           
-          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-slate-100  hover:bg-slate-50 :bg-slate-900/50 transition-colors">
             <input
               type="checkbox"
               name="smsAlerts"
               defaultChecked={preferences?.smsAlerts}
-              className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 dark:border-slate-700 dark:bg-slate-900"
+              className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600  "
             />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900  flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-slate-400" />
                 {dict.smsAlerts || "SMS Alerts"}
               </span>
@@ -103,10 +103,10 @@ export function SettingsForm({
         </div>
       </form>
 
-      <div className="flex flex-col gap-6 border-t border-slate-100 dark:border-slate-800 pt-8">
+      <div className="flex flex-col gap-6 border-t border-slate-100  pt-8">
         <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{dict.dataManagement || "Data Management"}</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Shaxsiy ma'lumotlaringizni yuklab olishingiz yoki akkauntni o'chirishingiz mumkin.</p>
+          <h3 className="text-lg font-bold text-slate-900 ">{dict.dataManagement || "Data Management"}</h3>
+          <p className="text-sm text-slate-500 ">Shaxsiy ma'lumotlaringizni yuklab olishingiz yoki akkauntni o'chirishingiz mumkin.</p>
         </div>
         
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -121,7 +121,7 @@ export function SettingsForm({
           </Button>
           <Button
             variant="ghost"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 justify-center"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 :bg-red-950/30 flex items-center gap-2 justify-center"
             onClick={handleDelete}
             loading={deleteLoading}
           >

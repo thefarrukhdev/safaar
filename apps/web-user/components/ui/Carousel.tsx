@@ -55,7 +55,7 @@ export function Carousel({
         className={`flex w-full snap-x snap-mandatory overflow-x-auto ${aspectRatio} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
       >
         {images.map((src, idx) => (
-          <div key={idx} className="relative h-full w-full flex-none snap-center bg-slate-100 dark:bg-slate-800">
+          <div key={idx} className="relative h-full w-full flex-none snap-center bg-slate-100 ">
             <Image
               src={src}
               alt={`${alt} ${idx + 1}`}

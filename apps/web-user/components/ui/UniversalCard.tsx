@@ -260,7 +260,7 @@ export function UniversalCard({
     >
       {variant === "overlay" ? (
         /* Overlay variant (e.g. City Card / Special Showcase) */
-        <div className="relative aspect-[4/3] sm:aspect-[3/2] w-full overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <div className="relative aspect-[4/3] sm:aspect-[3/2] w-full overflow-hidden bg-slate-100  flex items-center justify-center">
           {renderImages()}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
           {topLeft && <div className="absolute left-3 top-3 z-10">{topLeft}</div>}
@@ -305,7 +305,7 @@ export function UniversalCard({
         /* Default variant (standard card) */
         <>
           {/* Top Media Section */}
-          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden rounded-t-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden rounded-t-xl bg-slate-100  flex items-center justify-center">
             {renderImages()}
 
             {topLeft && <div className="absolute left-3 top-3 z-10">{topLeft}</div>}
@@ -346,7 +346,7 @@ export function UniversalCard({
 
             {/* Card Footer */}
             {(priceNode || footerLeft || actionNode || footerRight) && (
-              <div className="mt-3 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2.5 sm:pt-3 dark:border-slate-800/80">
+              <div className="mt-3 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2.5 sm:pt-3 ">
                 <div className="flex flex-col min-w-0">{footerLeft ?? priceNode}</div>
                 {(footerRight || actionNode) && (
                   <div className="shrink-0 flex items-center">

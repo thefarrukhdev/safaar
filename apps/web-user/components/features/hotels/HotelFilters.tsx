@@ -94,7 +94,7 @@ export function HotelFilters({
           className="w-full flex items-center justify-between !h-11 min-h-[44px] px-3.5 text-xs sm:text-sm font-bold"
         >
           <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
-            <Filter className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <Filter className="h-4 w-4 shrink-0 text-blue-600 " />
             <span className="truncate">{dict.filters.toggle}</span>
             {activeCount > 0 && (
               <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-black text-white">
@@ -120,9 +120,9 @@ export function HotelFilters({
         {/* NARX (1 KECHA) */}
         <FilterGroup title={dict.filters.pricePerNight}>
           <div className="flex flex-col gap-2 pt-1">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700 ">
               <span>0 {dict.filters.currency}</span>
-              <span className="text-blue-600 dark:text-blue-400 font-extrabold">
+              <span className="text-blue-600  font-extrabold">
                 {priceRange.toLocaleString("fr-FR").replace(/\s/g, " ")} {dict.filters.currency}
               </span>
             </div>
@@ -133,7 +133,7 @@ export function HotelFilters({
               step={50000}
               value={priceRange}
               onChange={(e) => setPriceRange(Number(e.target.value))}
-              className="h-2 w-full accent-blue-600 bg-slate-200 rounded-lg cursor-pointer dark:bg-slate-700"
+              className="h-2 w-full accent-blue-600 bg-slate-200 rounded-lg cursor-pointer "
             />
           </div>
         </FilterGroup>
@@ -148,7 +148,7 @@ export function HotelFilters({
             ].map((item) => (
               <label
                 key={item.val}
-                className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer group hover:text-blue-600"
+                className="flex items-center justify-between text-xs font-bold text-slate-700  cursor-pointer group hover:text-blue-600"
               >
                 <span className="flex items-center gap-2">
                   <input
@@ -161,7 +161,7 @@ export function HotelFilters({
                     <span className="flex text-amber-400">
                       {"★".repeat(item.starsCount)}
                     </span>
-                    <span className="ml-1 text-slate-600 dark:text-slate-400 font-medium">
+                    <span className="ml-1 text-slate-600  font-medium">
                       {item.label}
                     </span>
                   </span>
@@ -184,7 +184,7 @@ export function HotelFilters({
             ].map((cat) => (
               <label
                 key={cat.id}
-                className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600"
+                className="flex items-center justify-between text-xs font-bold text-slate-700  cursor-pointer hover:text-blue-600"
               >
                 <span className="flex items-center gap-2">
                   <input
@@ -216,7 +216,7 @@ export function HotelFilters({
             ].map((amenity) => (
               <label
                 key={amenity.id}
-                className="flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600"
+                className="flex items-center text-xs font-bold text-slate-700  cursor-pointer hover:text-blue-600"
               >
                 <span className="flex items-center gap-2">
                   <input
@@ -249,7 +249,7 @@ export function HotelFilters({
             ].map((ptype) => (
               <label
                 key={ptype.id}
-                className="flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-blue-600"
+                className="flex items-center text-xs font-bold text-slate-700  cursor-pointer hover:text-blue-600"
               >
                 <span className="flex items-center gap-2">
                   <input

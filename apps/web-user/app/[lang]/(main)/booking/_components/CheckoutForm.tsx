@@ -131,13 +131,13 @@ export function CheckoutForm({
       <input type="hidden" name="roomId" value={room.id} />
 
       <div className="flex flex-col gap-8">
-        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.guestDetails}</h2>
+        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm  ">
+          <h2 className="text-xl font-bold text-slate-900 ">{dict.guestDetails}</h2>
           
           {isGuest ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.firstName}</span>
+                <span className="text-sm font-semibold text-slate-700 ">{dict.firstName}</span>
                 <Input
                   name="firstName"
                   autoComplete="given-name"
@@ -146,7 +146,7 @@ export function CheckoutForm({
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.lastName}</span>
+                <span className="text-sm font-semibold text-slate-700 ">{dict.lastName}</span>
                 <Input
                   name="lastName"
                   autoComplete="family-name"
@@ -155,7 +155,7 @@ export function CheckoutForm({
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.email}</span>
+                <span className="text-sm font-semibold text-slate-700 ">{dict.email}</span>
                 <Input
                   type="email"
                   name="email"
@@ -165,7 +165,7 @@ export function CheckoutForm({
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.phone}</span>
+                <span className="text-sm font-semibold text-slate-700 ">{dict.phone}</span>
                 <Input
                   type="tel"
                   name="phone"
@@ -177,7 +177,7 @@ export function CheckoutForm({
             </div>
           ) : (
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.fullName}</span>
+              <span className="text-sm font-semibold text-slate-700 ">{dict.fullName}</span>
               <Input
                 name="fullName"
                 autoComplete="name"
@@ -208,7 +208,7 @@ export function CheckoutForm({
               <input type="hidden" name="checkOut" value={checkOut} />
             </div>
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.guests}</span>
+              <span className="text-sm font-semibold text-slate-700 ">{dict.guests}</span>
               <Input
                 type="number"
                 name="guests"
@@ -221,18 +221,18 @@ export function CheckoutForm({
           </div>
 
           <label className="flex flex-col gap-1.5 mt-2">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.specialRequests}</span>
+            <span className="text-sm font-semibold text-slate-700 ">{dict.specialRequests}</span>
             <textarea
               name="specialRequests"
               rows={3}
               placeholder={dict.specialRequestsPlaceholder}
-              className="w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-900/60 transition-[border-color,box-shadow] duration-200 hover:border-slate-900/70 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600 dark:placeholder:text-slate-400"
+              className="w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-900/60 transition-[border-color,box-shadow] duration-200 hover:border-slate-900/70 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600    :border-slate-600 :text-slate-400"
             />
           </label>
         </section>
 
-        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
+        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm  ">
+          <h2 className="text-xl font-bold text-slate-900 ">{dict.paymentMethod}</h2>
           <PaymentSelector
             defaultValue="card"
             name="paymentMethod"
@@ -245,11 +245,11 @@ export function CheckoutForm({
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.summary}</h2>
+      <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28  ">
+        <h2 className="text-xl font-bold text-slate-900 ">{dict.summary}</h2>
         <div className="flex flex-col gap-0.5">
-          <p className="font-semibold text-slate-900 dark:text-white">{hotelName}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{room.name}</p>
+          <p className="font-semibold text-slate-900 ">{hotelName}</p>
+          <p className="text-sm text-slate-500 ">{room.name}</p>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-500">
@@ -264,9 +264,9 @@ export function CheckoutForm({
           </div>
         )}
 
-        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+        <div className="border-t border-slate-100 pt-4 ">
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.promoCode}</span>
+            <span className="text-sm font-semibold text-slate-700 ">{dict.promoCode}</span>
             <div className="flex gap-2">
               <Input
                 name="promoCode"
@@ -281,9 +281,9 @@ export function CheckoutForm({
           </label>
         </div>
 
-        <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold dark:border-slate-800">
-          <span className="text-slate-900 dark:text-white">{dict.total}</span>
-          <span className="text-slate-900 dark:text-white">{formatSum(total)}</span>
+        <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold ">
+          <span className="text-slate-900 ">{dict.total}</span>
+          <span className="text-slate-900 ">{formatSum(total)}</span>
         </div>
 
         {nights < 1 && (
@@ -298,9 +298,9 @@ export function CheckoutForm({
         <div className="mt-4 w-full">
           <label className="flex items-start gap-2.5 text-xs">
             <input type="checkbox" name="agreeTerms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500  "
             />
-            <span className="text-slate-600 dark:text-slate-400 leading-tight">
+            <span className="text-slate-600  leading-tight">
               {dict.agreeTermsPrefix}
               <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-primary-600 hover:underline">
                 {dict.termsLink}

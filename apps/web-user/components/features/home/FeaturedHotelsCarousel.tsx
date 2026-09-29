@@ -41,7 +41,7 @@ export function FeaturedHotelsCarousel({
       {cards.length === 0 ? (
         <div className="mt-6">
           <EmptyState 
-            icon={<BedDouble className="h-10 w-10 text-slate-400 dark:text-slate-500" />}
+            icon={<BedDouble className="h-10 w-10 text-slate-400 " />}
             title={(dict as any).empty || "Hozircha bo'sh"} 
             description={(dict as any).emptyDesc || "Ayni paytda tavsiya etilgan joylar mavjud emas. Tez orada yangilanadi."} 
           />

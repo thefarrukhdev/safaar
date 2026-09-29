@@ -52,10 +52,10 @@ export function OfflineRetryControl({
   if (online) {
     return (
       <div className="flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600  ">
           <CheckCircle2 className="h-8 w-8 stroke-[2.5]" />
         </div>
-        <p className="font-bold text-emerald-700 dark:text-emerald-300">
+        <p className="font-bold text-emerald-700 ">
           Internet aloqasi tiklandi! Qayta yuklanmoqda...
         </p>
       </div>
@@ -64,7 +64,7 @@ export function OfflineRetryControl({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-inner dark:bg-slate-800 dark:text-slate-400">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-inner  ">
         <WifiOff className="h-8 w-8 stroke-[2]" />
       </div>
 

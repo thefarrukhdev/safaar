@@ -14,11 +14,11 @@ export function CatalogHeader({
   filterControls,
 }: CatalogHeaderProps) {
   return (
-    <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
-      <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>
+    <div className="mb-8 border-b border-slate-200 pb-6 ">
+      <h1 className="text-2xl font-black tracking-tight text-slate-900  sm:text-3xl lg:text-4xl" style={{ fontFamily: "var(--font-manrope, sans-serif)" }}>
         {title}
       </h1>
-      <p className="mt-1.5 text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">
+      <p className="mt-1.5 text-sm sm:text-base font-medium text-slate-600 ">
         {subtitle}
       </p>
 

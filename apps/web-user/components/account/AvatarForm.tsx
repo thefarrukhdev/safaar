@@ -51,7 +51,7 @@ export function AvatarForm({
 
   return (
     <div className="flex items-center gap-5 sm:gap-6">
-      <div className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-500 shadow-inner dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 items-center justify-center">
+      <div className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-500 shadow-inner   border border-slate-200  items-center justify-center">
         {profile.avatarUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -83,7 +83,7 @@ export function AvatarForm({
         {profile.avatarUrl && (
           <Button
             variant="ghost"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 :bg-red-950/30"
             onClick={handleDelete}
             loading={loading}
             size="sm"

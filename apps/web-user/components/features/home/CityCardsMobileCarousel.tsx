@@ -106,7 +106,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
               className={`rounded-full transition-all duration-300 ${
                 i === activeIndex
                   ? "w-5 h-2 bg-primary-500"
-                  : "w-2 h-2 bg-slate-300 dark:bg-slate-600"
+                  : "w-2 h-2 bg-slate-300 "
               }`}
               aria-label={`${i + 1}-shaharni ko'rish`}
             />
@@ -118,7 +118,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <button
             onClick={() => goTo(activeIndex - 1)}
             disabled={activeIndex === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white  text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white  text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50  "
             aria-label="Oldingi"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function CityCardsMobileCarousel({ items }: CityCardsMobileCarouselProps)
           <button
             onClick={() => goTo(activeIndex + 1)}
             disabled={activeIndex === items.length - 1}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white  text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white  text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-slate-50  "
             aria-label="Keyingi"
           >
             <ChevronRight className="h-4 w-4" />

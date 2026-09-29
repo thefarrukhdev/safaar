@@ -42,7 +42,7 @@ function LocateMeControl() {
             e.stopPropagation();
             map.locate({ setView: true, maxZoom: 14 });
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg transition-transform hover:scale-105 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg transition-transform hover:scale-105 hover:bg-slate-50   :bg-slate-700 border border-slate-200 "
           title="Mening joylashuvim"
         >
           <Navigation className="h-5 w-5" />
@@ -74,14 +74,14 @@ export default function AttractionsMap({
         <div class="relative flex items-center justify-center transition-all duration-300 ${isHovered ? 'scale-110 z-50' : 'scale-100 z-10'}">
           <div class="flex items-center gap-1 rounded-full px-2.5 py-1.5 shadow-lg ${
             isHovered 
-              ? 'bg-rose-600 text-white shadow-rose-600/30 ring-2 ring-rose-200 dark:ring-rose-900' 
-              : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+              ? 'bg-rose-600 text-white shadow-rose-600/30 ring-2 ring-rose-200 ' 
+              : 'bg-slate-900 text-white  '
           }">
             <span class="text-[11px] font-bold tracking-tight whitespace-nowrap">★ ${attr.rating.toFixed(1)}</span>
           </div>
           <!-- Tiny triangle pointer -->
           <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-[6px] border-l-transparent border-r-transparent ${
-            isHovered ? 'border-t-rose-600' : 'border-t-slate-900 dark:border-t-white'
+            isHovered ? 'border-t-rose-600' : 'border-t-slate-900 '
           }"></div>
         </div>
       `,
@@ -95,7 +95,7 @@ export default function AttractionsMap({
     const count = cluster.getChildCount();
     return L.divIcon({
       html: `
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white shadow-xl shadow-primary-600/30 ring-4 ring-primary-100 dark:ring-primary-900/40">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white shadow-xl shadow-primary-600/30 ring-4 ring-primary-100 ">
           <span class="text-sm font-bold">${count}</span>
         </div>
       `,
@@ -106,7 +106,7 @@ export default function AttractionsMap({
   };
 
   if (!mounted) {
-    return <div className="h-full w-full bg-[#E5E5DF] dark:bg-[#1A1A1A] animate-pulse" />;
+    return <div className="h-full w-full bg-[#E5E5DF] [#1A1A1A] animate-pulse" />;
   }
 
   const defaultCenter: [number, number] = [41.2995, 69.2401];

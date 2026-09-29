@@ -196,18 +196,18 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
         <div
           role="dialog"
           aria-label={dict?.supportAria || "Safaar qo'llab-quvvatlash"}
-          className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-200 dark:border-slate-800 dark:bg-slate-900/95 sm:right-6 sm:w-[380px]"
+          className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-200   sm:right-6 sm:w-[380px]"
         >
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3.5 dark:border-slate-800 dark:bg-slate-800/80">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3.5  ">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-white shadow-md">
                 <Headset className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                <span className="text-sm font-extrabold text-slate-900 ">
                   {dict?.supportAria || "Safaar Support"}
                 </span>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-semibold text-slate-500 ">
                   {authRequired && guestStep === "idle"
                     ? dict?.loginNeeded || "Yangi murojaat"
                     : ticketId
@@ -222,7 +222,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                 type="button"
                 onClick={() => void loadThread()}
                 disabled={loading || authRequired}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 :bg-slate-800 :text-slate-200"
                 aria-label={dict?.refreshAria || "Yangilash"}
               >
                 <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -230,7 +230,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 :bg-slate-800 :text-slate-200"
                 aria-label={dict?.closeAria || "Yopish"}
               >
                 <X className="h-4 w-4" />
@@ -240,11 +240,11 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
 
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
             {loading && messages.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500   ">
                 {dict?.loadingTickets || "Ticketlar yuklanmoqda..."}
               </p>
             ) : messages.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-500   ">
                 {dict?.emptyTicketPrompt || "Yangi murojaat uchun savolingizni yozing."}
               </p>
             ) : (
@@ -259,7 +259,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                     }`}
                   >
                     {!isUser && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-300">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600  ">
                         <Headset className="h-4 w-4" />
                       </div>
                     )}
@@ -268,7 +268,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                       className={`max-w-[78%] rounded-xl px-4 py-2.5 text-xs leading-relaxed shadow-xs ${
                         isUser
                           ? "rounded-br-xs bg-primary-500 font-medium text-white"
-                          : "rounded-bl-xs border border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                          : "rounded-bl-xs border border-slate-200 bg-slate-100 text-slate-800   "
                       }`}
                     >
                       <p>{message.text}</p>
@@ -284,7 +284,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                     </div>
 
                     {isUser && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600  ">
                         <User className="h-4 w-4" />
                       </div>
                     )}
@@ -294,19 +294,19 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
             )}
 
             {error && (
-              <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700   ">
                 {error}
               </p>
             )}
 
             {authRequired && guestStep === "idle" && (
-              <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/40">
-                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+              <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3  ">
+                <p className="text-xs font-medium text-amber-800 ">
                   {dict?.loginRequired || "Tizimga kirmagansiz. Murojaat qoldirish uchun xabaringizni yozing va ma'lumotlaringizni qoldiring, yoki tizimga kiring."}
                 </p>
                 <a
                   href={loginHref}
-                  className="inline-flex w-fit rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-amber-900 shadow-sm border border-amber-200 hover:bg-amber-100 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-800 dark:hover:bg-amber-800"
+                  className="inline-flex w-fit rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-amber-900 shadow-sm border border-amber-200 hover:bg-amber-100    :bg-amber-800"
                 >
                   {dict?.loginBtn || "Login"}
                 </a>
@@ -319,7 +319,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
           {authRequired && guestStep === "asking_details" ? (
             <form
               onSubmit={handleGuestSubmit}
-              className="flex flex-col gap-3 border-t border-slate-100 bg-card p-4 dark:border-slate-800 dark:bg-slate-900"
+              className="flex flex-col gap-3 border-t border-slate-100 bg-card p-4  "
             >
               <div className="flex flex-col gap-2">
                 <input
@@ -328,7 +328,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   placeholder={dict?.nameLabel || "Ismingiz"}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20   "
                 />
                 <input
                   type="tel"
@@ -336,7 +336,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                   value={guestPhone}
                   onChange={(e) => setGuestPhone(e.target.value)}
                   placeholder={dict?.phoneLabel || "Telefon raqamingiz"}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20   "
                 />
               </div>
               <Button
@@ -350,10 +350,10 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
               </Button>
             </form>
           ) : authRequired && guestStep === "submitted" ? (
-            <div className="border-t border-slate-100 bg-card p-4 text-center dark:border-slate-800 dark:bg-slate-900">
+            <div className="border-t border-slate-100 bg-card p-4 text-center  ">
               <a
                 href={loginHref}
-                className="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400"
+                className="text-xs font-semibold text-primary-600 hover:underline "
               >
                 {dict?.loginBtn || "Login"} qilib tarixni kuzating
               </a>
@@ -361,7 +361,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
           ) : (
             <form
               onSubmit={handleSend}
-              className="flex items-center gap-2 border-t border-slate-100 bg-card p-3 dark:border-slate-800 dark:bg-slate-900"
+              className="flex items-center gap-2 border-t border-slate-100 bg-card p-3  "
             >
               <input
                 type="text"
@@ -369,7 +369,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
                 onChange={(event) => setInputText(event.target.value)}
                 placeholder={dict?.inputPlaceholder || "Xabaringizni yozing..."}
                 disabled={sending}
-                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
+                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:opacity-60   "
               />
               <Button
                 type="submit"

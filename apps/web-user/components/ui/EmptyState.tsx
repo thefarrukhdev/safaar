@@ -15,7 +15,7 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon = <SearchX className="size-10 text-slate-900/70 dark:text-white/70" aria-hidden="true" />,
+  icon = <SearchX className="size-10 text-slate-900/70 " aria-hidden="true" />,
   title,
   description,
   actionLabel,
@@ -25,18 +25,18 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl border border-slate-900/[0.08] bg-white p-8 text-center dark:border-white/[0.10] dark:bg-slate-900 ${className}`}
+      className={`flex flex-col items-center justify-center rounded-xl border border-slate-900/[0.08] bg-white p-8 text-center [0.10]  ${className}`}
     >
-      <div className="flex size-16 items-center justify-center rounded-xl bg-slate-900/[0.05] dark:bg-white/[0.08]">
+      <div className="flex size-16 items-center justify-center rounded-xl bg-slate-900/[0.05] [0.08]">
         {icon}
       </div>
 
-      <h3 className="mt-4 text-base font-medium leading-snug text-slate-900 dark:text-white">
+      <h3 className="mt-4 text-base font-medium leading-snug text-slate-900 ">
         {title}
       </h3>
 
       {description && (
-        <p className="mt-1.5 max-w-md text-sm text-slate-900/70 dark:text-white/70">
+        <p className="mt-1.5 max-w-md text-sm text-slate-900/70 ">
           {description}
         </p>
       )}

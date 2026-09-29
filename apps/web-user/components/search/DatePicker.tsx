@@ -178,14 +178,14 @@ export function DatePicker({
         <>
           {/* Mobilda overlay */}
           <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs md:hidden" aria-hidden onClick={() => setOpen(false)} />
-          <div className="fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 rounded-xl border border-slate-200 bg-card p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:absolute md:inset-auto md:left-0 md:top-full md:mt-2 md:w-72 md:translate-y-0">
+          <div className="fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 rounded-xl border border-slate-200 bg-card p-4 shadow-2xl   md:absolute md:inset-auto md:left-0 md:top-full md:mt-2 md:w-72 md:translate-y-0">
             {/* Mobile Header with Close Button */}
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 md:hidden">
-              <span className="text-sm font-bold text-slate-800 dark:text-white">Sanani tanlang</span>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100  md:hidden">
+              <span className="text-sm font-bold text-slate-800 ">Sanani tanlang</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="text-slate-400 hover:text-slate-600  :text-slate-300 p-1 rounded-full hover:bg-slate-100 :bg-slate-800 transition-colors"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />

@@ -72,8 +72,8 @@ export default async function RestaurantDetailPage({
       </div>
 
       {/* Main Cover and Gallery */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="relative aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm  ">
+        <div className="relative aspect-[21/9] w-full bg-slate-100 ">
           {restaurant.imageUrl ? (
             <Image
               src={restaurant.imageUrl}
@@ -94,7 +94,7 @@ export default async function RestaurantDetailPage({
             {restaurant.images.map((img, idx) => (
               <div
                 key={idx}
-                className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+                className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl bg-slate-100 "
               >
                 <Image
                   src={img}
@@ -112,10 +112,10 @@ export default async function RestaurantDetailPage({
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900  sm:text-3xl">
               {restaurant.name}
             </h1>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 ">
               <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
               {restaurant.cityName}
               {restaurant.address ? ` · ${restaurant.address}` : ""}
@@ -126,7 +126,7 @@ export default async function RestaurantDetailPage({
             {restaurant.rating > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1 px-3 py-1 text-sm text-amber-700 dark:text-amber-400"
+                className="gap-1 px-3 py-1 text-sm text-amber-700 "
               >
                 <Star className="h-4 w-4 fill-current text-amber-500" />
                 {restaurant.rating.toFixed(1)}
@@ -135,9 +135,9 @@ export default async function RestaurantDetailPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600 ">
           {restaurant.workingHours && (
-            <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
+            <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 ">
               <Clock className="h-4 w-4 text-slate-400" />
               {(dict as any).detail?.workingHours || "Ish vaqti"}: {restaurant.workingHours}
             </span>
@@ -145,7 +145,7 @@ export default async function RestaurantDetailPage({
           {restaurant.phone && (
             <a
               href={`tel:${restaurant.phone.replace(/\s+/g, "")}`}
-              className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+              className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 hover:bg-slate-200  :bg-slate-700"
             >
               <Phone className="h-4 w-4 text-slate-400" />
               {restaurant.phone}
@@ -159,17 +159,17 @@ export default async function RestaurantDetailPage({
         <div className="flex flex-col gap-8">
           {restaurant.description && (
             <section className="flex flex-col gap-2">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              <h2 className="text-xl font-bold text-slate-900 ">
                 {(dict as any).detail?.about || "Restoran haqida"}
               </h2>
-              <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
+              <p className="whitespace-pre-line leading-relaxed text-slate-600 ">
                 {restaurant.description}
               </p>
             </section>
           )}
 
           <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-2xl font-bold text-slate-900 ">
               {reviewsDict.title || "Sharhlar"}
             </h2>
             <ReviewsList 

@@ -50,8 +50,8 @@ export default async function AccountProfilePage({
     <Card>
       <CardBody className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{dict.profile.title}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="text-lg font-semibold text-slate-900 ">{dict.profile.title}</h2>
+          <p className="text-sm text-slate-500 ">
             {dict.profile.memberSince}: {memberSince}
           </p>
         </div>

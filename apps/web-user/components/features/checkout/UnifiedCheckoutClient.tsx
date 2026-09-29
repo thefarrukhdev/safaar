@@ -102,10 +102,10 @@ export function UnifiedCheckoutClient() {
 
   if (successBookingId) {
     return (
-      <div className="mx-auto max-w-lg mt-10 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
+      <div className="mx-auto max-w-lg mt-10 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md  ">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 dark:text-emerald-200">{t.successTitle}</h3>
-        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+        <h3 className="mt-3 text-xl font-extrabold text-emerald-900 ">{t.successTitle}</h3>
+        <p className="mt-1 text-sm text-emerald-700 ">
           {t.bookingId} <span className="font-mono font-bold">{successBookingId}</span>
         </p>
         <div className="mt-6">
@@ -121,23 +121,23 @@ export function UnifiedCheckoutClient() {
 
   return (
     <div className="container mx-auto max-w-5xl py-10 px-4">
-      <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-8">{t.title}</h1>
+      <h1 className="text-3xl font-extrabold text-slate-900  mb-8">{t.title}</h1>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         {/* Left Column - Form */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm  ">
           {errorMsg && (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700   ">
               {errorMsg}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <section>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{t.guestInfo}</h2>
+              <h2 className="text-lg font-bold text-slate-900  mb-4">{t.guestInfo}</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-sm font-semibold text-slate-700  mb-1">
                     {t.nameLabel}
                   </label>
                   <input
@@ -145,11 +145,11 @@ export function UnifiedCheckoutClient() {
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-sm font-semibold text-slate-700  mb-1">
                     {t.phoneLabel}
                   </label>
                   <input
@@ -157,19 +157,19 @@ export function UnifiedCheckoutClient() {
                     value={guestPhone}
                     onChange={(e) => setGuestPhone(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
                   />
                 </div>
                 {type !== "restaurant" && (
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-sm font-semibold text-slate-700  mb-1">
                       {t.emailLabel}
                     </label>
                     <input
                       type="email"
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
                     />
                   </div>
                 )}
@@ -177,17 +177,17 @@ export function UnifiedCheckoutClient() {
             </section>
 
             <section>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{t.paymentMethod}</h2>
+              <h2 className="text-lg font-bold text-slate-900  mb-4">{t.paymentMethod}</h2>
               
               {isNoCardType ? (
-                <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800   ">
                   <ShieldCheck className="h-5 w-5 shrink-0 text-amber-600" />
                   <p>{t.cashNote}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700  cursor-pointer">
                       <input 
                         type="radio" 
                         name="payment" 
@@ -198,7 +198,7 @@ export function UnifiedCheckoutClient() {
                       />
                       {t.card}
                     </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700  cursor-pointer">
                       <input 
                         type="radio" 
                         name="payment" 
@@ -213,7 +213,7 @@ export function UnifiedCheckoutClient() {
                   {paymentMethod === "card" && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700  mb-1">
                           {t.cardNumber}
                         </label>
                         <input
@@ -221,11 +221,11 @@ export function UnifiedCheckoutClient() {
                           value={cardNumber}
                           onChange={(e) => setCardNumber(e.target.value)}
                           placeholder="0000 0000 0000 0000"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700  mb-1">
                           {t.cardExpire}
                         </label>
                         <input
@@ -233,7 +233,7 @@ export function UnifiedCheckoutClient() {
                           value={cardExpire}
                           onChange={(e) => setCardExpire(e.target.value)}
                           placeholder="MM/YY"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
                         />
                       </div>
                     </div>
@@ -251,7 +251,7 @@ export function UnifiedCheckoutClient() {
                   required
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="text-slate-600 dark:text-slate-400">
+                <span className="text-slate-600 ">
                   {t.termsAgree}{" "}
                   <Link
                     href={`/${locale}/terms`}
@@ -275,28 +275,28 @@ export function UnifiedCheckoutClient() {
         </div>
 
         {/* Right Column - Order Summary */}
-        <div className="h-fit rounded-xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{t.orderSummary}</h2>
-          <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-            <div className="flex justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+        <div className="h-fit rounded-xl border border-slate-200 bg-slate-50 p-6  ">
+          <h2 className="text-lg font-bold text-slate-900  mb-4">{t.orderSummary}</h2>
+          <div className="space-y-3 text-sm text-slate-600 ">
+            <div className="flex justify-between border-b border-slate-200 pb-3 ">
               <span className="font-semibold">ID:</span>
               <span className="font-mono">{entityId}</span>
             </div>
             
-            <div className="flex justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+            <div className="flex justify-between border-b border-slate-200 pb-3 ">
               <span className="font-semibold">{t.checkIn}:</span>
               <span>{checkIn}</span>
             </div>
 
             {type === "restaurant" && slotTime && (
-              <div className="flex justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+              <div className="flex justify-between border-b border-slate-200 pb-3 ">
                 <span className="font-semibold">{t.time}:</span>
                 <span>{slotTime}</span>
               </div>
             )}
 
             {type !== "restaurant" && checkOut && (
-              <div className="flex justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+              <div className="flex justify-between border-b border-slate-200 pb-3 ">
                 <span className="font-semibold">{t.checkOut}:</span>
                 <span>{checkOut}</span>
               </div>

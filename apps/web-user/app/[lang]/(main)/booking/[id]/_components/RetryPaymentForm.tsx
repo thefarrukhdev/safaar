@@ -128,26 +128,26 @@ export function RetryPaymentForm({
 
       {/* Fee / yakuniy summa paneli — HAMMA raqam backend'dan (preview'dan),
           frontend hech qanday fee/jamini mustaqil hisoblamaydi. */}
-      <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+      <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm  ">
         <div className="flex items-center justify-between">
-          <span className="text-slate-500 dark:text-slate-400">Bron summasi</span>
-          <span className="font-semibold text-slate-900 dark:text-white">
+          <span className="text-slate-500 ">Bron summasi</span>
+          <span className="font-semibold text-slate-900 ">
             {formatSum(preview?.baseAmount ?? bookingAmount)}
           </span>
         </div>
         {hasFee && (
           <div className="flex items-center justify-between">
-            <span className="text-slate-500 dark:text-slate-400">
+            <span className="text-slate-500 ">
               {METHOD_LABELS[selected] ?? selected} to'lov haqi ({((preview!.feeRate) * 100).toFixed(1)}%)
             </span>
-            <span className="font-semibold text-amber-700 dark:text-amber-400">
+            <span className="font-semibold text-amber-700 ">
               + {formatSum(preview!.feeAmount)}
             </span>
           </div>
         )}
-        <div className="mt-1 flex items-center justify-between border-t border-slate-200 pt-1.5 dark:border-slate-800">
-          <span className="font-bold text-slate-900 dark:text-white">Jami to'lanadigan summa</span>
-          <span className="flex items-center gap-1.5 font-extrabold text-primary-700 dark:text-primary-400">
+        <div className="mt-1 flex items-center justify-between border-t border-slate-200 pt-1.5 ">
+          <span className="font-bold text-slate-900 ">Jami to'lanadigan summa</span>
+          <span className="flex items-center gap-1.5 font-extrabold text-primary-700 ">
             {isPreviewing && !preview && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {formatSum(!providerMismatch && preview ? preview.amount : bookingAmount)}
           </span>
@@ -164,7 +164,7 @@ export function RetryPaymentForm({
           checkoutga yo'naltiriladi — frontend buni qo'lda qayta yozishi
           shart emas. */}
       {providerMismatch && preview && (
-        <p className="flex items-start gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+        <p className="flex items-start gap-2 text-xs font-medium text-amber-700 ">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           Siz avval boshlagan <strong>{METHOD_LABELS[preview.provider] ?? preview.provider}</strong> orqali
           to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan
@@ -173,13 +173,13 @@ export function RetryPaymentForm({
       )}
 
       {previewError && (
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+        <p className="text-sm font-medium text-red-600 ">
           {errorMessage(previewError)}
         </p>
       )}
 
       {state.error && (
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+        <p className="text-sm font-medium text-red-600 ">
           {errorMessage(state.error)}
         </p>
       )}

@@ -65,20 +65,20 @@ export function Select({
         aria-expanded={open}
         aria-label={ariaLabel}
         className={cn(
-          "group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white",
+          "group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500   ",
           buttonClassName
         )}
       >
         {icon && (
-          <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400">
+          <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600  :text-primary-400">
             {icon}
           </span>
         )}
         <span className="flex min-w-0 flex-1 flex-col">
           {label && (
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+            <span className="text-[11px] font-bold text-slate-500 ">{label}</span>
           )}
-          <span className={cn("truncate text-xs font-bold", !selected && "text-slate-900/60 dark:text-slate-400", selected && "text-slate-900 dark:text-white")}>
+          <span className={cn("truncate text-xs font-bold", !selected && "text-slate-900/60 ", selected && "text-slate-900 ")}>
             {display}
           </span>
         </span>
@@ -93,11 +93,11 @@ export function Select({
 
       {open && (
         <div className={cn(
-          "absolute left-0 top-full mt-2 z-50 w-full min-w-[11rem] max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 dark:border-slate-700 dark:bg-slate-800",
+          "absolute left-0 top-full mt-2 z-50 w-full min-w-[11rem] max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95  ",
           menuClassName
         )}>
           {options.length === 0 && (
-            <span className="block px-3 py-2 text-sm text-slate-900/70 dark:text-slate-400">—</span>
+            <span className="block px-3 py-2 text-sm text-slate-900/70 ">—</span>
           )}
           {options.map((opt) => {
             const active = opt.value === value;
@@ -114,8 +114,8 @@ export function Select({
                 className={cn(
                   "flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/40 dark:text-primary-300"
-                    : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+                    ? "bg-primary-50 font-medium text-primary-700  "
+                    : "text-slate-700 hover:bg-slate-100  :bg-slate-700"
                 )}
               >
                 {opt.label}

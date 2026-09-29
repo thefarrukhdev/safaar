@@ -44,7 +44,7 @@ export function CityPicker({ cities, value, onChange, placeholder, label }: Prop
           {label && <span className="text-xs font-bold text-slate-500">{label}</span>}
           <span
             className={`truncate text-sm font-bold ${
-              selected ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"
+              selected ? "text-slate-900 " : "text-slate-600 "
             }`}
           >
             {selected ? selected.name : placeholder}

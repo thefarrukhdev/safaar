@@ -141,10 +141,10 @@ export function TransportView({
 
       {/* Unified Search Bar (Premium UI) */}
       <div className="relative z-20 -mt-10 sm:-mt-14 mb-8 mx-auto w-full max-w-5xl">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center bg-white dark:bg-slate-900 rounded-3xl md:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] ring-1 ring-slate-200/50 dark:ring-white/10 p-2 md:p-3 gap-2 md:gap-0">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center bg-white  rounded-3xl md:rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] [0_8px_30px_rgb(0,0,0,0.3)] ring-1 ring-slate-200/50  p-2 md:p-3 gap-2 md:gap-0">
           
           {/* City */}
-          <div className="flex-1 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
+          <div className="flex-1 px-4 py-2 hover:bg-slate-50 :bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
             <Select
               value={selectedCity}
               onChange={setSelectedCity}
@@ -153,15 +153,15 @@ export function TransportView({
                 ...cities.map((city) => ({ value: city, label: city })),
               ]}
               label="Qayerdan"
-              buttonClassName="border-transparent bg-transparent dark:bg-transparent shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
+              buttonClassName="border-transparent bg-transparent  shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
               menuClassName="w-56 mt-4"
             />
           </div>
 
-          <div className="hidden md:block w-px h-12 bg-slate-200 dark:bg-slate-800" />
+          <div className="hidden md:block w-px h-12 bg-slate-200 " />
 
           {/* Dates */}
-          <div className="flex-[1.5] flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors gap-2">
+          <div className="flex-[1.5] flex items-center px-4 py-2 hover:bg-slate-50 :bg-slate-800/50 rounded-2xl md:rounded-full transition-colors gap-2">
             <div className="flex-1">
               <DatePicker
                 locale={locale}
@@ -176,7 +176,7 @@ export function TransportView({
                 compact
               />
             </div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+            <div className="w-px h-8 bg-slate-200 " />
             <div className="flex-1">
               <DatePicker
                 locale={locale}
@@ -190,10 +190,10 @@ export function TransportView({
             </div>
           </div>
 
-          <div className="hidden md:block w-px h-12 bg-slate-200 dark:bg-slate-800" />
+          <div className="hidden md:block w-px h-12 bg-slate-200 " />
 
           {/* Driver */}
-          <div className="flex-1 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
+          <div className="flex-1 px-4 py-2 hover:bg-slate-50 :bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">
             <Select
               value={driverFilter}
               onChange={setDriverFilter}
@@ -203,7 +203,7 @@ export function TransportView({
                 { value: "without", label: dict.withoutDriver },
               ]}
               label="Haydovchi"
-              buttonClassName="border-transparent bg-transparent dark:bg-transparent shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
+              buttonClassName="border-transparent bg-transparent  shadow-none p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
               menuClassName="w-56 mt-4"
             />
           </div>
@@ -230,8 +230,8 @@ export function TransportView({
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-200 ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
-                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm hover:border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
+                      ? "bg-slate-900 text-white shadow-sm  "
+                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm hover:border-slate-300    :border-slate-700"
                   }`}
                 >
                   {cat.label}
@@ -252,7 +252,7 @@ export function TransportView({
               { value: "price_desc", label: dict.sortPriceDesc },
               { value: "seats", label: dict.sortSeats },
             ]}
-            buttonClassName="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl h-11"
+            buttonClassName="w-full bg-white  border-slate-200  rounded-xl h-11"
           />
         </div>
       </div>

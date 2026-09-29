@@ -128,7 +128,7 @@ export async function AccommodationPage({
     <main className="relative mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col px-3 sm:px-4 md:px-8 pb-8 pt-3 sm:pt-6">
       
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+      <div className="relative mb-3 sm:mb-6 flex h-[140px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         {/* Background photo */}
         <Image
           src="/images/heroes/hotels_hero.jpg"
@@ -153,7 +153,7 @@ export async function AccommodationPage({
         
       </div>
 
-      <div className="relative z-20 mb-4 sm:mb-6 w-full lg:w-4/5 mx-auto">
+      <div className="relative z-20 mb-3 sm:mb-6 w-full lg:w-4/5 mx-auto">
         <SearchBar
           locale={locale}
           dict={common.search}
@@ -162,7 +162,7 @@ export async function AccommodationPage({
         />
       </div>
       
-      <div className="mb-4 sm:mb-6">
+      <div className="mb-3 sm:mb-6">
         <AccommodationCategoryTabs locale={locale} dict={common.nav as Record<string, string>} />
       </div>
 

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-5 py-4 transition-colors duration-200 hover:bg-slate-50 md:px-5 md:py-3 md:rounded-full cursor-pointer";
+const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-3 py-2.5 transition-colors duration-200 hover:bg-slate-50 md:px-5 md:py-3 md:rounded-full cursor-pointer";
 
 export function SearchBar({
   locale,
@@ -233,10 +233,10 @@ export function SearchBar({
         </div>
 
         {/* 4. Qidirish tugmasi */}
-        <div className="shrink-0 p-3 md:p-0 md:pl-2">
+        <div className="shrink-0 p-2.5 md:p-0 md:pl-2">
           <Button
             type="submit"
-            className="w-full md:w-auto h-14 md:h-12 px-8 uppercase tracking-wide rounded-full bg-blue-600 text-white font-bold transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97]"
+            className="w-full md:w-auto h-11 md:h-12 px-8 uppercase tracking-wide rounded-full bg-blue-600 text-white font-bold transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97]"
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
             <span>{dict.submit}</span>

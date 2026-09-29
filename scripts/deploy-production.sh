@@ -234,7 +234,7 @@ verify_no_auto_migration() {
   # (see apps/backend/Dockerfile CMD) — not a hand-rolled command that could
   # bypass the start:prod script we verify below.
   case "$cmd" in
-    *start:prod*@safaar/backend*) : ;;
+    *@safaar/backend*start:prod*|*start:prod*@safaar/backend*) : ;;
     *) fail "Image CMD is ${cmd}, expected a 'pnpm --filter @safaar/backend run start:prod' start. Refusing to deploy." ;;
   esac
 

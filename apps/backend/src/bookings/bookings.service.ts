@@ -1289,6 +1289,31 @@ export class BookingsService {
 
   async retryPayment(actor: RequestActor | undefined, id: string) {
     const booking = await this.assertBooking(id, actor);
+
+    // BUG FIX (payments/refunds audit, 2026-09-29): booking allaqachon
+    // TO'LANGAN bo'lsa (confirmed/awaiting_partner_confirmation/completed)
+    // yangi to'lov sessiyasi OCHILMAYDI. `createPayment()`dagi "mavjud ochiq
+    // to'lov" qidiruvi faqat `status IN ('pending','processing')` qatorlarni
+    // ko'radi — allaqachon `'paid'` bo'lgan yagona to'lov shu qidiruvga mos
+    // kelmagani uchun bu yerga HECH QANDAY booking-holat tekshiruvisiz
+    // yetib kelinsa, IKKINCHI, mustaqil, HAQIQIY to'lov sessiyasi (yangi
+    // checkout URL yoki karta sxemalari uchun HAQIQIY Uzum Checkout
+    // `/payment/register` chaqiruvi) ochilardi — mijoz uchun haqiqiy
+    // ikkinchi marta to'lov (double-charge) xavfi, hech qanday avtomatik
+    // qaytarishsiz. `payments.service.ts::createPayment()`dagi bilan BIR
+    // XIL "allaqachon to'langan" ta'rifi (`assertUzumPayable()`dagi
+    // ALREADY_PAID bilan bir xil uchta holat).
+    if (
+      booking.status === BS.CONFIRMED ||
+      booking.status === BS.AWAITING_PARTNER_CONFIRMATION ||
+      booking.status === BS.COMPLETED
+    ) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_PAID',
+        message: 'Bu bron uchun to\u2018lov allaqachon qabul qilingan',
+      });
+    }
+
     return this.createPayment(this.pg, booking);
   }
 

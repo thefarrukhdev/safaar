@@ -3827,6 +3827,25 @@ export class AdminService {
               // ko'rilmasligi uchun (rasmiy kontrakt: `X-Operation-Id`
               // idempotentlik kaliti).
               operationId: id,
+              // BUG FIX (payments/refunds audit, 2026-09-29): `register()`
+              // (yagona yo'l — `uzum_checkout` payment yaratiladi) HAR DOIM
+              // `isFiscalConfigured()`ni TALAB qiladi (`uzum-checkout.
+              // provider.ts::register()`), va o'sha fiskal cart item
+              // `productId = payments.id` (`merchantOperationId`) bilan
+              // yoziladi. `refund()`ning o'zi ESA — xuddi shu fiskal
+              // konfiguratsiya yoqilganda — `originalProductId` BERILMASA
+              // taxminiy productId yubormaslik uchun ATAYLAB
+              // `REFUND_FAILED` bilan rad etadi (`uzum-checkout.
+              // provider.ts` — "originalProductId shart..."). Bu maydon
+              // shu yergacha UMUMAN uzatilmagani uchun — har qanday HAQIQIY
+              // (fiskal-yoqilgan muhitda yaratilgan) Uzum Checkout to'lovi
+              // uchun admin-tasdiqlagan refund SO'ZSIZ 503 bilan
+              // muvaffaqiyatsiz bo'lardi (qayta urinish ham yordam
+              // bermasdi — sabab konfiguratsion, vaqtinchalik emas).
+              // `payableRow.id` — AYNAN shu `payments.id`, `register()`da
+              // ishlatilgan `merchantOperationId` bilan bir xil (deterministik,
+              // yangi ustun/migratsiya shart emas).
+              originalProductId: payableRow.id,
             });
             providerRefundReference = providerResult.refundId;
           } catch (err) {

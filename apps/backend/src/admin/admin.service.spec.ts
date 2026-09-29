@@ -2076,6 +2076,19 @@ describe('AdminService frontend action endpoints', () => {
         amountSom: 100000,
         reason: 'Mijoz iltimosi',
         operationId: refundId,
+        // BUG REGRESSION (payments/refunds audit): `UzumCheckoutProvider
+        // .refund()`'s real implementation THROWS `REFUND_FAILED` whenever
+        // fiscal receipt env vars are configured (`isFiscalConfigured()`)
+        // and `originalProductId` is missing — and `register()` (the ONLY
+        // way a `uzum_checkout` payment is ever created) itself REQUIRES
+        // `isFiscalConfigured()` to succeed. So every real `uzum_checkout`
+        // payment that reaches this refund path has fiscal ALWAYS
+        // configured, meaning the missing field here made EVERY real
+        // Uzum Checkout refund fail. `originalProductId` must be the
+        // `payments.id` used as `merchantOperationId`/`productId` during
+        // `register()` — see `uzum-checkout.provider.ts` comment near
+        // `productId: input.merchantOperationId`.
+        originalProductId: 'payment-uzc-1',
       });
       const providerRefCall = pgMock.query.mock.calls.find(([sql]) =>
         String(sql).includes('provider_refund_reference'),

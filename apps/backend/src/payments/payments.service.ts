@@ -174,6 +174,41 @@ export class PaymentsService {
       bookingId,
       guestAccessToken,
     );
+
+    // BUG FIX (payments/refunds audit, 2026-09-29): booking allaqachon
+    // TO'LANGAN (confirmed/awaiting_partner_confirmation/completed) bo'lsa —
+    // yangi to'lov SESSIYASI OCHILMAYDI. Bu XUDDI SHU "allaqachon to'langan"
+    // ta'rifi — `assertUzumPayable()`dagi ALREADY_PAID tekshiruvi bilan BIR
+    // XIL (faqat u Uzum Merchant `/check`+`/create` webhook yo'lini
+    // himoyalaydi, umumiy REST `POST /payments/:id/create`ni EMAS). Avval bu
+    // yerda HECH QANDAY booking-holat tekshiruvi yo'q edi: pastdagi
+    // "mavjud ochiq to'lov" qidiruvi faqat `status IN ('pending','processing')`
+    // qatorlarni ko'rar edi — allaqachon `'paid'` bo'lgan yagona to'lov
+    // qatori bu qidiruvga mos KELMASDI, shuning uchun kod pastga tushib
+    // IKKINCHI, mustaqil, HAQIQIY to'lov sessiyasi (yangi Click/Payme
+    // checkout URL, yoki karta sxemalari uchun HAQIQIY Uzum Checkout
+    // `/payment/register` chaqiruvi) ochardi. Agar mijoz (yoki eski checkout
+    // havolasini qayta ochgan/almashtirilgan kimdir) shu ikkinchi sessiyani
+    // yakunlasa — webhook uni HAM `'paid'` deb belgilaydi (booking allaqachon
+    // `OPEN_BOOKING_STATUSES`da bo'lmagani uchun ledger IKKINCHI marta
+    // kreditlanmaydi — bu qism xavfsiz edi), LEKIN mijoz HAQIQIY pulni
+    // IKKINCHI marta to'lagan bo'lardi, hech qanday avtomatik qaytarishsiz
+    // (bu "lost race" — `SETTLED_BOOKING_STATUSES` — holatidan FARQLI, u
+    // holat avtomatik refund ochadi). Bunga qo'shimcha, hisobot
+    // (`booking-reports.query.ts`) shu bronning `paid_amount`ini IKKI
+    // MARTA hisoblab qo'yardi (`SUM(amount) FILTER (WHERE status='paid')
+    // GROUP BY booking_id`).
+    if (
+      booking.status === BS.CONFIRMED ||
+      booking.status === BS.AWAITING_PARTNER_CONFIRMATION ||
+      booking.status === BS.COMPLETED
+    ) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_PAID',
+        message: 'Bu bron uchun to‘lov allaqachon qabul qilingan',
+      });
+    }
+
     const requested = this.provider(body.provider);
 
     // Shu bron uchun hali natijasi chiqmagan (pending/processing) payment

@@ -401,6 +401,54 @@ describe('PaymentsService.createPayment (regression: payment_url was always null
     expect(click.buildCheckoutUrl).not.toHaveBeenCalled();
     expect(payme.buildCheckoutUrl).not.toHaveBeenCalled();
   });
+
+  // BUG REGRESSION (payments/refunds audit, 2026-09-29): a booking that is
+  // ALREADY paid (`confirmed` / `awaiting_partner_confirmation` / `completed`
+  // — the exact same "already paid" definition `assertUzumPayable()` already
+  // uses for the Uzum Merchant `/check` + `/create` webhooks) must NOT be
+  // able to open a brand-new payment session via `POST /payments/:id/create`.
+  // Before the fix, the "existing open payment?" lookup only matched
+  // `status IN ('pending','processing')` — a booking whose ONLY payment row
+  // is already `'paid'` sailed straight through and got a SECOND, real,
+  // independent payment session (new Click/Payme checkout URL, or a real
+  // Uzum Checkout `/payment/register` call for card schemes). If the
+  // customer (or an attacker replaying an old checkout link) completes that
+  // second session, the webhook marks the SECOND row `'paid'` too — no
+  // ledger double-credit (booking is no longer in `OPEN_BOOKING_STATUSES`),
+  // but the customer is charged a SECOND real payment with no automatic
+  // refund, and `booking-reports.query.ts`'s
+  // `SUM(amount) FILTER (WHERE status='paid') GROUP BY booking_id` then
+  // double-counts that booking's paid_amount.
+  it("REJECTS creating a new payment session for a booking that's already paid (confirmed) — prevents real double-charge", async () => {
+    pg.query.mockResolvedValueOnce([{ ...bookingRow, status: 'confirmed' }]); // assertBookingVisible
+
+    await expect(
+      service.createPayment(owner, 'booking-1', { provider: 'click' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      response: { code: 'BOOKING_ALREADY_PAID' },
+    });
+
+    // No new payment row may be written once rejected.
+    const insertCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('INSERT INTO payments'),
+    );
+    expect(insertCall).toBeUndefined();
+  });
+
+  it.each(['awaiting_partner_confirmation', 'completed'])(
+    'REJECTS creating a new payment session for booking status=%s too (same "already paid" definition as assertUzumPayable)',
+    async (status) => {
+      pg.query.mockResolvedValueOnce([{ ...bookingRow, status }]);
+
+      await expect(
+        service.createPayment(owner, 'booking-1', { provider: 'click' }),
+      ).rejects.toMatchObject({
+        status: 422,
+        response: { code: 'BOOKING_ALREADY_PAID' },
+      });
+    },
+  );
 });
 
 describe('PaymentsService.clickPrepare / clickComplete (real Click protocol)', () => {

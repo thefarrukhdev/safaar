@@ -1959,6 +1959,76 @@ describe('BookingsService.findOne — authorization (regression: unauthenticated
   });
 });
 
+describe('BookingsService.retryPayment (regression: double-charge on an already-paid booking)', () => {
+  let service: BookingsService;
+  let pg: jest.Mocked<Pick<PostgresService, 'query'>>;
+
+  const owner: RequestActor = {
+    id: 'user-owner',
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  const bookingRow = {
+    id: 'booking-1',
+    user_id: 'user-owner',
+    partner_organization_id: 'partner-1',
+    total_amount: 100000,
+    currency: 'UZS',
+    payment_method: 'click',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new BookingsService(
+      pg as unknown as PostgresService,
+      {
+        bookingStatusChanged: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+      } as unknown as EventsService,
+      { send: jest.fn() } as unknown as EmailService,
+      noopPromosService() as unknown as PromosService,
+      {
+        buildCheckoutUrl: jest
+          .fn()
+          .mockReturnValue('https://checkout.example/x'),
+      } as unknown as PaymentsService,
+      noopCacheService() as unknown as AppCacheService,
+    );
+  });
+
+  it.each(['confirmed', 'awaiting_partner_confirmation', 'completed'])(
+    'REJECTS retry-payment once booking status=%s (already paid) \u2014 no second payment row is created',
+    async (status) => {
+      pg.query.mockResolvedValueOnce([{ ...bookingRow, status }]); // assertBooking
+
+      await expect(
+        service.retryPayment(owner, 'booking-1'),
+      ).rejects.toMatchObject({
+        status: 422,
+        response: { code: 'BOOKING_ALREADY_PAID' },
+      });
+
+      const insertCall = pg.query.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO payments'),
+      );
+      expect(insertCall).toBeUndefined();
+    },
+  );
+
+  it('still allows retry-payment while booking is genuinely open (pending)', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ ...bookingRow, status: 'pending' }]) // assertBooking
+      .mockResolvedValueOnce([]) // no existing pending/processing payment
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    const result = await service.retryPayment(owner, 'booking-1');
+    expect(result).toMatchObject({ booking_id: 'booking-1' });
+  });
+});
+
 describe('BookingsService.findOne — guest booking access token (BUG-01 confirmation fix)', () => {
   let service: BookingsService;
   let pg: jest.Mocked<Pick<PostgresService, 'query'>>;

@@ -480,6 +480,8 @@ describe('PaymentsService.createUzumCheckoutPayment (register seam)', () => {
     return { pg, service };
   };
 
+  afterEach(() => jest.restoreAllMocks());
+
   it('konfiguratsiya yo‘q => 503 PAYMENT_PROVIDER_NOT_CONFIGURED, INSERT yo‘q', async () => {
     const { pg, service } = makeService({});
     pg.query
@@ -618,7 +620,10 @@ describe('PaymentsService.payment — active Uzum status polling', () => {
     status: 'pending',
   };
 
-  const makeService = (c: Record<string, string | undefined>) => {
+  const makeService = (
+    c: Record<string, string | undefined>,
+    guestAccessMock?: { resolve: jest.Mock },
+  ) => {
     const pg = { query: jest.fn(), transaction: jest.fn() };
     pg.transaction.mockImplementation(
       (op: (tx: PostgresTransaction) => unknown) => op({ query: pg.query }),
@@ -630,6 +635,7 @@ describe('PaymentsService.payment — active Uzum status polling', () => {
       { isConfigured: () => false } as never,
       new UzumProvider({ get: jest.fn() } as never),
       new UzumCheckoutProvider({ get: (k: string) => c[k] } as never),
+      guestAccessMock as never,
     );
     return { pg, service };
   };
@@ -662,7 +668,7 @@ describe('PaymentsService.payment — active Uzum status polling', () => {
       .mockResolvedValueOnce([]) // processPaymentEvent: INSERT partner_ledger_entries
       .mockResolvedValueOnce([paidPayment]); // syncUzumCheckoutPaymentStatus: SELECT * FROM payments WHERE id = $1
 
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: () =>
@@ -679,6 +685,69 @@ describe('PaymentsService.payment — active Uzum status polling', () => {
 
     const res = await service.payment(admin, 'booking-1');
     expect(res.status).toBe('paid');
+    // Pre-verified status berilgani sababli redundant ikkinchi getOrderStatus so'rovi yuborilmaydi
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('guest booking createPayment => return URL guestToken parametrini o‘z ichiga oladi', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          errorCode: 0,
+          result: {
+            orderId: 'order-guest-1',
+            paymentRedirectUrl:
+              'https://checkout.ipt-merch.com/?orderId=order-guest-1',
+          },
+        }),
+    } as Response);
+
+    const guestAccess = { issue: jest.fn(), resolve: jest.fn() };
+    guestAccess.resolve.mockResolvedValue('booking-1');
+
+    const { pg, service } = makeService(
+      {
+        UZUM_CHECKOUT_BASE_URL: 'https://checkout.example',
+        UZUM_CHECKOUT_TERMINAL_ID: 'terminal-test',
+        UZUM_CHECKOUT_API_KEY: 'api-key-test',
+        UZUM_CHECKOUT_SPIC: '10703999001000000',
+        UZUM_CHECKOUT_PACKAGE_CODE: '1495084',
+        UZUM_CHECKOUT_VAT_PERCENT: '12',
+        UZUM_CHECKOUT_RECEIPT_PINFL: '11111111111111',
+      },
+      guestAccess,
+    );
+    const guestBookingRow = { ...bookingRow, user_id: null };
+    pg.query
+      .mockResolvedValueOnce([guestBookingRow]) // assertBookingVisible
+      .mockResolvedValueOnce([]) // no open payment
+      .mockResolvedValueOnce([]) // INSERT INTO payments
+      .mockResolvedValueOnce([]);
+
+    await service.createPayment(
+      undefined,
+      'booking-1',
+      { provider: 'uzum_checkout' },
+      'my-guest-token-xyz',
+    );
+
+    const fetchMock = globalThis.fetch as jest.Mock<
+      Promise<Response>,
+      [string, { body: string }]
+    >;
+    const [, fetchInit] = fetchMock.mock.calls[0];
+    const registerBody = JSON.parse(fetchInit.body) as {
+      successUrl?: string;
+      failureUrl?: string;
+    };
+    expect(registerBody.successUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=success&guestToken=my-guest-token-xyz',
+    );
+    expect(registerBody.failureUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=failed&guestToken=my-guest-token-xyz',
+    );
   });
 
   it('processing uzum_checkout to‘lov + Uzum getOrderStatus FAILED => to‘lov failed qilinadi', async () => {

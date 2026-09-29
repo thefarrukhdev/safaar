@@ -32,6 +32,7 @@ import { PaymeProvider } from './providers/payme.provider';
 import {
   UzumCheckoutError,
   UzumCheckoutProvider,
+  type CheckoutOrderStatus,
   type NormalizedCheckoutCallback,
   type RegisterCheckoutResult,
 } from './providers/uzum-checkout.provider';
@@ -287,12 +288,13 @@ export class PaymentsService {
       await this.pg.query('DELETE FROM payments WHERE id = $1', [existing.id]);
     }
 
-    return this.writeNewPayment(booking, requested);
+    return this.writeNewPayment(booking, requested, guestAccessToken);
   }
 
   private async writeNewPayment(
     booking: BookingVisibilityRow,
     requested: string,
+    guestAccessToken?: string,
   ) {
     // ── HIMOYA: 0 (yoki manfiy/yaroqsiz) summali bron ──────────────────
     // BEPUL bron (masalan restoran rezervatsiyasi) uchun to'lov sessiyasi
@@ -322,10 +324,18 @@ export class PaymentsService {
     // (schemasiz) — eski/umumiy qiymat, orqaga moslik uchun saqlangan,
     // fee'siz (avvalgidek).
     if (isCardScheme(requested)) {
-      return this.createUzumCheckoutPayment(booking, requested);
+      return this.createUzumCheckoutPayment(
+        booking,
+        requested,
+        guestAccessToken,
+      );
     }
     if (requested === 'uzum_checkout') {
-      return this.createUzumCheckoutPayment(booking, undefined);
+      return this.createUzumCheckoutPayment(
+        booking,
+        undefined,
+        guestAccessToken,
+      );
     }
 
     const id = randomUUID();
@@ -488,12 +498,16 @@ export class PaymentsService {
   private async createUzumCheckoutPayment(
     booking: BookingVisibilityRow,
     scheme: CardScheme | undefined,
+    guestAccessToken?: string,
   ) {
     const grossAmount = Number(booking.total_amount);
     const fee = scheme ? calculateCardSchemeFee(grossAmount, scheme) : null;
     const registerAmount = fee ? fee.totalPayableAmountSom : grossAmount;
 
     const paymentId = randomUUID();
+    const guestParam = guestAccessToken
+      ? `&guestToken=${encodeURIComponent(guestAccessToken)}`
+      : '';
     let reg: RegisterCheckoutResult;
     try {
       reg = await this.checkout.register({
@@ -502,8 +516,8 @@ export class PaymentsService {
         merchantOperationId: paymentId,
         amountSom: registerAmount,
         currency: booking.currency,
-        successUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=success`,
-        failureUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=failed`,
+        successUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=success${guestParam}`,
+        failureUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=failed${guestParam}`,
         // web-user checkout'ni endi o'z sahifasi ichida (iframe) ko'rsatadi
         // — foydalanuvchi butunlay boshqa domenga o'tkazilmaydi. Karta
         // ma'lumotini hamon FAQAT Uzum'ning o'z sahifasi yig'adi/ko'radi;
@@ -1702,6 +1716,7 @@ export class PaymentsService {
   async uzumCheckoutCallback(
     input: NormalizedCheckoutCallback,
     debugHeaders?: Record<string, string>,
+    preVerified?: CheckoutOrderStatus,
   ): Promise<{
     received: true;
     duplicate: boolean;
@@ -1820,26 +1835,35 @@ export class PaymentsService {
     //    chaqiruvimiz orqali summa QAYTA TASDIQLANADI, va FAQAT shu
     //    tasdiqlangan summa quyida ishlatiladi.
     let verifiedAmountSom: number | undefined;
-    try {
-      const verified = await this.checkout.getOrderStatus(input.orderId);
-      if (verified.state === 'PAID' && verified.amountSom !== null) {
-        verifiedAmountSom = verified.amountSom;
+    if (
+      preVerified &&
+      preVerified.state === 'PAID' &&
+      preVerified.amountSom !== null &&
+      preVerified.amountSom !== undefined
+    ) {
+      verifiedAmountSom = preVerified.amountSom;
+    } else {
+      try {
+        const verified = await this.checkout.getOrderStatus(input.orderId);
+        if (verified.state === 'PAID' && verified.amountSom !== null) {
+          verifiedAmountSom = verified.amountSom;
+        }
+      } catch (err) {
+        // `getOrderStatus`ning o'zi muvaffaqiyatsiz (tarmoq/konfiguratsiya) —
+        // `UzumCheckoutError` ATAYLAB oddiy `Error`ga aylantiriladi: aks holda
+        // controller uni signature-rad etish (401) deb noto'g'ri talqin
+        // qilardi (`instanceof UzumCheckoutError`). Oddiy `Error` esa
+        // controller'ning umumiy catch bloki orqali 500'ga tushadi — Uzum
+        // buni qayta urinish signali sifatida qabul qiladi (rasmiy: max 5
+        // marta), bu yerda esa hech qanday DB holati O'ZGARMAYDI.
+        this.logger.warn(
+          `uzum-checkout callback: getOrderStatus orqali qayta tasdiqlash ` +
+            `muvaffaqiyatsiz order=${input.orderId}: ${
+              err instanceof Error ? err.message : "noma'lum"
+            }`,
+        );
+        throw new Error('uzum_checkout_status_reverify_failed');
       }
-    } catch (err) {
-      // `getOrderStatus`ning o'zi muvaffaqiyatsiz (tarmoq/konfiguratsiya) —
-      // `UzumCheckoutError` ATAYLAB oddiy `Error`ga aylantiriladi: aks holda
-      // controller uni signature-rad etish (401) deb noto'g'ri talqin
-      // qilardi (`instanceof UzumCheckoutError`). Oddiy `Error` esa
-      // controller'ning umumiy catch bloki orqali 500'ga tushadi — Uzum
-      // buni qayta urinish signali sifatida qabul qiladi (rasmiy: max 5
-      // marta), bu yerda esa hech qanday DB holati O'ZGARMAYDI.
-      this.logger.warn(
-        `uzum-checkout callback: getOrderStatus orqali qayta tasdiqlash ` +
-          `muvaffaqiyatsiz order=${input.orderId}: ${
-            err instanceof Error ? err.message : "noma'lum"
-          }`,
-      );
-      throw new Error('uzum_checkout_status_reverify_failed');
     }
 
     if (verifiedAmountSom === undefined) {
@@ -2075,15 +2099,19 @@ export class PaymentsService {
     try {
       const status = await this.checkout.getOrderStatus(orderId);
       if (status.state === 'PAID') {
-        await this.uzumCheckoutCallback({
-          orderId,
-          orderNumber: '',
-          merchantOperationId: String(payment.id),
-          amountSom: status.amountSom ?? Number(payment.amount),
-          currency: String(payment.currency),
-          state: 'PAID',
-          raw: status.raw,
-        });
+        await this.uzumCheckoutCallback(
+          {
+            orderId,
+            orderNumber: '',
+            merchantOperationId: String(payment.id),
+            amountSom: status.amountSom ?? Number(payment.amount),
+            currency: String(payment.currency),
+            state: 'PAID',
+            raw: status.raw,
+          },
+          undefined,
+          status,
+        );
         const [updated] = await this.pg.query<PaymentRow>(
           'SELECT * FROM payments WHERE id = $1',
           [payment.id],

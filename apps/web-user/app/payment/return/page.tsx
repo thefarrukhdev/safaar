@@ -8,6 +8,8 @@ function PaymentReturnContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId") ?? "";
   const status = searchParams.get("status") ?? "success";
+  const guestToken = searchParams.get("guestToken") ?? "";
+  const locale = searchParams.get("locale") ?? searchParams.get("lang") ?? "uz";
 
   useEffect(() => {
     // Iframe ichida bo'lsa — ota (parent) oynaga xabar yuboramiz.
@@ -19,6 +21,7 @@ function PaymentReturnContent() {
           type: "SAFAAR_PAYMENT_RESULT",
           status,
           bookingId,
+          guestToken,
         },
         "*",
       );
@@ -26,9 +29,10 @@ function PaymentReturnContent() {
       // ignore
     }
 
+    const guestParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
     const redirectPath = bookingId
-      ? `/booking/${encodeURIComponent(bookingId)}?payment=${encodeURIComponent(status)}`
-      : "/";
+      ? `/${locale}/booking/${encodeURIComponent(bookingId)}?payment=${encodeURIComponent(status)}${guestParam}`
+      : `/${locale}`;
 
     // Agar iframe ichida EMAS, butun sahifa (REDIRECT rejimi) bo'lsa — darhol bron sahifasiga o'tamiz
     if (window.top === window.self) {
@@ -50,9 +54,12 @@ function PaymentReturnContent() {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [bookingId, status]);
+  }, [bookingId, status, guestToken, locale]);
 
-  const targetUrl = bookingId ? `/booking/${bookingId}?payment=${status}` : "/";
+  const guestParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+  const targetUrl = bookingId
+    ? `/${locale}/booking/${bookingId}?payment=${status}${guestParam}`
+    : `/${locale}`;
 
   return (
     <div className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">

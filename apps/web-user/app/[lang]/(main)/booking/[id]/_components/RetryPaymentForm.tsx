@@ -136,7 +136,7 @@ export function RetryPaymentForm({
         // ignore
       }
 
-      if (isReturnMessage || isExpectedOrigin) {
+      if (isReturnMessage && isExpectedOrigin) {
         setIsVerifyingStatus(true);
         pollCount.current = 0;
         stopPolling();

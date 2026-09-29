@@ -150,7 +150,7 @@ export function UniversalCard({
                 alt={imageAlt}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover/card:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
+                className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 quality={85}
                 loading={idx <= currentImageIdx + 1 ? "eager" : "lazy"}
               />
@@ -163,14 +163,14 @@ export function UniversalCard({
             <button
               type="button"
               onClick={prevImage}
-              className={`absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 shadow-md flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity z-20 cursor-pointer disabled:hidden ${currentImageIdx === 0 ? 'hidden' : ''}`}
+              className={`absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 border border-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer disabled:hidden ${currentImageIdx === 0 ? 'hidden' : ''}`}
             >
               <ChevronLeft className="h-4 w-4 text-slate-700" />
             </button>
             <button
               type="button"
               onClick={nextImage}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 shadow-md flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity z-20 cursor-pointer disabled:hidden ${currentImageIdx === images.length - 1 ? 'hidden' : ''}`}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 border border-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer disabled:hidden ${currentImageIdx === images.length - 1 ? 'hidden' : ''}`}
             >
               <ChevronRight className="h-4 w-4 text-slate-700" />
             </button>
@@ -195,8 +195,8 @@ export function UniversalCard({
   // Resolve Location Node
   const locationNode = location ? (
     typeof location === "string" ? (
-      <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-slate-900/70 truncate">
-        <MapPin className="size-3.5 shrink-0 text-slate-900/70" />
+      <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-slate-500 truncate">
+        <MapPin className="size-3.5 shrink-0 text-slate-500" />
         <span className="truncate">{location}</span>
       </span>
     ) : (
@@ -213,7 +213,7 @@ export function UniversalCard({
         return (
           <span
             key={`${tagText}-${idx}`}
-            className="inline-flex h-5 items-center gap-1 rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] px-2 text-[10px] sm:text-[11px] font-semibold text-slate-900/70"
+            className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-500"
           >
             {tagIcon}
             <span>{tagText}</span>
@@ -229,11 +229,11 @@ export function UniversalCard({
   const priceNode = price ? (
     <div className="flex flex-col leading-tight">
       {price.oldAmount !== undefined && (
-        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 line-through">
+        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 line-through">
           {typeof price.oldAmount === "number" ? formatPrice(price.oldAmount, locale) : price.oldAmount}
         </span>
       )}
-      <span className="text-sm sm:text-base md:text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+      <span className="text-sm sm:text-base md:text-lg font-semibold tracking-tight text-slate-900">
         {typeof price.amount === "number" ? formatPrice(price.amount, locale) : price.amount}
       </span>
       {price.period && (
@@ -248,7 +248,7 @@ export function UniversalCard({
   const actionNode = actionLabel ? (
     <span
       onClick={onActionClick ? (e) => { e.stopPropagation(); onActionClick(); } : undefined}
-      className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] sm:text-xs font-medium text-white  transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97]  select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+      className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] sm:text-xs font-medium text-white transition-colors duration-200 ease-out hover:bg-blue-700 active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
     >
       <span>{actionLabel}</span>
       {actionIcon ?? <ChevronRight className="h-3.5 w-3.5 stroke-[3]" />}
@@ -257,7 +257,7 @@ export function UniversalCard({
 
   const content = (
     <article
-      className={`group/card flex h-full flex-col overflow-hidden rounded-xl border border-slate-900/[0.08] bg-white transition-[background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] ${className}`}
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 ease-out hover:border-slate-300 ${className}`}
     >
       {variant === "overlay" ? (
         /* Overlay variant (e.g. City Card / Special Showcase) */
@@ -287,16 +287,16 @@ export function UniversalCard({
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 p-4">
-            <div className="text-base sm:text-xl font-semibold text-white drop-shadow-md line-clamp-1">
+            <div className="text-base sm:text-xl font-semibold text-white line-clamp-1">
               {title}
             </div>
             {locationNode && (
-              <div className="mt-1 text-xs sm:text-sm font-medium text-white/90 drop-shadow-sm">
+              <div className="mt-1 text-xs sm:text-sm font-medium text-white/90">
                 {locationNode}
               </div>
             )}
             {extraInfo && (
-              <div className="mt-1 text-xs font-medium text-white/80 drop-shadow-sm">
+              <div className="mt-1 text-xs font-medium text-white/80">
                 {extraInfo}
               </div>
             )}
@@ -337,7 +337,7 @@ export function UniversalCard({
           {/* Card Body */}
           <div className="flex flex-1 flex-col justify-between px-3.5 pt-3 pb-2 sm:px-4 sm:pt-3.5 sm:pb-2.5">
             <div className="flex flex-col gap-1">
-              <div className="line-clamp-1 text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+              <div className="line-clamp-1 text-sm sm:text-base font-semibold text-slate-900">
                 {title}
               </div>
               {locationNode}

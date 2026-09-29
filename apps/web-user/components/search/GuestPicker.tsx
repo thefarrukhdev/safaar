@@ -62,7 +62,7 @@ export function GuestPicker({ value, onChange }: Props) {
         type="button"
         onClick={decrement}
         disabled={value <= 1}
-        className="grid h-8 w-8 place-items-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900 transition-colors duration-200 hover:bg-slate-900/[0.08] active:scale-[0.97] disabled:opacity-40 disabled:hover:bg-slate-900/[0.05]"
+        className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-900 transition-colors duration-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.97] disabled:pointer-events-none disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
         aria-label="Kamaytirish"
       >
         <Minus className="h-4 w-4 stroke-[2.5]" />
@@ -76,7 +76,7 @@ export function GuestPicker({ value, onChange }: Props) {
         onChange={handleChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="h-8 w-14 min-w-[3.5rem] rounded-md border-transparent bg-transparent text-center text-sm font-bold tabular-nums text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 dark:text-white dark:focus:bg-slate-800"
+        className="h-8 w-14 min-w-[3.5rem] rounded-full border-transparent bg-transparent text-center text-sm font-bold tabular-nums text-slate-900 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         aria-label="Mehmonlar soni"
       />
 
@@ -84,7 +84,7 @@ export function GuestPicker({ value, onChange }: Props) {
         type="button"
         onClick={increment}
         disabled={value >= 1000}
-        className="grid h-8 w-8 place-items-center rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] text-slate-900 transition-colors duration-200 hover:bg-slate-900/[0.08] active:scale-[0.97] disabled:opacity-40 disabled:hover:bg-slate-900/[0.05]"
+        className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-900 transition-colors duration-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.97] disabled:pointer-events-none disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
         aria-label="Oshirish"
       >
         <Plus className="h-4 w-4 stroke-[2.5]" />

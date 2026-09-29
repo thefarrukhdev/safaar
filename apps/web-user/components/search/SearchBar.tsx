@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-5 py-4 transition-colors duration-200 hover:bg-slate-900/[0.03] md:px-5 md:py-3 md:rounded-full cursor-pointer";
+const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-5 py-4 transition-colors duration-200 hover:bg-slate-50 md:px-5 md:py-3 md:rounded-full cursor-pointer";
 
 export function SearchBar({
   locale,
@@ -135,7 +135,7 @@ export function SearchBar({
     <div className="mx-auto w-full relative z-50">
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col rounded-[24px] border border-slate-900/[0.12] bg-white shadow-xl shadow-slate-900/5 transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full p-0 md:p-2 divide-y divide-slate-900/[0.08] md:divide-y-0"
+        className="relative flex flex-col rounded-full border border-slate-200 bg-white transition-all duration-200 ease-out focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center p-0 md:p-2 divide-y divide-slate-200 md:divide-y-0"
       >
         {/* 1. Shahar / Destinatsiya */}
         <div 
@@ -147,7 +147,7 @@ export function SearchBar({
             }
           }}
         >
-          <MapPin className="h-5 w-5 shrink-0 text-primary-600 group-hover:text-primary-700 transition-colors" aria-hidden />
+          <MapPin className="h-5 w-5 shrink-0 text-blue-600 transition-colors" aria-hidden />
           <div className="min-w-0 flex-1">
             <CityPicker
               cities={cities}
@@ -162,11 +162,11 @@ export function SearchBar({
           </div>
           
           {showRecent && recentSearches.length > 0 && !cityId && (
-            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-xl border border-slate-900/[0.08] bg-white shadow-float p-3">
+            <div className="absolute top-full left-0 z-50 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3">
               {recentSearches.map((search) => (
                 <div
                   key={search.timestamp}
-                  className="group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 bg-transparent border border-transparent hover:bg-slate-900/[0.03] transition-colors"
+                  className="group flex cursor-pointer items-center justify-between rounded-full px-3 py-2.5 bg-transparent border border-transparent hover:bg-slate-50 transition-colors"
                   onClick={() => {
                     setCityId(search.cityId);
                     setGuests(search.guests);
@@ -183,9 +183,9 @@ export function SearchBar({
                   <div className="flex items-center gap-3">
                     <Clock className="h-4 w-4 text-slate-400 shrink-0" />
                     <div className="flex flex-col">
-                      <span className="font-semibold text-sm text-slate-800">{search.cityName}</span>
+                      <span className="font-semibold text-sm text-slate-900">{search.cityName}</span>
                       {(search.checkIn || search.checkOut) && (
-                        <span className="text-xs text-slate-500">
+                         <span className="text-xs text-slate-500">
                           {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix}
                         </span>
                       )}
@@ -193,7 +193,7 @@ export function SearchBar({
                   </div>
                   <button
                     type="button"
-                    className="p-1 rounded-full text-slate-400 bg-transparent hover:bg-slate-900/[0.05] hover:text-slate-600 transition-colors"
+                    className="p-1 rounded-full text-slate-400 bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       setRecentSearches(prev => {
@@ -212,19 +212,19 @@ export function SearchBar({
           )}
         </div>
 
-        <span className="hidden h-6 w-px bg-slate-900/[0.12] md:block" aria-hidden="true"></span>
+        <span className="hidden h-6 w-px bg-slate-200 md:block" aria-hidden="true"></span>
 
         {/* 2. Sanalar (Kirish - Chiqish) */}
         <div className="min-w-0 flex-1">
           <SearchDatePicker locale={locale} dict={dict} />
         </div>
 
-        <span className="hidden h-6 w-px bg-slate-900/[0.12] md:block" aria-hidden="true"></span>
+        <span className="hidden h-6 w-px bg-slate-200 md:block" aria-hidden="true"></span>
 
         {/* 3. Mehmonlar soni */}
         <div className={fieldWrapperClass}>
           <div className="flex w-full items-center gap-3">
-            <Users className="h-5 w-5 shrink-0 text-primary-600 group-hover:text-primary-700 transition-colors" aria-hidden />
+            <Users className="h-5 w-5 shrink-0 text-blue-600 transition-colors" aria-hidden />
             <div className="flex flex-col flex-1">
               <span className="text-xs font-bold text-slate-500">{dict.guests}</span>
               <GuestPicker value={guests} onChange={setGuests} />
@@ -236,7 +236,7 @@ export function SearchBar({
         <div className="shrink-0 p-3 md:p-0 md:pl-2">
           <Button
             type="submit"
-            className="w-full md:w-auto h-14 md:h-12 px-8 uppercase tracking-wide rounded-xl md:rounded-full bg-blue-600 text-white font-bold transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] shadow-lg shadow-blue-600/20"
+            className="w-full md:w-auto h-14 md:h-12 px-8 uppercase tracking-wide rounded-full bg-blue-600 text-white font-bold transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97]"
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
             <span>{dict.submit}</span>

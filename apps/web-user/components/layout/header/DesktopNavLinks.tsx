@@ -29,8 +29,8 @@ export function DesktopNavLinks({ items }: { items: NavItem[] }) {
             className={cn(
               "flex items-center rounded-full px-3.5 py-2 text-[15px] font-bold transition-all duration-200",
               active
-                ? "text-slate-900 bg-slate-50 group-data-[transparent=true]/header:text-white"
-                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:text-white"
+                ? "text-slate-900 bg-slate-50 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:bg-white/20"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/15"
             )}
           >
             {item.label}

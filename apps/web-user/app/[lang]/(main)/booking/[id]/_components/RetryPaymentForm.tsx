@@ -128,7 +128,7 @@ export function RetryPaymentForm({
 
       {/* Fee / yakuniy summa paneli — HAMMA raqam backend'dan (preview'dan),
           frontend hech qanday fee/jamini mustaqil hisoblamaydi. */}
-      <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm  ">
+      <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-4 text-sm  ">
         <div className="flex items-center justify-between">
           <span className="text-slate-500 ">Bron summasi</span>
           <span className="font-semibold text-slate-900 ">
@@ -190,7 +190,7 @@ export function RetryPaymentForm({
         size="lg"
         loading={isConfirming}
         disabled={busy || (!preview?.paymentUrl && !providerMismatch)}
-        className="w-full font-bold shadow-md"
+        className="w-full font-bold border border-slate-200"
       >
         {providerMismatch
           ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[preview?.provider ?? ""] ?? ""})`

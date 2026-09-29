@@ -128,7 +128,7 @@ export default async function BookingDetailPage({
         <BackButton />
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-xl  ">
+      <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white border border-slate-200  ">
       {isConfirmed ? (
         <div className="flex flex-col gap-2 bg-emerald-50/80 p-6 sm:p-8 ">
           <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : isRefunded ? (
-        <div className="flex flex-col gap-2 bg-slate-50 p-6 sm:p-8 ">
+        <div className="flex flex-col gap-2 bg-white p-6 sm:p-8 ">
           <div className="flex items-center gap-3">
             <RotateCcw className="h-7 w-7 shrink-0 text-slate-600 " />
             <h1 className="text-xl font-extrabold tracking-tight text-slate-900  sm:text-2xl">
@@ -193,7 +193,7 @@ export default async function BookingDetailPage({
           </p>
         </div>
       ) : (
-        <div className="bg-slate-50 p-6 sm:p-8 ">
+        <div className="bg-white p-6 sm:p-8 ">
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 ">
             {dict.title}
           </h1>
@@ -205,8 +205,8 @@ export default async function BookingDetailPage({
         className="relative flex flex-col gap-5 p-6 sm:p-8 bg-white "
       >
         <div className="absolute left-0 right-0 top-0 h-px border-t-2 border-dashed border-slate-200 " />
-        <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-slate-100 " />
-        <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-slate-100 " />
+        <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-white " />
+        <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-white " />
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 ">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 ">
             {dict.receiptSummary}
@@ -232,7 +232,7 @@ export default async function BookingDetailPage({
           <Row label={dict.payment} className="mt-2 border-t border-slate-100 pt-4 ">
             <span className="flex items-center gap-2 text-sm font-semibold capitalize text-slate-900 ">
               {payment.provider ? `${payment.provider.toUpperCase()}` : ""}
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600  ">
+              <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600  ">
                 {paymentStatuses[payment.status] ?? payment.status}
               </span>
             </span>

@@ -16,9 +16,9 @@ export default function GlobalError({
     <html lang="uz">
       <body
         style={{ margin: 0 }}
-        className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-20 text-center "
+        className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-20 text-center "
       >
-        <div className="flex max-w-md flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8 shadow-xl  ">
+        <div className="flex max-w-md flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8">
           <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 ">
             <AlertOctagon className="h-10 w-10 text-red-600 " />
           </div>
@@ -34,7 +34,7 @@ export default function GlobalError({
           <button
             type="button"
             onClick={() => reset()}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary-600 px-6 text-base font-bold text-white shadow-md transition-all hover:bg-primary-700 hover:shadow-lg active:scale-[0.98]"
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary-600 px-6 text-base font-bold text-white transition-all hover:bg-primary-700 active:scale-[0.98]"
           >
             Sahifani qayta yuklash
           </button>

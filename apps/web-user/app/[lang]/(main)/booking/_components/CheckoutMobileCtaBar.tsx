@@ -35,7 +35,7 @@ export function CheckoutMobileCtaBar({
     <div
       aria-hidden={!isHidden}
       className={cn(
-        "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-900/[0.08] shadow-float px-4 py-3   transition-all duration-300 ease-in-out",
+        "fixed bottom-16 inset-x-0 z-40 md:hidden bg-white border-t border-slate-900/[0.08] border border-slate-200 px-4 py-3   transition-all duration-300 ease-in-out",
         isHidden
           ? "translate-y-0 opacity-100"
           : "translate-y-full opacity-0 pointer-events-none",

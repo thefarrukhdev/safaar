@@ -87,8 +87,8 @@ export function BookingChat({
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-card shadow-sm   overflow-hidden h-[400px]">
-      <div className="border-b border-slate-100 bg-slate-50 p-4  ">
+    <div className="flex flex-col rounded-xl border border-slate-200 bg-card border border-slate-200   overflow-hidden h-[400px]">
+      <div className="border-b border-slate-100 bg-white p-4  ">
         <h3 className="font-bold text-slate-900 ">{dict.title}</h3>
       </div>
       
@@ -108,7 +108,7 @@ export function BookingChat({
                   className={`max-w-[75%] rounded-xl px-4 py-2 text-sm ${
                     isUser
                       ? "bg-primary-600 text-white rounded-br-none"
-                      : "bg-slate-100 text-slate-900   rounded-bl-none"
+                      : "bg-white text-slate-900   rounded-bl-none"
                   }`}
                 >
                   <p>{msg.body}</p>
@@ -130,7 +130,7 @@ export function BookingChat({
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-slate-100 p-3  flex gap-2 bg-slate-50 ">
+      <form onSubmit={handleSend} className="border-t border-slate-100 p-3  flex gap-2 bg-white ">
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}

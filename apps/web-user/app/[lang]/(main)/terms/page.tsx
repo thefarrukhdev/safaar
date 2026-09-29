@@ -53,14 +53,14 @@ export default async function TermsPage({
         <a
           href="/docs/safaar-oferta-uz.docx"
           download
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl shadow-sm transition-all    :bg-slate-800 :text-white active:scale-95"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl border border-slate-200 transition-all    :bg-slate-800 :text-white active:scale-95"
         >
           <Download className="w-4 h-4" />
           {downloadTexts[lang as Locale]}
         </a>
       </div>
 
-      <div className="bg-white rounded-xl sm:rounded-xl border border-slate-200 shadow-sm p-6 sm:p-12 lg:p-16  ">
+      <div className="bg-white rounded-xl sm:rounded-xl border border-slate-200 p-6 sm:p-12 lg:p-16  ">
         {/* Content generated from DOCX with manual resets */}
         <div 
           className="

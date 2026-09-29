@@ -34,7 +34,7 @@ export default function ErrorPage({
 
   return (
     <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
-      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-slate-200/80 bg-white p-8 shadow-xl sm:p-12  ">
+      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8 sm:p-12">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-xl bg-red-100 ">
           <ServerCrash className="h-10 w-10 text-red-600 " />
         </div>

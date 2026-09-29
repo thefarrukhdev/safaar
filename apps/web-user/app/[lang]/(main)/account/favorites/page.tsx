@@ -129,8 +129,8 @@ export default async function AccountFavoritesPage({
               href={`/${locale}/hotels/${hotel.slug}`}
               className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300  ">
-                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 ">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card border border-slate-200 transition-all duration-200 hover:bg-slate-50 hover:border-slate-300  ">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-white ">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
@@ -145,7 +145,7 @@ export default async function AccountFavoritesPage({
                     </span>
                   )}
                   {hotel.rating > 0 && (
-                    <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 shadow-sm backdrop-blur-xs   ">
+                    <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 border border-slate-200    ">
                       <Star className="h-3 w-3 fill-current" />
                       {hotel.rating.toFixed(1)}
                     </span>
@@ -181,8 +181,8 @@ export default async function AccountFavoritesPage({
               href={linked.href}
               className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300  ">
-                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 ">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card border border-slate-200 transition-all duration-200 hover:bg-slate-50 hover:border-slate-300  ">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-white ">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
@@ -214,7 +214,7 @@ export default async function AccountFavoritesPage({
         return (
           <Card key={item.favId}>
             <CardBody className="flex items-center gap-3">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700  ">
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700  ">
                 {item.targetType}
               </span>
               <span className="text-sm font-medium text-slate-700 ">

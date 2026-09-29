@@ -7,7 +7,7 @@ export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], ch
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src={bannerUrl || "/images/heroes/hero.png"}
+          src={bannerUrl || "/registon-sifatli.jpeg"}
           alt="Safaar — O'zbekiston"
           fill
           priority

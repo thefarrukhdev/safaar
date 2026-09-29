@@ -31,15 +31,15 @@ export function HotelAmenities({
   return (
     <section className="flex flex-col gap-6 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
       <h2 className="text-2xl font-bold text-slate-900">{typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}</h2>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <ul className="flex flex-wrap gap-2">
         {visibleAmenities.map((id) => {
           const Icon = AMENITY_ICONS[id];
           return (
             <li
               key={id}
-              className="flex items-center gap-4 text-sm sm:text-base text-slate-700"
+              className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 gap-1.5"
             >
-              {Icon && <Icon className="h-6 w-6 text-slate-700" strokeWidth={1.5} />}
+              {Icon && <Icon className="h-4 w-4" strokeWidth={1.5} />}
               <span>{amenityName[id] ?? id}</span>
             </li>
           );
@@ -49,8 +49,7 @@ export function HotelAmenities({
         <div>
           <Button
             variant="secondary"
-            size="lg"
-            className="border-slate-900 text-slate-900 bg-white hover:bg-slate-50 border font-semibold px-6"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-900 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50 active:scale-[0.97]"
             onClick={() => setIsOpen(true)}
           >
             {(dict.amenities.showAll).replace("{count}", String(amenities.length))}
@@ -64,15 +63,15 @@ export function HotelAmenities({
         title={typeof dict.amenities === "string" ? dict.amenities : dict.amenities.title}
       >
         <div className="flex flex-col gap-6">
-          <ul className="flex flex-col gap-6">
+          <ul className="flex flex-wrap gap-2">
             {amenities.map((id) => {
               const Icon = AMENITY_ICONS[id];
               return (
                 <li
                   key={id}
-                  className="flex items-center gap-4 text-base text-slate-700 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0"
+                  className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 gap-1.5"
                 >
-                  {Icon && <Icon className="h-6 w-6 text-slate-700" strokeWidth={1.5} />}
+                  {Icon && <Icon className="h-4 w-4" strokeWidth={1.5} />}
                   <span>{amenityName[id] ?? id}</span>
                 </li>
               );

@@ -139,7 +139,7 @@ export default async function Page({
   if (!hotel) {
     return (
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16">
-        <p className="rounded-xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800 shadow-sm">
+        <p className="rounded-xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800">
           {dict.error}
         </p>
       </main>
@@ -196,10 +196,10 @@ export default async function Page({
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
               {hotel.name}
             </h1>
-            <p className="flex items-center gap-1.5 text-base font-medium text-slate-600">
+            <p className="flex items-center gap-1.5 text-base font-medium text-slate-500">
               <MapPin className="h-5 w-5 shrink-0 text-slate-400" />
               {hotel.cityName}
-              {hotel.address && <span className="opacity-60">· {hotel.address}</span>}
+              {hotel.address && <span>· {hotel.address}</span>}
             </p>
           </div>
 
@@ -216,7 +216,7 @@ export default async function Page({
                 dict={favDict}
               />
               {hotel.stars > 0 && (
-                <span className="text-xl tracking-widest text-amber-500 drop-shadow-sm">
+                <span className="text-xl tracking-widest text-amber-500">
                   {'★'.repeat(hotel.stars)}
                 </span>
               )}
@@ -224,7 +224,7 @@ export default async function Page({
             {hotel.rating > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1.5 border-amber-200 bg-white px-4 py-1.5 text-sm font-extrabold text-amber-700 shadow-sm"
+                className="gap-1.5 border-amber-200 bg-white px-4 py-1.5 text-sm font-extrabold text-amber-700"
               >
                 <Star className="h-4 w-4 fill-current text-amber-500" />
                 <span>{hotel.rating.toFixed(1)}</span>
@@ -270,7 +270,7 @@ export default async function Page({
               <h2 className="text-2xl font-bold text-slate-900">
                 {dict.about}
               </h2>
-              <p className="leading-relaxed text-slate-600">
+              <p className="leading-relaxed text-slate-500">
                 {hotel.description}
               </p>
             </section>

@@ -14,17 +14,6 @@ export function HotelBookingWidget({
   dict: HotelDetailDict;
   locale: string;
 }) {
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return null;
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return null;
-      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(d);
-    } catch (e) {
-      return null;
-    }
-  };
-
   return (
     <aside className="hidden lg:flex h-fit flex-col gap-5 rounded-xl border border-slate-900/[0.08] bg-white p-6 shadow-float sticky top-24">
       <div>
@@ -42,18 +31,7 @@ export function HotelBookingWidget({
         )}
       </div>
 
-      <div className="flex flex-col rounded-xl border border-slate-900/[0.08]">
-        <div className="flex border-b border-slate-900/[0.08]">
-          <div className="flex flex-1 flex-col border-r border-slate-900/[0.08] p-3">
-            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkIn}</span>
-            <span className="text-sm text-slate-500">{formatDate(checkIn) || dict.booking.addDate}</span>
-          </div>
-          <div className="flex flex-1 flex-col p-3">
-            <span className="text-[10px] font-bold uppercase text-slate-900">{dict.booking.checkOut}</span>
-            <span className="text-sm text-slate-500">{formatDate(checkOut) || dict.booking.addDate}</span>
-          </div>
-        </div>
-      </div>
+      {/* Check-in / Check-out soxta (ishlamaydigan) bloki foydalanuvchi xohishiga ko'ra olib tashlandi */}
 
       <a href="#rooms" id="hotel-original-cta" className="w-full">
         <button

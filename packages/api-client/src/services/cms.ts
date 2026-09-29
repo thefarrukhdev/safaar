@@ -223,7 +223,7 @@ export const cmsService = {
   /** `GET /cms/offers` — bosh sahifa "Chegirmadagi takliflar" uchun. */
   async getDeals(locale: Locale): Promise<DealView[]> {
     const raw = await rawApi.get<unknown>("/cms/offers", {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
     const items = camelizeKeys<RawDeal[]>(raw);
     return (items ?? [])

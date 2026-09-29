@@ -89,10 +89,10 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
           />
           <nav
             aria-label="Mobil navigatsiya"
-            className="fixed inset-y-0 right-0 z-[110] flex h-[100dvh] w-full max-w-[320px] flex-col overflow-y-auto bg-white shadow-2xl animate-in slide-in-from-right duration-300 dark:bg-slate-900"
+            className="fixed inset-y-0 right-0 z-[110] flex h-[100dvh] w-full max-w-[320px] flex-col overflow-y-auto bg-white animate-in slide-in-from-right duration-300 dark:bg-slate-900"
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
               <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">
                 {MENU_LABEL[currentLocale] ?? "Menyu"}
               </span>
@@ -176,7 +176,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
                         className={cn(
                           "flex flex-col items-center justify-center rounded-xl py-2.5 px-1 text-center transition-all duration-150 active:scale-95",
                           active
-                            ? "bg-primary-600 text-white shadow-sm ring-1 ring-primary-600 ring-offset-2 dark:ring-offset-slate-900"
+                            ? "bg-primary-600 text-white ring-1 ring-primary-600 ring-offset-2 dark:ring-offset-slate-900"
                             : "bg-white text-slate-700 border border-slate-200 hover:border-primary-300 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                         )}
                       >

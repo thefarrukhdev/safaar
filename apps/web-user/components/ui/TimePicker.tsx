@@ -74,10 +74,10 @@ export function TimePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 flex h-64 w-full origin-top gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95  ">
+        <div className="absolute left-0 top-full z-50 mt-2 flex h-64 w-full origin-top gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 animate-in fade-in zoom-in-95  ">
           
           <div className="flex-1 overflow-y-auto no-scrollbar border-r border-slate-100 pr-1 ">
-            <div className="sticky top-0 bg-white/90 backdrop-blur pb-1 mb-1 text-[10px] font-bold text-slate-400 uppercase text-center  z-10">Soat</div>
+            <div className="sticky top-0 bg-white pb-1 mb-1 text-[10px] font-bold text-slate-400 uppercase text-center  z-10">Soat</div>
             <div className="flex flex-col gap-1">
               {hours.map((h) => (
                 <button
@@ -98,7 +98,7 @@ export function TimePicker({
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar pl-1">
-            <div className="sticky top-0 bg-white/90 backdrop-blur pb-1 mb-1 text-[10px] font-bold text-slate-400 uppercase text-center  z-10">Daqiqa</div>
+            <div className="sticky top-0 bg-white pb-1 mb-1 text-[10px] font-bold text-slate-400 uppercase text-center  z-10">Daqiqa</div>
             <div className="flex flex-col gap-1">
               {minutes.map((m) => (
                 <button

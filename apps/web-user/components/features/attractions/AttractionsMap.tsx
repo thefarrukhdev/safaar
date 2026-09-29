@@ -42,7 +42,7 @@ function LocateMeControl() {
             e.stopPropagation();
             map.locate({ setView: true, maxZoom: 14 });
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg transition-transform hover:scale-105 hover:bg-slate-50   :bg-slate-700 border border-slate-200 "
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 transition-transform hover:scale-105 hover:bg-white :bg-slate-700 border border-slate-200"
           title="Mening joylashuvim"
         >
           <Navigation className="h-5 w-5" />
@@ -72,17 +72,11 @@ export default function AttractionsMap({
       className: "custom-marker bg-transparent border-none",
       html: `
         <div class="relative flex items-center justify-center transition-all duration-300 ${isHovered ? 'scale-110 z-50' : 'scale-100 z-10'}">
-          <div class="flex items-center gap-1 rounded-full px-2.5 py-1.5 shadow-lg ${
-            isHovered 
-              ? 'bg-rose-600 text-white shadow-rose-600/30 ring-2 ring-rose-200 ' 
-              : 'bg-slate-900 text-white  '
-          }">
+          <div class="flex items-center gap-1 rounded-full px-2.5 py-1.5 ${ isHovered ? 'bg-rose-600 text-white ring-2 ring-rose-200 ' : 'bg-slate-900 text-white ' }">
             <span class="text-[11px] font-bold tracking-tight whitespace-nowrap">★ ${attr.rating.toFixed(1)}</span>
           </div>
           <!-- Tiny triangle pointer -->
-          <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-[6px] border-l-transparent border-r-transparent ${
-            isHovered ? 'border-t-rose-600' : 'border-t-slate-900 '
-          }"></div>
+          <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-[6px] border-l-transparent border-r-transparent ${ isHovered ? 'border-t-rose-600' : 'border-t-slate-900 ' }"></div>
         </div>
       `,
       iconSize: [48, 28],
@@ -95,7 +89,7 @@ export default function AttractionsMap({
     const count = cluster.getChildCount();
     return L.divIcon({
       html: `
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white shadow-xl shadow-primary-600/30 ring-4 ring-primary-100 ">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white ring-4 ring-primary-100">
           <span class="text-sm font-bold">${count}</span>
         </div>
       `,
@@ -190,7 +184,7 @@ export default function AttractionsMap({
         }
         .leaflet-control-zoom {
           border: none !important;
-          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+          
           margin-top: 24px !important;
           margin-right: 24px !important;
         }

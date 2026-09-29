@@ -184,8 +184,8 @@ export function DatePicker({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden" aria-hidden />
-          <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-xl border border-slate-200 bg-card p-4 shadow-2xl   md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0 animate-in fade-in zoom-in-95 duration-100">
+          <div className="fixed inset-0 z-40 bg-black/40 md:hidden" aria-hidden />
+          <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-xl border border-slate-200 bg-white p-4 md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0 animate-in fade-in zoom-in-95 duration-100">
             {/* Mobile Header with Close Button */}
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100  md:hidden">
               <span className="text-xs font-bold text-slate-800 ">{placeholder}</span>

@@ -32,7 +32,7 @@ export function PhotoLightbox({
   const currentPhoto = photos[currentIndex];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200">
       <button
         type="button"
         onClick={onClose}
@@ -77,7 +77,7 @@ export function PhotoLightbox({
       </div>
 
       {/* Counter indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-md">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white">
         {currentIndex + 1} / {photos.length}
       </div>
     </div>

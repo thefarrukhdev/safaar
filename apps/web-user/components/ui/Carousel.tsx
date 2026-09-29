@@ -76,7 +76,7 @@ export function Carousel({
               e.stopPropagation();
               if (currentIndex > 0) scrollToIndex(currentIndex - 1);
             }}
-            className={`absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-md backdrop-blur-sm transition-all hover:scale-110 hover:bg-white active:scale-95 ${
+            className={`absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-900 transition-all hover:scale-110 hover:bg-slate-50 active:scale-95 ${
               currentIndex === 0
                 ? "pointer-events-none opacity-0"
                 : "opacity-0 group-hover:opacity-100"
@@ -92,7 +92,7 @@ export function Carousel({
               e.stopPropagation();
               if (currentIndex < images.length - 1) scrollToIndex(currentIndex + 1);
             }}
-            className={`absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-md backdrop-blur-sm transition-all hover:scale-110 hover:bg-white active:scale-95 ${
+            className={`absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-900 transition-all hover:scale-110 hover:bg-slate-50 active:scale-95 ${
               currentIndex === images.length - 1
                 ? "pointer-events-none opacity-0"
                 : "opacity-0 group-hover:opacity-100"

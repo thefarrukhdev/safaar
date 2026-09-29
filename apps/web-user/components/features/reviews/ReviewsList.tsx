@@ -152,7 +152,7 @@ export function ReviewsList({
                 <span className="text-sm font-medium text-slate-900 w-24">
                   {dict.categories?.[key] ?? key}
                 </span>
-                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-white rounded-full overflow-hidden">
                   <div
                     className="h-full bg-slate-900 rounded-full"
                     style={{ width: `${Math.min(100, Math.max(0, (avg / 5) * 100))}%` }}
@@ -174,7 +174,7 @@ export function ReviewsList({
       </div>
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6">
           <h3 className="font-bold text-slate-900">{dict.writeReview}</h3>
           
           <div className="flex flex-col gap-2">
@@ -213,7 +213,7 @@ export function ReviewsList({
                   setFiles(Array.from(e.target.files));
                 }
               }}
-              className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-900 hover:file:bg-slate-200"
+              className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white file:text-slate-900 hover:file:bg-slate-200"
             />
           </div>
 
@@ -242,7 +242,7 @@ export function ReviewsList({
             return (
               <div
                 key={review.id}
-                className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 transition-all hover:shadow-sm"
+                className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 transition-all"
               >
                 {/* Author Info Header */}
                 <div className="flex items-center gap-4">
@@ -290,7 +290,7 @@ export function ReviewsList({
                          key={idx}
                          type="button"
                          onClick={() => openLightbox(review.photos!, idx)}
-                         className="group relative h-24 w-24 overflow-hidden rounded-xl bg-slate-100"
+                         className="group relative h-24 w-24 overflow-hidden rounded-xl bg-white"
                        >
                          <Image
                            src={photo}

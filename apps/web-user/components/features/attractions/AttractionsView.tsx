@@ -32,9 +32,9 @@ function FilterHeader({
   dict: AttractionsDict;
 }) {
   return (
-    <div className="sticky top-0 z-30 flex flex-col gap-4 bg-white/90 px-4 py-4 pb-2 backdrop-blur-xl border-b border-slate-100  [#080E0D]/90 sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-30 flex flex-col gap-4 bg-white/90 px-4 py-4 pb-2 border-b border-slate-100 [#080E0D]/90 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 ">
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
           {dict.title}
         </h1>
         <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -50,14 +50,14 @@ function FilterHeader({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder={dict.searchPlaceholder || "Obida nomi yoki shahar bo'yicha qidiruv..."}
-            className="h-12 w-full rounded-full border-slate-200 bg-slate-50/50 pl-11 pr-4 text-sm font-medium shadow-sm transition-shadow hover:shadow focus-visible:ring-primary-500  "
+            className="h-12 w-full rounded-full border-slate-200 bg-white/50 pl-11 pr-4 text-sm font-medium focus-visible:ring-primary-500"
           />
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
         </div>
         <button
           type="button"
           onClick={onOpenFilters}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50    md:hidden"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-white md:hidden"
           aria-label="Filtrlar"
         >
           <SlidersHorizontal className="h-5 w-5" />
@@ -71,11 +71,7 @@ function FilterHeader({
             key={cat.id}
             type="button"
             onClick={() => onCategoryChange(cat.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${
-              selectedCategory === cat.id
-                ? "bg-slate-900 text-white shadow-sm  "
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100    :bg-slate-800"
-            }`}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${ selectedCategory === cat.id ? "bg-slate-900 text-white " : "border border-slate-200 bg-white text-slate-600 hover:bg-white :bg-slate-800" }`}
           >
             {cat.label}
           </button>
@@ -92,21 +88,21 @@ function MapPlaceholder({ dict }: { dict: AttractionsDict }) {
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       
       <div className="absolute right-6 top-6 flex flex-col gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg  ">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700">
           <Compass className="h-5 w-5" />
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-lg  ">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700">
           <LayoutGrid className="h-5 w-5" />
         </div>
       </div>
       
-      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-4 rounded-3xl bg-white/80 p-6 shadow-2xl backdrop-blur-xl ">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-600  ">
+      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-4 rounded-3xl border border-slate-200 bg-white/80 p-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-600">
           <MapPin className="h-8 w-8" />
         </div>
         <div className="text-center">
-          <h3 className="text-lg font-black text-slate-900 ">{dict.map?.title}</h3>
-          <p className="text-sm font-medium text-slate-500 ">{dict.map?.soon}</p>
+          <h3 className="text-lg font-black text-slate-900">{dict.map?.title}</h3>
+          <p className="text-sm font-medium text-slate-500">{dict.map?.soon}</p>
         </div>
       </div>
     </div>
@@ -157,24 +153,24 @@ function BottomSheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px] lg:hidden"
+        className="fixed inset-0 z-40 bg-black/45 lg:hidden"
         aria-hidden
         onClick={handleClose}
       />
       <div
         ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-slate-200 bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]   lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-slate-200 bg-white lg:hidden"
         style={{ transform: "translateY(100%)" }}
       >
         <div className="flex justify-center pb-1 pt-3">
-          <div className="h-1 w-10 rounded-full bg-slate-200 " />
+          <div className="h-1 w-10 rounded-full bg-slate-200" />
         </div>
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 pb-3 pt-1 ">
-          <span className="text-sm font-black text-slate-900 ">{title}</span>
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 pb-3 pt-1">
+          <span className="text-sm font-black text-slate-900">{title}</span>
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200  "
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 hover:bg-slate-200"
             aria-label="Yopish"
           >
             <X className="h-4 w-4" />
@@ -267,7 +263,7 @@ export function AttractionsView({
       </div>
 
       {/* ── RIGHT: Sticky Map Panel (Desktop) ──────────────────── */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col overflow-hidden border-l border-slate-200 ">
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col overflow-hidden border-l border-slate-200">
         <div className="sticky top-0 h-full">
           <AttractionsMap attractions={filtered} hoveredId={hoveredId} />
         </div>
@@ -277,7 +273,7 @@ export function AttractionsView({
       <button
         type="button"
         onClick={() => setMapOpen(true)}
-        className="fixed bottom-6 left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 lg:hidden  "
+        className="fixed bottom-6 left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white transition-transform hover:scale-105 active:scale-95 lg:hidden"
       >
         <Map className="h-4 w-4" />
         {dict.map?.show || "Xarita"}
@@ -291,11 +287,7 @@ export function AttractionsView({
               key={cat.id}
               type="button"
               onClick={() => { setSelectedCategory(cat.id); setFiltersOpen(false); }}
-              className={`rounded-full px-4 py-2.5 text-sm font-bold transition-all ${
-                selectedCategory === cat.id
-                  ? "bg-slate-900 text-white shadow-sm  "
-                  : "border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:text-slate-900   "
-              }`}
+              className={`rounded-full px-4 py-2.5 text-sm font-bold transition-all ${ selectedCategory === cat.id ? "bg-slate-900 text-white " : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900 " }`}
             >
               {cat.label}
             </button>

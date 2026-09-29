@@ -10,7 +10,7 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast:
-            "group flex items-start gap-3 w-full rounded-xl border p-4 shadow-xl backdrop-blur-md transition-all sm:max-w-[420px]",
+            "group flex items-start gap-3 w-full rounded-xl border border-slate-200 bg-white p-4 transition-all sm:max-w-[420px]",
           title: "text-sm font-semibold",
           description: "mt-1 text-sm opacity-90",
           actionButton: "mt-3 bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-500 rounded-md",
@@ -21,7 +21,7 @@ export function Toaster() {
           error: "border-red-500/20 bg-red-50/90 text-red-900   ",
           info: "border-blue-500/20 bg-blue-50/90 text-blue-900   ",
           warning: "border-amber-500/20 bg-amber-50/90 text-amber-900   ",
-          default: "border-slate-200 bg-white/90 text-slate-900   ",
+          default: "border-slate-200 bg-white text-slate-900   ",
         },
       }}
       icons={{

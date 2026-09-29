@@ -65,11 +65,11 @@ export function RestaurantBookingSection({
   };
 
   return (
-    <div id="booking-section" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40    relative overflow-hidden">
+    <div id="booking-section" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
       
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900 ">
+        <h2 className="text-xl font-bold text-slate-900">
           {t.title}
         </h2>
       </div>
@@ -112,7 +112,7 @@ export function RestaurantBookingSection({
           </div>
 
           {errorMsg && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700    flex items-start gap-2">
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 flex items-start gap-2">
               <div className="mt-0.5 shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
@@ -123,7 +123,7 @@ export function RestaurantBookingSection({
           <Button
             onClick={handleBookClick}
             disabled={isLoading}
-            className="w-full mt-2 rounded-xl py-6 text-[15px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98] shadow-md hover:shadow-lg disabled:opacity-70 disabled:active:scale-100"
+            className="w-full mt-2 rounded-xl py-6 text-[15px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -139,11 +139,11 @@ export function RestaurantBookingSection({
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center  ">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 ">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white">
             <Users className="h-6 w-6 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 ">{t.noTables}</p>
+          <p className="text-sm font-medium text-slate-600">{t.noTables}</p>
         </div>
       )}
     </div>

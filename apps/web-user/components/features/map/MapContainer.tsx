@@ -55,19 +55,19 @@ function createPricePinIcon(
 ) {
   const text = price || (rating ? `★ ${rating.toFixed(1)}` : "Ko'rish");
   
-  let bgStyle = "background-color: white; color: #0f172a; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);";
+  let bgStyle = "background-color: white; color: #0f172a; border: 1px solid #e2e8f0; ";
   let dotColor = "#2563eb";
   let transform = "scale(1)";
   let pointerColor = "white";
   let pointerBorder = "border-top: 6px solid #e2e8f0;"; // For the outer border shadow simulation if needed, but simple CSS triangle is fine
   
   if (isSelected) {
-    bgStyle = "background-color: #1d4ed8; color: white; border: 1px solid #1d4ed8; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.1);";
+    bgStyle = "background-color: #1d4ed8; color: white; border: 1px solid #1d4ed8; ";
     dotColor = "#fbbf24";
     transform = "scale(1.15)";
     pointerColor = "#1d4ed8";
   } else if (isHovered) {
-    bgStyle = "background-color: #2563eb; color: white; border: 1px solid #2563eb; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);";
+    bgStyle = "background-color: #2563eb; color: white; border: 1px solid #2563eb; ";
     dotColor = "white";
     transform = "scale(1.10)";
     pointerColor = "#2563eb";
@@ -116,7 +116,7 @@ function CustomMarker({ item, isSelected, isHovered, onSelectItem, map }: { item
       <Popup maxWidth={280} minWidth={280} className="custom-popup" ref={popupRef}>
         <div className="flex flex-col min-w-[280px]">
           {item.imageUrl && (
-            <div className="relative h-[160px] w-full overflow-hidden rounded-t-xl bg-slate-100 ">
+            <div className="relative h-[160px] w-full overflow-hidden rounded-t-xl bg-white">
               <Image 
                 src={item.imageUrl} 
                 alt={item.name || ""}
@@ -125,28 +125,28 @@ function CustomMarker({ item, isSelected, isHovered, onSelectItem, map }: { item
                 sizes="(max-width: 768px) 100vw, 280px"
               />
               {item.rating !== undefined && (
-                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-white/95 px-2 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm  ">
+                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 px-2 py-1 text-xs font-bold text-slate-900">
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                   {item.rating.toFixed(1)}
                 </div>
               )}
             </div>
           )}
-          <div className="flex flex-col p-4 bg-white ">
-            <h3 className="text-sm font-bold text-slate-900  m-0 truncate">{item.name}</h3>
+          <div className="flex flex-col p-4 bg-white">
+            <h3 className="text-sm font-bold text-slate-900 m-0 truncate">{item.name}</h3>
             {(item.cityName || item.address) && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-slate-500  m-0 truncate">
+              <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 m-0 truncate">
                 <MapPin className="h-3 w-3 shrink-0" />
                 {item.cityName ? item.cityName + (item.address ? " · " + item.address : "") : item.address}
               </p>
             )}
             {item.priceFormatted && (
               <p className="mt-3 text-base font-extrabold text-[#2563eb] m-0 flex items-baseline gap-1">
-                {item.priceFormatted} <span className="text-xs font-medium text-slate-400 ">/ kecha</span>
+                {item.priceFormatted} <span className="text-xs font-medium text-slate-400">/ kecha</span>
               </p>
             )}
             {item.linkUrl && (
-              <Link href={item.linkUrl} className="mt-3 flex w-full items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#1d4ed8] !text-white no-underline">
+              <Link href={item.linkUrl} className="mt-3 flex w-full items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#1d4ed8] !text-white no-underline">
                 Ko'rish
               </Link>
             )}
@@ -163,14 +163,14 @@ function CustomControls() {
     <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomIn(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white   :bg-blue-600 :text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
         title="Zoom in"
       >
         <Plus className="h-5 w-5" />
       </button>
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomOut(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] shadow-lg transition-colors hover:bg-[#2563eb] hover:text-white   :bg-blue-600 :text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
         title="Zoom out"
       >
         <Minus className="h-5 w-5" />
@@ -253,7 +253,7 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
         className={isDark ? "map-tiles-dark" : ""}
       />
       <CustomControls />
-      <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] shadow-md   pointer-events-none">
+      <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] pointer-events-none">
         {visibleCount} ta mehmonxona
       </div>
       {items.map((item: MapMarkerItem) => {
@@ -283,7 +283,7 @@ export function MapContainer({
   onBoundsChange,
   center = [41.2995, 69.2401],
   zoom = 12,
-  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-2xl  bg-slate-100 ",
+  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200  bg-slate-100 ",
 }: MapContainerProps) {
   const firstCoords = items.map(resolveItemCoords).find(c => c) ?? center;
   
@@ -291,7 +291,7 @@ export function MapContainer({
     <div className={className}>
       <style>{`
         .leaflet-popup-content { margin: 0 !important; padding: 0 !important; }
-        .leaflet-popup-content-wrapper { padding: 0 !important; border-radius: 16px !important; overflow: hidden !important; box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important; background: transparent !important; }
+        .leaflet-popup-content-wrapper { padding: 0 !important; border-radius: 16px !important; overflow: hidden !important;  background: transparent !important; }
         .leaflet-popup-tip-container { display: none; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .leaflet-popup { animation: fadeInUp 0.2s ease; margin-bottom: 8px; }

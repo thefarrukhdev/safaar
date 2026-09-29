@@ -272,7 +272,7 @@ export function UniversalCard({
                   aria-label="Sevimli"
                   aria-pressed={favorite}
                   onClick={handleFavoriteClick}
-                  className="inline-flex size-8 items-center justify-center rounded-full bg-white/90 text-slate-900/70  backdrop-blur transition-[background-color,box-shadow,transform,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white hover:text-slate-900 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer motion-reduce:transition-none motion-reduce:active:scale-100"
+                  className="inline-flex size-8 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-900/70 transition-[background-color,box-shadow,transform,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-50 hover:text-slate-900 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   <Heart
                     className={`size-4 transition-colors ${
@@ -318,7 +318,7 @@ export function UniversalCard({
                   aria-label="Sevimli"
                   aria-pressed={favorite}
                   onClick={handleFavoriteClick}
-                  className="inline-flex size-8 items-center justify-center rounded-full bg-white/90 text-slate-900/70  backdrop-blur transition-[background-color,box-shadow,transform,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white hover:text-slate-900 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer motion-reduce:transition-none motion-reduce:active:scale-100"
+                  className="inline-flex size-8 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-900/70 transition-[background-color,box-shadow,transform,color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-slate-50 hover:text-slate-900 active:scale-[0.97]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   <Heart
                     className={`size-4 transition-colors ${

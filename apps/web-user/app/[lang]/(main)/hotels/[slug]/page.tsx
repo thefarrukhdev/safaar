@@ -11,7 +11,6 @@ import { RoomList } from '@/components/hotels/RoomList';
 import { HotelMobileCtaBar } from '@/components/hotels/HotelMobileCtaBar';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
-import { HotelBookingWidget } from '@/components/features/hotels/HotelBookingWidget';
 import { HotelAmenities } from '@/components/features/hotels/HotelAmenities';
 import { HotelRules } from '@/components/features/hotels/HotelRules';
 import { HotelStickyNav } from '@/components/features/hotels/HotelStickyNav';
@@ -237,8 +236,8 @@ export default async function Page({
 
       <HotelStickyNav dict={dict.nav} />
 
-      <div className="grid grid-cols-1 gap-5 lg:gap-8 lg:grid-cols-[1fr_400px]">
-        <div className="flex flex-col gap-0">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-0">
+        <div className="flex w-full flex-col gap-0">
           {/* Top Highlights */}
           <section className="flex flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <ul className="flex flex-col gap-4">
@@ -347,15 +346,7 @@ export default async function Page({
           </section>
         </div>
 
-        <div className="hidden lg:block">
-          <HotelBookingWidget
-            minPriceSum={hotel.minPriceSum}
-            checkIn={one(sp.check_in) ?? one(sp.checkIn)}
-            checkOut={one(sp.check_out) ?? one(sp.checkOut)}
-            dict={dict}
-            locale={locale}
-          />
-        </div>
+
       </div>
 
       <HotelMobileCtaBar

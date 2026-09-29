@@ -4,8 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
 import { Camera, ImageIcon } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
-import { Carousel } from '@/components/ui/Carousel';
+import { Lightbox } from '@/components/ui/Lightbox';
 
 export function HotelGallery({
   images,
@@ -113,22 +112,13 @@ export function HotelGallery({
         </div>
       </div>
 
-      {/* Fullscreen Gallery Modal */}
-      <Modal
+      {/* Fullscreen Lightbox */}
+      <Lightbox
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        maxWidth="max-w-5xl"
-        title="Barcha rasmlar"
-      >
-        <div className="mt-2 w-full px-1">
-          <Carousel
-            images={shots}
-            alt={alt}
-            aspectRatio="aspect-[16/10] sm:aspect-[21/9]"
-            className="rounded-xl shadow-lg ring-1 ring-slate-200"
-          />
-        </div>
-      </Modal>
+        images={shots}
+        alt={alt}
+      />
     </>
   );
 }

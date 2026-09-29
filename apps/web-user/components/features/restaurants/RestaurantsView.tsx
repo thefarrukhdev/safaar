@@ -112,7 +112,7 @@ export function RestaurantsView({
   return (
     <div className="mx-auto w-full max-w-[1536px] flex-1 px-4 md:px-8 py-8 sm:px-6">
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl border border-slate-200 px-5 sm:px-8 md:px-12">
         <Image
           src="/images/heroes/hero.png"
           alt="Restaurants hero"
@@ -162,7 +162,7 @@ export function RestaurantsView({
                 options={cityOptions}
                 placeholder={(dict as any).city || "Shahar"}
                 className="w-full"
-                buttonClassName="h-12 bg-slate-50  border-slate-200  hover:bg-slate-100 :bg-slate-800 transition-colors"
+                buttonClassName="h-12 bg-white  border-slate-200  hover:bg-white :bg-slate-800 transition-colors"
                 icon={<MapPin className="h-4 w-4 text-slate-500 mr-2" />}
               />
             </div>
@@ -175,7 +175,7 @@ export function RestaurantsView({
                 options={cuisineOptions}
                 placeholder={(dict as any).cuisineType || "Oshxona turi"}
                 className="w-full"
-                buttonClassName="h-12 bg-slate-50  border-slate-200  hover:bg-slate-100 :bg-slate-800 transition-colors"
+                buttonClassName="h-12 bg-white  border-slate-200  hover:bg-white :bg-slate-800 transition-colors"
                 icon={<Utensils className="h-4 w-4 text-slate-500 mr-2" />}
               />
             </div>

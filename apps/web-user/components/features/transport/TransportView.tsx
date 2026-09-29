@@ -117,7 +117,7 @@ export function TransportView({
   return (
     <main className="mx-auto w-full md:w-[96%] max-w-[1536px] flex-1 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8">
       {/* Header Banner */}
-      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl md:rounded-[32px] px-5 sm:px-8 md:px-12">
+      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl md:rounded-[32px] border border-slate-200 px-5 sm:px-8 md:px-12">
         <Image
           src="/images/heroes/transport_hero.jpg"
           alt="Transport"
@@ -141,7 +141,7 @@ export function TransportView({
 
       {/* Unified Search Bar (Premium UI) */}
       <div className="relative z-20 -mt-10 sm:-mt-14 mb-8 mx-auto w-full max-w-5xl">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center bg-white rounded-3xl md:rounded-full ring-1 ring-slate-200/50 p-2 md:p-3 gap-2 md:gap-0">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center bg-white rounded-3xl md:rounded-full border border-slate-200 p-2 md:p-3 gap-2 md:gap-0">
           
           {/* City */}
           <div className="flex-1 px-4 py-2 hover:bg-white :bg-slate-800/50 rounded-2xl md:rounded-full transition-colors">

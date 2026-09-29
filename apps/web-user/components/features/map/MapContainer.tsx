@@ -59,7 +59,7 @@ function createPricePinIcon(
   let dotColor = "#2563eb";
   let transform = "scale(1)";
   let pointerColor = "white";
-  let pointerBorder = "border-top: 6px solid #e2e8f0;"; // For the outer border shadow simulation if needed, but simple CSS triangle is fine
+  let pointerBorder = "border-top: 6px solid #e2e8f0;"; // For the outer border  simulation if needed, but simple CSS triangle is fine
   
   if (isSelected) {
     bgStyle = "background-color: #1d4ed8; color: white; border: 1px solid #1d4ed8; ";
@@ -163,14 +163,14 @@ function CustomControls() {
     <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomIn(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
         title="Zoom in"
       >
         <Plus className="h-5 w-5" />
       </button>
       <button 
         onClick={(e) => { e.preventDefault(); map.zoomOut(); }}
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#2563eb] transition-colors hover:bg-[#2563eb] hover:text-white :bg-blue-600 :text-white"
         title="Zoom out"
       >
         <Minus className="h-5 w-5" />
@@ -253,7 +253,7 @@ function MapContent({ items, hoveredItemId, selectedItemId, onSelectItem, onBoun
         className={isDark ? "map-tiles-dark" : ""}
       />
       <CustomControls />
-      <div className="absolute top-4 left-4 z-[1000] rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] pointer-events-none">
+      <div className="absolute top-4 left-4 z-[1000] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#2563eb] pointer-events-none">
         {visibleCount} ta mehmonxona
       </div>
       {items.map((item: MapMarkerItem) => {
@@ -283,7 +283,7 @@ export function MapContainer({
   onBoundsChange,
   center = [41.2995, 69.2401],
   zoom = 12,
-  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200  bg-slate-100 ",
+  className = "relative h-[580px] w-full rounded-2xl overflow-hidden border border-slate-200  bg-white ",
 }: MapContainerProps) {
   const firstCoords = items.map(resolveItemCoords).find(c => c) ?? center;
   

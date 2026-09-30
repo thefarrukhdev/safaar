@@ -275,6 +275,7 @@ describe('CmsService pages', () => {
           {
             id: 'promo-room-1',
             entity_type: 'room',
+            entity_id: 'room-1',
             name: 'Standart xona',
             room_base_price: '500000',
             old_price_sum: '500000',
@@ -315,6 +316,7 @@ describe('CmsService pages', () => {
           {
             id: 'promo-vehicle-1',
             entity_type: 'vehicle',
+            entity_id: 'veh-1',
             name: 'Chevrolet Cobalt',
             old_price_sum: '300000',
             new_price_sum: '240000',
@@ -335,13 +337,13 @@ describe('CmsService pages', () => {
       const promoDeal = result.find((r) => r.id === 'promo-vehicle-1');
 
       expect(promoDeal).toMatchObject({
-        slug: 'transport/bus-co-1',
+        slug: 'transport/veh-1',
         old_price: 300000,
         new_price: 240000,
         discount_percent: 20,
         image_url: 'https://cdn.example.com/bus.jpg',
       });
-      expect((promoDeal!.title as Record<string, string>).uz).toBe('Afrosiyob');
+      expect((promoDeal!.title as Record<string, string>).uz).toBe('Chevrolet Cobalt');
     });
 
     it('clamps a public vehicle deal to the CURRENT vehicles.price_per_day (regression: audit found /cms/offers advertised the raw unclamped new_price_sum even after the base price_per_day was lowered post-approval)', async () => {
@@ -351,6 +353,7 @@ describe('CmsService pages', () => {
           {
             id: 'promo-vehicle-2',
             entity_type: 'vehicle',
+            entity_id: 'veh-2',
             name: 'Cobalt #2',
             old_price_sum: '500000',
             new_price_sum: '400000',

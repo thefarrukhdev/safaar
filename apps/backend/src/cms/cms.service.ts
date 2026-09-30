@@ -114,7 +114,7 @@ export class CmsService {
         async () => {
           const rows = await this.postgres.query(`
           SELECT
-            p.id, p.entity_type, p.entity_name as name,
+            p.id, p.entity_type, p.entity_id, p.entity_name as name,
             p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
             hr.base_price::float8 as room_base_price,
             h.slug as hotel_slug, hc.name as hotel_city_name,
@@ -163,9 +163,7 @@ export class CmsService {
                     end_date: String(row.end_date),
                   })
                 : null;
-            const titleStr = isRoom
-              ? row.name
-              : row.bus_company_name || row.name;
+            const titleStr = row.name;
             const cityObj =
               isRoom && row.hotel_city_name
                 ? objectValue(row.hotel_city_name)
@@ -175,7 +173,7 @@ export class CmsService {
               type: 'offer',
               slug: isRoom
                 ? `hotels/${row.hotel_slug}`
-                : `transport/${row.bus_company_id}`,
+                : `transport/${row.entity_id}`,
               title: { uz: titleStr, ru: titleStr, en: titleStr },
               name: titleStr,
               title_text: titleStr,

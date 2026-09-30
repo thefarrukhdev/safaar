@@ -8,6 +8,8 @@ export interface AttractionItem {
   rating: number;
   imageUrl: string;
   bestTimeToVisit: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface RestaurantItem {

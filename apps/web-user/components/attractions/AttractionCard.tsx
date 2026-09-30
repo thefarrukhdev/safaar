@@ -13,21 +13,15 @@ interface AttractionCardProps {
   onHover?: (hovering: boolean) => void;
 }
 
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
+const CATEGORY_STYLES: Record<string, { dot: string }> = {
   historical: {
-    bg: "bg-amber-50 border-amber-200",
-    text: "text-amber-800",
-    dot: "bg-amber-500",
+    dot: "bg-slate-500",
   },
   unesco: {
-    bg: "bg-primary-50 border-primary-200",
-    text: "text-primary-800",
-    dot: "bg-primary-500",
+    dot: "bg-blue-600",
   },
   nature: {
-    bg: "bg-emerald-50 border-emerald-200",
-    text: "text-emerald-800",
-    dot: "bg-emerald-500",
+    dot: "bg-slate-500",
   },
 };
 
@@ -50,15 +44,13 @@ function FavoriteButton({ inset = false }: { inset?: boolean }) {
       type="button"
       aria-label="Sevimlilar"
       onClick={handleClick}
-      className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 ${
-        active
-          ? "bg-white/100 shadow-md"
-          : "bg-white/80 shadow-sm hover:bg-white"
+      className={`flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white transition-all duration-200 hover:scale-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+        !active && "hover:bg-slate-50"
       } ${inset ? "absolute right-3 top-3 z-10" : ""}`}
     >
       <Heart
         className={`h-4 w-4 transition-colors duration-200 ${
-          active ? "fill-rose-500 text-rose-500" : "text-slate-600"
+          active ? "fill-blue-600 text-blue-600" : "text-slate-900"
         }`}
       />
     </button>
@@ -90,10 +82,10 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
       ref={cardRef}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
-      className="group flex cursor-pointer flex-col gap-3"
+      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 ease-out hover:border-slate-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
     >
       {/* ── Image Container ─────────────────────────────────────── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 ">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
@@ -104,15 +96,15 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
             quality={85}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-slate-100 ">
-            <ImageOff className="h-8 w-8 text-slate-300 " />
+          <div className="flex h-full items-center justify-center bg-slate-100">
+            <ImageOff className="h-8 w-8 text-slate-300" />
           </div>
         )}
 
         <FavoriteButton inset />
 
         <div className="absolute left-3 top-3 z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-slate-900 shadow-sm backdrop-blur-md  ">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-900">
             <span className={`h-1.5 w-1.5 rounded-full ${catStyle.dot}`} />
             {categoryLabel}
           </span>
@@ -120,28 +112,28 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
       </div>
 
       {/* ── Text Info ─────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1 px-0.5">
+      <div className="flex flex-col gap-1 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 text-[15px] font-bold leading-tight text-slate-900 ">
+          <h3 className="line-clamp-1 text-lg font-semibold leading-tight text-slate-900">
             {item.name}
           </h3>
           {item.rating > 0 && (
-            <div className="flex shrink-0 items-center gap-1 text-sm">
-              <Star className="h-3.5 w-3.5 fill-slate-900 text-slate-900  " />
-              <span className="font-medium text-slate-900 ">
+            <div className="flex shrink-0 items-center gap-1 text-sm mt-0.5">
+              <Star className="h-3.5 w-3.5 fill-slate-900 text-slate-900" />
+              <span className="font-medium text-slate-900">
                 {item.rating.toFixed(1)}
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-slate-500 ">
+        <div className="flex items-center gap-1.5 text-sm text-slate-500">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="line-clamp-1">{item.cityName}</span>
         </div>
 
         {item.bestTimeToVisit && (
-          <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-slate-500 ">
+          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-500">
             <Clock className="h-3.5 w-3.5 shrink-0" />
             <span className="line-clamp-1">{item.bestTimeToVisit}</span>
           </p>

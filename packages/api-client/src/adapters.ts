@@ -106,6 +106,7 @@ interface RawRoom {
   name: Localized;
   basePrice?: number;
   base_price?: number;
+  effectivePrice?: number;
   effective_price?: number;
   baseOccupancy?: number;
   maxAdults?: number;
@@ -171,7 +172,8 @@ export function toHotelListItem(raw: RawHotel, locale: Locale): HotelListItem {
 function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
   // `effective_price` is the discounted final price, `base_price` is the original price.
   const basePriceSum = Number(raw.base_price ?? raw.basePrice ?? 0);
-  const priceSum = raw.effective_price !== undefined ? Number(raw.effective_price) : basePriceSum;
+  const effective = raw.effectivePrice ?? raw.effective_price;
+  const priceSum = effective !== undefined ? Number(effective) : basePriceSum;
   const discountAmount = basePriceSum - priceSum;
 
   return {

@@ -15,6 +15,9 @@ export function corsOriginsFromEnv(value: string | undefined) {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  origins.push('https://partner.safaar.uz');
+  origins.push('https://safaar-partner-ten.vercel.app');
+
   if (production && origins.length === 0) {
     throw new Error(
       'CORS_ORIGINS production muhitida bo‘sh bo‘lishi mumkin emas',

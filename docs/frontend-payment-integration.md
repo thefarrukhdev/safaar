@@ -5,6 +5,8 @@
 > aniq ko'rsatish. Bu hujjat backend kodini QAYTA YOZISHNI tavsiya qilmaydi —
 > faqat frontend nima qilishi kerakligini yozadi.
 >
+> 🚀 **Tezkor amaliy vazifalar (Action Items):** [docs/frontend-payment-action-items.md](file:///home/laziz/safaar/docs/frontend-payment-action-items.md)
+>
 > **Manba:** `apps/backend/src/payments/*`, `apps/backend/src/refunds/*`,
 > `apps/backend/src/bookings/bookings.service.ts`,
 > `apps/backend/src/common/{legal,finance}.ts`, va real ishlatilayotgan

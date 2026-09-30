@@ -66,7 +66,7 @@ function PaymentReturnContent() {
   return (
     <div className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <h2 className="text-base font-semibold text-slate-900">
           To&apos;lov tasdiqlanmoqda...
         </h2>
@@ -76,7 +76,7 @@ function PaymentReturnContent() {
         <a
           href={targetUrl}
           target="_top"
-          className="mt-4 text-xs font-medium text-primary-600 hover:underline"
+          className="mt-4 text-xs font-medium text-blue-600 hover:underline active:scale-[0.97]"
         >
           Agar sahifa avtomatik yangilanmasa, bu yerni bosing
         </a>
@@ -90,7 +90,7 @@ export default function PaymentReturnPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[300px] items-center justify-center p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
         </div>
       }
     >

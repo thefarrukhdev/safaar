@@ -110,16 +110,16 @@ export function UzumCheckoutFrame({
 
   return (
     <Modal isOpen onClose={onClose} title={title ?? "Xavfsiz to'lov — Uzum Checkout"}>
-      <div className="flex h-[70vh] w-full min-w-[320px] flex-col gap-2 sm:h-[600px]">
+      <div className="flex h-[70vh] w-full min-w-[320px] flex-col gap-2 sm:h-[600px] bg-white">
         {verifying && (
-          <div className="flex items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
+          <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs font-medium text-blue-600">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             To&apos;lov tekshirilmoqda...
           </div>
         )}
 
         {failed && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          <div className="rounded-lg bg-white border border-red-200 px-3 py-2 text-xs font-medium text-red-700">
             To&apos;lov amalga oshmadi. Qayta urinib ko&apos;ring yoki oynani yoping.
           </div>
         )}

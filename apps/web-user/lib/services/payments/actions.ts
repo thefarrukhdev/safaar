@@ -129,16 +129,11 @@ export async function createPaymentSessionAction(
  * postMessage payload'idagi hech qanday maydonga ("success"/"status" va h.k.)
  * ishonilmaydi — bu action FAQAT `GET /payments/:bookingId`ni chaqiradi,
  * yagona haqiqat manbai shu.
-=======
- * To'lov holatini tekshirish action'i — modal/iframe ichida to'lov tugatilgach
- * yoki polling davomida chaqiriladi.
->>>>>>> fix/uzum-iframe-flow
  */
 export async function checkPaymentStatusAction(
   bookingId: string,
   guestToken?: string,
 ): Promise<{ status?: string; error?: string }> {
-<<<<<<< HEAD
   const session = await getSession();
   if (!session && !guestToken) {
     return { error: "AUTH_TOKEN_INVALID" };
@@ -156,20 +151,4 @@ export async function checkPaymentStatusAction(
   } catch {
     return { error: "ERROR" };
   }
-=======
-  if (!bookingId) {
-    return { error: "INVALID_BOOKING" };
-  }
-  const session = await getSession();
-  return safeAction<{ status?: string; error?: string }>(
-    async () => {
-      const payment = await api.payments.getPaymentStatus(bookingId, {
-        token: session?.accessToken,
-        guestToken,
-      });
-      return { status: payment?.status };
-    },
-    { error: "ERROR" },
-  );
->>>>>>> fix/uzum-iframe-flow
 }

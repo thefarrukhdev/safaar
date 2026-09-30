@@ -75,7 +75,6 @@ export function RoomList({
               </div>
             </div>
 
-<<<<<<< HEAD
             <div className="flex items-center justify-between gap-4 border-t border-slate-900/[0.08] pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
               <div className="text-left sm:text-right">
                 {room.promotion && (
@@ -100,29 +99,6 @@ export function RoomList({
                     {dict.discountUntil.replace("{date}", room.promotion.endDate)}
                   </div>
                 )}
-=======
-            <div className="flex flex-col sm:flex-col items-stretch sm:items-end gap-4 border-t border-slate-200 pt-3 sm:border-0 sm:pt-0">
-              <div className="text-left sm:text-right flex flex-col items-start sm:items-end">
-                {room.basePriceSum && room.discountAmount && room.discountAmount > 0 && (
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-medium text-slate-500 line-through decoration-slate-300">
-                      {formatSum(room.basePriceSum, locale)}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                      -{Math.round((room.discountAmount / room.basePriceSum) * 100)}%
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-lg font-semibold tabular-nums text-slate-900">
-                    {formatSum(room.priceSum, locale)}
-                  </span>
-                  <span className="text-xs font-normal text-slate-500">
-                    {" "}
-                    / {dict.perNight}
-                  </span>
-                </div>
->>>>>>> fix/uzum-iframe-flow
               </div>
 
               {soldOut ? (

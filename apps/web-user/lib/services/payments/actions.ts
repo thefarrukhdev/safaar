@@ -123,7 +123,6 @@ export async function createPaymentSessionAction(
 }
 
 /**
-<<<<<<< HEAD
  * Iframe ichidan kelgan (tasdiqlangan origindan) postMessage'dan keyin
  * to'lov holatini HAQIQIY backend orqali tekshirish uchun. Uzum'ning
  * postMessage payload'idagi hech qanday maydonga ("success"/"status" va h.k.)

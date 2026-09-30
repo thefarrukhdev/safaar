@@ -85,7 +85,13 @@ export function UzumCheckoutFrame({
     }
 
     function handleMessage(event: MessageEvent) {
-      if (!expectedOrigin.current || event.origin !== expectedOrigin.current) {
+      const isSafaarReturn =
+        event.origin === window.location.origin &&
+        event.data?.type === "SAFAAR_PAYMENT_RESULT";
+      const isUzumOrigin = Boolean(
+        expectedOrigin.current && event.origin === expectedOrigin.current,
+      );
+      if (!isSafaarReturn && !isUzumOrigin) {
         return;
       }
       setFailed(false);

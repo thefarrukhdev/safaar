@@ -1,7 +1,7 @@
 "use client";
 
 import { CarFront, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useVehicles, useCreateVehicle, useUpdateVehicle } from "../../_hooks/use-vehicles";
 import { Button } from "../../_components/ui/button";
@@ -162,16 +162,20 @@ export function VehicleDialog({ open, onClose, editing }: { open: boolean, onClo
     },
   });
 
-  if (open && editing && form.getValues().name !== editing.name) {
-    form.reset({
-      name: editing.name,
-      plateNumber: editing.plateNumber || "",
-      seatsCount: editing.seatsCount,
-      pricePerDay: editing.pricePerDay,
-    });
-  } else if (open && !editing && form.getValues().name && !form.formState.isDirty) {
-    form.reset({ name: "", plateNumber: "", seatsCount: 4, pricePerDay: 300000 });
-  }
+  useEffect(() => {
+    if (open) {
+      if (editing) {
+        form.reset({
+          name: editing.name,
+          plateNumber: editing.plateNumber || "",
+          seatsCount: editing.seatsCount,
+          pricePerDay: editing.pricePerDay,
+        });
+      } else {
+        form.reset({ name: "", plateNumber: "", seatsCount: 4, pricePerDay: 300000 });
+      }
+    }
+  }, [open, editing, form]);
 
   const onSubmit = async (values: Values) => {
     try {

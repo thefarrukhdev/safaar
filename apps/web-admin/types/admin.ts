@@ -714,3 +714,20 @@ export interface SidebarMenuItem {
   badge?: number;
   children?: SidebarMenuItem[];
 }
+
+export interface PartnerBookingReport {
+  organizationId: string;
+  partnerName: string;
+  domain: string;
+  totalBookings: number;
+  onlineCount: number;
+  onsiteCount: number;
+  grossAmount: number;
+  paidAmount: number;
+}
+
+export interface PartnerReportsResponse {
+  period: { from: string | null; to: string | null };
+  currency: string;
+  partners: PartnerBookingReport[];
+}

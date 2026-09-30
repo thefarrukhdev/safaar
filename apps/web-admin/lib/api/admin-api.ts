@@ -6,6 +6,8 @@ import {
   AdminBusBooking,
   AdminRestaurantBooking,
   PartnerRequest,
+  PartnerBookingReport,
+  PartnerReportsResponse,
   CatalogAmenity,
   CatalogRegion,
   CatalogCity,
@@ -2503,5 +2505,10 @@ export const AdminApi = {
   blockListingDates: async (id: string, payload: { startDate: string; endDate: string; reason: string }) => {
     const { data } = await apiClient.post(`/admin/hotels/${id}/blocked-dates`, payload);
     return data;
+  },
+
+  getPartnerReports: async (filters?: Record<string, unknown>): Promise<PartnerReportsResponse> => {
+    const { data } = await apiClient.get('/admin/partner-reports', filters);
+    return data as PartnerReportsResponse;
   },
 };

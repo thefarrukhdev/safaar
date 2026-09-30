@@ -8,6 +8,7 @@ import {
   PartnerRequest,
   CatalogAmenity,
   CatalogRegion,
+  CatalogCity,
   CmsArticle,
   CmsBanner,
   FinanceReport,
@@ -170,6 +171,14 @@ function toRegion(row: ApiRecord): CatalogRegion {
     name: localizedText(row.name, 'Hudud'),
     hotelsCount: Number(row.hotelsCount ?? row.hotels_count ?? 0),
     isActive: asBoolean(row.isActive ?? row.is_active, true),
+  };
+}
+
+function toCity(row: ApiRecord): CatalogCity {
+  return {
+    id: String(row.id ?? ''),
+    regionId: String(row.region_id ?? row.regionId ?? ''),
+    name: localizedText(row.name, 'Shahar'),
   };
 }
 
@@ -2171,6 +2180,22 @@ export const AdminApi = {
   },
   deleteRegion: async (id: string): Promise<void> => {
     await apiClient.delete(`/admin/catalog/regions/${id}`);
+  },
+
+  getCities: async (): Promise<CatalogCity[]> => {
+    const { data } = await apiClient.get('/catalog/cities');
+    return unknownItems(data).map((row) => toCity(asRecord(row)));
+  },
+  createCity: async (regionId: string, name: string): Promise<CatalogCity> => {
+    const { data } = await apiClient.post('/admin/catalog/cities', { regionId, name });
+    return toCity(asRecord(data));
+  },
+  updateCity: async (id: string, regionId: string, name: string): Promise<CatalogCity> => {
+    const { data } = await apiClient.patch(`/admin/catalog/cities/${id}`, { regionId, name });
+    return toCity(asRecord(data));
+  },
+  deleteCity: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/catalog/cities/${id}`);
   },
   getAmenities: async (): Promise<CatalogAmenity[]> => {
     const { data } = await apiClient.get('/catalog/amenities');

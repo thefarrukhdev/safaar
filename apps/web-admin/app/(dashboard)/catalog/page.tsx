@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { AdminApi } from "@/lib/api/admin-api";
-import type { CatalogRegion, CatalogAmenity } from "@/types/admin";
+import type { CatalogRegion, CatalogCity, CatalogAmenity } from "@/types/admin";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
@@ -13,28 +13,31 @@ import { Plus, Edit2, Trash2, MapPin, Wifi } from "lucide-react";
 import { extractApiErrorMessage } from "@/lib/utils";
 
 export default function CatalogPage() {
-  const [activeTab, setActiveTab] = useState<"regions" | "amenities">("regions");
+  const [activeTab, setActiveTab] = useState<"regions" | "cities" | "amenities">("regions");
   const [regions, setRegions] = useState<CatalogRegion[]>([]);
   const [amenities, setAmenities] = useState<CatalogAmenity[]>([]);
+  const [cities, setCities] = useState<CatalogCity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<CatalogRegion | CatalogAmenity | null>(null);
+  const [editing, setEditing] = useState<CatalogRegion | CatalogCity | CatalogAmenity | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [type, setType] = useState<CatalogAmenity['type']>("hotel");
+  const [regionId, setRegionId] = useState("");
   const [amenitiesFilter, setAmenitiesFilter] = useState<CatalogAmenity['type'] | 'all'>('all');
 
   const load = useCallback(() => {
     setLoading(true);
     setError(false);
-    Promise.all([AdminApi.getRegions(), AdminApi.getAmenities()])
-      .then(([reg, amen]) => {
+    Promise.all([AdminApi.getRegions(), AdminApi.getCities(), AdminApi.getAmenities()])
+      .then(([reg, cit, amen]) => {
         setRegions(reg);
+        setCities(cit);
         setAmenities(amen);
       })
       .catch(() => {
@@ -46,10 +49,11 @@ export default function CatalogPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([AdminApi.getRegions(), AdminApi.getAmenities()])
-      .then(([reg, amen]) => {
+    Promise.all([AdminApi.getRegions(), AdminApi.getCities(), AdminApi.getAmenities()])
+      .then(([reg, cit, amen]) => {
         if (!cancelled) {
           setRegions(reg);
+          setCities(cit);
           setAmenities(amen);
         }
       })
@@ -71,14 +75,19 @@ export default function CatalogPage() {
     setCode("");
     setIsActive(true);
     setType(amenitiesFilter !== "all" ? amenitiesFilter as CatalogAmenity['type'] : "hotel");
+    setRegionId(regions[0]?.id || "");
     setModalOpen(true);
   };
 
-  const openEdit = (item: CatalogRegion | CatalogAmenity) => {
+  const openEdit = (item: CatalogRegion | CatalogCity | CatalogAmenity) => {
     setEditing(item);
     setName(item.name);
-    setIsActive(item.isActive);
-    if ("code" in item) {
+    setIsActive("isActive" in item ? item.isActive : true);
+    if ("regionId" in item) {
+      setRegionId(item.regionId);
+      setCode("");
+      setType("hotel");
+    } else if ("code" in item) {
       setCode(item.code);
       setType(item.type);
     } else {
@@ -96,7 +105,20 @@ export default function CatalogPage() {
     }
     setSaving(true);
     try {
-      if (activeTab === "regions") {
+      if (activeTab === "cities") {
+        if (!regionId) {
+          toast.error("Viloyatni tanlang.");
+          setSaving(false);
+          return;
+        }
+        if (editing) {
+          await AdminApi.updateCity(editing.id, regionId, trimmedName);
+          toast.success("Shahar yangilandi!");
+        } else {
+          await AdminApi.createCity(regionId, trimmedName);
+          toast.success("Shahar qo'shildi!");
+        }
+      } else if (activeTab === "regions") {
         if (editing) {
           await AdminApi.updateRegion(editing.id, trimmedName, isActive);
           toast.success("Hudud yangilandi!");
@@ -130,11 +152,13 @@ export default function CatalogPage() {
     }
   };
 
-  const handleDelete = async (item: CatalogRegion | CatalogAmenity) => {
+  const handleDelete = async (item: CatalogRegion | CatalogCity | CatalogAmenity) => {
     if (!confirm(`"${item.name}"ni o'chirmoqchimisiz?`)) return;
     setDeletingId(item.id);
     try {
-      if (activeTab === "regions") {
+      if (activeTab === "cities") {
+        await AdminApi.deleteCity(item.id);
+      } else if (activeTab === "regions") {
         await AdminApi.deleteRegion(item.id);
       } else {
         await AdminApi.deleteAmenity(item.id);
@@ -147,6 +171,30 @@ export default function CatalogPage() {
       setDeletingId(null);
     }
   };
+
+  const cityColumns: Column<CatalogCity>[] = [
+    { key: "id", label: "ID", render: (row) => <span className="text-xs font-mono">{row.id}</span> },
+    { key: "name", label: "Shahar nomi", render: (row) => <span className="font-medium">{row.name}</span> },
+    { key: "region", label: "Viloyat", render: (row) => <span className="text-[var(--text-secondary)]">{regions.find(r => r.id === row.regionId)?.name || "Noma'lum"}</span> },
+    {
+      key: "actions",
+      label: "",
+      render: (row) => (
+        <div className="flex justify-end gap-2">
+          <button className="w-8 h-8 rounded flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/10" onClick={() => openEdit(row)}>
+            <Edit2 size={14} />
+          </button>
+          <button
+            className="w-8 h-8 rounded flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger)]/10 disabled:opacity-50"
+            disabled={deletingId === row.id}
+            onClick={() => handleDelete(row)}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   const regionColumns: Column<CatalogRegion>[] = [
     { key: "id", label: "ID", render: (row) => <span className="text-xs font-mono">{row.id}</span> },
@@ -240,7 +288,16 @@ export default function CatalogPage() {
           onClick={() => setActiveTab("regions")}
         >
           <MapPin size={16} />
-          Viloyat va Shaharlar
+          Viloyatlar
+        </button>
+        <button
+          className={`pb-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "cities" ? "text-[var(--primary)] border-b-2 border-[var(--primary)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+          onClick={() => setActiveTab("cities")}
+        >
+          <MapPin size={16} />
+          Shaharlar
         </button>
         <button
           className={`pb-3 text-sm font-medium transition-colors flex items-center gap-2 ${
@@ -270,7 +327,17 @@ export default function CatalogPage() {
             </select>
           </div>
         )}
-        {activeTab === "regions" ? (
+        {activeTab === "cities" ? (
+          <DataTable 
+            columns={cityColumns} 
+            data={cities} 
+            keyField="id" 
+            emptyMessage="Shaharlar topilmadi"
+            isLoading={loading}
+            isError={error}
+            onRetry={load}
+          />
+        ) : activeTab === "regions" ? (
           <DataTable 
             columns={regionColumns} 
             data={regions} 
@@ -298,8 +365,8 @@ export default function CatalogPage() {
         onClose={() => !saving && setModalOpen(false)}
         title={
           editing
-            ? activeTab === "regions" ? "Hududni tahrirlash" : "Qulaylikni tahrirlash"
-            : activeTab === "regions" ? "Yangi hudud" : "Yangi qulaylik"
+            ? activeTab === "cities" ? "Shaharni tahrirlash" : activeTab === "regions" ? "Viloyatni tahrirlash" : "Qulaylikni tahrirlash"
+            : activeTab === "cities" ? "Yangi shahar" : activeTab === "regions" ? "Yangi viloyat" : "Yangi qulaylik"
         }
         footer={
           <>
@@ -313,6 +380,21 @@ export default function CatalogPage() {
         }
       >
         <div className="flex flex-col gap-4">
+          {activeTab === "cities" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">Viloyat</label>
+              <select 
+                className="h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-[var(--primary)]"
+                value={regionId} 
+                onChange={(e) => setRegionId(e.target.value)}
+              >
+                <option value="">Viloyatni tanlang</option>
+                {regions.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {activeTab === "amenities" && !editing && (
             <>
               <div className="flex flex-col gap-1.5">
@@ -339,11 +421,12 @@ export default function CatalogPage() {
           )}
           <Input
             label="Nomi"
-            placeholder={activeTab === "regions" ? "Toshkent" : "Wi-Fi"}
+            placeholder={activeTab === "cities" ? "Asaka" : activeTab === "regions" ? "Andijon viloyati" : "Wi-Fi"}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <div className="flex items-center gap-2 mt-2">
+          {activeTab !== "cities" && (
+            <div className="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               id="isActiveToggle"
@@ -355,6 +438,7 @@ export default function CatalogPage() {
               Faol holatda (Hamkorlarga ko'rinadi)
             </label>
           </div>
+          )}
         </div>
       </Modal>
     </div>

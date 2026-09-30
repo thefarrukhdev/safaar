@@ -632,6 +632,12 @@ export interface CatalogRegion {
   isActive: boolean;
 }
 
+export interface CatalogCity {
+  id: string;
+  regionId: string;
+  name: string;
+}
+
 export interface CatalogAmenity {
   id: string;
   code: string;

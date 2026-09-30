@@ -2454,6 +2454,10 @@ export const AdminApi = {
     return toPartnerPromotion(asRecord(data));
   },
 
+  deletePartnerPromotion: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/promotions/${id}`);
+  },
+
   toggleListingFeatured: async (
     id: string,
     featured: boolean,

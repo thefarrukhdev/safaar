@@ -120,6 +120,7 @@ interface RawRoom {
   totalInventory?: number;
   available?: number;
   promotion?: RawRoomPromotion | null;
+  images?: string[];
 }
 
 interface RawHotel {
@@ -200,6 +201,7 @@ function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
           },
         }
       : {}),
+    ...(raw.images && raw.images.length > 0 ? { images: raw.images } : {}),
   };
 }
 

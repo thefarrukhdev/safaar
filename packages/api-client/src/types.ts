@@ -47,6 +47,7 @@ export interface RoomTypeView {
   capacity: number;
   available: number;
   promotion?: RoomPromotionView;
+  images?: string[];
 }
 
 export interface HotelDetail extends HotelListItem {

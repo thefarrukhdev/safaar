@@ -415,6 +415,30 @@ export class HotelsService {
       roomRows.map((r: Record<string, unknown>) => String(r.id)),
     );
 
+    const roomIds = roomRows.map((r: Record<string, unknown>) => String(r.id));
+    const roomTypeIds = roomRows.map((r: Record<string, unknown>) => String(r.room_type_id));
+    const allRoomRelatedIds = Array.from(new Set([...roomIds, ...roomTypeIds]));
+
+    const roomMediaMap = new Map<string, string[]>();
+    if (allRoomRelatedIds.length > 0) {
+      const roomMedia = await this.pg.query<{ owner_id: string; url: string }>(
+        `SELECT owner_id::text, url
+         FROM media_files
+         WHERE owner_type IN ('room', 'room_type')
+           AND owner_id = ANY($1::uuid[])
+           AND deleted_at IS NULL
+           AND url IS NOT NULL
+         ORDER BY sort_order ASC, created_at ASC`,
+        [allRoomRelatedIds],
+      );
+      for (const m of roomMedia) {
+        if (!roomMediaMap.has(m.owner_id)) {
+          roomMediaMap.set(m.owner_id, []);
+        }
+        roomMediaMap.get(m.owner_id)!.push(m.url);
+      }
+    }
+
     return roomRows.map((r: Record<string, unknown>) => {
       const roomTypeName = localized(r.room_type_name);
       const translation = roomNames.get(String(r.id));
@@ -447,6 +471,10 @@ export class HotelsService {
         status: r.status,
         available: Number(r.total_inventory),
         promotion,
+        images: Array.from(new Set([
+          ...(roomMediaMap.get(String(r.id)) || []),
+          ...(roomMediaMap.get(String(r.room_type_id)) || [])
+        ])),
       };
     });
   }

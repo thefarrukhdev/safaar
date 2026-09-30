@@ -413,7 +413,8 @@ describe('HotelsService.findOne', () => {
       .mockResolvedValueOnce([]) // hotel_amenities
       .mockResolvedValueOnce(roomRows) // hotel_rooms + room_types
       .mockResolvedValueOnce(roomTranslationRows) // hotel_room_translations
-      .mockResolvedValueOnce(roomPromotionRows); // active promotions (per room)
+      .mockResolvedValueOnce(roomPromotionRows)
+      .mockResolvedValueOnce([]); // room media
   }
 
   function makeService() {
@@ -456,7 +457,7 @@ describe('HotelsService.findOne', () => {
     expect(translationSql).toContain('room_id = ANY($1::uuid[])');
     expect(translationParams).toEqual([['room-1']]);
     // One query per resource type, not per room — 7 total regardless of room count.
-    expect(pg.query.mock.calls.length).toBe(7);
+    expect(pg.query.mock.calls.length).toBe(8);
   });
 
   it('a hotel with zero rooms skips the room-names query entirely (no wasted round-trip)', async () => {
@@ -695,7 +696,8 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
         },
       ])
       .mockResolvedValueOnce([]) // hotel_room_translations
-      .mockResolvedValueOnce([]); // active promotions
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]); // room media
 
     const rooms = await service.rooms('hotel-1');
 
@@ -738,7 +740,8 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
           start_date: '2026-09-01',
           end_date: '2026-10-31',
         },
-      ]);
+      ])
+      .mockResolvedValueOnce([]);
 
     const quote = await service.quote('hotel-1', {
       room_id: 'room-1',
@@ -795,7 +798,8 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
           start_date: '2026-09-01',
           end_date: '2026-12-31',
         },
-      ]);
+      ])
+      .mockResolvedValueOnce([]);
 
     const quote = await service.quote('hotel-1', {
       room_id: 'room-1',
@@ -854,7 +858,8 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
           start_date: '2026-09-01',
           end_date: '2026-12-31',
         },
-      ]);
+      ])
+      .mockResolvedValueOnce([]);
 
     const rooms = await service.rooms('hotel-1');
 

@@ -69,10 +69,6 @@ export default function PartnerPromotionsPage() {
   const [deleteModal, setDeleteModal] = useState<{ type: 'single'; id: string } | { type: 'expired' } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  useEffect(() => {
-    loadPromotions();
-  }, []);
-
   async function loadPromotions() {
     try {
       setLoading(true);
@@ -84,6 +80,10 @@ export default function PartnerPromotionsPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadPromotions();
+  }, []);
 
   const handleDecision = async (id: string, decision: 'approve' | 'reject') => {
     setDecisionId(`${decision}:${id}`);

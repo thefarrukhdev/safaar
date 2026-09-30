@@ -660,9 +660,20 @@ export function ListingOverview() {
                   updateStatus.isPending ||
                   listing.status === ListingStatus.UNDER_REVIEW
                 }
+                variant={listing.status === ListingStatus.PUBLISHED ? 'outline' : 'primary'}
+                className={listing.status === ListingStatus.PUBLISHED ? 'w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30' : 'w-full'}
               >
-                <Send className="h-4 w-4" aria-hidden />
-                Nashrga yuborish
+                {listing.status === ListingStatus.PUBLISHED ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" aria-hidden />
+                    E'lonni yashirish
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" aria-hidden />
+                    Nashrga yuborish
+                  </>
+                )}
               </Button>
             )}
           </CardBody>

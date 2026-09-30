@@ -182,7 +182,7 @@ export default function PartnerPromotionsPage() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-white">
-        <table className="w-full text-sm whitespace-nowrap">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
@@ -203,7 +203,7 @@ export default function PartnerPromotionsPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                 Holat
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="px-3 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                 Amallar
               </th>
             </tr>
@@ -279,8 +279,8 @@ export default function PartnerPromotionsPage() {
                         }}
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                         {promo.status === 'pending_review' ? (
                           <>
                             <Button

@@ -2,7 +2,7 @@ name: Backend Deploy
 
 # Backend uchun to'liq "tekshir → deploy" pipeline:
 #   1) checks       — build:types, prisma validate, typecheck, format:check,
-#                      lint, npm audit (CRITICAL gate), test, build
+#                      lint, pnpm audit (CRITICAL gate), test, build
 #   2) secret-scan  — kodga tushib qolgan parol/token/kalitlarni topadi
 #   3) docker-build — Dockerfile'ni quradi (push qilmaydi) + Trivy bilan
 #                      image ichidagi zaifliklarni skanerlaydi (CRITICAL bloklaydi)
@@ -30,7 +30,7 @@ on:
       - "apps/backend/**"
       - "packages/types/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "scripts/deploy-production.sh"
       - ".github/workflows/backend-deploy.yml"
 
@@ -39,19 +39,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build:types
-      - run: npm run prisma:validate -w @safaar/backend --if-present || true
-      - run: npm run typecheck -w @safaar/backend --if-present || true
-      - run: npm run format:check -w @safaar/backend --if-present || true
-      - run: npm run lint -w @safaar/backend --if-present || true
-      - run: npm audit --workspace=@safaar/backend --audit-level=critical || true
-      - run: npm run test:backend --if-present || true
-      - run: npm run build:backend
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
+      - run: pnpm --filter @safaar/backend run prisma:validate || true
+      - run: pnpm --filter @safaar/backend run typecheck || true
+      - run: pnpm --filter @safaar/backend run format:check || true
+      - run: pnpm --filter @safaar/backend run lint || true
+      - run: pnpm audit --filter @safaar/backend || true
+      - run: pnpm run test:backend || true
+      - run: pnpm run build:backend
 
   secret-scan:
     name: Secret scanning (gitleaks)

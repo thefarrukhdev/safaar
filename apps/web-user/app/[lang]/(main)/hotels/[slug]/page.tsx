@@ -11,7 +11,6 @@ import { RoomList } from '@/components/hotels/RoomList';
 import { HotelMobileCtaBar } from '@/components/hotels/HotelMobileCtaBar';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
-import { HotelBookingWidget } from '@/components/features/hotels/HotelBookingWidget';
 import { HotelAmenities } from '@/components/features/hotels/HotelAmenities';
 import { HotelRules } from '@/components/features/hotels/HotelRules';
 import { HotelStickyNav } from '@/components/features/hotels/HotelStickyNav';
@@ -140,7 +139,7 @@ export default async function Page({
   if (!hotel) {
     return (
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16">
-        <p className="rounded-xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800 shadow-sm">
+        <p className="rounded-xl border border-amber-200 bg-white p-4 text-sm font-medium text-amber-800">
           {dict.error}
         </p>
       </main>
@@ -180,9 +179,9 @@ export default async function Page({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
       />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 sm:gap-6 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 lg:gap-8 px-4 sm:px-6 lg:px-8 pt-8 sm:pt-6 pb-28 md:pb-10">
         {/* Back Button */}
-        <div className="w-full flex items-center">
+        <div className="w-full flex items-center mt-3 sm:mt-0">
           <BackButton />
         </div>
 
@@ -197,10 +196,10 @@ export default async function Page({
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
               {hotel.name}
             </h1>
-            <p className="flex items-center gap-1.5 text-base font-medium text-slate-600">
+            <p className="flex items-center gap-1.5 text-base font-medium text-slate-500">
               <MapPin className="h-5 w-5 shrink-0 text-slate-400" />
               {hotel.cityName}
-              {hotel.address && <span className="opacity-60">· {hotel.address}</span>}
+              {hotel.address && <span>· {hotel.address}</span>}
             </p>
           </div>
 
@@ -217,7 +216,7 @@ export default async function Page({
                 dict={favDict}
               />
               {hotel.stars > 0 && (
-                <span className="text-xl tracking-widest text-amber-500 drop-shadow-sm">
+                <span className="text-xl tracking-widest text-amber-500">
                   {'★'.repeat(hotel.stars)}
                 </span>
               )}
@@ -225,7 +224,7 @@ export default async function Page({
             {hotel.rating > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1.5 border-amber-200 bg-white px-4 py-1.5 text-sm font-extrabold text-amber-700 shadow-sm"
+                className="gap-1.5 border-amber-200 bg-white px-4 py-1.5 text-sm font-extrabold text-amber-700"
               >
                 <Star className="h-4 w-4 fill-current text-amber-500" />
                 <span>{hotel.rating.toFixed(1)}</span>
@@ -237,8 +236,8 @@ export default async function Page({
 
       <HotelStickyNav dict={dict.nav} />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
-        <div className="flex flex-col gap-0">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-0">
+        <div className="flex w-full flex-col gap-0">
           {/* Top Highlights */}
           <section className="flex flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <ul className="flex flex-col gap-4">
@@ -271,7 +270,7 @@ export default async function Page({
               <h2 className="text-2xl font-bold text-slate-900">
                 {dict.about}
               </h2>
-              <p className="leading-relaxed text-slate-600">
+              <p className="leading-relaxed text-slate-500">
                 {hotel.description}
               </p>
             </section>
@@ -347,13 +346,7 @@ export default async function Page({
           </section>
         </div>
 
-        <HotelBookingWidget
-          minPriceSum={hotel.minPriceSum}
-          checkIn={one(sp.check_in) ?? one(sp.checkIn)}
-          checkOut={one(sp.check_out) ?? one(sp.checkOut)}
-          dict={dict}
-          locale={locale}
-        />
+
       </div>
 
       <HotelMobileCtaBar

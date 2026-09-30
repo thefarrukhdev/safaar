@@ -19,6 +19,7 @@ export function useZodForm<T extends FieldValues>({
 }: UseZodFormProps<T>) {
   return useForm<T>({
     ...formProps,
-    resolver: zodResolver(schema as any),
+    // @ts-expect-error - zodResolver generic typing often mismatches with react-hook-form internals
+    resolver: zodResolver(schema),
   });
 }

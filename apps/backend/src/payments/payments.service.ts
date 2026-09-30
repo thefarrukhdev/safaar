@@ -32,6 +32,7 @@ import { PaymeProvider } from './providers/payme.provider';
 import {
   UzumCheckoutError,
   UzumCheckoutProvider,
+  type CheckoutOrderStatus,
   type NormalizedCheckoutCallback,
   type RegisterCheckoutResult,
 } from './providers/uzum-checkout.provider';
@@ -150,7 +151,7 @@ export class PaymentsService {
     guestAccessToken?: string,
   ) {
     await this.assertBookingVisible(actor, bookingId, guestAccessToken);
-    const [payment] = await this.pg.query<PaymentRow>(
+    let [payment] = await this.pg.query<PaymentRow>(
       'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
       [bookingId],
     );
@@ -160,6 +161,18 @@ export class PaymentsService {
         message: 'Payment topilmadi',
       });
     }
+
+    // Uzum Checkout (va karta turlari) orqali kutilayotgan (pending/processing)
+    // to'lov bo'lsa — frontend polling qilganda 2 daqiqalik cron'ni kutib o'tirmay,
+    // darhol Uzum'dan haqiqiy holatni so'rab, tasdiqlaymiz.
+    if (
+      payment.provider === 'uzum_checkout' &&
+      (payment.status === 'pending' || payment.status === 'processing') &&
+      payment.provider_reference
+    ) {
+      payment = await this.syncUzumCheckoutPaymentStatus(payment);
+    }
+
     return this.shapePaymentResponse(payment);
   }
 
@@ -174,6 +187,41 @@ export class PaymentsService {
       bookingId,
       guestAccessToken,
     );
+
+    // BUG FIX (payments/refunds audit, 2026-09-29): booking allaqachon
+    // TO'LANGAN (confirmed/awaiting_partner_confirmation/completed) bo'lsa —
+    // yangi to'lov SESSIYASI OCHILMAYDI. Bu XUDDI SHU "allaqachon to'langan"
+    // ta'rifi — `assertUzumPayable()`dagi ALREADY_PAID tekshiruvi bilan BIR
+    // XIL (faqat u Uzum Merchant `/check`+`/create` webhook yo'lini
+    // himoyalaydi, umumiy REST `POST /payments/:id/create`ni EMAS). Avval bu
+    // yerda HECH QANDAY booking-holat tekshiruvi yo'q edi: pastdagi
+    // "mavjud ochiq to'lov" qidiruvi faqat `status IN ('pending','processing')`
+    // qatorlarni ko'rar edi — allaqachon `'paid'` bo'lgan yagona to'lov
+    // qatori bu qidiruvga mos KELMASDI, shuning uchun kod pastga tushib
+    // IKKINCHI, mustaqil, HAQIQIY to'lov sessiyasi (yangi Click/Payme
+    // checkout URL, yoki karta sxemalari uchun HAQIQIY Uzum Checkout
+    // `/payment/register` chaqiruvi) ochardi. Agar mijoz (yoki eski checkout
+    // havolasini qayta ochgan/almashtirilgan kimdir) shu ikkinchi sessiyani
+    // yakunlasa — webhook uni HAM `'paid'` deb belgilaydi (booking allaqachon
+    // `OPEN_BOOKING_STATUSES`da bo'lmagani uchun ledger IKKINCHI marta
+    // kreditlanmaydi — bu qism xavfsiz edi), LEKIN mijoz HAQIQIY pulni
+    // IKKINCHI marta to'lagan bo'lardi, hech qanday avtomatik qaytarishsiz
+    // (bu "lost race" — `SETTLED_BOOKING_STATUSES` — holatidan FARQLI, u
+    // holat avtomatik refund ochadi). Bunga qo'shimcha, hisobot
+    // (`booking-reports.query.ts`) shu bronning `paid_amount`ini IKKI
+    // MARTA hisoblab qo'yardi (`SUM(amount) FILTER (WHERE status='paid')
+    // GROUP BY booking_id`).
+    if (
+      booking.status === BS.CONFIRMED ||
+      booking.status === BS.AWAITING_PARTNER_CONFIRMATION ||
+      booking.status === BS.COMPLETED
+    ) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_PAID',
+        message: 'Bu bron uchun to‘lov allaqachon qabul qilingan',
+      });
+    }
+
     const requested = this.provider(body.provider);
 
     // Shu bron uchun hali natijasi chiqmagan (pending/processing) payment
@@ -240,12 +288,13 @@ export class PaymentsService {
       await this.pg.query('DELETE FROM payments WHERE id = $1', [existing.id]);
     }
 
-    return this.writeNewPayment(booking, requested);
+    return this.writeNewPayment(booking, requested, guestAccessToken);
   }
 
   private async writeNewPayment(
     booking: BookingVisibilityRow,
     requested: string,
+    guestAccessToken?: string,
   ) {
     // ── HIMOYA: 0 (yoki manfiy/yaroqsiz) summali bron ──────────────────
     // BEPUL bron (masalan restoran rezervatsiyasi) uchun to'lov sessiyasi
@@ -275,10 +324,18 @@ export class PaymentsService {
     // (schemasiz) — eski/umumiy qiymat, orqaga moslik uchun saqlangan,
     // fee'siz (avvalgidek).
     if (isCardScheme(requested)) {
-      return this.createUzumCheckoutPayment(booking, requested);
+      return this.createUzumCheckoutPayment(
+        booking,
+        requested,
+        guestAccessToken,
+      );
     }
     if (requested === 'uzum_checkout') {
-      return this.createUzumCheckoutPayment(booking, undefined);
+      return this.createUzumCheckoutPayment(
+        booking,
+        undefined,
+        guestAccessToken,
+      );
     }
 
     const id = randomUUID();
@@ -441,12 +498,16 @@ export class PaymentsService {
   private async createUzumCheckoutPayment(
     booking: BookingVisibilityRow,
     scheme: CardScheme | undefined,
+    guestAccessToken?: string,
   ) {
     const grossAmount = Number(booking.total_amount);
     const fee = scheme ? calculateCardSchemeFee(grossAmount, scheme) : null;
     const registerAmount = fee ? fee.totalPayableAmountSom : grossAmount;
 
     const paymentId = randomUUID();
+    const guestParam = guestAccessToken
+      ? `&guestToken=${encodeURIComponent(guestAccessToken)}`
+      : '';
     let reg: RegisterCheckoutResult;
     try {
       reg = await this.checkout.register({
@@ -455,8 +516,8 @@ export class PaymentsService {
         merchantOperationId: paymentId,
         amountSom: registerAmount,
         currency: booking.currency,
-        successUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=success`,
-        failureUrl: `${this.webUserUrl()}/booking/${booking.id}?payment=failed`,
+        successUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=success${guestParam}`,
+        failureUrl: `${this.webUserUrl()}/payment/return?bookingId=${booking.id}&status=failed${guestParam}`,
         // web-user checkout'ni endi o'z sahifasi ichida (iframe) ko'rsatadi
         // — foydalanuvchi butunlay boshqa domenga o'tkazilmaydi. Karta
         // ma'lumotini hamon FAQAT Uzum'ning o'z sahifasi yig'adi/ko'radi;
@@ -1655,6 +1716,7 @@ export class PaymentsService {
   async uzumCheckoutCallback(
     input: NormalizedCheckoutCallback,
     debugHeaders?: Record<string, string>,
+    preVerified?: CheckoutOrderStatus,
   ): Promise<{
     received: true;
     duplicate: boolean;
@@ -1773,26 +1835,35 @@ export class PaymentsService {
     //    chaqiruvimiz orqali summa QAYTA TASDIQLANADI, va FAQAT shu
     //    tasdiqlangan summa quyida ishlatiladi.
     let verifiedAmountSom: number | undefined;
-    try {
-      const verified = await this.checkout.getOrderStatus(input.orderId);
-      if (verified.state === 'PAID' && verified.amountSom !== null) {
-        verifiedAmountSom = verified.amountSom;
+    if (
+      preVerified &&
+      preVerified.state === 'PAID' &&
+      preVerified.amountSom !== null &&
+      preVerified.amountSom !== undefined
+    ) {
+      verifiedAmountSom = preVerified.amountSom;
+    } else {
+      try {
+        const verified = await this.checkout.getOrderStatus(input.orderId);
+        if (verified.state === 'PAID' && verified.amountSom !== null) {
+          verifiedAmountSom = verified.amountSom;
+        }
+      } catch (err) {
+        // `getOrderStatus`ning o'zi muvaffaqiyatsiz (tarmoq/konfiguratsiya) —
+        // `UzumCheckoutError` ATAYLAB oddiy `Error`ga aylantiriladi: aks holda
+        // controller uni signature-rad etish (401) deb noto'g'ri talqin
+        // qilardi (`instanceof UzumCheckoutError`). Oddiy `Error` esa
+        // controller'ning umumiy catch bloki orqali 500'ga tushadi — Uzum
+        // buni qayta urinish signali sifatida qabul qiladi (rasmiy: max 5
+        // marta), bu yerda esa hech qanday DB holati O'ZGARMAYDI.
+        this.logger.warn(
+          `uzum-checkout callback: getOrderStatus orqali qayta tasdiqlash ` +
+            `muvaffaqiyatsiz order=${input.orderId}: ${
+              err instanceof Error ? err.message : "noma'lum"
+            }`,
+        );
+        throw new Error('uzum_checkout_status_reverify_failed');
       }
-    } catch (err) {
-      // `getOrderStatus`ning o'zi muvaffaqiyatsiz (tarmoq/konfiguratsiya) —
-      // `UzumCheckoutError` ATAYLAB oddiy `Error`ga aylantiriladi: aks holda
-      // controller uni signature-rad etish (401) deb noto'g'ri talqin
-      // qilardi (`instanceof UzumCheckoutError`). Oddiy `Error` esa
-      // controller'ning umumiy catch bloki orqali 500'ga tushadi — Uzum
-      // buni qayta urinish signali sifatida qabul qiladi (rasmiy: max 5
-      // marta), bu yerda esa hech qanday DB holati O'ZGARMAYDI.
-      this.logger.warn(
-        `uzum-checkout callback: getOrderStatus orqali qayta tasdiqlash ` +
-          `muvaffaqiyatsiz order=${input.orderId}: ${
-            err instanceof Error ? err.message : "noma'lum"
-          }`,
-      );
-      throw new Error('uzum_checkout_status_reverify_failed');
     }
 
     if (verifiedAmountSom === undefined) {
@@ -1975,7 +2046,7 @@ export class PaymentsService {
   }
 
   async reconcileUzumCheckoutPayments(
-    olderThanMinutes = 2,
+    olderThanMinutes = 1,
   ): Promise<{ scanned: number; updated: number }> {
     if (!this.checkout.isConfigured()) {
       return { scanned: 0, updated: 0 };
@@ -1989,7 +2060,6 @@ export class PaymentsService {
     // (`provider='uzum_checkout'`, `pending`, `provider_reference` YO'Q —
     // `bookings.service.ts::createPayment()`) band qilib, HAQIQIY
     // `processing` sessiyalarni rekonsiliatsiyadan siqib chiqarmaydi.
-    // `olderThanMinutes` oynasi va `LIMIT` ATAYLAB o'zgartirilmagan.
     const rows = await this.pg.query<PaymentRow>(
       `SELECT * FROM payments
        WHERE provider = 'uzum_checkout'
@@ -1998,19 +2068,39 @@ export class PaymentsService {
          AND created_at < now() - make_interval(mins => $1::int)
        ORDER BY created_at ASC
        LIMIT 100`,
-      [Math.max(1, Math.floor(olderThanMinutes))],
+      [Math.max(0, Math.floor(olderThanMinutes))],
     );
 
     let updated = 0;
     for (const payment of rows) {
-      const orderId = String(payment.provider_reference ?? '');
-      if (!orderId) {
-        continue;
+      const prevStatus = payment.status;
+      const synced = await this.syncUzumCheckoutPaymentStatus(payment);
+      if (synced.status !== prevStatus) {
+        updated += 1;
       }
-      try {
-        const status = await this.checkout.getOrderStatus(orderId);
-        if (status.state === 'PAID') {
-          await this.uzumCheckoutCallback({
+    }
+
+    return { scanned: rows.length, updated };
+  }
+
+  /**
+   * Uzum Checkout'dagi buyurtma holatini (`getOrderStatus`) tekshiradi va
+   * agar holat o'zgargan bo'lsa (PAID yoki FAILED) — DB'dagi holatni yangilaydi.
+   * `payment()` polling oqimi hamda `reconcileUzumCheckoutPayments()` cron
+   * shu yagona metod orqali to'lov holatini sinxronlashtiradi.
+   */
+  private async syncUzumCheckoutPaymentStatus(
+    payment: PaymentRow,
+  ): Promise<PaymentRow> {
+    const orderId = String(payment.provider_reference ?? '');
+    if (!orderId || !this.checkout.isConfigured()) {
+      return payment;
+    }
+    try {
+      const status = await this.checkout.getOrderStatus(orderId);
+      if (status.state === 'PAID') {
+        await this.uzumCheckoutCallback(
+          {
             orderId,
             orderNumber: '',
             merchantOperationId: String(payment.id),
@@ -2018,28 +2108,36 @@ export class PaymentsService {
             currency: String(payment.currency),
             state: 'PAID',
             raw: status.raw,
-          });
-          updated += 1;
-        } else if (status.state === 'FAILED') {
-          await this.pg.query(
-            `UPDATE payments SET status = 'failed', updated_at = now()
-             WHERE id = $1 AND status IN ('pending', 'processing')`,
-            [payment.id],
-          );
-          updated += 1;
-        }
-      } catch (err) {
-        // `getOrderStatus` muvaffaqiyatsiz (tarmoq/HTTP/errorCode) bo'lsa —
-        // jim o'tamiz, secret log qilinmaydi (faqat orderId + xabar); keyingi
-        // cron aylanishida qayta sinaladi.
-        this.logger.warn(
-          `uzum-checkout reconcile order=${orderId} o'tkazib yuborildi: ${
-            err instanceof Error ? err.message : 'nomaʼlum'
-          }`,
+          },
+          undefined,
+          status,
         );
+        const [updated] = await this.pg.query<PaymentRow>(
+          'SELECT * FROM payments WHERE id = $1',
+          [payment.id],
+        );
+        return updated ?? payment;
+      } else if (status.state === 'FAILED') {
+        await this.pg.query(
+          `UPDATE payments SET status = 'failed', updated_at = now()
+           WHERE id = $1 AND status IN ('pending', 'processing')`,
+          [payment.id],
+        );
+        const [updated] = await this.pg.query<PaymentRow>(
+          'SELECT * FROM payments WHERE id = $1',
+          [payment.id],
+        );
+        return updated ?? payment;
       }
+    } catch (err) {
+      // `getOrderStatus` muvaffaqiyatsiz (tarmoq/HTTP/errorCode) bo'lsa —
+      // jim o'tamiz, secret log qilinmaydi (faqat orderId + xabar).
+      this.logger.warn(
+        `uzum-checkout sync status muvaffaqiyatsiz order=${orderId}: ${
+          err instanceof Error ? err.message : 'nomaʼlum'
+        }`,
+      );
     }
-
-    return { scanned: rows.length, updated };
+    return payment;
   }
 }

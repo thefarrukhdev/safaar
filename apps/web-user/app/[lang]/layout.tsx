@@ -110,7 +110,7 @@ export default async function LangLayout({
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${manrope.variable} h-full overflow-x-hidden subpixel-antialiased`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden bg-slate-100/60 text-slate-900 subpixel-antialiased dark:bg-slate-950 dark:text-slate-100">
+      <body className="flex min-h-full flex-col overflow-x-hidden bg-white text-slate-900 subpixel-antialiased  ">
         <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
           <NuqsAdapter>
 

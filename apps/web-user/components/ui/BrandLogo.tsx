@@ -21,7 +21,7 @@ export function BrandLogo({ href, brand, className, variant = "light" }: BrandLo
     >
       <span className={cn(
         "font-black tracking-tighter text-2xl sm:text-3xl md:text-[34px] leading-none",
-        isDark ? "text-white" : "text-primary-600 dark:text-white"
+        isDark ? "text-white" : "text-primary-600 "
       )}>
         {brand}
       </span>

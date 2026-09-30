@@ -87,7 +87,7 @@ export default async function TransportDetailPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 {transport.name}
               </h1>
               <FavoriteButton
@@ -99,7 +99,7 @@ export default async function TransportDetailPage({
                 dict={favDict}
               />
             </div>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
               <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
               {transport.cityName}
               {transport.companyName ? ` · ${transport.companyName}` : ""}
@@ -110,7 +110,7 @@ export default async function TransportDetailPage({
             {transport.rating > 0 && (
               <Badge
                 variant="outline"
-                className="gap-1 px-3 py-1 text-sm text-amber-700 dark:text-amber-400"
+                className="gap-1 px-3 py-1 text-sm text-amber-700"
               >
                 <Star className="h-4 w-4 fill-current text-amber-500" />
                 {transport.rating.toFixed(1)}
@@ -120,19 +120,19 @@ export default async function TransportDetailPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600 dark:text-slate-300">
-          <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
+        <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+          <span className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5">
             <Users className="h-4 w-4 text-slate-400" />
             {transport.seats} {(dict as any).detail?.seats || "o'rin"}
           </span>
           {transport.fuelType && (
-            <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
+            <span className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5">
               <Fuel className="h-4 w-4 text-slate-400" />
               {transport.fuelType}
             </span>
           )}
           {transport.luggageCapacityBags != null && (
-            <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
+            <span className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5">
               <Luggage className="h-4 w-4 text-slate-400" />
               {transport.luggageCapacityBags} {(dict as any).detail?.bags || "sumka"}
             </span>
@@ -140,7 +140,7 @@ export default async function TransportDetailPage({
           {transport.phone && (
             <a
               href={`tel:${transport.phone.replace(/\s+/g, "")}`}
-              className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+              className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 hover:bg-slate-200 :bg-slate-700"
             >
               <Phone className="h-4 w-4 text-slate-400" />
               {transport.phone}
@@ -152,15 +152,15 @@ export default async function TransportDetailPage({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-8">
           {transport.companyName && (
-            <section className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
+            <section className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-medium text-slate-500">
                   {(dict as any).detail?.providedBy || "Taqdim etuvchi kompaniya"}
                 </p>
-                <p className="text-base font-bold text-slate-900 dark:text-white">
+                <p className="text-base font-bold text-slate-900">
                   {transport.companyName}
                 </p>
               </div>
@@ -168,8 +168,8 @@ export default async function TransportDetailPage({
           )}
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{(dict as any).detail?.about || "Transport haqida"}</h2>
-            <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
+            <h2 className="text-xl font-bold text-slate-900">{(dict as any).detail?.about || "Transport haqida"}</h2>
+            <p className="whitespace-pre-line leading-relaxed text-slate-600">
               {((dict as any).detail?.rentalDescription || "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.").replace("{company}", transport.companyName || "Hamkor").replace("{name}", transport.name)}
             </p>
           </section>
@@ -179,7 +179,7 @@ export default async function TransportDetailPage({
           </section>
 
           <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-2xl font-bold text-slate-900">
               {reviewsDict.title || "Sharhlar"}
             </h2>
             <ReviewsList 

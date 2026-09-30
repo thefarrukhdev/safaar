@@ -34,16 +34,16 @@ export default function ErrorPage({
 
   return (
     <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
-      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-slate-200/80 bg-white p-8 shadow-xl sm:p-12 dark:border-slate-800 dark:bg-slate-900/50">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/30">
-          <ServerCrash className="h-10 w-10 text-red-600 dark:text-red-500" />
+      <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8 sm:p-12">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-xl bg-red-100 ">
+          <ServerCrash className="h-10 w-10 text-red-600 " />
         </div>
         
-        <h1 className="mb-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+        <h1 className="mb-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl ">
           {dict.title}
         </h1>
         
-        <p className="mb-8 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400">
+        <p className="mb-8 text-sm font-medium leading-relaxed text-slate-600 ">
           {dict.text}
         </p>
         

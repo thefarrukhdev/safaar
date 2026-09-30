@@ -324,6 +324,7 @@ describe('CmsService pages', () => {
             hotel_slug: null,
             hotel_city_name: null,
             hotel_image: null,
+            vehicle_price_per_day: '300000',
             bus_company_id: 'bus-co-1',
             bus_company_name: 'Afrosiyob',
             bus_image: 'https://cdn.example.com/bus.jpg',
@@ -341,6 +342,41 @@ describe('CmsService pages', () => {
         image_url: 'https://cdn.example.com/bus.jpg',
       });
       expect((promoDeal!.title as Record<string, string>).uz).toBe('Afrosiyob');
+    });
+
+    it('clamps a public vehicle deal to the CURRENT vehicles.price_per_day (regression: audit found /cms/offers advertised the raw unclamped new_price_sum even after the base price_per_day was lowered post-approval)', async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'promo-vehicle-2',
+            entity_type: 'vehicle',
+            name: 'Cobalt #2',
+            old_price_sum: '500000',
+            new_price_sum: '400000',
+            discount_percent: 20,
+            end_date: '2026-10-01',
+            status: 'published',
+            hotel_slug: null,
+            hotel_city_name: null,
+            hotel_image: null,
+            // Hamkor promotion tasdiqlangandan keyin mashinaning haqiqiy
+            // kunlik narxini 350000'ga tushirgan — public e'lon HECH QACHON
+            // shu joriy narxdan oshmasligi kerak (350000, 400000 emas).
+            vehicle_price_per_day: '350000',
+            bus_company_id: 'bus-co-2',
+            bus_company_name: 'Cobalt Rental',
+            bus_image: null,
+          },
+        ]);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+      const promoDeal = result.find((r) => r.id === 'promo-vehicle-2');
+
+      expect(promoDeal).toMatchObject({
+        old_price: 350000,
+        new_price: 350000,
+      });
     });
 
     it('a real database error on the promotions query is logged and degrades to zero promo deals — it never fabricates a fake/error-shaped promotion card', async () => {

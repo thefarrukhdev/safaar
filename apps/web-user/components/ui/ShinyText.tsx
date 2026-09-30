@@ -19,7 +19,7 @@ export function ShinyText({
     <span
       className={`inline-block bg-clip-text text-transparent bg-[length:200%_100%]
         bg-[linear-gradient(110deg,#0f172a,45%,#3b82f6,55%,#0f172a)]
-        dark:bg-[linear-gradient(110deg,#ffffff,45%,#3b82f6,55%,#ffffff)]
+        [linear-gradient(110deg,#ffffff,45%,#3b82f6,55%,#ffffff)]
         ${disabled ? "" : "animate-[shine_var(--speed)_linear_infinite]"} 
         ${className}`}
       style={

@@ -23,6 +23,8 @@ export interface HotelListItem {
   rating: number;
   reviewsCount: number;
   minPriceSum: number;
+  baseMinPriceSum?: number;
+  discountAmount?: number;
   imageUrl?: string;
   latitude?: number;
   longitude?: number;
@@ -40,6 +42,8 @@ export interface RoomTypeView {
   id: string;
   name: string;
   priceSum: number;
+  basePriceSum?: number;
+  discountAmount?: number;
   capacity: number;
   available: number;
   promotion?: RoomPromotionView;
@@ -199,4 +203,25 @@ export interface CmsPageView {
   seoDescription: string;
   /** Admin SEO panelida saqlangan xavfsizlashtirilgan (sanitized) maydonlar. */
   seo: CmsEntrySeoView;
+}
+
+export interface NotificationPreferencesView {
+  emailAlerts?: boolean;
+  smsAlerts?: boolean;
+  pushAlerts?: boolean;
+}
+
+export interface BookingMessageView {
+  id: string;
+  bookingId?: string;
+  senderType?: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface CancelPreviewView {
+  penaltyAmount?: number;
+  refundableAmount?: number;
+  freeCancellationDeadline?: string;
+  isFree?: boolean;
 }

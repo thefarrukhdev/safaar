@@ -70,7 +70,7 @@ export function ProfileForm({
       </label>
 
       {state.ok && (
-        <p className="text-sm text-green-600 dark:text-green-400">
+        <p className="text-sm text-green-600 ">
           {dict.saved}
         </p>
       )}

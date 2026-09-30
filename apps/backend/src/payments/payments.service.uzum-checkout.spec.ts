@@ -480,6 +480,8 @@ describe('PaymentsService.createUzumCheckoutPayment (register seam)', () => {
     return { pg, service };
   };
 
+  afterEach(() => jest.restoreAllMocks());
+
   it('konfiguratsiya yo‘q => 503 PAYMENT_PROVIDER_NOT_CONFIGURED, INSERT yo‘q', async () => {
     const { pg, service } = makeService({});
     pg.query
@@ -587,9 +589,223 @@ describe('PaymentsService.createUzumCheckoutPayment (register seam)', () => {
     const registerBody = JSON.parse(fetchInit.body) as {
       amount: number;
       merchantParams: { cart: { total: number } };
+      successUrl?: string;
+      failureUrl?: string;
     };
     expect(registerBody.amount).toBe(15_000_000); // gross tiyin, EMAS 15_225_000 (gross+1.5%)
     expect(registerBody.merchantParams.cart.total).toBe(15_000_000);
+    expect(registerBody.successUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=success',
+    );
+    expect(registerBody.failureUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=failed',
+    );
+  });
+});
+
+describe('PaymentsService.payment — active Uzum status polling', () => {
+  const cfg = {
+    UZUM_CHECKOUT_BASE_URL: 'https://checkout.example',
+    UZUM_CHECKOUT_TERMINAL_ID: 'terminal-test',
+    UZUM_CHECKOUT_API_KEY: 'api-key-test',
+  };
+
+  const bookingRow = {
+    id: 'booking-1',
+    booking_number: 'UZB-QATEST01',
+    user_id: 'user-1',
+    partner_organization_id: 'partner-1',
+    total_amount: '150000',
+    currency: 'UZS',
+    status: 'pending',
+  };
+
+  const makeService = (
+    c: Record<string, string | undefined>,
+    guestAccessMock?: { resolve: jest.Mock },
+  ) => {
+    const pg = { query: jest.fn(), transaction: jest.fn() };
+    pg.transaction.mockImplementation(
+      (op: (tx: PostgresTransaction) => unknown) => op({ query: pg.query }),
+    );
+    const service = new PaymentsService(
+      pg as unknown as PostgresService,
+      { get: jest.fn() } as never,
+      { isConfigured: () => false } as never,
+      { isConfigured: () => false } as never,
+      new UzumProvider({ get: jest.fn() } as never),
+      new UzumCheckoutProvider({ get: (k: string) => c[k] } as never),
+      guestAccessMock as never,
+    );
+    return { pg, service };
+  };
+
+  const admin: RequestActor = {
+    id: 'admin-1',
+    actorType: 'admin',
+    role: Role.SUPER_ADMIN,
+    roles: [Role.SUPER_ADMIN],
+  };
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('processing uzum_checkout to‘lov + Uzum getOrderStatus PAID => to‘lov paid va booking confirmed qilinadi', async () => {
+    const { pg, service } = makeService(cfg);
+    const procPayment = { ...checkoutPayment, status: 'processing' };
+    const paidPayment = { ...checkoutPayment, status: 'paid' };
+
+    pg.query
+      .mockResolvedValueOnce([bookingRow]) // assertBookingVisible
+      .mockResolvedValueOnce([procPayment]) // payment(): SELECT * FROM payments WHERE booking_id = $1
+      .mockResolvedValueOnce([procPayment]) // uzumCheckoutCallback: locate checkout payment
+      .mockResolvedValueOnce([{ id: 'evt-1', payment_id: null }]) // processPaymentEvent: claim event
+      .mockResolvedValueOnce([bookingRow]) // processPaymentEvent: booking FOR UPDATE
+      .mockResolvedValueOnce([procPayment]) // processPaymentEvent: payment FOR UPDATE
+      .mockResolvedValueOnce([]) // processPaymentEvent: UPDATE payments -> paid
+      .mockResolvedValueOnce([]) // processPaymentEvent: UPDATE payment_events
+      .mockResolvedValueOnce([]) // processPaymentEvent: UPDATE bookings -> confirmed
+      .mockResolvedValueOnce([]) // processPaymentEvent: INSERT booking_status_history
+      .mockResolvedValueOnce([]) // processPaymentEvent: INSERT partner_ledger_entries
+      .mockResolvedValueOnce([paidPayment]); // syncUzumCheckoutPaymentStatus: SELECT * FROM payments WHERE id = $1
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          errorCode: 0,
+          result: {
+            orderId: ORDER_ID,
+            status: 'COMPLETED',
+            completedAmount: 15_000_000,
+            currency: '860',
+          },
+        }),
+    } as Response);
+
+    const res = await service.payment(admin, 'booking-1');
+    expect(res.status).toBe('paid');
+    // Pre-verified status berilgani sababli redundant ikkinchi getOrderStatus so'rovi yuborilmaydi
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('guest booking createPayment => return URL guestToken parametrini o‘z ichiga oladi', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          errorCode: 0,
+          result: {
+            orderId: 'order-guest-1',
+            paymentRedirectUrl:
+              'https://checkout.ipt-merch.com/?orderId=order-guest-1',
+          },
+        }),
+    } as Response);
+
+    const guestAccess = { issue: jest.fn(), resolve: jest.fn() };
+    guestAccess.resolve.mockResolvedValue('booking-1');
+
+    const { pg, service } = makeService(
+      {
+        UZUM_CHECKOUT_BASE_URL: 'https://checkout.example',
+        UZUM_CHECKOUT_TERMINAL_ID: 'terminal-test',
+        UZUM_CHECKOUT_API_KEY: 'api-key-test',
+        UZUM_CHECKOUT_SPIC: '10703999001000000',
+        UZUM_CHECKOUT_PACKAGE_CODE: '1495084',
+        UZUM_CHECKOUT_VAT_PERCENT: '12',
+        UZUM_CHECKOUT_RECEIPT_PINFL: '11111111111111',
+      },
+      guestAccess,
+    );
+    const guestBookingRow = { ...bookingRow, user_id: null };
+    pg.query
+      .mockResolvedValueOnce([guestBookingRow]) // assertBookingVisible
+      .mockResolvedValueOnce([]) // no open payment
+      .mockResolvedValueOnce([]) // INSERT INTO payments
+      .mockResolvedValueOnce([]);
+
+    await service.createPayment(
+      undefined,
+      'booking-1',
+      { provider: 'uzum_checkout' },
+      'my-guest-token-xyz',
+    );
+
+    const fetchMock = globalThis.fetch as jest.Mock<
+      Promise<Response>,
+      [string, { body: string }]
+    >;
+    const [, fetchInit] = fetchMock.mock.calls[0];
+    const registerBody = JSON.parse(fetchInit.body) as {
+      successUrl?: string;
+      failureUrl?: string;
+    };
+    expect(registerBody.successUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=success&guestToken=my-guest-token-xyz',
+    );
+    expect(registerBody.failureUrl).toBe(
+      'http://localhost:3000/payment/return?bookingId=booking-1&status=failed&guestToken=my-guest-token-xyz',
+    );
+  });
+
+  it('processing uzum_checkout to‘lov + Uzum getOrderStatus FAILED => to‘lov failed qilinadi', async () => {
+    const { pg, service } = makeService(cfg);
+    const procPayment = { ...checkoutPayment, status: 'processing' };
+    const failedPayment = { ...checkoutPayment, status: 'failed' };
+
+    pg.query
+      .mockResolvedValueOnce([bookingRow]) // assertBookingVisible
+      .mockResolvedValueOnce([procPayment]) // SELECT * FROM payments WHERE booking_id = $1
+      .mockResolvedValueOnce([]) // UPDATE payments SET status = 'failed'
+      .mockResolvedValueOnce([failedPayment]); // SELECT * FROM payments WHERE id = $1
+
+    jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          errorCode: 0,
+          result: {
+            orderId: ORDER_ID,
+            status: 'DECLINED',
+          },
+        }),
+    } as Response);
+
+    const res = await service.payment(admin, 'booking-1');
+    expect(res.status).toBe('failed');
+  });
+
+  it('processing uzum_checkout to‘lov + getOrderStatus tarmoq xatosi => GET so‘rovi yiqitilmaydi, joriy holat qaytariladi', async () => {
+    const { pg, service } = makeService(cfg);
+    const procPayment = { ...checkoutPayment, status: 'processing' };
+
+    pg.query
+      .mockResolvedValueOnce([bookingRow]) // assertBookingVisible
+      .mockResolvedValueOnce([procPayment]); // SELECT * FROM payments WHERE booking_id = $1
+
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('Network offline'));
+
+    const res = await service.payment(admin, 'booking-1');
+    expect(res.status).toBe('processing');
+  });
+
+  it('allaqachon paid bo‘lgan to‘lov uchun Uzum getOrderStatus chaqirilmaydi', async () => {
+    const { pg, service } = makeService(cfg);
+    const paidPayment = { ...checkoutPayment, status: 'paid' };
+
+    pg.query
+      .mockResolvedValueOnce([bookingRow])
+      .mockResolvedValueOnce([paidPayment]);
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+    const res = await service.payment(admin, 'booking-1');
+    expect(res.status).toBe('paid');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 

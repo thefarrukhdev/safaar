@@ -27,7 +27,24 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: '/payment/:path*',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://uzum.uz https://*.uzum.uz https://uzumbank.uz https://*.uzumbank.uz https://uzumcheckout.uz https://*.uzumcheckout.uz https://ipt-merch.com https://*.ipt-merch.com",
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+      {
+        source: '/((?!payment/).*)',
         headers: [
           {
             key: 'X-Content-Type-Options',

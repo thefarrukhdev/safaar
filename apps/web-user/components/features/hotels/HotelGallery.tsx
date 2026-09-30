@@ -4,8 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
 import { Camera, ImageIcon } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
-import { Carousel } from '@/components/ui/Carousel';
+import { Lightbox } from '@/components/ui/Lightbox';
 
 export function HotelGallery({
   images,
@@ -23,7 +22,7 @@ export function HotelGallery({
   if (shots.length === 0) {
     return (
       <div
-        className="flex aspect-[21/9] w-full items-center justify-center rounded-xl bg-slate-900/[0.05] text-slate-900/40"
+        className="flex aspect-[21/9] w-full items-center justify-center rounded-2xl bg-slate-100 text-slate-900/40"
         role="img"
         aria-label={alt}
       >
@@ -36,14 +35,8 @@ export function HotelGallery({
     <>
       {/* Desktop/Mobile Gallery Grid */}
       <div className="relative">
-        <img
-          src={shots[0]}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 size-full scale-110 rounded-xl object-cover opacity-30 blur-3xl saturate-150"
-        />
         <div
-          className="group relative cursor-pointer overflow-hidden rounded-xl"
+          className="group relative cursor-pointer overflow-hidden rounded-2xl"
           onClick={() => setIsOpen(true)}
         >
           <div className="grid grid-cols-1 gap-1.5 sm:h-[400px] sm:grid-cols-4 sm:grid-rows-2">
@@ -75,7 +68,7 @@ export function HotelGallery({
                 <div
                   key={`${src}-${index}`}
                   className={cn(
-                    'relative overflow-hidden bg-slate-900/[0.05]',
+                    'relative overflow-hidden bg-slate-100',
                     !isMain && 'hidden sm:block',
                     isMain ? 'aspect-[16/10] sm:aspect-auto w-full' : '',
                     gridClasses
@@ -90,13 +83,17 @@ export function HotelGallery({
                     className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.02] motion-reduce:transition-none"
                     quality={isMain ? 85 : 75}
                   />
-                  {isLastVisible && shots.length > 1 && (
+                  {(isLastVisible || (isMain && shots.length > 1)) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsOpen(true);
                       }}
-                      className="absolute bottom-4 right-4 z-10 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-900/[0.06] bg-white/90 backdrop-blur px-5 text-sm font-medium text-slate-900 transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100"
+                      className={cn(
+                        "absolute bottom-4 right-4 z-10 h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-900 transition-all duration-200 ease-out hover:bg-slate-50 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 motion-reduce:transition-none motion-reduce:active:scale-100",
+                        isMain && !isLastVisible ? "flex sm:hidden" : "",
+                        isLastVisible && !isMain ? "hidden sm:flex" : "flex"
+                      )}
                     >
                       <Camera className="size-5" aria-hidden="true" />
                       <span>{shots.length} ta rasm</span>
@@ -109,22 +106,13 @@ export function HotelGallery({
         </div>
       </div>
 
-      {/* Fullscreen Gallery Modal */}
-      <Modal
+      {/* Fullscreen Lightbox */}
+      <Lightbox
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        maxWidth="max-w-5xl"
-        title="Barcha rasmlar"
-      >
-        <div className="mt-2 w-full px-1">
-          <Carousel
-            images={shots}
-            alt={alt}
-            aspectRatio="aspect-[16/10] sm:aspect-[21/9]"
-            className="rounded-xl shadow-lg ring-1 ring-slate-200"
-          />
-        </div>
-      </Modal>
+        images={shots}
+        alt={alt}
+      />
     </>
   );
 }

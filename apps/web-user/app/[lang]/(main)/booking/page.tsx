@@ -70,7 +70,7 @@ export default async function CheckoutPage({
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-28 lg:pb-12">
       <div className="flex items-center gap-3">
         <BackButton />
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 ">
           {dict.title}
         </h1>
       </div>

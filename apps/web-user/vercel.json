@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd ../.. && npm run build:types && npm run build -w @safaar/api-client && npm run build -w @safaar/web-user",
-  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && pnpm run build:types && pnpm --filter @safaar/api-client run build && pnpm --filter @safaar/web-user run build",
+  "installCommand": "cd ../.. && pnpm install",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }

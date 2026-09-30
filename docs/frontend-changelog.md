@@ -304,7 +304,7 @@ promos mantig'i o'zgarmadi.
   `web-admin` Vercel project link/credential mavjud emas (`.vercel` root
   `web-partner` ga bog'langan). Deploy `web-admin` Vercel loyihasiga
   kirish huquqi bo'lgan kishi tomonidan qilinishi kerak
-  (`npx vercel --prod` yoki git-connected branch). Fixlar haqiqiy
+  (`pnpm vercel --prod` yoki git-connected branch). Fixlar haqiqiy
   production API'ga qarab real brauzerda tasdiqlangan; faqat
   Vercel-hosted URL verifikatsiyasi deploy'dan keyin qoladi.
 
@@ -374,7 +374,7 @@ Vizual dizayn takrorlanmadi — bir xil `AccommodationPage` + `AccommodationList
 - `/uz/resorts` DevTools Network'da `.../v1/hotels?type=resort` so'rovi ketishi
   kerak; `/uz/hotels` da `type` yo'q.
 - `/uz/hotels` regressiyasi bo'lmasligi kerak (bir xil ro'yxat).
-- Backend: `npx jest src/hotels` (11 test).
+- Backend: `pnpm jest src/hotels` (11 test).
 
 ## Qaytadan kiritmaslik uchun
 Yangi accommodation kategoriya route qo'shsangiz: `renderAccommodationRoute.tsx`
@@ -462,7 +462,7 @@ Lokal production build + real backend:
 cd apps/web-user
 NEXT_PUBLIC_API_URL=https://111-88-246-79.sslip.io/v1 \
 NEXT_PUBLIC_SITE_URL=http://localhost:3100 \
-npx next build && npx next start -p 3100
+pnpm next build && pnpm next start -p 3100
 ```
 Keyin:
 - Kirmagan holatda `/uz/hotels` → `button[aria-label="Bildirishnomalar"]` = **0 ta**.
@@ -578,7 +578,7 @@ route allaqachon bor — offline fallback uchun ishlatish mumkin.
 
 | Nima | Natija |
 |---|---|
-| `npm run build:types && build -w @safaar/api-client && build -w @safaar/web-user` | ✅ PASS |
+| `pnpm run build:types && build -w @safaar/api-client && build -w @safaar/web-user` | ✅ PASS |
 | `tsc --noEmit` (`apps/web-user`) | ✅ PASS |
 | `eslint` (o'zgargan fayllar) | ✅ PASS |
 | F2: lokal prod `curl /sw.js` | ✅ `200`, `content-type: application/javascript` |
@@ -602,7 +602,7 @@ beradi, chunki backend allowlist'ida `localhost` yo'q).
 
 ## Deploy
 Bu yozuv yozilганда — **hali deploy qilinmagan** (foydalanuvchi tasdig'i kutilmoqda).
-web-user deploy workflow'i: `cd apps/web-user && npx vercel --prod` (Vercel loyihasi
+web-user deploy workflow'i: `cd apps/web-user && pnpm vercel --prod` (Vercel loyihasi
 `web-user`, prod URL `https://web-user-rho.vercel.app`; git auto-deploy yo'q, manual CLI).
 
 ## Git

@@ -47,14 +47,14 @@ export function DetailLocationSection({
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
+      <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
       
       <div className="flex flex-col md:flex-row gap-6">
         <div className="flex flex-col gap-4 w-full md:w-[320px] shrink-0">
-          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
             <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">{address}</span>
+              <span className="text-sm font-medium text-slate-900 leading-relaxed">{address}</span>
             </div>
           </div>
 
@@ -62,23 +62,23 @@ export function DetailLocationSection({
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-[0.98]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 text-sm font-medium text-white transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <ExternalLink className="h-4 w-4" />
             {openInMapsText}
           </a>
         </div>
         
-        <div className="w-full h-[400px]">
+        <div className="w-full h-[250px] sm:h-[400px]">
           {hasCoordinates ? (
             <InteractiveMapView 
               items={mapItems} 
-              className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800"
+              className="relative h-[250px] sm:h-[400px] w-full rounded-2xl overflow-hidden border border-slate-200"
               zoom={14}
             />
           ) : (
-            <div className="flex h-[400px] w-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <div className="flex h-[250px] sm:h-[400px] w-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-100">
+              <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
                 <MapPin className="h-4 w-4" />
                 {noCoordsText}
               </p>

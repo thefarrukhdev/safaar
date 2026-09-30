@@ -36,7 +36,7 @@ jobs:
           filters: |
             shared: &shared
               - 'package.json'
-              - 'package-lock.json'
+              - 'pnpm-lock.yaml'
               - 'packages/types/**'
             backend:
               - *shared
@@ -53,17 +53,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build:types
-      - run: npm run prisma:validate -w @safaar/backend --if-present || true
-      - run: npm run format:check -w @safaar/backend --if-present || true
-      - run: npm run lint -w @safaar/backend --if-present || true
-      - run: npm run test:backend --if-present || true
-      - run: npm run build:backend
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
+      - run: pnpm --filter @safaar/backend run prisma:validate || true
+      - run: pnpm --filter @safaar/backend run format:check || true
+      - run: pnpm --filter @safaar/backend run lint || true
+      - run: pnpm run test:backend || true
+      - run: pnpm run build:backend
 
   # 3) Frontend tekshiruvlari
   frontend:
@@ -72,14 +73,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build:types
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:types
       # Frontend loyihalarini to'liq build va lint qilib tekshiramiz
-      - run: npx turbo run lint build --filter="./apps/web-*"
+      - run: pnpm exec turbo run lint build --filter="./apps/web-*"
 
   # 4) Boundary check — (Soft mode: faqat ogohlantiradi, bloklamaydi)
   boundary-check:

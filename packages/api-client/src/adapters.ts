@@ -111,7 +111,9 @@ interface RawRoomPromotion {
 interface RawRoom {
   id: string;
   name: Localized;
-  basePrice: number;
+  basePrice?: number;
+  base_price?: number;
+  effective_price?: number;
   baseOccupancy?: number;
   maxAdults?: number;
   totalInventory?: number;
@@ -139,11 +141,20 @@ interface RawHotel {
   pets_allowed?: boolean;
   children_allowed?: boolean;
   minPrice?: number;
+  min_price?: number;
+  baseMinPrice?: number;
+  base_min_price?: number;
+  discountAmount?: number;
+  discount_amount?: number;
   city?: RawCity;
   rooms?: RawRoom[];
 }
 
 function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
+  const baseMinPriceSum = raw.base_min_price ?? raw.baseMinPrice;
+  const minPriceSum = Number(raw.min_price ?? raw.minPrice ?? 0);
+  const discountAmount = raw.discount_amount ?? raw.discountAmount ?? (baseMinPriceSum ? baseMinPriceSum - minPriceSum : 0);
+
   return {
     id: raw.id,
     slug: raw.slug,
@@ -152,7 +163,8 @@ function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
     stars: raw.stars ?? 0,
     rating: raw.ratingAverage ?? 0,
     reviewsCount: raw.reviewsCount ?? 0,
-    minPriceSum: Number(raw.minPrice ?? 0),
+    minPriceSum,
+    ...(baseMinPriceSum && discountAmount > 0 && { baseMinPriceSum, discountAmount }),
     imageUrl: raw.images?.[0],
     latitude: raw.latitude,
     longitude: raw.longitude,
@@ -164,10 +176,16 @@ export function toHotelListItem(raw: RawHotel, locale: Locale): HotelListItem {
 }
 
 function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
+  // `effective_price` is the discounted final price, `base_price` is the original price.
+  const basePriceSum = Number(raw.base_price ?? raw.basePrice ?? 0);
+  const priceSum = raw.effective_price !== undefined ? Number(raw.effective_price) : basePriceSum;
+  const discountAmount = basePriceSum - priceSum;
+
   return {
     id: raw.id,
     name: pickLocale(raw.name, locale),
-    priceSum: Number(raw.basePrice ?? 0),
+    priceSum,
+    ...(discountAmount > 0 && { basePriceSum, discountAmount }),
     capacity: raw.baseOccupancy ?? raw.maxAdults ?? 1,
     available: raw.available ?? raw.totalInventory ?? 0,
     ...(raw.promotion
@@ -214,6 +232,8 @@ interface RawUser {
   preferredLanguage?: string;
   bonusBalance?: number;
   createdAt?: string;
+  avatarUrl?: string;
+  avatar_url?: string;
 }
 
 export function toProfileView(raw: RawUser): ProfileView {
@@ -228,7 +248,7 @@ export function toProfileView(raw: RawUser): ProfileView {
     lastName,
     fullName: fullName || (raw.phone ?? ""),
     email: raw.email ?? "",
-    avatarUrl: (raw as any).avatarUrl || (raw as any).avatar_url,
+    avatarUrl: raw.avatarUrl || raw.avatar_url,
     bonusBalanceSum: Number(raw.bonusBalance ?? 0),
     preferredLanguage: raw.preferredLanguage ?? "uz",
     status: raw.status ?? "active",

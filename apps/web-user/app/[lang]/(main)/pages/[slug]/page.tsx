@@ -66,18 +66,18 @@ export default async function CmsPagePage({
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
       <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl ">
           {entry.title || common.brand}
         </h1>
         {entry.updatedAt && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 ">
             {UPDATED_LABEL[locale]}:{" "}
             {new Date(entry.updatedAt).toLocaleDateString(locale)}
           </p>
         )}
       </header>
 
-      <div className="flex flex-col gap-4 text-base leading-relaxed text-slate-600 dark:text-slate-400">
+      <div className="flex flex-col gap-4 text-base leading-relaxed text-slate-600 ">
         {paragraphs.length > 0 ? (
           paragraphs.map((paragraph, index) => (
             <p key={index} className="whitespace-pre-wrap">

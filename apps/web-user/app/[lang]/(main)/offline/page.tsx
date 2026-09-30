@@ -27,10 +27,10 @@ export default async function OfflinePage({
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-6 py-20 text-center">
       <div className="flex flex-col items-center gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900  sm:text-3xl">
           {offline.title}
         </h1>
-        <p className="max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+        <p className="max-w-md text-sm leading-relaxed text-slate-600 ">
           {offline.text}
         </p>
       </div>

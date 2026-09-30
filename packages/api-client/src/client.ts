@@ -36,6 +36,10 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   token?: string;
   query?: Record<string, QueryValue>;
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]): string {

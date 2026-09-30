@@ -7,7 +7,7 @@ Import these two files into Postman:
 
 Run order for local testing:
 
-1. Start backend: `npm run dev:backend`
+1. Start backend: `pnpm run dev:backend`
 2. Select the `safaar Local` environment.
 3. Run `POST /auth/user/send-otp`.
 4. Run `POST /auth/user/verify-otp`; it stores `userAccessToken`.

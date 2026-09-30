@@ -7,14 +7,14 @@ on:
       - "apps/backend/**"
       - "packages/types/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/security.yml"
   pull_request:
     paths:
       - "apps/backend/**"
       - "packages/types/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/security.yml"
 
 permissions:
@@ -42,14 +42,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: npm audit (Warning Only)
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: pnpm audit (Warning Only)
         run: |
-          npm audit --audit-level=critical || echo "::warning::Kritik zaifliklar topildi. Ularni iloji boricha tezroq to'g'rilash tavsiya etiladi."
+          pnpm audit || echo "::warning::Kritik zaifliklar topildi. Ularni iloji boricha tezroq to'g'rilash tavsiya etiladi."
 
   dependency-review:
     name: New dependency review (PR)

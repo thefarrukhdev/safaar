@@ -176,7 +176,7 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={handleCancelClick}
-            className="gap-2 font-bold text-red-600 hover:text-red-700 dark:text-red-500 rounded-full active:scale-[0.97]"
+            className="gap-2 font-bold text-red-600 hover:text-red-700  rounded-full active:scale-[0.97]"
           >
             <XCircle className="h-4 w-4" />
             {dict.actions?.cancelBooking}
@@ -189,7 +189,7 @@ export function BookingActions({
             variant="secondary"
             size="lg"
             onClick={() => setRefundModalOpen(true)}
-            className="gap-2 font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500 rounded-full active:scale-[0.97]"
+            className="gap-2 font-bold text-amber-600 hover:text-amber-700  rounded-full active:scale-[0.97]"
           >
             <RotateCcw className="h-4 w-4" />
             {(dict as any).actions?.requestRefund}
@@ -223,9 +223,9 @@ export function BookingActions({
           ) : error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : previewData ? (
-            <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 dark:bg-slate-800">
+            <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 ">
               {dict.cancelModal?.rulesIntro && (
-                <p className="text-sm text-slate-700 dark:text-slate-300">
+                <p className="text-sm text-slate-700 ">
                   {dict.cancelModal.rulesIntro}
                 </p>
               )}
@@ -263,7 +263,7 @@ export function BookingActions({
             </div>
           ) : null}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
             <Button
               variant="ghost"
               onClick={() => setCancelModalOpen(false)}
@@ -275,7 +275,7 @@ export function BookingActions({
             <Button
               variant="secondary"
               onClick={confirmCancel}
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full active:scale-[0.97]"
+              className="text-red-600 hover:bg-red-50 :bg-red-950/30 rounded-full active:scale-[0.97]"
               disabled={loadingPreview || cancelling || !!error}
             >
               {cancelling
@@ -293,11 +293,11 @@ export function BookingActions({
         <div className="space-y-4">
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="text-sm font-medium text-slate-700 ">
               {dict.refundModal?.reasonLabel}
             </label>
             <textarea
-              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500   "
               rows={4}
               placeholder={dict.refundModal?.reasonPlaceholder}
               value={refundReason}
@@ -305,7 +305,7 @@ export function BookingActions({
               disabled={refunding}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] dark:border-slate-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
             <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding} className="rounded-full active:scale-[0.97]">
               Yopish
             </Button>

@@ -16,7 +16,7 @@ export function HeaderBrand({ href, brand, className }: HeaderBrandProps) {
         className
       )}
     >
-      <span className="text-xl font-black tracking-tight text-primary-600 transition-colors hover:text-primary-700 sm:text-2xl dark:text-primary-500 group-data-[transparent=true]/header:text-white">
+      <span className="text-xl font-black tracking-tight text-blue-600 transition-colors sm:text-2xl group-data-[transparent=true]/header:text-white">
         {brand}
       </span>
     </Link>

@@ -39,7 +39,7 @@ export function AuthLayout({ children, locale, dict }: AuthLayoutProps) {
       <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
         <Link 
           href={`/${locale}`}
-          className="flex items-center gap-2 px-4 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full text-slate-700 dark:text-slate-200 text-sm font-semibold transition-all duration-300 shadow-sm"
+          className="flex items-center gap-2 px-4 h-10 bg-white  border border-slate-200  hover:bg-slate-50 :bg-slate-800 rounded-full text-slate-700  text-sm font-semibold transition-all duration-300 shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Ortga</span>

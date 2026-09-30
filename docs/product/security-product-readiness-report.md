@@ -286,7 +286,7 @@ still present in `Modal.tsx`, `searchParams` still present in
 
 ### Re-verification against the combined (checkpoint + CSP) state
 
-- All three apps rebuilt from scratch (`npm ci` in an isolated worktree,
+- All three apps rebuilt from scratch (`pnpm install --frozen-lockfile` in an isolated worktree,
   not relying on any build cache) — all three PASS.
 - Full enforced-CSP QA suite re-run against this combined state:
   18/18 passed (web-user 8, web-admin 9, web-partner 1 covering 6
@@ -320,7 +320,7 @@ still present in `Modal.tsx`, `searchParams` still present in
 
 A second isolated git worktree (`/home/laziz/safaar-final-release`,
 detached HEAD at the exact combined commit) was created, installed via
-a genuine `npm ci`, and all three apps built successfully there too —
+a genuine `pnpm install --frozen-lockfile`, and all three apps built successfully there too —
 this is the actual proposed deploy source, distinct from the working
 checkout (which still carries deliberately-unrelated uncommitted items:
 an admin CLI script feature, pre-existing e2e test infrastructure,

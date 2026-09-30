@@ -63,20 +63,20 @@ export function BookingsListLive({
               <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 dark:text-white">
+                    <span className="font-semibold text-slate-900 ">
                       {booking.bookingNumber}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700  ">
                       {typeLabel}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 ">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClasses[tone]}`}
                     >
                       {statusLabel}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-slate-900 ">
                       {formatSum(booking.totalSum)}
                     </span>
                   </div>

@@ -30,6 +30,11 @@ import {
   isSchool21Code,
   type ActiveRoomPromotion,
 } from '../common/room-pricing';
+import {
+  activeVehiclePromotionPredicate,
+  calculateVehiclePrice,
+  type ActiveVehiclePromotion,
+} from '../common/vehicle-pricing';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
@@ -98,6 +103,12 @@ interface VehicleRow {
   id: string;
   company_id: string;
   price_per_day: string | number;
+  promotion_id?: string | null;
+  promotion_old_price?: string | number | null;
+  promotion_new_price?: string | number | null;
+  promotion_discount_percent?: string | number | null;
+  promotion_start_date?: string | null;
+  promotion_end_date?: string | null;
 }
 
 export interface BookingRow {
@@ -804,8 +815,30 @@ export class BookingsService {
     const promo = await this.resolvePromo(promoCode);
 
     const { booking, payment } = await this.pg.transaction(async (tx) => {
+      // Xona yo'liga (`createHotelInternal`) AYNAN bir xil naqsh: mashina
+      // qulflanadigan (`FOR UPDATE`) SO'ROVNING O'ZIDA joriy faol hamkor
+      // promotion'i ham LEFT JOIN LATERAL orqali yuklanadi — bu narxni
+      // promotion tasdiqlangan paytdagi emas, HOZIRGI (booking daqiqasidagi)
+      // `price_per_day` va HOZIRGI faol promotion holatiga bog'laydi
+      // ("suzuvchi" — floating — narx, xuddi xona promotion'i kabi).
       const [locked] = await tx.query<VehicleRow>(
-        "SELECT id, price_per_day FROM vehicles WHERE id = $1 AND status = 'active' FOR UPDATE",
+        `SELECT v.id, v.price_per_day,
+                ap.id::text AS promotion_id,
+                ap.old_price_sum::float8 AS promotion_old_price,
+                ap.new_price_sum::float8 AS promotion_new_price,
+                ap.discount_percent AS promotion_discount_percent,
+                ap.start_date::text AS promotion_start_date,
+                ap.end_date::text AS promotion_end_date
+         FROM vehicles v
+         LEFT JOIN LATERAL (
+           SELECT p.*
+           FROM promotions p
+           WHERE ${activeVehiclePromotionPredicate('p', 'v.id')}
+           ORDER BY p.updated_at DESC, p.created_at DESC
+           LIMIT 1
+         ) ap ON TRUE
+         WHERE v.id = $1 AND v.status = 'active'
+         FOR UPDATE OF v`,
         [vehicle.id],
       );
       if (!locked) {
@@ -833,14 +866,53 @@ export class BookingsService {
         });
       }
 
-      const subtotal = Number(locked.price_per_day) * days;
-      const discountAmount = promo
+      // Xona yo'liga AYNAN bir xil naqsh (`bookings.service.ts:633-636` —
+      // `createHotelInternal`): promotion narxi joriy `price_per_day`dan
+      // OSHIB ketmasligini kafolatlaydigan `calculateVehiclePrice()`
+      // (ilgari bu yerda promotion UMUMAN hisobga olinmas edi — hamkor
+      // tasdiqlangan chegirma bilan e'lon qilingan mashina baribir to'liq
+      // narxda hisoblanardi, "SAFAAR VEHICLE PROMOTION PRICING AUDIT"
+      // aniqlagan asosiy pul yo'lidagi xato).
+      const vehiclePromotion: ActiveVehiclePromotion | null =
+        locked.promotion_id
+          ? {
+              id: locked.promotion_id,
+              entity_id: locked.id,
+              old_price_sum: Number(locked.promotion_old_price),
+              new_price_sum: Number(locked.promotion_new_price),
+              discount_percent: Number(locked.promotion_discount_percent),
+              start_date: locked.promotion_start_date ?? undefined,
+              end_date: String(locked.promotion_end_date ?? ''),
+            }
+          : null;
+      const unitPrice = calculateVehiclePrice(
+        locked.price_per_day,
+        vehiclePromotion,
+      );
+      const baseSubtotal = unitPrice.basePricePerDay * days;
+      const effectiveSubtotal = unitPrice.effectivePricePerDay * days;
+      const partnerDiscountAmount = baseSubtotal - effectiveSubtotal;
+
+      // Xona yo'lidagi bir xil SCHOOL21 anti-stacking siyosati (`:638-643`)
+      // — endi mashina promotion'i ham narxga ta'sir qilishi mumkin bo'lgani
+      // uchun, xuddi shu suiiste'mol yo'li (bitta obyektga ikkita chegirmani
+      // birlashtirish) mashinalar uchun ham ochiladi, shuning uchun bir xil
+      // himoya qo'llaniladi.
+      if (vehiclePromotion && promo && isSchool21Code(promo.code)) {
+        throw new BadRequestException({
+          code: 'PROMO_STACKING_NOT_ALLOWED',
+          message: 'SCHOOL21 faol hamkor chegirmasi bilan birga qo‘llanilmaydi',
+        });
+      }
+
+      const promoDiscountAmount = promo
         ? calculatePromoDiscount(
-            subtotal,
+            effectiveSubtotal,
             promo.discount_type,
             promo.discount_value,
           )
         : 0;
+      const discountAmount = partnerDiscountAmount + promoDiscountAmount;
 
       if (promo) {
         const redeemed = await this.promosService.redeem(promo.code, tx);
@@ -857,7 +929,7 @@ export class BookingsService {
         partner_organization_id: vehicle.partner_organization_id,
         payment_method: this.paymentMethod(dto.payment_method),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
-        subtotal,
+        subtotal: baseSubtotal,
         discount_amount: discountAmount,
         commission_rate_percent: vehicle.commission_rate,
         hotel_id: null,
@@ -873,7 +945,15 @@ export class BookingsService {
           check_in: checkIn,
           check_out: checkOut,
           days,
-          price_per_day: Number(locked.price_per_day),
+          price_per_day: unitPrice.basePricePerDay,
+          effective_price_per_day: unitPrice.effectivePricePerDay,
+          partner_promotion: vehiclePromotion
+            ? {
+                id: vehiclePromotion.id,
+                discount_percent: vehiclePromotion.discount_percent,
+                discount_amount: partnerDiscountAmount,
+              }
+            : null,
           promo_code: promo?.code ?? null,
           guest: {
             first_name: guest.firstName,
@@ -1209,6 +1289,31 @@ export class BookingsService {
 
   async retryPayment(actor: RequestActor | undefined, id: string) {
     const booking = await this.assertBooking(id, actor);
+
+    // BUG FIX (payments/refunds audit, 2026-09-29): booking allaqachon
+    // TO'LANGAN bo'lsa (confirmed/awaiting_partner_confirmation/completed)
+    // yangi to'lov sessiyasi OCHILMAYDI. `createPayment()`dagi "mavjud ochiq
+    // to'lov" qidiruvi faqat `status IN ('pending','processing')` qatorlarni
+    // ko'radi — allaqachon `'paid'` bo'lgan yagona to'lov shu qidiruvga mos
+    // kelmagani uchun bu yerga HECH QANDAY booking-holat tekshiruvisiz
+    // yetib kelinsa, IKKINCHI, mustaqil, HAQIQIY to'lov sessiyasi (yangi
+    // checkout URL yoki karta sxemalari uchun HAQIQIY Uzum Checkout
+    // `/payment/register` chaqiruvi) ochilardi — mijoz uchun haqiqiy
+    // ikkinchi marta to'lov (double-charge) xavfi, hech qanday avtomatik
+    // qaytarishsiz. `payments.service.ts::createPayment()`dagi bilan BIR
+    // XIL "allaqachon to'langan" ta'rifi (`assertUzumPayable()`dagi
+    // ALREADY_PAID bilan bir xil uchta holat).
+    if (
+      booking.status === BS.CONFIRMED ||
+      booking.status === BS.AWAITING_PARTNER_CONFIRMATION ||
+      booking.status === BS.COMPLETED
+    ) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_PAID',
+        message: 'Bu bron uchun to\u2018lov allaqachon qabul qilingan',
+      });
+    }
+
     return this.createPayment(this.pg, booking);
   }
 

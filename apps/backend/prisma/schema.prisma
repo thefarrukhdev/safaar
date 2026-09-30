@@ -1390,6 +1390,10 @@ enum PaymentMethod {
   uzcard
   humo
   cash
+  uzum
+  uzum_checkout
+  visa
+  mastercard
 }
 
 enum BookingStatus {
@@ -1409,6 +1413,7 @@ enum PaymentStatus {
   paid
   failed
   refunded
+  reversed
 }
 
 enum RefundStatus {

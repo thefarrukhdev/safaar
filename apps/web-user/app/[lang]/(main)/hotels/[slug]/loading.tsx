@@ -21,7 +21,7 @@ export default function HotelDetailLoading() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800"
+              className="h-20 animate-pulse rounded-xl bg-slate-100 "
             />
           ))}
         </div>

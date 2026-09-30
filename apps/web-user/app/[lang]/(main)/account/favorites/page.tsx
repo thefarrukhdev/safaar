@@ -47,7 +47,7 @@ export default async function AccountFavoritesPage({
   if (rawFavorites.length === 0) {
     return (
       <EmptyState
-        icon={<HeartOff className="h-10 w-10 text-slate-400 dark:text-slate-500" />}
+        icon={<HeartOff className="h-10 w-10 text-slate-400 " />}
         title={dict.favorites.empty}
         description={favDict.emptyDescription}
         actionLabel={favDict.discoverAction}
@@ -129,8 +129,8 @@ export default async function AccountFavoritesPage({
               href={`/${locale}/hotels/${hotel.slug}`}
               className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
-                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card transition-all duration-200 hover:bg-white hover:border-slate-300 ">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-white ">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
@@ -145,7 +145,7 @@ export default async function AccountFavoritesPage({
                     </span>
                   )}
                   {hotel.rating > 0 && (
-                    <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 shadow-sm backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
+                    <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 ">
                       <Star className="h-3 w-3 fill-current" />
                       {hotel.rating.toFixed(1)}
                     </span>
@@ -154,14 +154,14 @@ export default async function AccountFavoritesPage({
 
                 <div className="flex flex-1 flex-col justify-between p-3">
                   <div>
-                    <h3 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">
+                    <h3 className="line-clamp-1 text-sm font-bold text-slate-900 ">
                       {hotel.name}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{hotel.cityName}</p>
+                    <p className="text-xs text-slate-500 ">{hotel.cityName}</p>
                   </div>
 
                   <div className="mt-auto">
-                    <span className="text-sm font-bold text-primary-700 dark:text-primary-400">
+                    <span className="text-sm font-bold text-primary-700 ">
                       {formatSum(hotel.minPriceSum)}
                     </span>
                     <span className="text-[10px] text-slate-400"> / {favDict.perNight || "kecha"}</span>
@@ -181,8 +181,8 @@ export default async function AccountFavoritesPage({
               href={linked.href}
               className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
-              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
-                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
+              <article className="flex h-full overflow-hidden rounded-xl border border-slate-200 bg-card transition-all duration-200 hover:bg-white hover:border-slate-300 ">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-white ">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
@@ -198,10 +198,10 @@ export default async function AccountFavoritesPage({
                   )}
                 </div>
                 <div className="flex flex-1 flex-col justify-center p-3">
-                  <h3 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">
+                  <h3 className="line-clamp-1 text-sm font-bold text-slate-900 ">
                     {linked.name}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{linked.subtitle}</p>
+                  <p className="text-xs text-slate-500 ">{linked.subtitle}</p>
                 </div>
               </article>
             </Link>
@@ -214,10 +214,10 @@ export default async function AccountFavoritesPage({
         return (
           <Card key={item.favId}>
             <CardBody className="flex items-center gap-3">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700  ">
                 {item.targetType}
               </span>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="text-sm font-medium text-slate-700 ">
                 {item.targetId}
               </span>
             </CardBody>

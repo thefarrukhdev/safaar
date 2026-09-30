@@ -44,7 +44,7 @@ export function CityPicker({ cities, value, onChange, placeholder, label }: Prop
           {label && <span className="text-xs font-bold text-slate-500">{label}</span>}
           <span
             className={`truncate text-sm font-bold ${
-              selected ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"
+              selected ? "text-slate-900 " : "text-slate-600 "
             }`}
           >
             {selected ? selected.name : placeholder}
@@ -58,7 +58,7 @@ export function CityPicker({ cities, value, onChange, placeholder, label }: Prop
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto rounded-2xl border border-slate-900/[0.08] bg-white p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
+        <div className="absolute left-0 top-full z-50 mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 animate-in fade-in zoom-in-95">
           {cities.length === 0 && (
             <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
           )}
@@ -70,13 +70,13 @@ export function CityPicker({ cities, value, onChange, placeholder, label }: Prop
                 onChange(city.id);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors ${
+              className={`flex w-full items-center gap-2 rounded-full px-3 py-2.5 text-left text-sm font-bold transition-colors ${
                 city.id === value
-                  ? "bg-blue-600/[0.10] text-blue-700"
-                  : "text-slate-800 hover:bg-slate-900/[0.03]"
+                  ? "bg-slate-50 text-blue-600"
+                  : "text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-600" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-600" />
               <span>{city.name}</span>
             </button>
           ))}

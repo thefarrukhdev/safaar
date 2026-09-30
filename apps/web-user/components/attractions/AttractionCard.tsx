@@ -93,7 +93,7 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
       className="group flex cursor-pointer flex-col gap-3"
     >
       {/* ── Image Container ─────────────────────────────────────── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 ">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
@@ -104,15 +104,15 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
             quality={85}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-slate-100 dark:bg-slate-800">
-            <ImageOff className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+          <div className="flex h-full items-center justify-center bg-slate-100 ">
+            <ImageOff className="h-8 w-8 text-slate-300 " />
           </div>
         )}
 
         <FavoriteButton inset />
 
         <div className="absolute left-3 top-3 z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-slate-900 shadow-sm backdrop-blur-md dark:bg-slate-900/90 dark:text-white">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-slate-900 shadow-sm backdrop-blur-md  ">
             <span className={`h-1.5 w-1.5 rounded-full ${catStyle.dot}`} />
             {categoryLabel}
           </span>
@@ -122,26 +122,26 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
       {/* ── Text Info ─────────────────────────────────────────── */}
       <div className="flex flex-col gap-1 px-0.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 text-[15px] font-bold leading-tight text-slate-900 dark:text-white">
+          <h3 className="line-clamp-1 text-[15px] font-bold leading-tight text-slate-900 ">
             {item.name}
           </h3>
           {item.rating > 0 && (
             <div className="flex shrink-0 items-center gap-1 text-sm">
-              <Star className="h-3.5 w-3.5 fill-slate-900 text-slate-900 dark:fill-white dark:text-white" />
-              <span className="font-medium text-slate-900 dark:text-white">
+              <Star className="h-3.5 w-3.5 fill-slate-900 text-slate-900  " />
+              <span className="font-medium text-slate-900 ">
                 {item.rating.toFixed(1)}
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-1.5 text-sm text-slate-500 ">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="line-clamp-1">{item.cityName}</span>
         </div>
 
         {item.bestTimeToVisit && (
-          <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-slate-500 ">
             <Clock className="h-3.5 w-3.5 shrink-0" />
             <span className="line-clamp-1">{item.bestTimeToVisit}</span>
           </p>

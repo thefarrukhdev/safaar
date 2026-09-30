@@ -34,6 +34,7 @@ import {
   UzumCheckoutProvider,
 } from '../payments/providers/uzum-checkout.provider';
 import {
+  livePromotionPredicate,
   PROMOTION_RETURNING_SQL,
   toPromotionApiShape,
   type PromotionRow,
@@ -3826,6 +3827,25 @@ export class AdminService {
               // ko'rilmasligi uchun (rasmiy kontrakt: `X-Operation-Id`
               // idempotentlik kaliti).
               operationId: id,
+              // BUG FIX (payments/refunds audit, 2026-09-29): `register()`
+              // (yagona yo'l — `uzum_checkout` payment yaratiladi) HAR DOIM
+              // `isFiscalConfigured()`ni TALAB qiladi (`uzum-checkout.
+              // provider.ts::register()`), va o'sha fiskal cart item
+              // `productId = payments.id` (`merchantOperationId`) bilan
+              // yoziladi. `refund()`ning o'zi ESA — xuddi shu fiskal
+              // konfiguratsiya yoqilganda — `originalProductId` BERILMASA
+              // taxminiy productId yubormaslik uchun ATAYLAB
+              // `REFUND_FAILED` bilan rad etadi (`uzum-checkout.
+              // provider.ts` — "originalProductId shart..."). Bu maydon
+              // shu yergacha UMUMAN uzatilmagani uchun — har qanday HAQIQIY
+              // (fiskal-yoqilgan muhitda yaratilgan) Uzum Checkout to'lovi
+              // uchun admin-tasdiqlagan refund SO'ZSIZ 503 bilan
+              // muvaffaqiyatsiz bo'lardi (qayta urinish ham yordam
+              // bermasdi — sabab konfiguratsion, vaqtinchalik emas).
+              // `payableRow.id` — AYNAN shu `payments.id`, `register()`da
+              // ishlatilgan `merchantOperationId` bilan bir xil (deterministik,
+              // yangi ustun/migratsiya shart emas).
+              originalProductId: payableRow.id,
             });
             providerRefundReference = providerResult.refundId;
           } catch (err) {
@@ -5860,5 +5880,102 @@ export class AdminService {
 
   rejectPromotion(actor: RequestActor | undefined, id: string) {
     return this.decidePromotion(actor, id, 'rejected');
+  }
+
+  /**
+   * `DELETE /admin/promotions/:id` — chegirma arizasini butunlay o'chirish
+   * (admin "Chegirma arizalari" jadvalidagi Delete tugmasi uchun).
+   *
+   * QATTIQ (hard) DELETE, soft-delete EMAS — loyihadagi mavjud konvensiya
+   * shu: `deleted_at` ustuni FAQAT subyekt/identity va media jadvallarida
+   * bor (`users`, `admin_users`, `partner_users`, `hotels`, `media_files`,
+   * `push_tokens` — production DB'da tekshirilgan), admin boshqaradigan
+   * operatsion qatorlar esa (`regions`, `cities`, `amenities`,
+   * `cms_entries` type='promo') `regionDelete()`/`amenityDelete()`/
+   * `promoDelete()`da AYNAN shu `delete ... returning id` idiomasi bilan
+   * o'chiriladi. `promotions`da `deleted_at` ustuni yo'q va uni qo'shish
+   * uchun hech qanday sabab topilmadi (quyidagi "ma'lumot butunligi"ga
+   * qarang), ya'ni YANGI MIGRATSIYA SHART EMAS.
+   *
+   * MA'LUMOT BUTUNLIGI (nega bu tarixni buzmaydi): butun DB'da
+   * `promotions.id`ga ishora qiladigan BIRORTA HAM foreign key yo'q
+   * (`pg_constraint where confrelid = 'promotions'::regclass` -> 0 qator,
+   * production'da tekshirilgan) va `promotion` so'zi biror ustun nomida
+   * uchramaydi. Bron yaratilganda chegirma ma'lumoti
+   * `bookings.price_snapshot` JSONB'iga NUSXALANADI
+   * (`bookings.service.ts`: `partner_promotion: { id, discount_percent,
+   * discount_amount }` + `base_price_per_night`/`effective_price_per_night`),
+   * `bookings.subtotal`/`discount_amount` esa allaqachon hisoblangan
+   * summalar. Ya'ni to'lov/bron tarixi promotion qatoriga BOG'LIQ EMAS —
+   * qator o'chsa ham hisob-kitob o'zgarmaydi.
+   *
+   * STATUS DARVOZASI: AYNAN HOZIR kuchda bo'lgan (`published` + bugungi
+   * sana `[start_date, end_date]` oralig'ida) chegirmani o'chirib
+   * BO'LMAYDI — bunday chegirma shu daqiqada ommaviy narxga ta'sir
+   * qilmoqda (`/hotels/:id`, `/bookings/quote`, `/cms/offers`), ya'ni uni
+   * jimgina yo'q qilish mijoz ko'rgan narxni ogohlantirishsiz oshirib
+   * yuboradi. `pending_review`, `rejected`, muddati tugagan yoki hali
+   * boshlanmagan `published` chegirmalar — o'chirilishi mumkin (ular hozir
+   * hech qanday ommaviy narxga ta'sir qilmaydi). Shart
+   * `livePromotionPredicate()` — narxlash yo'llari ishlatadigan AYNAN bir
+   * xil predikat, shuning uchun "o'chirilishi mumkin" va "ommaviy narxga
+   * ta'sir qilmaydi" tushunchalari bir-biridan ajralib keta olmaydi.
+   *
+   * DIQQAT (mavjud API cheklovi, bu yerda o'zgartirilmadi): `published`
+   * chegirmani `reject` qilib bo'lmaydi — `decidePromotion()` faqat
+   * `pending_review`dan o'tishga ruxsat beradi, aks holda 409
+   * `PROMOTION_ALREADY_DECIDED`. Ya'ni hozir kuchda bo'lgan chegirmani
+   * muddatidan oldin to'xtatish yo'li UMUMAN yo'q, va shu sababli u
+   * `end_date` o'tmaguncha o'chirilmaydi. Agar mahsulot "kuchda bo'lgan
+   * chegirmani darhol to'xtatish" imkonini talab qilsa — bu ALOHIDA qaror
+   * (masalan `unpublish`/`end_date = CURRENT_DATE - 1` oqimi), DELETE
+   * semantikasiga jimgina qo'shib qo'yiladigan narsa emas.
+   *
+   * Bitta shartli `DELETE ... WHERE ... RETURNING` — alohida SELECT-keyin-
+   * DELETE emas, ya'ni poyga holati (race) xavfsiz va takroriy chaqiriq
+   * deterministik (ikkinchi marta 404). Fallback SELECT faqat 404/409 ni
+   * ajratish uchun, 0 qator qaytganda ishlaydi — `decidePromotion()` va
+   * `withdrawalDecision()`dagi bir xil naqsh.
+   */
+  async deletePromotion(actor: RequestActor | undefined, id: string) {
+    const [deleted] = await this.postgres.query<{
+      id: string;
+      status: string;
+    }>(
+      `DELETE FROM promotions
+       WHERE id = $1::uuid
+         AND NOT (${livePromotionPredicate()})
+       RETURNING id::text, status::text`,
+      [id],
+    );
+
+    if (!deleted) {
+      const [existing] = await this.postgres.query<{ status: string }>(
+        `SELECT status::text FROM promotions WHERE id = $1::uuid`,
+        [id],
+      );
+      if (!existing) {
+        throw new NotFoundException({
+          code: 'PROMOTION_NOT_FOUND',
+          message: 'Chegirma topilmadi',
+        });
+      }
+      throw new ConflictException({
+        code: 'PROMOTION_INVALID_STATUS',
+        message:
+          "Hozir kuchda bo'lgan chegirmani (published, sanasi davom etayotgan) o'chirib bo'lmaydi — u ayni damda ommaviy narxga ta'sir qilmoqda. Muddati (end_date) tugagandan keyin o'chirish mumkin.",
+      });
+    }
+
+    await this.auditChange(
+      'promotion.delete',
+      actor,
+      'promotion',
+      id,
+      { status: deleted.status },
+      null,
+    );
+    this.invalidateAdminCache();
+    return { id, deleted: true };
   }
 }

@@ -16,14 +16,14 @@ export default function HotelsLoading() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
         {/* Filters Sidebar Skeleton */}
-        <Skeleton className="hidden lg:block h-[600px] rounded-xl border border-slate-200 dark:border-slate-800" />
+        <Skeleton className="hidden lg:block h-[600px] rounded-xl border border-slate-200 " />
         
         {/* Hotel Cards Grid Skeleton */}
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-card shadow-xs dark:border-slate-800 dark:bg-slate-900"
+              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-card shadow-xs  "
             >
               <Skeleton className="aspect-[4/3] w-full" />
               <div className="flex flex-col gap-3 p-5">

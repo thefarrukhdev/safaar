@@ -96,7 +96,7 @@ export function PushSubscriptionManager({
   return (
     <div className={className}>
       {subscribed ? (
-        <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700   ">
           <BellCheck className="h-4 w-4 stroke-[2.5]" />
           Push-bildirishnomalar yoqilgan
         </div>

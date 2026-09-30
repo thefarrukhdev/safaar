@@ -38,7 +38,7 @@ function AuthButtons({
       <div className={`flex gap-3 ${isCol ? "flex-col mt-2" : "items-center"}`}>
         <Link
           href={`${base}/account`}
-          className={buttonVariants({ variant: "ghost",  className: cn(sizeClass, "font-bold text-slate-700 dark:text-white hover:bg-slate-100", transparentGhost) })}
+          className={buttonVariants({ variant: "ghost",  className: cn(sizeClass, "font-bold text-slate-700  hover:bg-slate-100", transparentGhost) })}
         >
           {dict.actions.account}
         </Link>

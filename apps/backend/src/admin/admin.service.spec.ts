@@ -1,6 +1,7 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { authSessionStore } from '../auth/session-store';
+import { livePromotionPredicate } from '../common/promotion';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -2075,6 +2076,19 @@ describe('AdminService frontend action endpoints', () => {
         amountSom: 100000,
         reason: 'Mijoz iltimosi',
         operationId: refundId,
+        // BUG REGRESSION (payments/refunds audit): `UzumCheckoutProvider
+        // .refund()`'s real implementation THROWS `REFUND_FAILED` whenever
+        // fiscal receipt env vars are configured (`isFiscalConfigured()`)
+        // and `originalProductId` is missing — and `register()` (the ONLY
+        // way a `uzum_checkout` payment is ever created) itself REQUIRES
+        // `isFiscalConfigured()` to succeed. So every real `uzum_checkout`
+        // payment that reaches this refund path has fiscal ALWAYS
+        // configured, meaning the missing field here made EVERY real
+        // Uzum Checkout refund fail. `originalProductId` must be the
+        // `payments.id` used as `merchantOperationId`/`productId` during
+        // `register()` — see `uzum-checkout.provider.ts` comment near
+        // `productId: input.merchantOperationId`.
+        originalProductId: 'payment-uzc-1',
       });
       const providerRefCall = pgMock.query.mock.calls.find(([sql]) =>
         String(sql).includes('provider_refund_reference'),
@@ -2419,6 +2433,87 @@ describe('AdminService frontend action endpoints', () => {
       await expect(
         service.approvePromotion(actor, promotionId),
       ).rejects.toMatchObject({ status: 404 });
+    });
+  });
+
+  describe('deletePromotion (DELETE /admin/promotions/:id — admin "Chegirma arizalari" delete button)', () => {
+    const promotionId = '00000000-0000-0000-0000-0000000000f1';
+
+    it('hard-deletes a deletable promotion in one conditional statement (no SELECT-then-DELETE), audit-logs it and busts the admin cache', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: promotionId, status: 'rejected' }]) // DELETE ... RETURNING
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.deletePromotion(actor, promotionId);
+
+      expect(result).toEqual({ id: promotionId, deleted: true });
+
+      const deleteCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('DELETE FROM promotions'),
+      );
+      expect(deleteCall).toBeDefined();
+      expect(deleteCall![1]).toEqual([promotionId]);
+      // The status gate must be part of the same statement, and it must be
+      // the shared "currently live" predicate — not a re-spelled copy.
+      expect(String(deleteCall![0])).toContain(
+        `NOT (${livePromotionPredicate()})`,
+      );
+      // No pre-flight SELECT on the happy path.
+      expect(
+        pgMock.query.mock.calls.filter(([sql]) =>
+          String(sql).includes('SELECT status::text FROM promotions'),
+        ),
+      ).toHaveLength(0);
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![1]?.[3]).toBe('promotion.delete');
+      expect(auditCall![1]?.[4]).toBe('promotion');
+      expect(auditCall![1]?.[5]).toBe(promotionId);
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('admin:*');
+    });
+
+    it('refuses to delete a promotion that is published AND inside its date window (it is priced into live public offers right now) with 409 PROMOTION_INVALID_STATUS', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([]) // DELETE blocked by the live-promotion gate
+        .mockResolvedValueOnce([{ status: 'published' }]); // fallback lookup
+
+      await expect(
+        service.deletePromotion(actor, promotionId),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'PROMOTION_INVALID_STATUS' },
+      });
+    });
+
+    it('deletes a non-existent promotion with 404 PROMOTION_NOT_FOUND, matching approve/reject', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([]) // DELETE -> 0 rows
+        .mockResolvedValueOnce([]); // fallback lookup -> not found
+
+      await expect(
+        service.deletePromotion(actor, promotionId),
+      ).rejects.toMatchObject({
+        status: 404,
+        response: { code: 'PROMOTION_NOT_FOUND' },
+      });
+    });
+
+    it('does not audit-log or invalidate cache when nothing was deleted', async () => {
+      pgMock.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      await expect(
+        service.deletePromotion(actor, promotionId),
+      ).rejects.toThrow();
+
+      expect(
+        pgMock.query.mock.calls.some(([sql]) =>
+          String(sql).includes('insert into audit_logs'),
+        ),
+      ).toBe(false);
+      expect(cacheMock.delByPattern).not.toHaveBeenCalled();
     });
   });
 });

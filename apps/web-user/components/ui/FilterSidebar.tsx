@@ -50,19 +50,19 @@ export function FilterSidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden w-full flex-col gap-5 rounded-xl border border-slate-900/[0.08] bg-white p-5 dark:border-white/[0.10] dark:bg-slate-900 lg:flex lg:sticky lg:top-24 lg:h-fit">
+      <aside className="hidden w-full flex-col gap-5 rounded-xl border border-slate-900/[0.08] bg-white p-5 [0.10]  lg:flex lg:sticky lg:top-24 lg:h-fit">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-900/[0.08] pb-3.5 dark:border-white/[0.10]">
+        <div className="flex items-center justify-between border-b border-slate-900/[0.08] pb-3.5 [0.10]">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <Filter className="h-4 w-4 text-blue-600 " />
+            <h2 className="text-base font-semibold text-slate-900 ">
               {title}
             </h2>
           </div>
           <button
             type="button"
             onClick={onReset}
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-full px-2 py-1"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline  cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-full px-2 py-1"
           >
             {resetLabel}
           </button>
@@ -88,20 +88,20 @@ export function FilterSidebar({
         <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
           {/* Overlay backdrop */}
           <div
-            className="fixed inset-0 bg-slate-900/50 dark:bg-black/60 transition-opacity"
+            className="fixed inset-0 bg-slate-900/50  transition-opacity"
             onClick={onClose}
           />
 
           {/* Drawer content sheet */}
-          <div className="relative z-10 flex max-h-[85vh] w-full flex-col rounded-t-xl border-t border-slate-900/[0.08] dark:border-white/[0.10] bg-white dark:bg-slate-900 shadow-float animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.2,0,0,1)]">
+          <div className="relative z-10 flex max-h-[85vh] w-full flex-col rounded-t-xl border-t border-slate-900/[0.08] [0.10] bg-white  shadow-float animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.2,0,0,1)]">
             {/* Drag Handle */}
-            <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-900/[0.12] dark:bg-white/[0.16]" />
+            <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-900/[0.12] [0.16]" />
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-900/[0.08] px-5 py-4 dark:border-white/[0.10]">
+            <div className="flex items-center justify-between border-b border-slate-900/[0.08] px-5 py-4 [0.10]">
               <span className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                <Filter className="h-4 w-4 text-blue-600 " />
+                <h2 className="text-base font-semibold text-slate-900 ">
                   {title}
                 </h2>
               </span>
@@ -109,14 +109,14 @@ export function FilterSidebar({
                 <button
                   type="button"
                   onClick={onReset}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-full px-2 py-1"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline  cursor-pointer transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-full px-2 py-1"
                 >
                   {resetLabel}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-900/[0.08] text-slate-900/60 hover:bg-slate-900/[0.05] hover:text-slate-900 dark:border-white/[0.10] dark:text-white/60 dark:hover:bg-white/[0.08] dark:hover:text-white transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-900/[0.08] text-slate-900/60 hover:bg-slate-900/[0.05] hover:text-slate-900 [0.10]  :bg-white/[0.08] :text-white transition-colors duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -129,7 +129,7 @@ export function FilterSidebar({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-slate-900/[0.08] bg-white px-5 py-4 dark:border-white/[0.10] dark:bg-slate-900">
+            <div className="border-t border-slate-900/[0.08] bg-white px-5 py-4 [0.10] ">
               <button
                 type="button"
                 onClick={() => {

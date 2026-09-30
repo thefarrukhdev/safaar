@@ -143,6 +143,7 @@ export function RestaurantBookingSection({
     }
   };
 
+<<<<<<< HEAD
   if (successBookingId) {
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md dark:border-emerald-800 dark:bg-emerald-950/40">
@@ -165,6 +166,16 @@ export function RestaurantBookingSection({
           variant="secondary"
           className="mt-6 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
         >{bDict.newBooking || "Yangi bron qilish"}</Button>
+=======
+  return (
+    <div id="booking-section" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+      
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-900">
+          {t.title}
+        </h2>
+>>>>>>> fix/uzum-iframe-flow
       </div>
     );
   }
@@ -211,6 +222,7 @@ export function RestaurantBookingSection({
           </div>
 
           {errorMsg && (
+<<<<<<< HEAD
             <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
               {errorMsg}
             </div>
@@ -355,6 +367,28 @@ export function RestaurantBookingSection({
                   Ommaviy Oferta
                 </Link>{" "}
                 shartlariga roziman.
+=======
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 flex items-start gap-2">
+              <div className="mt-0.5 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <Button
+            onClick={handleBookClick}
+            disabled={isLoading}
+            className="w-full mt-2 rounded-xl py-6 text-[15px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {t.processing}
+>>>>>>> fix/uzum-iframe-flow
               </span>
             </label>
 
@@ -384,7 +418,19 @@ export function RestaurantBookingSection({
             )}
           </form>
         </div>
+<<<<<<< HEAD
       </Modal>
     </>
+=======
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white">
+            <Users className="h-6 w-6 text-slate-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600">{t.noTables}</p>
+        </div>
+      )}
+    </div>
+>>>>>>> fix/uzum-iframe-flow
   );
 }

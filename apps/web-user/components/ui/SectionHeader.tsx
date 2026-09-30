@@ -29,7 +29,7 @@ export function SectionHeader({ title, subtitle, action, badge, className }: Sec
       <div className="flex flex-col gap-1.5 sm:gap-2">
         {/* H2 — Manrope 800, design system scale */}
         <h2
-          className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+          className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl "
           style={{ fontFamily: "var(--font-manrope, sans-serif)", letterSpacing: "-0.02em" }}
         >
           {title}
@@ -37,7 +37,7 @@ export function SectionHeader({ title, subtitle, action, badge, className }: Sec
 
         {/* Subtitle — Inter 400, Warm Neutral */}
         {subtitle && (
-          <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-500 sm:text-base dark:text-slate-400">
+          <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-500 sm:text-base ">
             {subtitle}
           </p>
         )}

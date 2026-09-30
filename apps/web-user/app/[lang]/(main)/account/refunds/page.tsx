@@ -53,7 +53,7 @@ export default async function AccountRefundsPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+        <h2 className="text-xl font-bold text-slate-900 ">
           {dict.refunds?.title}
         </h2>
       </div>
@@ -61,7 +61,7 @@ export default async function AccountRefundsPage({
       {(!refunds || refunds.length === 0) ? (
         <Card>
           <CardBody className="py-12 sm:py-16 text-center">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            <p className="text-sm font-medium text-slate-500 ">
               {dict.refunds?.empty}
             </p>
           </CardBody>
@@ -73,7 +73,7 @@ export default async function AccountRefundsPage({
               <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between py-4 sm:py-5">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 dark:text-white">
+                    <span className="font-semibold text-slate-900 ">
                       {(dict as any).refunds?.booking || "Bron"}: #{refund.booking_id}
                     </span>
                     <span
@@ -88,7 +88,7 @@ export default async function AccountRefundsPage({
                       {refund.status}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-sm text-slate-500 ">
                     <span className="font-medium">{dict.refunds?.reason}:</span> {refund.reason}
                   </p>
                 </div>

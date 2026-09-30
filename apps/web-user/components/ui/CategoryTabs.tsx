@@ -24,7 +24,7 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
   return (
     <div className="relative mb-6 w-full">
       {/* Fade gradient left */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-white to-transparent dark:from-slate-950 md:hidden" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-white to-transparent  md:hidden" />
 
       <div className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden relative z-0 flex w-full gap-3 overflow-x-auto pb-2 pt-1 px-4 sm:px-6 lg:px-10">
         {tabs.map((tab) => {
@@ -40,11 +40,11 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
           const className = cn(
             "group relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full px-4 h-9 text-sm font-medium transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100",
             isTabActive
-              ? "bg-slate-900 text-white hover:bg-slate-900/90 dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
-              : "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.12]"
+              ? "bg-slate-900 text-white hover:bg-slate-900/90   :bg-white/90"
+              : "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] [0.08]  :bg-white/[0.12]"
           );
 
-          const iconColor = tab.color ?? (isTabActive ? "text-white dark:text-slate-900" : "text-slate-900/70 dark:text-white/70 group-hover:text-slate-900 dark:group-hover:text-white");
+          const iconColor = tab.color ?? (isTabActive ? "text-white " : "text-slate-900/70  group-hover:text-slate-900 :text-white");
 
           const content = (
             <>
@@ -74,7 +74,7 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
       </div>
 
       {/* Fade gradient right */}
-      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-white to-transparent dark:from-slate-950 md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-white to-transparent  md:hidden" />
     </div>
   );
 }

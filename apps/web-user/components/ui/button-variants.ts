@@ -6,11 +6,11 @@ export type Rounded = "full";
 
 export const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
+    "bg-blue-600 hover:bg-blue-700 text-white",
   accent:
     "bg-amber-500 text-slate-900 hover:bg-amber-600 active:bg-amber-700",
   secondary:
-    "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] active:bg-slate-900/[0.12]",
+    "bg-white border border-slate-200 hover:bg-slate-50 text-slate-900",
   ghost:
     "bg-transparent text-slate-900 hover:bg-slate-900/[0.05] active:bg-slate-900/[0.08]",
 };
@@ -27,8 +27,7 @@ export const roundedClasses: Record<Rounded, string> = {
 
 export const baseButtonClasses =
   "inline-flex items-center justify-center gap-2 font-medium " +
-  "transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] " +
-  "active:scale-[0.97] " +
+  "active:scale-[0.97] transition-all duration-200 ease-out " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " +
   "disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none " +
   "motion-reduce:transition-none motion-reduce:active:scale-100";

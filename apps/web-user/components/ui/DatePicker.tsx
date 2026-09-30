@@ -160,21 +160,21 @@ export function DatePicker({
         className={
           compact
             ? "flex w-full items-center gap-2 text-left"
-            : "group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+            : "group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500   "
         }
       >
         {!compact && (
-          <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400">
+          <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600  :text-primary-400">
             {icon ?? <CalendarIcon className="h-4 w-4" />}
           </span>
         )}
         <span className="flex min-w-0 flex-1 flex-col">
           {label && (
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+            <span className="text-[11px] font-bold text-slate-500 ">{label}</span>
           )}
           <span
             className={`truncate text-xs font-bold ${
-              displayValue ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"
+              displayValue ? "text-slate-900 " : "text-slate-400 "
             }`}
           >
             {displayValue ?? placeholder}
@@ -184,15 +184,15 @@ export function DatePicker({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden" aria-hidden />
-          <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-xl border border-slate-200 bg-card p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0 animate-in fade-in zoom-in-95 duration-100">
+          <div className="fixed inset-0 z-40 bg-black/40 md:hidden" aria-hidden />
+          <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-xl border border-slate-200 bg-white p-4 md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0 animate-in fade-in zoom-in-95 duration-100">
             {/* Mobile Header with Close Button */}
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 md:hidden">
-              <span className="text-xs font-bold text-slate-800 dark:text-white">{placeholder}</span>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100  md:hidden">
+              <span className="text-xs font-bold text-slate-800 ">{placeholder}</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="text-slate-400 hover:text-slate-600  :text-slate-300 p-1 rounded-full hover:bg-slate-100 :bg-slate-800 transition-colors"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -207,11 +207,11 @@ export function DatePicker({
                   setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1))
                 }
                 aria-label="prev"
-                className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-400"
+                className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600  :bg-slate-800 :text-primary-400"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-900 ">
                 {monthLabel}
               </span>
               <button
@@ -220,7 +220,7 @@ export function DatePicker({
                   setView((v) => new Date(v.getFullYear(), v.getMonth() + 1, 1))
                 }
                 aria-label="next"
-                className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-400"
+                className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600  :bg-slate-800 :text-primary-400"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -231,7 +231,7 @@ export function DatePicker({
               {weekdays.map((w) => (
                 <span
                   key={w}
-                  className="grid h-8 place-items-center text-[10px] font-black uppercase text-slate-400 dark:text-slate-500"
+                  className="grid h-8 place-items-center text-[10px] font-black uppercase text-slate-400 "
                 >
                   {w}
                 </span>
@@ -261,8 +261,8 @@ export function DatePicker({
                         isSelected
                           ? "bg-primary-600 text-white shadow-xs"
                           : disabled
-                            ? "cursor-not-allowed text-slate-300 dark:text-slate-700"
-                            : "text-slate-800 hover:bg-primary-50 hover:text-primary-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-primary-400"
+                            ? "cursor-not-allowed text-slate-300 "
+                            : "text-slate-800 hover:bg-primary-50 hover:text-primary-700  :bg-slate-800 :text-primary-400"
                       }
                       ${!isSelected && isToday ? "ring-1 ring-primary-400" : ""}
                     `}

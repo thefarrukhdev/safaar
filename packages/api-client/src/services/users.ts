@@ -1,3 +1,4 @@
+import type { NotificationPreferencesView } from "../types";
 import { rawApi } from "../client";
 import { camelizeKeys } from "../case";
 import { toBookingView, toBonusView, toFavoriteView, toProfileView } from "../adapters";
@@ -20,7 +21,7 @@ export const usersService = {
     const raw = await rawApi.get<unknown>("/me", {
       ...options,
       cache: "no-store",
-    } as any);
+    });
     return toProfileView(camelizeKeys(raw));
   },
 
@@ -46,9 +47,9 @@ export const usersService = {
     const raw = await rawApi.get<unknown>("/me/bookings", {
       ...options,
       cache: "no-store",
-    } as any);
+    });
     const items = camelizeKeys<unknown[]>(raw);
-    return (items ?? []).map((item) => toBookingView(item as any));
+    return (items ?? []).map((item) => toBookingView(item as Parameters<typeof toBookingView>[0]));
   },
 
   /** `GET /me/favorites` — sevimlilar ro'yxati. */
@@ -56,9 +57,9 @@ export const usersService = {
     const raw = await rawApi.get<unknown>("/me/favorites", {
       ...options,
       cache: "no-store",
-    } as any);
+    });
     const items = camelizeKeys<unknown[]>(raw);
-    return (items ?? []).map((item) => toFavoriteView(item as any));
+    return (items ?? []).map((item) => toFavoriteView(item as Parameters<typeof toFavoriteView>[0]));
   },
 
   /** `GET /me/bonuses` — bonus balansi va tarixi. */
@@ -66,7 +67,7 @@ export const usersService = {
     const raw = await rawApi.get<unknown>("/me/bonuses", {
       ...options,
       cache: "no-store",
-    } as any);
+    });
     return toBonusView(camelizeKeys(raw));
   },
 
@@ -123,13 +124,13 @@ export const usersService = {
   },
 
   /** `GET /me/notifications/preferences` — bildirishnomalar sozlamalari. */
-  async getNotificationPreferences(options?: { token?: string }): Promise<any> {
-    return rawApi.get<any>("/me/notifications/preferences", options);
+  async getNotificationPreferences(options?: { token?: string }): Promise<NotificationPreferencesView> {
+    return rawApi.get<NotificationPreferencesView>("/me/notifications/preferences", options);
   },
 
   /** `PATCH /me/notifications/preferences` — bildirishnomalar sozlamalarini yangilash. */
-  async updateNotificationPreferences(data: any, options?: { token?: string }): Promise<any> {
-    return rawApi.patch<any>("/me/notifications/preferences", data, options);
+  async updateNotificationPreferences(data: unknown, options?: { token?: string }): Promise<NotificationPreferencesView> {
+    return rawApi.patch<NotificationPreferencesView>("/me/notifications/preferences", data, options);
   },
 
   /** `POST /me/data-export` — ma'lumotlarni eksport qilish so'rovi. */

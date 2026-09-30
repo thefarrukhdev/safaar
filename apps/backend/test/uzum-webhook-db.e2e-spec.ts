@@ -13,7 +13,7 @@
  * (host 127.0.0.1, a non-default port such as 55432, database safaar_uzum_test,
  * throwaway user/password), then:
  *
- *   npx jest --config test/jest-e2e.json test/uzum-webhook-db.e2e-spec.ts --runInBand
+ *   pnpm jest --config test/jest-e2e.json test/uzum-webhook-db.e2e-spec.ts --runInBand
  */
 import { randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';

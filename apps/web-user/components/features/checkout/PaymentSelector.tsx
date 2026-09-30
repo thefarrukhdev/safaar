@@ -35,10 +35,10 @@ export interface PaymentMethodConfig {
 }
 
 const CARD_THEME = {
-  badgeBg: "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800",
-  badgeText: "text-emerald-700 dark:text-emerald-300",
+  badgeBg: "bg-emerald-50  border-emerald-200 ",
+  badgeText: "text-emerald-700 ",
   borderSelected: "border-emerald-500 ring-2 ring-emerald-500/20",
-  bgSelected: "bg-emerald-50/40 dark:bg-emerald-950/20",
+  bgSelected: "bg-emerald-50/40 ",
   iconBg: "bg-emerald-600 text-white",
 };
 
@@ -57,10 +57,10 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
     dictKey: "cash" as any,
     type: "cash",
     colorTheme: {
-      badgeBg: "bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800",
-      badgeText: "text-amber-800 dark:text-amber-300",
+      badgeBg: "bg-amber-50  border-amber-200 ",
+      badgeText: "text-amber-800 ",
       borderSelected: "border-amber-500 ring-2 ring-amber-500/20",
-      bgSelected: "bg-amber-50/40 dark:bg-amber-950/20",
+      bgSelected: "bg-amber-50/40 ",
       iconBg: "bg-amber-500 text-white",
     },
   },
@@ -129,7 +129,7 @@ export function PaymentSelector({
                 "group relative flex flex-col gap-3 cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
                 isSelected
                   ? cn(option.colorTheme.borderSelected, option.colorTheme.bgSelected)
-                  : "border-slate-200 bg-card hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-slate-700"
+                  : "border-slate-200 bg-card hover:border-slate-300   :border-slate-700"
               )}
             >
               <div className="flex items-start justify-between w-full gap-3">
@@ -148,12 +148,12 @@ export function PaymentSelector({
 
                   <div className="flex flex-col gap-1 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 dark:text-white">
+                      <span className="font-bold text-slate-900 ">
                         {nameText}
                       </span>
                     </div>
                     {subtitleText && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-500 ">
                         {subtitleText}
                       </p>
                     )}
@@ -184,8 +184,8 @@ export function PaymentSelector({
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
                       isSelected
-                        ? "border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500"
-                        : "border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
+                        ? "border-primary-600 bg-primary-600 text-white  "
+                        : "border-slate-300 bg-slate-50  "
                     )}
                   >
                     {isSelected && <CheckCircle2 className="h-4 w-4 stroke-[3]" />}
@@ -196,17 +196,17 @@ export function PaymentSelector({
               {/* Extras (Logos) below the text */}
               {option.type === "local_card" && (
                 <div className="flex items-center flex-wrap gap-2 ml-[50px]">
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                    <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                    <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
                   </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                    <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                    <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
                   </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                    <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                    <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
                   </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                    <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                    <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
                   </div>
                 </div>
               )}

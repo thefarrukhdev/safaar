@@ -37,7 +37,8 @@ export async function createBookingAction(
 
   const session = await getSession();
 
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "uzcard")) as
+  const rawPaymentMethod = String(formData.get("paymentMethod") ?? "uzcard");
+  const paymentMethod = (rawPaymentMethod === "card" ? "uzcard" : rawPaymentMethod) as
     | "uzcard"
     | "humo"
     | "visa"
@@ -123,7 +124,8 @@ export async function createBusBookingAction(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const paymentMethod = (String(formData.get("paymentMethod") ?? "uzcard")) as
+  const rawPaymentMethod = String(formData.get("paymentMethod") ?? "uzcard");
+  const paymentMethod = (rawPaymentMethod === "card" ? "uzcard" : rawPaymentMethod) as
     | "uzcard"
     | "humo"
     | "visa"
@@ -162,7 +164,7 @@ export async function createBusBookingAction(
 export async function validatePromoAction(code: string) {
   try {
     const res = await api.promos.validate(code);
-    return { success: true, data: res as any };
+    return { success: true, data: res };
   } catch (error) {
     return {
       success: false,
@@ -254,7 +256,7 @@ export async function createVehicleBookingAction(input: {
         guestName: input.guestName,
         guestPhone: input.guestPhone,
         guestEmail: input.guestEmail,
-        paymentMethod: input.paymentMethod as any,
+        paymentMethod: input.paymentMethod,
       },
       options
     );

@@ -64,14 +64,22 @@ export function HotelStickyNav({
   }, [navItems]);
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 hidden md:block">
-      <div className="mx-auto flex w-full max-w-[1536px] items-center gap-8 px-8 h-16">
+    <nav className="sticky top-0 z-40 w-full bg-white border-b border-slate-200">
+      <div 
+        className="mx-auto flex w-full max-w-[1536px] items-center gap-8 px-4 sm:px-8 h-16 overflow-x-auto whitespace-nowrap snap-x hide-scrollbar"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <style>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         {navItems.map((item) => (
           <a
             key={item.id}
             href={`#${item.id}`}
             onClick={(e) => handleClick(e, item.id)}
-            className={`text-sm font-bold transition-colors h-full flex items-center border-b-2 ${
+            className={`snap-start shrink-0 text-sm font-bold transition-colors h-full flex items-center border-b-2 ${
               activeSection === item.id
                 ? "border-slate-900 text-slate-900"
                 : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"

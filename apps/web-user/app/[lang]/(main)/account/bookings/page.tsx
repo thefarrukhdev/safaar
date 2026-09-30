@@ -42,7 +42,7 @@ export default async function AccountBookingsPage({
   if (bookings.length === 0) {
     return (
       <EmptyState
-        icon={<CalendarX className="h-10 w-10 text-slate-400 dark:text-slate-500" />}
+        icon={<CalendarX className="h-10 w-10 text-slate-400 " />}
         title={dict.bookings.empty}
         description={dict.bookings.emptyDescription}
         actionLabel={dict.bookings.emptyAction}

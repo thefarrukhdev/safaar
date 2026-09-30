@@ -61,17 +61,17 @@ export function TransportBookingSection({
   return (
     <div
       id="booking-section"
-      className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-6 shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="scroll-mt-24 rounded-xl border border-slate-200 bg-card p-6"
     >
-      <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
-        <Car className="h-5 w-5 text-primary-600 dark:text-primary-400" />{bDict.title || "Mashinani band qilish"}
+      <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+        <Car className="h-5 w-5 text-primary-600" />{bDict.title || "Mashinani band qilish"}
       </h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-1 text-xs text-slate-500">
         {formatSum(transport.pricePerDaySum)} / kuniga
       </p>
 
       {errorMsg && (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
           {errorMsg}
         </div>
       )}
@@ -79,7 +79,7 @@ export function TransportBookingSection({
       <form onSubmit={handleBookClick} className="mt-5 space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.pickup || "Olib ketish"}
             </label>
             <DatePicker
@@ -92,7 +92,7 @@ export function TransportBookingSection({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               <Calendar className="mr-1 inline-block h-3.5 w-3.5" />{bDict.return || "Qaytarish"}
             </label>
             <DatePicker
@@ -106,11 +106,11 @@ export function TransportBookingSection({
         </div>
 
         {days > 0 && (
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs dark:bg-slate-800/60">
-            <span className="text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between rounded-xl bg-white px-3.5 py-2.5 text-xs">
+            <span className="text-slate-500">
               {((dict as any).booking?.daysCount || "{days} kun").replace("{days}", days.toString())}
             </span>
-            <span className="font-bold text-slate-900 dark:text-white">
+            <span className="font-bold text-slate-900">
               {formatSum(totalAmount)}
             </span>
           </div>
@@ -118,7 +118,7 @@ export function TransportBookingSection({
 
         <Button
           type="submit"
-          className="mt-6 w-full bg-primary-600 font-bold text-white hover:bg-primary-700 py-4 shadow-sm"
+          className="mt-6 w-full bg-primary-600 font-bold text-white hover:bg-primary-700 py-4"
         >
           {bDict.bookNow || "Bron qilish"}
         </Button>

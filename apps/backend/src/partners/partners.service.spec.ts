@@ -351,6 +351,99 @@ describe('PartnersService frontend action endpoints', () => {
     ]);
   });
 
+  describe('PartnersService.updateListingLocation (regression: PARTNERS-LOCATION-NULL-ISLAND — a raw `Number(body.latitude)`/`Number(body.longitude)` turned a blank/whitespace/null coordinate into `0` via `Number("")===0`, silently saving the listing at (0,0) "Null Island" instead of clearing it to NULL)', () => {
+    const findLocationUpdate = () =>
+      pgMock.query.mock.calls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('latitude = $'),
+      );
+
+    it('an empty-string latitude/longitude is stored as NULL, not 0 (Null Island)', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '',
+        longitude: '',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall).toBeDefined();
+      expect(updateCall?.[0]).toContain('longitude = $');
+      // params: [latitude, longitude, updated_at, id]
+      expect(updateCall?.[1]?.[0]).toBeNull();
+      expect(updateCall?.[1]?.[1]).toBeNull();
+    });
+
+    it('a whitespace-only latitude is stored as NULL, not 0', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '   ',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+    });
+
+    it('an explicit null latitude/longitude is stored as NULL', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: null,
+        longitude: null,
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+      expect(updateCall?.[1]?.[1]).toBeNull();
+    });
+
+    it('a non-numeric garbage string is stored as NULL instead of corrupting the column with NaN', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: 'abc',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBeNull();
+    });
+
+    it('a valid decimal coordinate is parsed and stored as a real number', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: '41.3111',
+        longitude: '69.2797',
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBe(41.3111);
+      expect(updateCall?.[1]?.[1]).toBe(69.2797);
+    });
+
+    it('numeric 0 is a legitimate coordinate and is preserved as 0, not dropped', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        latitude: 0,
+        longitude: 0,
+      });
+
+      const updateCall = findLocationUpdate();
+      expect(updateCall?.[1]?.[0]).toBe(0);
+      expect(updateCall?.[1]?.[1]).toBe(0);
+    });
+
+    it('an omitted latitude/longitude leaves the column untouched (no UPDATE emitted for it)', async () => {
+      await service.updateListingLocation(actor, hotelId, {
+        address: 'Yangi manzil',
+      });
+
+      expect(findLocationUpdate()).toBeUndefined();
+    });
+
+    it('rejects updating the location of a hotel belonging to another partner organization', async () => {
+      pgMock.query.mockResolvedValue([
+        { ...hotelRow, partner_organization_id: 'some-other-org' },
+      ]);
+
+      await expect(
+        service.updateListingLocation(actor, hotelId, { latitude: '41.3111' }),
+      ).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'HOTEL_FORBIDDEN' },
+      });
+    });
+  });
+
   it('rejects review submission until every listing section is complete', async () => {
     pgMock.query
       .mockResolvedValueOnce([hotelRow])
@@ -3263,5 +3356,216 @@ describe('PartnersService.assignRoom (regression: "BACKEND BUG AUDIT" — bus/tr
       String(sql).includes('FROM vehicles'),
     );
     expect(vehicleLookupCall).toBeUndefined();
+  });
+});
+
+describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST /partners/bookings/:id/board (and /check-in, /complete) returned an unhandled 500 whenever `policy_snapshot` was not a JSON object; empirically confirmed against a real PostgreSQL 17 instance that `jsonb_set` throws "cannot set path in scalar" for a string/number value and "path element ... is not an integer" for an array value — COALESCE only substitutes for NULL, it never guarded against those cases)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+  const vehicleBookingRow = {
+    id: 'booking-1',
+    type: 'vehicle',
+    partner_organization_id: 'org-1',
+    hotel_id: null,
+    room_id: null,
+    price_snapshot: {},
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('board: the UPDATE sent to Postgres normalizes any non-object policy_snapshot to {} instead of relying on COALESCE (which only covers NULL)', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE ... jsonb_set
+      .mockResolvedValueOnce([
+        {
+          ...vehicleBookingRow,
+          policy_snapshot: { boarded_at: '2026-09-27T10:00:00.000Z' },
+        },
+      ]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'boarded');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('boarded_at'),
+    );
+    expect(updateCall).toBeDefined();
+    const [sql] = updateCall!;
+    expect(String(sql)).toContain("jsonb_typeof(policy_snapshot) = 'object'");
+    expect(String(sql)).not.toMatch(/jsonb_set\(COALESCE\(policy_snapshot/);
+  });
+
+  it('board: missing booking rejects with 404 BOOKING_EXPIRED, no UPDATE is attempted', async () => {
+    pg.query.mockResolvedValueOnce([]); // this.booking() finds nothing
+
+    await expect(
+      service.bookingStatus(actor, 'no-such-booking', 'boarded'),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'BOOKING_EXPIRED' },
+    });
+    expect(pg.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('board: booking belonging to another partner organization rejects with 403 BOOKING_FORBIDDEN, no UPDATE is attempted', async () => {
+    pg.query.mockResolvedValueOnce([
+      { ...vehicleBookingRow, partner_organization_id: 'org-2' },
+    ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).rejects.toMatchObject({
+      status: 403,
+      response: { code: 'BOOKING_FORBIDDEN' },
+    });
+    expect(pg.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('board: a genuine database error from the UPDATE is not silently swallowed — it propagates to the caller', async () => {
+    const dbError = Object.assign(new Error('cannot set path in scalar'), {
+      code: '22023',
+    });
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockRejectedValueOnce(dbError); // UPDATE ... jsonb_set fails for real
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).rejects.toBe(dbError);
+  });
+
+  it('board: repeated (idempotent) board requests on the same booking both succeed', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't1' } },
+      ])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't1' } },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, policy_snapshot: { boarded_at: 't2' } },
+      ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).resolves.toBeDefined();
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'boarded'),
+    ).resolves.toBeDefined();
+  });
+
+  it('check-in: the checked_in_at UPDATE carries the same non-object-safe normalization as board', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE policy_snapshot checked_in_at
+      // no inventory query: hotel_id/room_id/bed_id all absent on vehicleBookingRow
+      .mockResolvedValueOnce([]) // UPDATE bookings SET status = 'confirmed'
+      .mockResolvedValueOnce([{ ...vehicleBookingRow, status: 'confirmed' }]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'checked_in');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('checked_in_at'),
+    );
+    expect(String(updateCall![0])).toContain(
+      "jsonb_typeof(policy_snapshot) = 'object'",
+    );
+  });
+
+  it('complete: the checked_out_at UPDATE carries the same non-object-safe normalization as board', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE policy_snapshot checked_out_at
+      .mockResolvedValueOnce([]) // UPDATE status = completed
+      .mockResolvedValueOnce([{ ...vehicleBookingRow, status: 'completed' }]); // final SELECT
+
+    await service.bookingStatus(actor, 'booking-1', 'completed');
+
+    const updateCall = queryCallsOf(pg).find(([sql]) =>
+      String(sql).includes('checked_out_at'),
+    );
+    expect(String(updateCall![0])).toContain(
+      "jsonb_typeof(policy_snapshot) = 'object'",
+    );
+  });
+});
+
+describe("PartnersService.reports (GET /partners/reports — this partner's own booking/payment report, always scoped to organizationId)", () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn().mockResolvedValue([]) };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it("always scopes the report to the actor's own organizationId, never returning another partner's data", async () => {
+    await service.reports(actor, {});
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('b.partner_organization_id = $1::uuid');
+    expect(params).toEqual(['org-1']);
+  });
+
+  it('rejects with 401 when the actor has no organizationId, before touching the database', async () => {
+    await expect(
+      service.reports({ ...actor, organizationId: undefined }, {}),
+    ).rejects.toMatchObject({
+      status: 401,
+      response: { code: 'PARTNER_ORGANIZATION_REQUIRED' },
+    });
+    expect(pg.query).not.toHaveBeenCalled();
+  });
+
+  it('forwards from/to/domain/status/paymentMethod query params to the aggregation layer', async () => {
+    await service.reports(actor, {
+      from: '2026-09-01',
+      to: '2026-09-30',
+      domain: 'hotel',
+      status: 'completed',
+      paymentMethod: 'cash',
+    });
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('b.created_at >= $2::timestamptz');
+    expect(String(sql)).toContain('b.created_at <= $3::timestamptz');
+    expect(String(sql)).toContain('b.payment_method::text = $4');
+    expect(String(sql)).toContain('b.status::text = $5');
+    expect(params).toEqual([
+      'org-1',
+      '2026-09-01T00:00:00.000Z',
+      '2026-09-30T00:00:00.000Z',
+      'cash',
+      'completed',
+      'hotel',
+    ]);
   });
 });

@@ -68,6 +68,16 @@ export function UniversalCard({
   const { formatPrice } = useCurrency();
   const [favorite, setFavorite] = useState(initialIsFavorite);
 
+  // Parent may correct this after an async persist call resolves (e.g.
+  // revert on a failed request, or apply the real server state). Adjusted
+  // during render per React's guidance, not in an effect, to avoid an
+  // extra commit: https://react.dev/learn/you-might-not-need-an-effect
+  const [prevIsFavorite, setPrevIsFavorite] = useState(initialIsFavorite);
+  if (initialIsFavorite !== prevIsFavorite) {
+    setPrevIsFavorite(initialIsFavorite);
+    setFavorite(initialIsFavorite);
+  }
+
   // Carousel State
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);

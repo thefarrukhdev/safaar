@@ -13,6 +13,7 @@ import {
   Ticket,
   UtensilsCrossed,
   Tag,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import { getPartnerLabels } from "../../_lib/utils/partner-labels";
@@ -64,7 +65,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Mijozlar",
-        items: [{ label: "Yo'lovchilar / Mijozlar", href: "/guests", icon: Users }],
+        items: [
+          { label: "Yo'lovchilar / Mijozlar", href: "/guests", icon: Users },
+          { label: "Mijozlar sharhlari", href: "/reviews", icon: Star },
+        ],
       },
       {
         title: "Boshqaruv",
@@ -100,7 +104,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Mijoz",
-        items: [{ label: "Mijozlar", href: "/guests", icon: Users }],
+        items: [
+          { label: "Mijozlar", href: "/guests", icon: Users },
+          { label: "Mijozlar sharhlari", href: "/reviews", icon: Star },
+        ],
       },
       {
         title: "Boshqaruv",
@@ -136,7 +143,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Mijoz",
-        items: [{ label: "Mijozlar", href: "/guests", icon: Users }],
+        items: [
+          { label: "Mijozlar", href: "/guests", icon: Users },
+          { label: "Mijozlar sharhlari", href: "/reviews", icon: Star },
+        ],
       },
       {
         title: "Boshqaruv",
@@ -172,7 +182,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
       },
       {
         title: "Mijoz",
-        items: [{ label: "Mijozlar", href: "/guests", icon: Users }],
+        items: [
+          { label: "Mijozlar", href: "/guests", icon: Users },
+          { label: "Mijozlar sharhlari", href: "/reviews", icon: Star },
+        ],
       },
       {
         title: "Boshqaruv",
@@ -207,7 +220,10 @@ export function getNavGroups(partnerType: string): NavGroup[] {
     },
     {
       title: "Mijoz",
-      items: [{ label: "Mijozlar", href: "/guests", icon: Users }],
+      items: [
+        { label: "Mijozlar", href: "/guests", icon: Users },
+        { label: "Mijozlar sharhlari", href: "/reviews", icon: Star },
+      ],
     },
     {
       title: "Boshqaruv",

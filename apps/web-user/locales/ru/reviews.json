@@ -13,6 +13,8 @@
   "submitting": "Отправка...",
   "submitReview": "Отправить отзыв",
   "anonymousGuest": "Гость",
+  "ownerReplyLabel": "Ответ партнёра",
+  "pendingReviewNotice": "Ваш отзыв принят. Он появится для других после проверки модератором.",
   "categories": {
     "cleanliness": "Чистота",
     "staff": "Обслуживание",

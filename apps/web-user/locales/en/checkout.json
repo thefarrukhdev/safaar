@@ -29,6 +29,7 @@
   "specialRequestsPlaceholder": "Write any special requests or preferences for the hotel...",
   "promoCode": "Promo code (if any)",
   "applyPromo": "Apply",
+  "promoApplied": "Discount applied:",
   "agreeTermsPrefix": "I agree to the ",
   "termsLink": "Public Offer",
   "agreeTermsSuffix": " terms.",
@@ -61,10 +62,7 @@
     "cash": {
       "title": "Pay at Property (Cash / Terminal)",
       "desc": "No prepayment required. Pay at the front desk upon arrival",
-      "badges": [
-        "No prepayment",
-        "Flexible cancellation"
-      ]
+      "badges": []
     },
     "local_card": {
       "title": "National cards",

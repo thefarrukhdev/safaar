@@ -5,7 +5,10 @@ import { LayoutGrid, Map } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { HotelsDict } from "@/i18n/dictionaries";
 import { formatSum } from "@/lib/money";
-import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
+import {
+  AccommodationCard,
+  type AccommodationFavoritesContext,
+} from "@/components/accommodation/AccommodationCard";
 import { HotelsPagination } from "@/components/hotels/HotelsPagination";
 import { InteractiveMapView, type MapMarkerItem } from "@/components/features/map/InteractiveMapView";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -24,6 +27,7 @@ export interface AccommodationListWithMapProps {
   headerSort?: React.ReactNode;
   filters?: React.ReactNode;
   activeFilters?: React.ReactNode;
+  favorites?: AccommodationFavoritesContext;
 }
 
 export function AccommodationListWithMap({
@@ -38,6 +42,7 @@ export function AccommodationListWithMap({
   headerSort,
   filters,
   activeFilters,
+  favorites,
 }: AccommodationListWithMapProps) {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [hoveredHotelId, setHoveredHotelId] = useState<string | null>(null);
@@ -65,14 +70,25 @@ export function AccommodationListWithMap({
 
   const handleBoundsChange = async (bounds: { neLat: number; neLng: number; swLat: number; swLng: number }) => {
     try {
-      const response = await api.hotels.getHotels(locale, {
-        neLat: bounds.neLat,
-        neLng: bounds.neLng,
-        swLat: bounds.swLat,
-        swLng: bounds.swLng,
-        limit: 50,
+      const params = new URLSearchParams({
+        locale,
+        neLat: String(bounds.neLat),
+        neLng: String(bounds.neLng),
+        swLat: String(bounds.swLat),
+        swLng: String(bounds.swLng),
+        limit: "50",
       });
-      setMapModeItems(response.items);
+      // Use the Next.js server-side proxy to avoid CORS issues when calling
+      // api.safaar.uz directly from the browser (e.g. on localhost).
+      const res = await fetch(`/api/hotels/map?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const rawItems: HotelListItem[] = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      setMapModeItems(rawItems);
     } catch (err) {
       console.error("Failed to fetch hotels for new map bounds", err);
     }
@@ -145,6 +161,7 @@ export function AccommodationListWithMap({
                     hotel={hotel}
                     locale={locale}
                     labels={{ perNight: dict.perNight, reviews: dict.reviews }}
+                    favorites={favorites}
                   />
                 </div>
               ))}
@@ -181,6 +198,7 @@ export function AccommodationListWithMap({
                 hotel={hotel}
                 locale={locale}
                 labels={{ perNight: dict.perNight, reviews: dict.reviews }}
+                favorites={favorites}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
@@ -49,6 +49,11 @@ export function CheckoutForm({
   const [promoError, setPromoError] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<CheckoutState, FormData>(
     createBookingAction,
     {},
@@ -83,7 +88,7 @@ export function CheckoutForm({
       setPromoDiscount({ type: res.data.discount_type, value: Number(res.data.discount_value) });
     } else {
       setPromoDiscount(null);
-      setPromoError(res.error || "Promo kod noto'g'ri yoki muddati tugagan");
+      setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
     }
     setPromoLoading(false);
   };
@@ -97,24 +102,43 @@ export function CheckoutForm({
     action(formData);
   };
 
+  const handleOnSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (false) { // Skip SMS logic completely now
+      e.preventDefault();
+      
+      if (!formRef.current?.checkValidity()) {
+        formRef.current?.reportValidity();
+        return;
+      }
+      
+      setIsSmsLoading(true);
+      setTimeout(() => {
+         setIsSmsLoading(false);
+         setShowSmsModal(true);
+      }, 1500);
+    }
+  };
+
   return (
     <>
     <form
+      ref={formRef}
+      onSubmit={handleOnSubmit}
       action={handleSubmitForm}
-      className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]"
+      className="grid grid-cols-1 gap-8 lg:gap-12 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] items-start"
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="hotelId" value={hotelId} />
       <input type="hidden" name="roomId" value={room.id} />
 
-      <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5">
-          <h2 className="text-lg font-semibold">{dict.guestDetails}</h2>
+      <div className="flex flex-col gap-8">
+        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.guestDetails}</h2>
           
           {isGuest ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.firstName}</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.firstName}</span>
                 <Input
                   name="firstName"
                   autoComplete="given-name"
@@ -122,8 +146,8 @@ export function CheckoutForm({
                   placeholder={dict.firstName}
                 />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.lastName}</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.lastName}</span>
                 <Input
                   name="lastName"
                   autoComplete="family-name"
@@ -131,8 +155,8 @@ export function CheckoutForm({
                   placeholder={dict.lastName}
                 />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.email}</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.email}</span>
                 <Input
                   type="email"
                   name="email"
@@ -141,8 +165,8 @@ export function CheckoutForm({
                   placeholder="example@mail.com"
                 />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{dict.phone}</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.phone}</span>
                 <Input
                   type="tel"
                   name="phone"
@@ -153,8 +177,8 @@ export function CheckoutForm({
               </label>
             </div>
           ) : (
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{dict.fullName}</span>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.fullName}</span>
               <Input
                 name="fullName"
                 autoComplete="name"
@@ -164,7 +188,7 @@ export function CheckoutForm({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <DatePicker
                 locale={locale}
                 label={dict.checkIn}
@@ -174,7 +198,7 @@ export function CheckoutForm({
               />
               <input type="hidden" name="checkIn" value={checkIn} />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <DatePicker
                 locale={locale}
                 label={dict.checkOut}
@@ -184,8 +208,8 @@ export function CheckoutForm({
               />
               <input type="hidden" name="checkOut" value={checkOut} />
             </div>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{dict.guests}</span>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.guests}</span>
               <Input
                 type="number"
                 name="guests"
@@ -197,23 +221,23 @@ export function CheckoutForm({
             </label>
           </div>
 
-          <label className="flex flex-col gap-1 mt-2">
-            <span className="text-sm font-medium">{dict.specialRequests}</span>
+          <label className="flex flex-col gap-1.5 mt-2">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.specialRequests}</span>
             <textarea
               name="specialRequests"
               rows={3}
               placeholder={dict.specialRequestsPlaceholder}
-              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              className="w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-900/60 transition-[border-color,box-shadow] duration-200 hover:border-slate-900/70 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600 dark:placeholder:text-slate-400"
             />
           </label>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-5 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
+        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.paymentMethod}</h2>
           <PaymentSelector
-            defaultValue={paymentMethod}
+            defaultValue="uzcard"
             name="paymentMethod"
-            allow={["uzcard", "humo", "visa", "mastercard"]}
+            allow={["uzcard"]}
             dict={dict.paymentMethods}
             onChange={setPaymentMethod}
           />
@@ -231,11 +255,11 @@ export function CheckoutForm({
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-3 rounded-xl border border-slate-900/[0.08] bg-card p-5 lg:sticky lg:top-24 shadow-float">
-        <h2 className="text-lg font-semibold">{dict.summary}</h2>
-        <div>
-          <p className="font-medium">{hotelName}</p>
-          <p className="text-sm text-slate-500">{room.name}</p>
+      <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{dict.summary}</h2>
+        <div className="flex flex-col gap-0.5">
+          <p className="font-semibold text-slate-900 dark:text-white">{hotelName}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{room.name}</p>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-500">
@@ -250,27 +274,26 @@ export function CheckoutForm({
           </div>
         )}
 
-        <div className="border-t border-slate-900/[0.08] pt-3 dark:border-slate-800">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-500">{dict.promoCode}</span>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dict.promoCode}</span>
             <div className="flex gap-2">
               <Input
                 name="promoCode"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
                 placeholder="PROMO2025"
-                className="text-sm"
               />
-              <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-3 rounded-full active:scale-[0.97]">{dict.applyPromo}</Button>
+              <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-4 rounded-xl active:scale-[0.97]">{dict.applyPromo}</Button>
             </div>
-            {promoError && <span className="text-xs text-red-500 mt-1">{promoError}</span>}
-            {promoDiscount && <span className="text-xs text-green-600 mt-1">Chegirma qo'llanildi: {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
+            {promoError && <span className="text-xs font-medium text-red-600 mt-1">{promoError}</span>}
+            {promoDiscount && <span className="text-xs font-medium text-green-600 mt-1">{(dict as any).promoApplied || "Chegirma qo'llanildi:"} {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
           </label>
         </div>
 
-        <div className="flex justify-between border-t border-slate-900/[0.08] pt-3 font-semibold dark:border-slate-800">
-          <span>{dict.total}</span>
-          <span>{formatSum(total)}</span>
+        <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold dark:border-slate-800">
+          <span className="text-slate-900 dark:text-white">{dict.total}</span>
+          <span className="text-slate-900 dark:text-white">{formatSum(total)}</span>
         </div>
 
         {nights < 1 && (
@@ -282,13 +305,10 @@ export function CheckoutForm({
           </p>
         )}
 
-        <div className="mt-2 w-full">
-          <label className="flex items-start gap-2 text-xs">
-            <input
-              type="checkbox"
-              name="agreeTerms"
-              required
-              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+        <div className="mt-4 w-full">
+          <label className="flex items-start gap-2.5 text-xs">
+            <input type="checkbox" name="agreeTerms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900"
             />
             <span className="text-slate-600 dark:text-slate-400 leading-tight">
               {dict.agreeTermsPrefix}
@@ -305,9 +325,9 @@ export function CheckoutForm({
             type="submit"
             variant="accent"
             size="lg"
-            className="w-full rounded-full active:scale-[0.97]"
-            loading={pending}
-            disabled={nights < 1}
+            className="w-full rounded-xl py-6 text-base font-bold active:scale-[0.98] transition-transform"
+            loading={pending || isSmsLoading}
+            disabled={nights < 1 || !agreeTerms}
           >
             {dict.payButton || dict.confirm}
           </Button>
@@ -317,10 +337,12 @@ export function CheckoutForm({
       <CheckoutMobileCtaBar
         total={total}
         dict={{ total: dict.total, payButton: dict.payButton }}
-        pending={pending}
-        disabled={nights < 1}
+        pending={pending || isSmsLoading}
+        disabled={nights < 1 || !agreeTerms}
         targetId="checkout-original-cta"
       />
+
+      
     </form>
     </>
   );

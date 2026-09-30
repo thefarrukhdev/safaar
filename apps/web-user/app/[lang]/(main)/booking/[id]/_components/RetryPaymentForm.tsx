@@ -93,7 +93,7 @@ export function RetryPaymentForm({
     setPreviewError(undefined);
     const seq = ++requestSeq.current;
     startPreview(async () => {
-      const result = await previewPayment(bookingId, provider, guestToken);
+      const result = await previewPayment(bookingId, provider === "card" ? "uzcard" : provider, guestToken);
       // Eskirgan (stale) javobni e'tiborsiz qoldiramiz — foydalanuvchi
       // tez-tez usul almashtirsa, faqat ENG OXIRGI so'rov natijasi qabul
       // qilinadi (poyga holati oldini olish).

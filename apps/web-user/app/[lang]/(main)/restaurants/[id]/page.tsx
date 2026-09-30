@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Clock, Utensils } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
+import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
 import { ReviewsList } from "@/components/features/reviews/ReviewsList";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
@@ -179,6 +180,20 @@ export default async function RestaurantDetailPage({
               targetType="restaurant"
               authed={!!session}
               token={session?.accessToken}
+            />
+          </section>
+
+          <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <DetailLocationSection 
+              title={(dict as any).detail?.location || "Joylashuv"}
+              address={restaurant.address || restaurant.cityName} 
+              latitude={restaurant.latitude} 
+              longitude={restaurant.longitude} 
+              itemName={restaurant.name}
+              itemImage={restaurant.imageUrl ?? undefined}
+              itemRating={restaurant.rating}
+              openInMapsText={(dict as any).detail?.openInMaps || "Google Maps'da ochish"}
+              noCoordsText={(dict as any).detail?.noCoordinates || "Xarita koordinatalari mavjud emas"}
             />
           </section>
         </div>

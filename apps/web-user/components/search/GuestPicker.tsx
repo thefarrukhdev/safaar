@@ -19,7 +19,7 @@ export function GuestPicker({ value, onChange }: Props) {
       >
         <Minus className="h-3.5 w-3.5 stroke-[2.5]" />
       </button>
-      <span className="min-w-6 text-center text-base font-bold tabular-nums text-slate-900">
+      <span className="min-w-6 text-center text-sm font-bold tabular-nums text-slate-900 dark:text-white">
         {value}
       </span>
       <button

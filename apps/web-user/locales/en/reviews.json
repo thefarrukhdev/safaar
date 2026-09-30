@@ -13,6 +13,8 @@
   "submitting": "Submitting...",
   "submitReview": "Submit review",
   "anonymousGuest": "Guest",
+  "ownerReplyLabel": "Partner's reply",
+  "pendingReviewNotice": "Your review has been received. It will be visible to others after moderation.",
   "categories": {
     "cleanliness": "Cleanliness",
     "staff": "Service",

@@ -1,4 +1,6 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { CurrentActor, type RequestActor } from '../common/actor';
+import { RolesGuard } from '../common/roles.guard';
 import { CatalogService } from './catalog.service';
 
 type CatalogQuery = Record<string, string | string[] | undefined>;
@@ -7,19 +9,27 @@ type CatalogQuery = Record<string, string | string[] | undefined>;
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
+  // `@UseGuards(RolesGuard)` bu yerda `@Roles()`/`@Permissions()`siz —
+  // auth ixtiyoriy: token yo'q bo'lsa (ommaviy chaqiruv) rad etilmaydi,
+  // faqat haqiqiy/yaroqli token bo'lsa actor aniqlanadi (web-admin'ning
+  // "Viloyat va Shaharlar"/qulayliklar ro'yxati aynan shu marshrutlarni
+  // chaqiradi — qarang `catalog.service.ts`).
   @Get('regions')
-  regions() {
-    return this.catalogService.regions();
+  @UseGuards(RolesGuard)
+  regions(@CurrentActor() actor: RequestActor | undefined) {
+    return this.catalogService.regions(actor);
   }
 
   @Get('cities')
-  cities() {
-    return this.catalogService.cities();
+  @UseGuards(RolesGuard)
+  cities(@CurrentActor() actor: RequestActor | undefined) {
+    return this.catalogService.cities(actor);
   }
 
   @Get('amenities')
-  amenities() {
-    return this.catalogService.amenities();
+  @UseGuards(RolesGuard)
+  amenities(@CurrentActor() actor: RequestActor | undefined) {
+    return this.catalogService.amenities(actor);
   }
 
   @Get('room-types')

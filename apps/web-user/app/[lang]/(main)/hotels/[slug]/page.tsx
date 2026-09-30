@@ -13,8 +13,9 @@ import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { HotelBookingWidget } from '@/components/features/hotels/HotelBookingWidget';
 import { HotelAmenities } from '@/components/features/hotels/HotelAmenities';
+import { HotelRules } from '@/components/features/hotels/HotelRules';
 import { HotelStickyNav } from '@/components/features/hotels/HotelStickyNav';
-import { HotelLocation } from '@/components/features/hotels/HotelLocation';
+import { DetailLocationSection } from '@/components/features/shared/DetailLocationSection';
 import { BackButton } from '@/components/ui/BackButton';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -286,6 +287,18 @@ export default async function Page({
             </section>
           )}
 
+          <section id="rules" className="scroll-mt-24 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <HotelRules 
+              checkInTime={hotel.checkInTime}
+              checkOutTime={hotel.checkOutTime}
+              cancellationPolicyCode={hotel.cancellationPolicyCode}
+              allowSmoking={hotel.allowSmoking}
+              allowPets={hotel.allowPets}
+              allowChildren={hotel.allowChildren}
+              dict={(dict as any).rulesSection}
+            />
+          </section>
+
           <section id="rooms" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <h2 className="text-2xl font-bold text-slate-900">
               {dict.rooms.title}
@@ -320,8 +333,17 @@ export default async function Page({
           </section>
 
           <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
-            <h2 className="text-2xl font-bold text-slate-900">{dict.locationTitle}</h2>
-            <HotelLocation address={hotel.address} latitude={hotel.latitude} longitude={hotel.longitude} dict={dict.location} />
+            <DetailLocationSection 
+              title={dict.locationTitle}
+              address={hotel.address} 
+              latitude={hotel.latitude} 
+              longitude={hotel.longitude} 
+              itemName={hotel.name}
+              itemImage={hotel.imageUrl ?? undefined}
+              itemRating={hotel.rating}
+              openInMapsText={dict.location?.openInMaps}
+              noCoordsText={dict.location?.noCoordinates}
+            />
           </section>
         </div>
 

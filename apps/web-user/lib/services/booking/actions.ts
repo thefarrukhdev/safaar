@@ -181,13 +181,22 @@ export async function createRestaurantBookingAction(input: {
   guestName: string;
   guestPhone: string;
   guestEmail: string;
-  paymentMethod: "uzcard" | "cash";
+  paymentMethod: "uzcard" | "humo" | "visa" | "mastercard" | "cash";
   agreeTerms: boolean;
-}): Promise<{ ok: boolean; bookingId?: string; error?: string }> {
+}): Promise<{
+  ok: boolean;
+  bookingId?: string;
+  bookingNumber?: string;
+  guestAccessToken?: string;
+  error?: string;
+}> {
   if (!input.agreeTerms) {
     return { ok: false, error: "TERMS_NOT_ACCEPTED" };
   }
 
+  // `session`dan olingan `accessToken` bronni HAQIQIY foydalanuvchi
+  // hisobiga bog'laydi ("Mening bronlarim"da ko'rinishi uchun) — bo'lmasa
+  // (mehmon/login qilmagan) backend guest checkout sifatida ishlaydi.
   const session = await getSession();
 
   try {
@@ -210,10 +219,17 @@ export async function createRestaurantBookingAction(input: {
       session ? { token: session.accessToken } : undefined
     );
 
-    const bookingId = booking.bookingNumber || booking.id || "CONFIRMED";
-    return { ok: true, bookingId };
+    return {
+      ok: true,
+      bookingId: booking.id,
+      bookingNumber: booking.bookingNumber,
+      guestAccessToken: booking.guestAccessToken,
+    };
   } catch (err: unknown) {
-    return { ok: false, error: err instanceof Error ? err.message : "Xatolik yuz berdi" };
+    return {
+      ok: false,
+      error: err instanceof ApiRequestError ? err.message : "Xatolik yuz berdi",
+    };
   }
 }
 

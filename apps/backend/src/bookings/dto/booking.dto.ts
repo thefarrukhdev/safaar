@@ -212,6 +212,69 @@ export class CreateBusBookingDto {
   @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
   payment_method?: string;
 
+  @ApiPropertyOptional({
+    default: 'instant_confirmation',
+    enum: ['instant_confirmation', 'request_confirmation'],
+  })
+  @IsOptional()
+  @IsIn(['instant_confirmation', 'request_confirmation'])
+  confirmation_mode?: string;
+
+  @ApiPropertyOptional({ example: 'Laziz' })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiPropertyOptional({ example: 'Shakarov' })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: 'Laziz Shakarov' })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiPropertyOptional({ example: 'laziz@example.com' })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '+998901234567' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Laziz Shakarov' })
+  @IsOptional()
+  @IsString()
+  guest_name?: string;
+
+  @ApiPropertyOptional({ example: 'Laziz Shakarov' })
+  @IsOptional()
+  @IsString()
+  guestName?: string;
+
+  @ApiPropertyOptional({ example: 'laziz@example.com' })
+  @IsOptional()
+  @IsString()
+  guest_email?: string;
+
+  @ApiPropertyOptional({ example: 'laziz@example.com' })
+  @IsOptional()
+  @IsString()
+  guestEmail?: string;
+
+  @ApiPropertyOptional({ example: '+998901234567' })
+  @IsOptional()
+  @IsString()
+  guest_phone?: string;
+
+  @ApiPropertyOptional({ example: '+998901234567' })
+  @IsOptional()
+  @IsString()
+  guestPhone?: string;
+
   @ApiPropertyOptional({ example: 'SUMMER10' })
   @IsOptional()
   @IsString()

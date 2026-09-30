@@ -507,8 +507,11 @@ function ReservationCard({
   onCheckIn: () => void;
 }) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
-  const canConfirm = reservation.status === BookingStatus.PENDING;
-  const canCheckIn = reservation.status === BookingStatus.CONFIRMED;
+  const today = new Date().toISOString().split("T")[0];
+  const isPastCheckIn = today > reservation.checkIn;
+  const isPastCheckOut = today > reservation.checkOut;
+  const canConfirm = reservation.status === BookingStatus.PENDING && !isPastCheckIn;
+  const canCheckIn = reservation.status === BookingStatus.CONFIRMED && !isPastCheckOut;
   const beds = useDataStore((s) => s.beds);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);

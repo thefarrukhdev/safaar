@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -18,6 +18,8 @@ export function Select({
   buttonClassName,
   menuClassName,
   ariaLabel,
+  label,
+  icon,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -27,6 +29,8 @@ export function Select({
   buttonClassName?: string;
   menuClassName?: string;
   ariaLabel?: string;
+  label?: string;
+  icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -61,20 +65,27 @@ export function Select({
         aria-expanded={open}
         aria-label={ariaLabel}
         className={cn(
-          "flex h-12 w-full items-center justify-between rounded-xl border border-slate-900/50 bg-white px-4 text-base text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white",
-          "transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
-          "hover:border-slate-900/70 dark:hover:border-slate-500",
-          "focus-visible:border-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-600",
+          "group flex w-full items-center gap-3 rounded-xl border border-slate-300 bg-card px-3.5 py-2.5 text-left transition-all hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white",
           buttonClassName
         )}
       >
-        <span className={cn("truncate", !selected && "text-slate-900/60 dark:text-slate-400")}>
-          {display}
+        {icon && (
+          <span className="shrink-0 text-slate-500 transition-colors group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400">
+            {icon}
+          </span>
+        )}
+        <span className="flex min-w-0 flex-1 flex-col">
+          {label && (
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+          )}
+          <span className={cn("truncate text-xs font-bold", !selected && "text-slate-900/60 dark:text-slate-400", selected && "text-slate-900 dark:text-white")}>
+            {display}
+          </span>
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-900/70 dark:text-slate-400 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
-            open && "rotate-180"
+            "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
+            open && "rotate-180 text-primary-500"
           )}
           aria-hidden
         />
@@ -82,7 +93,7 @@ export function Select({
 
       {open && (
         <div className={cn(
-          "absolute left-0 top-[calc(100%+4px)] z-50 w-full min-w-[11rem] rounded-xl border border-slate-900/[0.08] bg-white p-1.5 shadow-float motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-950",
+          "absolute left-0 top-full mt-2 z-50 w-full min-w-[11rem] max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 dark:border-slate-700 dark:bg-slate-800",
           menuClassName
         )}>
           {options.length === 0 && (
@@ -101,10 +112,10 @@ export function Select({
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex w-full items-center rounded-lg px-3 py-2 text-sm transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.98]",
+                  "flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-slate-900/[0.08] font-medium text-slate-900 dark:bg-slate-800 dark:text-white"
-                    : "text-slate-900 hover:bg-slate-900/[0.03] dark:text-slate-300 dark:hover:bg-slate-800/50"
+                    ? "bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/40 dark:text-primary-300"
+                    : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
                 )}
               >
                 {opt.label}

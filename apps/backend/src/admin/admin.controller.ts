@@ -209,6 +209,14 @@ export class AdminController {
     return this.adminService.partnerLedger(id);
   }
 
+  @Get('partner-reports')
+  @Permissions(Permission.FinanceRead)
+  partnerReports(
+    @Query() query: Record<string, string | string[] | undefined>,
+  ) {
+    return this.adminService.partnerReports(query);
+  }
+
   @Get('rooms/:id/availability')
   @Permissions(Permission.AvailabilityRead)
   roomAvailabilityCalendar(
@@ -696,6 +704,24 @@ export class AdminController {
   @Permissions(Permission.CmsWrite)
   regionDelete(@Param('id') id: string) {
     return this.adminService.regionDelete(id);
+  }
+
+  @Post('catalog/cities')
+  @Permissions(Permission.CmsWrite)
+  cityCreate(@Body() body: Record<string, unknown>) {
+    return this.adminService.cityCreate(body);
+  }
+
+  @Patch('catalog/cities/:id')
+  @Permissions(Permission.CmsWrite)
+  cityUpdate(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.adminService.cityUpdate(id, body);
+  }
+
+  @Delete('catalog/cities/:id')
+  @Permissions(Permission.CmsWrite)
+  cityDelete(@Param('id') id: string) {
+    return this.adminService.cityDelete(id);
   }
 
   @Post('catalog/amenities')

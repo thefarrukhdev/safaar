@@ -5,9 +5,10 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { api, ApiRequestError } from "@/lib/api";
 import { BackButton } from "@/components/ui/BackButton";
 import { Badge } from "@/components/ui/Badge";
-import { MapPin, Phone, Star, Users, Fuel, Luggage, Car } from "lucide-react";
+import { MapPin, Phone, Star, Users, Fuel, Luggage, Car, Building2 } from "lucide-react";
 import Image from "next/image";
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
+import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { ReviewsList } from "@/components/features/reviews/ReviewsList";
@@ -37,6 +38,8 @@ export async function generateMetadata({
     return {};
   }
 }
+
+import { TransportRules } from "@/components/features/transport/TransportRules";
 
 export default async function TransportDetailPage({
   params,
@@ -148,11 +151,31 @@ export default async function TransportDetailPage({
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-8">
+          {transport.companyName && (
+            <section className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
+                <Building2 className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {(dict as any).detail?.providedBy || "Taqdim etuvchi kompaniya"}
+                </p>
+                <p className="text-base font-bold text-slate-900 dark:text-white">
+                  {transport.companyName}
+                </p>
+              </div>
+            </section>
+          )}
+
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">{(dict as any).detail?.about || "Transport haqida"}</h2>
             <p className="whitespace-pre-line leading-relaxed text-slate-600 dark:text-slate-300">
               {((dict as any).detail?.rentalDescription || "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang.").replace("{company}", transport.companyName || "Hamkor").replace("{name}", transport.name)}
             </p>
+          </section>
+
+          <section id="rules" className="scroll-mt-24 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <TransportRules dict={(dict as any).rulesSection} />
           </section>
 
           <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
@@ -167,6 +190,20 @@ export default async function TransportDetailPage({
               targetType="bus_company"
               authed={!!session}
               token={session?.accessToken}
+            />
+          </section>
+
+          <section id="location" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
+            <DetailLocationSection 
+              title={(dict as any).detail?.location || "Olib ketish / Joylashuv"}
+              address={transport.cityName || "Noma'lum manzili"} 
+              latitude={transport.latitude} 
+              longitude={transport.longitude} 
+              itemName={transport.name}
+              itemImage={transport.imageUrl ?? undefined}
+              itemRating={transport.rating}
+              openInMapsText={(dict as any).detail?.openInMaps || "Google Maps'da ochish"}
+              noCoordsText={(dict as any).detail?.noCoordinates || "Xarita koordinatalari mavjud emas"}
             />
           </section>
         </div>

@@ -28,12 +28,21 @@ export interface HotelListItem {
   longitude?: number;
 }
 
+/** Admin tomonidan tasdiqlangan (`published`) va joriy amaldagi chegirma — faqat ko'rsatish, bron summasidan mustaqil. */
+export interface RoomPromotionView {
+  oldPriceSum: number;
+  newPriceSum: number;
+  discountPercent: number;
+  endDate: string;
+}
+
 export interface RoomTypeView {
   id: string;
   name: string;
   priceSum: number;
   capacity: number;
   available: number;
+  promotion?: RoomPromotionView;
 }
 
 export interface HotelDetail extends HotelListItem {
@@ -45,6 +54,10 @@ export interface HotelDetail extends HotelListItem {
   longitude: number;
   checkInTime: string;
   checkOutTime: string;
+  cancellationPolicyCode?: string;
+  allowSmoking?: boolean;
+  allowPets?: boolean;
+  allowChildren?: boolean;
   rooms: RoomTypeView[];
 }
 
@@ -120,6 +133,16 @@ export interface ReviewView {
   staff?: number;
   location?: number;
   valueForMoney?: number;
+  /** Hamkorning javobi (agar bo'lsa). Backend `reply_by`ni ommaviy javobda
+   * hech qachon qaytarmaydi (PII) — bu yerda ham yo'q. */
+  replyBody?: string;
+  repliedAt?: string;
+  /**
+   * Faqat `POST /reviews`ning O'Z javobida keladi (moderatsiya holatini
+   * darhol bilish uchun) — GET ro'yxatlari doim `published`ni qaytaradi,
+   * shuning uchun u yerda bu maydon hech qachon kerak emas va yo'q.
+   */
+  status?: 'pending_review' | 'published' | 'rejected';
 }
 
 export interface SupportTicketView {

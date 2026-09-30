@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -40,7 +41,9 @@ export default async function RestaurantsPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <RestaurantsView dict={restaurantsDict} items={restaurants} locale={locale} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <RestaurantsView dict={restaurantsDict} items={restaurants} locale={locale} />
+      </Suspense>
     </main>
   );
 }

@@ -25,6 +25,7 @@ export default function CatalogPage() {
   const [editing, setEditing] = useState<CatalogRegion | CatalogAmenity | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [isActive, setIsActive] = useState(true);
   const [type, setType] = useState<CatalogAmenity['type']>("hotel");
   const [amenitiesFilter, setAmenitiesFilter] = useState<CatalogAmenity['type'] | 'all'>('all');
 
@@ -68,6 +69,7 @@ export default function CatalogPage() {
     setEditing(null);
     setName("");
     setCode("");
+    setIsActive(true);
     setType(amenitiesFilter !== "all" ? amenitiesFilter as CatalogAmenity['type'] : "hotel");
     setModalOpen(true);
   };
@@ -75,6 +77,7 @@ export default function CatalogPage() {
   const openEdit = (item: CatalogRegion | CatalogAmenity) => {
     setEditing(item);
     setName(item.name);
+    setIsActive(item.isActive);
     if ("code" in item) {
       setCode(item.code);
       setType(item.type);
@@ -95,15 +98,15 @@ export default function CatalogPage() {
     try {
       if (activeTab === "regions") {
         if (editing) {
-          await AdminApi.updateRegion(editing.id, trimmedName);
+          await AdminApi.updateRegion(editing.id, trimmedName, isActive);
           toast.success("Hudud yangilandi!");
         } else {
-          await AdminApi.createRegion(trimmedName);
+          await AdminApi.createRegion(trimmedName, isActive);
           toast.success("Hudud qo'shildi!");
         }
       } else {
         if (editing) {
-          await AdminApi.updateAmenity(editing.id, trimmedName);
+          await AdminApi.updateAmenity(editing.id, trimmedName, isActive);
           toast.success("Qulaylik yangilandi!");
         } else {
           const trimmedCode = code.trim();
@@ -113,7 +116,7 @@ export default function CatalogPage() {
             return;
           }
           const finalCode = trimmedCode.startsWith(`${type}_`) ? trimmedCode : `${type}_${trimmedCode}`;
-          await AdminApi.createAmenity(finalCode, trimmedName);
+          await AdminApi.createAmenity(finalCode, trimmedName, isActive);
           toast.success("Qulaylik qo'shildi!");
         }
       }
@@ -340,6 +343,18 @@ export default function CatalogPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <div className="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="isActiveToggle"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
+            />
+            <label htmlFor="isActiveToggle" className="text-sm font-medium cursor-pointer">
+              Faol holatda (Hamkorlarga ko'rinadi)
+            </label>
+          </div>
         </div>
       </Modal>
     </div>

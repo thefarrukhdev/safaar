@@ -14,7 +14,6 @@ import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import dynamic from "next/dynamic";
 import NextTopLoader from "nextjs-toploader";
-import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { Toaster } from "@/components/ui/Toaster";
 import { config } from "@/lib/config";
 
@@ -113,7 +112,6 @@ export default async function LangLayout({
     >
       <body className="flex min-h-full flex-col overflow-x-hidden bg-slate-100/60 text-slate-900 subpixel-antialiased dark:bg-slate-950 dark:text-slate-100">
         <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
-        <AnalyticsProvider>
           <NuqsAdapter>
 
             <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
@@ -125,7 +123,6 @@ export default async function LangLayout({
               </div>
             </CurrencyProvider>
           </NuqsAdapter>
-        </AnalyticsProvider>
       </body>
     </html>
   );

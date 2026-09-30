@@ -13,11 +13,23 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import {
+  isValidEmail,
+  isValidUzbekPhone,
+  normalizeEmail,
+  normalizePhone,
+} from '../common/contact-normalization';
+import {
   calculateCommission,
   resolveAccommodationCommissionRate,
 } from '../common/finance';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
 import { isSlotWithinOperatingHours } from '../common/operating-hours';
+import {
+  activeRoomPromotionPredicate,
+  calculateRoomPrice,
+  isSchool21Code,
+  type ActiveRoomPromotion,
+} from '../common/room-pricing';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
@@ -57,6 +69,12 @@ interface HotelRoomRow {
   hotel_id: string;
   base_price: string | number;
   total_inventory: number;
+  promotion_id?: string | null;
+  promotion_old_price?: string | number | null;
+  promotion_new_price?: string | number | null;
+  promotion_discount_percent?: string | number | null;
+  promotion_start_date?: string | null;
+  promotion_end_date?: string | null;
 }
 
 interface TripRow {
@@ -93,6 +111,14 @@ export interface BookingRow {
   expires_at?: string | null;
   booking_number?: string;
   [key: string]: unknown;
+}
+
+interface GuestContact {
+  firstName: string | null;
+  lastName: string | null;
+  name: string;
+  email: string;
+  phone: string;
 }
 
 @Injectable()
@@ -478,20 +504,7 @@ export class BookingsService {
     }
     const nights = isRestaurant ? 1 : this.calculateNights(checkIn, checkOut);
     const rooms = isRestaurant ? 1 : Number(dto.rooms ?? 1);
-    const firstName = this.optionalText(dto.firstName ?? dto.first_name);
-    const lastName = this.optionalText(dto.lastName ?? dto.last_name);
-    const fullName = this.optionalText(dto.fullName ?? dto.full_name);
-    const composedName = [firstName, lastName].filter(Boolean).join(' ').trim();
-    const guestName =
-      this.optionalText(dto.guest_name ?? dto.guestName) ??
-      fullName ??
-      (composedName || '');
-    const guestEmail =
-      this.optionalText(
-        dto.guest_email ?? dto.guestEmail ?? dto.email,
-      )?.toLowerCase() ?? '';
-    const guestPhone =
-      this.optionalText(dto.guest_phone ?? dto.guestPhone ?? dto.phone) ?? '';
+    const guest = this.guestContact(actor, dto);
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
@@ -504,7 +517,23 @@ export class BookingsService {
     // (`partners.service.ts createBooking`) allaqachon to'g'ri qo'llangan.
     const { booking, payment } = await this.pg.transaction(async (tx) => {
       const [room] = await tx.query<HotelRoomRow>(
-        "SELECT id, base_price, hotel_id, total_inventory FROM hotel_rooms WHERE id = $1 AND hotel_id = $2 AND status = 'active' FOR UPDATE",
+        `SELECT hr.id, hr.base_price, hr.hotel_id, hr.total_inventory,
+                ap.id::text AS promotion_id,
+                ap.old_price_sum::float8 AS promotion_old_price,
+                ap.new_price_sum::float8 AS promotion_new_price,
+                ap.discount_percent AS promotion_discount_percent,
+                ap.start_date::text AS promotion_start_date,
+                ap.end_date::text AS promotion_end_date
+         FROM hotel_rooms hr
+         LEFT JOIN LATERAL (
+           SELECT p.*
+           FROM promotions p
+           WHERE ${activeRoomPromotionPredicate('p', 'hr.id')}
+           ORDER BY p.updated_at DESC, p.created_at DESC
+           LIMIT 1
+         ) ap ON TRUE
+         WHERE hr.id = $1 AND hr.hotel_id = $2 AND hr.status = 'active'
+         FOR UPDATE OF hr`,
         [roomId, hotelId],
       );
 
@@ -590,16 +619,39 @@ export class BookingsService {
         });
       }
 
-      const subtotal = Number(room.base_price) * nights * rooms;
-      const discountAmount = promo
+      const partnerPromotion: ActiveRoomPromotion | null = room.promotion_id
+        ? {
+            id: room.promotion_id,
+            entity_id: room.id,
+            old_price_sum: Number(room.promotion_old_price),
+            new_price_sum: Number(room.promotion_new_price),
+            discount_percent: Number(room.promotion_discount_percent),
+            start_date: room.promotion_start_date ?? undefined,
+            end_date: String(room.promotion_end_date ?? ''),
+          }
+        : null;
+      const unitPrice = calculateRoomPrice(room.base_price, partnerPromotion);
+      const baseSubtotal = unitPrice.basePrice * nights * rooms;
+      const effectiveSubtotal = unitPrice.effectivePrice * nights * rooms;
+      const partnerDiscountAmount = baseSubtotal - effectiveSubtotal;
+
+      if (partnerPromotion && promo && isSchool21Code(promo.code)) {
+        throw new BadRequestException({
+          code: 'PROMO_STACKING_NOT_ALLOWED',
+          message: 'SCHOOL21 faol hamkor chegirmasi bilan birga qo‘llanilmaydi',
+        });
+      }
+
+      const promoDiscountAmount = promo
         ? calculatePromoDiscount(
-            subtotal,
+            effectiveSubtotal,
             promo.discount_type,
             promo.discount_value,
           )
         : 0;
+      const discountAmount = partnerDiscountAmount + promoDiscountAmount;
 
-      if (promo) {
+      if (promo && promoDiscountAmount > 0) {
         const redeemed = await this.promosService.redeem(promo.code, tx);
         if (!redeemed) {
           // Tasdiqlash (validate) va shu yerdagi haqiqiy sarflash orasida
@@ -618,7 +670,7 @@ export class BookingsService {
         partner_organization_id: hotel.partner_organization_id,
         payment_method: this.paymentMethod(dto.payment_method),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
-        subtotal,
+        subtotal: baseSubtotal,
         discount_amount: discountAmount,
         commission_rate_percent: resolvedCommissionRatePercent,
         hotel_id: hotel.id,
@@ -627,9 +679,9 @@ export class BookingsService {
         check_in: checkIn,
         check_out: checkOut,
         slot_time: isRestaurant ? slotTime : null,
-        guest_name: guestName,
-        guest_email: guestEmail,
-        guest_phone: guestPhone,
+        guest_name: guest.name,
+        guest_email: guest.email,
+        guest_phone: guest.phone,
         terms_accepted_at: new Date().toISOString(),
         terms_version: CURRENT_TERMS_VERSION,
         price_snapshot: {
@@ -639,15 +691,24 @@ export class BookingsService {
           slot_time: isRestaurant ? slotTime : null,
           nights,
           rooms,
+          base_price_per_night: unitPrice.basePrice,
+          effective_price_per_night: unitPrice.effectivePrice,
+          partner_promotion: partnerPromotion
+            ? {
+                id: partnerPromotion.id,
+                discount_percent: partnerPromotion.discount_percent,
+                discount_amount: partnerDiscountAmount,
+              }
+            : null,
           adults: Number(dto.adults ?? dto.guests ?? 1),
           children: Number(dto.children ?? 0),
           promo_code: promo?.code ?? null,
           guest: {
-            first_name: firstName ?? null,
-            last_name: lastName ?? null,
-            name: guestName,
-            email: guestEmail,
-            phone: guestPhone,
+            first_name: guest.firstName,
+            last_name: guest.lastName,
+            name: guest.name,
+            email: guest.email,
+            phone: guest.phone,
           },
         },
       });
@@ -737,20 +798,7 @@ export class BookingsService {
     }
     const days = this.calculateNights(checkIn, checkOut);
 
-    const firstName = this.optionalText(dto.firstName ?? dto.first_name);
-    const lastName = this.optionalText(dto.lastName ?? dto.last_name);
-    const fullName = this.optionalText(dto.fullName ?? dto.full_name);
-    const composedName = [firstName, lastName].filter(Boolean).join(' ').trim();
-    const guestName =
-      this.optionalText(dto.guest_name ?? dto.guestName) ??
-      fullName ??
-      (composedName || '');
-    const guestEmail =
-      this.optionalText(
-        dto.guest_email ?? dto.guestEmail ?? dto.email,
-      )?.toLowerCase() ?? '';
-    const guestPhone =
-      this.optionalText(dto.guest_phone ?? dto.guestPhone ?? dto.phone) ?? '';
+    const guest = this.guestContact(actor, dto);
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
@@ -817,9 +865,9 @@ export class BookingsService {
         vehicle_id: locked.id,
         check_in: checkIn,
         check_out: checkOut,
-        guest_name: guestName,
-        guest_email: guestEmail,
-        guest_phone: guestPhone,
+        guest_name: guest.name,
+        guest_email: guest.email,
+        guest_phone: guest.phone,
         price_snapshot: {
           vehicle_id: locked.id,
           check_in: checkIn,
@@ -828,11 +876,11 @@ export class BookingsService {
           price_per_day: Number(locked.price_per_day),
           promo_code: promo?.code ?? null,
           guest: {
-            first_name: firstName ?? null,
-            last_name: lastName ?? null,
-            name: guestName,
-            email: guestEmail,
-            phone: guestPhone,
+            first_name: guest.firstName,
+            last_name: guest.lastName,
+            name: guest.name,
+            email: guest.email,
+            phone: guest.phone,
           },
         },
       });
@@ -894,7 +942,8 @@ export class BookingsService {
     actor: RequestActor | undefined,
     dto: Record<string, unknown>,
   ) {
-    const currentActor = this.requireActor(actor);
+    const userId = actor?.id ?? null;
+    const guest = this.guestContact(actor, dto);
     const tripId = String(dto.trip_id ?? dto.tripId ?? '');
 
     const [trip] = await this.pg.query<TripRow>(
@@ -989,7 +1038,7 @@ export class BookingsService {
         }
       }
 
-      const booking = await this.createBooking(tx, currentActor.id, {
+      const booking = await this.createBooking(tx, userId, {
         type: 'bus',
         partner_organization_id: partnerOrganizationId,
         payment_method: this.paymentMethod(dto.payment_method),
@@ -1000,10 +1049,20 @@ export class BookingsService {
         hotel_id: null,
         trip_id: trip.id,
         expires_at: expiresAt.toISOString(),
+        guest_name: guest.name,
+        guest_email: guest.email,
+        guest_phone: guest.phone,
         price_snapshot: {
           seats: seats.map((s) => s.seat_code),
           passengers: dto.passengers ?? [],
           promo_code: promo?.code ?? null,
+          guest: {
+            first_name: guest.firstName,
+            last_name: guest.lastName,
+            name: guest.name,
+            email: guest.email,
+            phone: guest.phone,
+          },
         },
       });
 
@@ -1023,7 +1082,13 @@ export class BookingsService {
     this.events.bookingStatusChanged(booking);
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
-    return { booking, payment };
+    void this.sendBookingConfirmationEmail(booking);
+
+    const guestAccessToken = booking.user_id
+      ? undefined
+      : await this.issueGuestBookingAccessToken(booking.id);
+
+    return { booking, payment, guestAccessToken };
   }
 
   async findOne(
@@ -1368,6 +1433,63 @@ export class BookingsService {
       });
     }
     return actor;
+  }
+
+  private guestContact(
+    actor: RequestActor | undefined,
+    dto: Record<string, unknown>,
+  ): GuestContact {
+    const firstName = this.optionalText(dto.firstName ?? dto.first_name);
+    const lastName = this.optionalText(dto.lastName ?? dto.last_name);
+    const fullName = this.optionalText(dto.fullName ?? dto.full_name);
+    const composedName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    const name =
+      this.optionalText(dto.guest_name ?? dto.guestName) ??
+      fullName ??
+      composedName;
+
+    const rawEmail = this.optionalText(
+      dto.guest_email ?? dto.guestEmail ?? dto.email,
+    );
+    const email = rawEmail ? normalizeEmail(rawEmail) : '';
+    if (email && !isValidEmail(email)) {
+      throw new BadRequestException({
+        code: 'BOOKING_GUEST_EMAIL_INVALID',
+        message: "To'g'ri email manzil kiriting",
+      });
+    }
+
+    const rawPhone = this.optionalText(
+      dto.guest_phone ?? dto.guestPhone ?? dto.phone,
+    );
+    const phone = rawPhone ? normalizePhone(rawPhone) : '';
+    if (phone && !isValidUzbekPhone(phone)) {
+      throw new BadRequestException({
+        code: 'BOOKING_GUEST_PHONE_INVALID',
+        message: "To'g'ri telefon raqam kiriting",
+      });
+    }
+
+    if (!actor && !name) {
+      throw new BadRequestException({
+        code: 'BOOKING_GUEST_NAME_REQUIRED',
+        message: 'Mehmon ism-familiyasini kiriting',
+      });
+    }
+    if (!actor && !phone && !email) {
+      throw new BadRequestException({
+        code: 'BOOKING_GUEST_CONTACT_REQUIRED',
+        message: 'Telefon raqam yoki email manzil kiriting',
+      });
+    }
+
+    return {
+      firstName: firstName ?? null,
+      lastName: lastName ?? null,
+      name,
+      email,
+      phone,
+    };
   }
 
   private publicOrigin(): string {

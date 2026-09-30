@@ -2422,3 +2422,355 @@ describe('AdminService frontend action endpoints', () => {
     });
   });
 });
+
+describe('AdminService.partnerReports (GET /admin/partner-reports — unlike PartnersService.reports, organizationId is optional so admin can see all partners at once)', () => {
+  let service: AdminService;
+  let pg: { query: jest.Mock };
+
+  beforeEach(() => {
+    pg = { query: jest.fn().mockResolvedValue([]) };
+    service = new AdminService(
+      {} as unknown as AppCacheService,
+      { add: jest.fn() } as unknown as JobQueueService,
+      pg as unknown as PostgresService,
+      {} as unknown as EventsService,
+      {} as unknown as SmsService,
+      {} as unknown as UzumCheckoutProvider,
+    );
+  });
+
+  it('does not scope to any organization when no partner/organizationId filter is given (sees all partners)', async () => {
+    await service.partnerReports({});
+
+    const allSql = pg.query.mock.calls.map(([sql]) => String(sql));
+    expect(
+      allSql.every((sql) => !sql.includes('partner_organization_id =')),
+    ).toBe(true);
+    expect(
+      allSql.some((sql) => sql.includes('LEFT JOIN partner_organizations po')),
+    ).toBe(true);
+  });
+
+  it('scopes to a single partner when `partner` (or `organizationId`) query param is given', async () => {
+    await service.partnerReports({ partner: 'org-42' });
+
+    const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+    expect(String(sql)).toContain('b.partner_organization_id = $1::uuid');
+    expect(params).toEqual(['org-42']);
+  });
+
+  it('includes both the aggregated summary/domains AND the per-partner breakdown in the response', async () => {
+    const result = await service.partnerReports({});
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('domains');
+    expect(result).toHaveProperty('daily');
+    expect(result).toHaveProperty('partners');
+    expect(Array.isArray(result.partners)).toBe(true);
+  });
+});
+
+describe('AdminService catalog cities', () => {
+  let service: AdminService;
+  let pgMock: jest.Mocked<Pick<PostgresService, 'query' | 'transaction'>>;
+  let cacheMock: {
+    getOrSet: jest.Mock;
+    delByPattern: jest.Mock;
+    del: jest.Mock;
+  };
+
+  beforeEach(() => {
+    pgMock = {
+      query: jest.fn(),
+      transaction: jest.fn(),
+    };
+    cacheMock = {
+      getOrSet: jest.fn(
+        async <T>(
+          _key: string,
+          _ttl: number,
+          factory: () => Promise<T> | T,
+        ): Promise<T> => Promise.resolve(factory()),
+      ),
+      delByPattern: jest.fn(),
+      del: jest.fn(),
+    };
+    service = new AdminService(
+      cacheMock as unknown as AppCacheService,
+      { add: jest.fn() } as unknown as JobQueueService,
+      pgMock as unknown as PostgresService,
+      {
+        partnerRequestCreated: jest.fn(),
+        partnerRequestDecided: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        bookingStatusChanged: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+        notificationCreated: jest.fn(),
+        supportTicketUpdated: jest.fn(),
+        supportMessageCreated: jest.fn(),
+        hotelListingChanged: jest.fn(),
+      } as unknown as EventsService,
+      { send: jest.fn() } as unknown as SmsService,
+      { refund: jest.fn() } as unknown as UzumCheckoutProvider,
+    );
+  });
+
+  it('creates a city in the real `cities` table (not `regions`) and invalidates the catalog cache', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: 'city-1',
+        region_id: 'region-1',
+        name: { uz: 'QA CITY BACKEND TEST' },
+        slug: 'qa-city-backend-test-abcd1234',
+        created_at: '2026-09-27T00:00:00.000Z',
+        updated_at: '2026-09-27T00:00:00.000Z',
+      },
+    ]);
+
+    const result = await service.cityCreate({
+      region_id: 'region-1',
+      name: { uz: 'QA CITY BACKEND TEST' },
+    });
+
+    expect(result).toMatchObject({ id: 'city-1', region_id: 'region-1' });
+    const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(String(sql)).toContain('insert into cities');
+    expect(params?.[0]).toBe('region-1');
+    expect(cacheMock.delByPattern).toHaveBeenCalledWith('catalog:*');
+  });
+
+  it('rejects city creation without a region_id', async () => {
+    await expect(
+      service.cityCreate({ name: { uz: 'No Region City' } }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'REGION_ID_REQUIRED' },
+    });
+    expect(pgMock.query).not.toHaveBeenCalled();
+  });
+
+  it('maps an invalid/non-existent region_id to a 400 REGION_NOT_FOUND instead of a raw DB error', async () => {
+    pgMock.query.mockRejectedValueOnce(
+      Object.assign(new Error('violates foreign key constraint'), {
+        code: '23503',
+      }),
+    );
+
+    await expect(
+      service.cityCreate({ region_id: 'missing-region', name: { uz: 'X' } }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'REGION_NOT_FOUND' },
+    });
+  });
+
+  it('updates a city name and invalidates the cache', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: 'city-1',
+        region_id: 'region-1',
+        name: { uz: 'Renamed' },
+        slug: 'city-1-slug',
+        created_at: '2026-09-27T00:00:00.000Z',
+        updated_at: '2026-09-27T01:00:00.000Z',
+      },
+    ]);
+
+    const result = await service.cityUpdate('city-1', {
+      name: { uz: 'Renamed' },
+    });
+
+    expect(result).toMatchObject({ id: 'city-1', name: { uz: 'Renamed' } });
+    expect(cacheMock.delByPattern).toHaveBeenCalledWith('catalog:*');
+  });
+
+  it('reports 404 when updating a city that does not exist', async () => {
+    pgMock.query.mockResolvedValueOnce([]);
+
+    await expect(
+      service.cityUpdate('missing-city', { name: { uz: 'X' } }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'CITY_NOT_FOUND' },
+    });
+  });
+
+  it('deletes a city and invalidates the cache', async () => {
+    pgMock.query.mockResolvedValueOnce([{ id: 'city-1' }]);
+
+    await expect(service.cityDelete('city-1')).resolves.toEqual({
+      id: 'city-1',
+      deleted: true,
+    });
+    expect(cacheMock.delByPattern).toHaveBeenCalledWith('catalog:*');
+  });
+
+  it('reports 404 when deleting a city that does not exist', async () => {
+    pgMock.query.mockResolvedValueOnce([]);
+
+    await expect(service.cityDelete('missing-city')).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'CITY_NOT_FOUND' },
+    });
+  });
+
+  it('refuses to delete a city referenced by a hotel (409, no cascade) instead of leaking a raw DB error', async () => {
+    pgMock.query.mockRejectedValueOnce(
+      Object.assign(new Error('violates foreign key constraint'), {
+        code: '23503',
+      }),
+    );
+
+    await expect(service.cityDelete('city-in-use')).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'CITY_IN_USE' },
+    });
+  });
+});
+
+describe('AdminService catalog is_active (regions + amenities)', () => {
+  let service: AdminService;
+  let pgMock: jest.Mocked<Pick<PostgresService, 'query' | 'transaction'>>;
+  let cacheMock: {
+    getOrSet: jest.Mock;
+    delByPattern: jest.Mock;
+    del: jest.Mock;
+  };
+
+  beforeEach(() => {
+    pgMock = { query: jest.fn(), transaction: jest.fn() };
+    cacheMock = {
+      getOrSet: jest.fn(
+        async <T>(
+          _key: string,
+          _ttl: number,
+          factory: () => Promise<T> | T,
+        ): Promise<T> => Promise.resolve(factory()),
+      ),
+      delByPattern: jest.fn(),
+      del: jest.fn(),
+    };
+    service = new AdminService(
+      cacheMock as unknown as AppCacheService,
+      { add: jest.fn() } as unknown as JobQueueService,
+      pgMock as unknown as PostgresService,
+      {
+        partnerRequestCreated: jest.fn(),
+        partnerRequestDecided: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        bookingStatusChanged: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+        notificationCreated: jest.fn(),
+        supportTicketUpdated: jest.fn(),
+        supportMessageCreated: jest.fn(),
+        hotelListingChanged: jest.fn(),
+      } as unknown as EventsService,
+      { send: jest.fn() } as unknown as SmsService,
+      { refund: jest.fn() } as unknown as UzumCheckoutProvider,
+    );
+  });
+
+  it('regionCreate(): defaults to is_active=true when not specified', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'region-1', name: { uz: 'Toshkent' }, is_active: true },
+    ]);
+
+    await service.regionCreate({ name: 'Toshkent' });
+
+    const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('insert into regions');
+    expect(params?.[1]).toBe(true);
+  });
+
+  it('regionCreate(): honors an explicit is_active=false on create', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'region-1', name: { uz: 'Toshkent' }, is_active: false },
+    ]);
+
+    await service.regionCreate({ name: 'Toshkent', is_active: false });
+
+    const [, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(params?.[1]).toBe(false);
+  });
+
+  it('regionUpdate(): can toggle is_active WITHOUT requiring/touching the name', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'region-1', name: { uz: 'Toshkent' }, is_active: false },
+    ]);
+
+    await service.regionUpdate('region-1', { is_active: false });
+
+    const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).not.toContain('name =');
+    expect(sql).toContain('is_active = $1');
+    expect(params).toEqual([false, 'region-1']);
+    expect(cacheMock.delByPattern).toHaveBeenCalledWith('catalog:*');
+  });
+
+  it('regionUpdate(): editing only the name does not accidentally change is_active', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'region-1', name: { uz: 'Yangi nom' }, is_active: true },
+    ]);
+
+    await service.regionUpdate('region-1', { name: 'Yangi nom' });
+
+    const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('name = ($1)::jsonb');
+    expect(sql).not.toContain('is_active =');
+  });
+
+  it('regionUpdate(): reports 404 for a non-existent region', async () => {
+    pgMock.query.mockResolvedValueOnce([]);
+
+    await expect(
+      service.regionUpdate('missing-region', { is_active: false }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'REGION_NOT_FOUND' },
+    });
+  });
+
+  it('amenityCreate(): defaults to is_active=true when not specified', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'amenity-1', code: 'wifi', name: { uz: 'Wi-Fi' }, is_active: true },
+    ]);
+
+    await service.amenityCreate({ code: 'wifi', name: 'Wi-Fi' });
+
+    const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('insert into amenities');
+    expect(params?.[2]).toBe(true);
+  });
+
+  it('amenityUpdate(): can toggle is_active WITHOUT requiring/touching the name', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: 'amenity-1',
+        code: 'wifi',
+        name: { uz: 'Wi-Fi' },
+        is_active: false,
+      },
+    ]);
+
+    await service.amenityUpdate('amenity-1', { is_active: false });
+
+    const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).not.toContain('name =');
+    expect(sql).toContain('is_active = $1');
+    expect(params).toEqual([false, 'amenity-1']);
+    expect(cacheMock.delByPattern).toHaveBeenCalledWith('catalog:*');
+  });
+
+  it('amenityUpdate(): reactivating (false -> true) works the same way', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      { id: 'amenity-1', code: 'wifi', name: { uz: 'Wi-Fi' }, is_active: true },
+    ]);
+
+    const result = await service.amenityUpdate('amenity-1', {
+      is_active: true,
+    });
+
+    expect(result).toMatchObject({ is_active: true });
+    const [, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+    expect(params).toEqual([true, 'amenity-1']);
+  });
+});

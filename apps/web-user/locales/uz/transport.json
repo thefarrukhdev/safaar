@@ -110,5 +110,18 @@
     "bags": "sumka",
     "about": "Transport haqida",
     "rentalDescription": "{company} tomonidan taqdim etiladigan {name}. Kunlik ijaraga olish uchun quyidagi sanalarni tanlang."
+  },
+  "rulesSection": {
+    "title": "Ijaraga olish qoidalari",
+    "age": "Yosh va staj",
+    "ageDesc": "Yoshi kamida 21 da, haydovchilik staji 2 yildan kam bo'lmasligi kerak",
+    "documents": "Kerakli hujjatlar",
+    "documentsDesc": "Pasport va haydovchilik guvohnomasi (originali)",
+    "smoking": "Chekish",
+    "smokingDesc": "Mashina ichida chekish qat'iyan man etiladi",
+    "deposit": "Depozit",
+    "depositDesc": "Mashina modeliga qarab depozit so'ralishi mumkin (Mashina toza holatda qaytarilsa to'liq qaytariladi)",
+    "mileage": "Kunlik limit",
+    "mileageDesc": "Kuniga 250 km (Undan oshsa har bir km uchun qo'shimcha to'lov)"
   }
 }

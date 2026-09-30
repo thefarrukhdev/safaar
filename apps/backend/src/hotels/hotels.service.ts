@@ -7,6 +7,10 @@ import { parsePagination, type QueryLike } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { parseGeoBounds } from '../common/geo-bounds';
+import {
+  calculateRoomPrice,
+  loadActiveRoomPromotions,
+} from '../common/room-pricing';
 
 // `partner_organizations.type` (PartnerOrganizationType) qiymatlaridan yashash
 // joyi turidagilari — `hotels` katalogi/detali faqat shularni ko'rsatadi
@@ -318,6 +322,7 @@ export class HotelsService {
         h.address, h.latitude::float8, h.longitude::float8, h.stars,
         h.rating_average::float8, h.reviews_count, h.status::text,
         h.check_in_time, h.check_out_time,
+        h.cancellation_policy_code, h.smoking_allowed, h.pets_allowed, h.children_allowed,
         h.created_at, h.updated_at,
         ht.name, ht.description,
         c.name as city_name, c.region_id::text
@@ -405,13 +410,24 @@ export class HotelsService {
     const roomNames = await this.loadRoomNames(
       roomRows.map((r: Record<string, unknown>) => String(r.id)),
     );
-    const roomPromotions = await this.loadActiveRoomPromotions(
+    const roomPromotions = await loadActiveRoomPromotions(
+      this.pg,
       roomRows.map((r: Record<string, unknown>) => String(r.id)),
     );
 
     return roomRows.map((r: Record<string, unknown>) => {
       const roomTypeName = localized(r.room_type_name);
       const translation = roomNames.get(String(r.id));
+      const activePromotion = roomPromotions.get(String(r.id)) ?? null;
+      const pricing = calculateRoomPrice(Number(r.base_price), activePromotion);
+      const promotion = activePromotion
+        ? {
+            old_price_sum: activePromotion.old_price_sum,
+            new_price_sum: activePromotion.new_price_sum,
+            discount_percent: activePromotion.discount_percent,
+            end_date: activePromotion.end_date,
+          }
+        : null;
       return {
         id: r.id,
         hotel_id: r.hotel_id,
@@ -427,72 +443,12 @@ export class HotelsService {
         max_children: Number(r.max_children),
         total_inventory: Number(r.total_inventory),
         base_price: Number(r.base_price),
+        effective_price: pricing.effectivePrice,
         status: r.status,
         available: Number(r.total_inventory),
-        promotion: roomPromotions.get(String(r.id)) ?? null,
+        promotion,
       };
     });
-  }
-
-  /**
-   * Admin tomonidan tasdiqlangan (`published`) va joriy sanada amal
-   * qiladigan (`start_date <= bugun <= end_date`) chegirmalarni xona
-   * id'lari bo'yicha batched yuklaydi (N+1 yo'q). FAQAT ko'rsatish
-   * (marketing badge) uchun — `decidePromotion()` `hotel_rooms.base_price`
-   * ustuniga hech qachon tegmaydi, shuning uchun bron narxi bu yerdan
-   * MUSTAQIL: chegirma bandini ko'rsatish real bron summasini o'zgartirmaydi.
-   */
-  private async loadActiveRoomPromotions(roomIds: string[]): Promise<
-    Map<
-      string,
-      {
-        old_price_sum: number;
-        new_price_sum: number;
-        discount_percent: number;
-        end_date: string;
-      }
-    >
-  > {
-    const promotions = new Map<
-      string,
-      {
-        old_price_sum: number;
-        new_price_sum: number;
-        discount_percent: number;
-        end_date: string;
-      }
-    >();
-    if (roomIds.length === 0) {
-      return promotions;
-    }
-
-    const rows = await this.pg.query<{
-      entity_id: string;
-      old_price_sum: number;
-      new_price_sum: number;
-      discount_percent: number;
-      end_date: string;
-    }>(
-      `SELECT entity_id::text, old_price_sum::float8, new_price_sum::float8,
-              discount_percent, end_date::text
-       FROM promotions
-       WHERE entity_type = 'room'
-         AND entity_id = ANY($1::uuid[])
-         AND status = 'published'::"PromotionStatus"
-         AND start_date <= CURRENT_DATE
-         AND end_date >= CURRENT_DATE`,
-      [roomIds],
-    );
-
-    for (const row of rows) {
-      promotions.set(row.entity_id, {
-        old_price_sum: Number(row.old_price_sum),
-        new_price_sum: Number(row.new_price_sum),
-        discount_percent: Number(row.discount_percent),
-        end_date: row.end_date,
-      });
-    }
-    return promotions;
   }
 
   /**
@@ -543,7 +499,8 @@ export class HotelsService {
     const checkOut = String(body.check_out ?? '');
     const nights = this.calculateNights(checkIn, checkOut);
     const roomsCount = Number(body.rooms ?? 1);
-    const subtotal = Number(room.base_price) * nights * roomsCount;
+    const baseSubtotal = Number(room.base_price) * nights * roomsCount;
+    const totalAmount = Number(room.effective_price) * nights * roomsCount;
 
     return {
       quote_id: `quote-${Date.now()}`,
@@ -554,10 +511,10 @@ export class HotelsService {
       nights,
       rooms: roomsCount,
       currency: 'UZS',
-      subtotal,
-      discount_amount: 0,
+      subtotal: baseSubtotal,
+      discount_amount: baseSubtotal - totalAmount,
       service_fee: 0,
-      total_amount: subtotal,
+      total_amount: totalAmount,
       expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
     };
   }

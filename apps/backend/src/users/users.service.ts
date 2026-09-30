@@ -12,6 +12,7 @@ import {
 } from '../common/pagination';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
+import { UploadsService, type UploadedFile } from '../uploads/uploads.service';
 import type { SetAvatarDto, UpdateProfileDto } from './dto/user.dto';
 
 type UserRow = Record<string, unknown>;
@@ -29,6 +30,7 @@ export interface PublicUserProfile {
   email_verified_at: string | null;
   last_login_at: string | null;
   avatar_media_id: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -40,6 +42,7 @@ export class UsersService {
   constructor(
     private readonly pg: PostgresService,
     private readonly jobs: JobQueueService,
+    private readonly uploads: UploadsService,
   ) {}
 
   private requireActor(actor: RequestActor | undefined): RequestActor {
@@ -97,28 +100,50 @@ export class UsersService {
     return this.publicUser(user);
   }
 
-  async setAvatar(actor: RequestActor | undefined, body: SetAvatarDto) {
+  async setAvatar(
+    actor: RequestActor | undefined,
+    body: SetAvatarDto,
+    file?: UploadedFile,
+  ) {
     const currentActor = this.requireActor(actor);
-    const mediaId = String(body.media_id ?? body.mediaId ?? '').trim();
-    if (!mediaId) {
-      throw new NotFoundException({
-        code: 'MEDIA_NOT_FOUND',
-        message: 'Avatar media fayli topilmadi',
-      });
-    }
 
-    const [media] = await this.pg.query(
-      `SELECT id::text
-       FROM media_files
-       WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
-       LIMIT 1`,
-      [mediaId, currentActor.id],
-    );
-    if (!media) {
-      throw new NotFoundException({
-        code: 'MEDIA_NOT_FOUND',
-        message: 'Avatar media fayli topilmadi',
-      });
+    // web-user yuboradigan haqiqiy oqim: `POST /me/avatar`ga to'g'ridan-
+    // to'g'ri multipart fayl (`FormData`, "file" maydoni) — oldindan
+    // `POST /uploads/images` orqali alohida yuklab, natijada olingan
+    // `media_id`ni yubormaydi. Bu yerda FileInterceptor bo'lmagani va
+    // haqiqiy faylni hech qachon saqlamaganimiz uchun `body.media_id` doim
+    // bo'sh bo'lardi va DARHOL "MEDIA_NOT_FOUND" bilan tugardi — fayl
+    // hech qachon media_files'ga tushmasdi. Endi haqiqiy fayl bo'lsa,
+    // uni `UploadsService`ning bir xil tekshiruv/saqlash yo'li orqali
+    // (owner_type/owner_id = joriy actor) yozamiz — alohida "yuklab, keyin
+    // biriktirish" ikki bosqichli JSON oqimi (`media_id`) ham, agar
+    // kelajakda boshqa client shundan foydalansa, ishlashda davom etadi.
+    let mediaId: string;
+    if (file) {
+      const media = await this.uploads.create(actor, 'image', {}, file);
+      mediaId = String((media as { id: string }).id);
+    } else {
+      mediaId = String(body.media_id ?? body.mediaId ?? '').trim();
+      if (!mediaId) {
+        throw new NotFoundException({
+          code: 'MEDIA_NOT_FOUND',
+          message: 'Avatar media fayli topilmadi',
+        });
+      }
+
+      const [media] = await this.pg.query(
+        `SELECT id::text
+         FROM media_files
+         WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
+         LIMIT 1`,
+        [mediaId, currentActor.id],
+      );
+      if (!media) {
+        throw new NotFoundException({
+          code: 'MEDIA_NOT_FOUND',
+          message: 'Avatar media fayli topilmadi',
+        });
+      }
     }
 
     const [user] = await this.pg.query(
@@ -155,15 +180,60 @@ export class UsersService {
       ? pagination.sortBy
       : 'created_at';
 
-    const sql = `SELECT * FROM bookings WHERE user_id = $1 ORDER BY ${sortCol} ${orderDir} ${limitOffsetSql(pagination)}`;
+    const sql = `
+      SELECT b.*
+      FROM bookings b
+      JOIN users u ON u.id = $1 AND u.deleted_at IS NULL
+      WHERE b.user_id = $1
+         OR (
+           b.user_id IS NULL
+           AND (
+             (
+               NULLIF(regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g'), '') IS NOT NULL
+               AND regexp_replace(COALESCE(b.guest_phone, ''), '[^0-9]', '', 'g') =
+                   regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g')
+             )
+             OR
+             (
+               NULLIF(lower(btrim(COALESCE(u.email, ''))), '') IS NOT NULL
+               AND lower(btrim(COALESCE(b.guest_email, ''))) =
+                   lower(btrim(COALESCE(u.email, '')))
+             )
+           )
+         )
+      ORDER BY b.${sortCol} ${orderDir}
+      ${limitOffsetSql(pagination)}
+    `;
     return this.pg.query(sql, [currentActor.id]);
   }
 
   async booking(actor: RequestActor | undefined, id: string) {
     const currentActor = this.requireActor(actor);
     const [booking] = await this.pg.query(
-      'SELECT * FROM bookings WHERE id = $1 AND user_id = $2',
-      [id, currentActor.id],
+      `SELECT b.*
+       FROM bookings b
+       JOIN users u ON u.id = $1 AND u.deleted_at IS NULL
+       WHERE b.id = $2
+         AND (
+           b.user_id = $1
+           OR (
+             b.user_id IS NULL
+             AND (
+               (
+                 NULLIF(regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g'), '') IS NOT NULL
+                 AND regexp_replace(COALESCE(b.guest_phone, ''), '[^0-9]', '', 'g') =
+                     regexp_replace(COALESCE(u.phone, ''), '[^0-9]', '', 'g')
+               )
+               OR
+               (
+                 NULLIF(lower(btrim(COALESCE(u.email, ''))), '') IS NOT NULL
+                 AND lower(btrim(COALESCE(b.guest_email, ''))) =
+                     lower(btrim(COALESCE(u.email, '')))
+               )
+             )
+           )
+         )`,
+      [currentActor.id, id],
     );
 
     if (!booking) {
@@ -229,26 +299,41 @@ export class UsersService {
     const targetId = String(body.target_id ?? body.hotel_id ?? '');
     const createdAt = new Date().toISOString();
 
-    await this.pg.query(
-      'INSERT INTO favorites (id, user_id, target_type, target_id, created_at) VALUES ($1, $2, $3, $4, $5)',
+    // `(user_id, target_type, target_id)` unique — ikkinchi marta bosish
+    // (masalan stale client holati tufayli) avvalgi kod bilan xom 23505
+    // unique-violation'ga, demak umumiy 500'ga olib kelardi. Endi
+    // idempotent: mavjud qatorni ("no-op" UPDATE) qaytaradi, yangisini
+    // yaratmaydi — client doim bitta barqaror favorite id oladi.
+    const [favorite] = await this.pg.query<{
+      id: string;
+      user_id: string;
+      target_type: string;
+      target_id: string;
+      created_at: string;
+    }>(
+      `INSERT INTO favorites (id, user_id, target_type, target_id, created_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, target_type, target_id) DO UPDATE
+         SET target_type = EXCLUDED.target_type
+       RETURNING id, user_id, target_type, target_id, created_at`,
       [id, currentActor.id, targetType, targetId, createdAt],
     );
 
-    return {
-      id,
-      user_id: currentActor.id,
-      target_type: targetType,
-      target_id: targetId,
-      created_at: createdAt,
-    };
+    return favorite;
   }
 
   async deleteFavorite(actor: RequestActor | undefined, id: string) {
     const currentActor = this.requireActor(actor);
-    await this.pg.query(
-      'DELETE FROM favorites WHERE id = $1 AND user_id = $2',
+    const rows = await this.pg.query<{ id: string }>(
+      'DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id',
       [id, currentActor.id],
     );
+    if (rows.length === 0) {
+      throw new NotFoundException({
+        code: 'FAVORITE_NOT_FOUND',
+        message: 'Sevimli topilmadi',
+      });
+    }
     return { id, user_id: currentActor.id, deleted: true };
   }
 
@@ -413,6 +498,7 @@ export class UsersService {
       email_verified_at: nullableString(row['email_verified_at']),
       last_login_at: nullableString(row['last_login_at']),
       avatar_media_id: nullableString(row['avatar_media_id']),
+      avatar_url: nullableString(row['avatar_url']),
       created_at: String(row['created_at']),
       updated_at: String(row['updated_at']),
       deleted_at: nullableString(row['deleted_at']),
@@ -435,6 +521,9 @@ function publicUserColumns(): string {
     email_verified_at,
     last_login_at,
     avatar_media_id::text,
+    (SELECT url FROM media_files
+       WHERE media_files.id = users.avatar_media_id
+         AND media_files.deleted_at IS NULL) AS avatar_url,
     created_at,
     updated_at,
     deleted_at,

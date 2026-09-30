@@ -13,6 +13,8 @@
   "submitting": "Yuborilmoqda...",
   "submitReview": "Sharhni yuborish",
   "anonymousGuest": "Mehmon",
+  "ownerReplyLabel": "Hamkorning javobi",
+  "pendingReviewNotice": "Sharhingiz qabul qilindi. Moderatsiyadan so'ng boshqalarga ko'rinadi.",
   "categories": {
     "cleanliness": "Tozalik",
     "staff": "Xizmat",

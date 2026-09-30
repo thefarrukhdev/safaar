@@ -77,13 +77,28 @@ export function RoomList({
 
             <div className="flex items-center justify-between gap-4 border-t border-slate-900/[0.08] pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
               <div className="text-left sm:text-right">
+                {room.promotion && (
+                  <div className="flex items-center gap-2 sm:justify-end">
+                    <span className="text-xs font-normal text-slate-900/50 line-through tabular-nums">
+                      {formatSum(room.promotion.oldPriceSum, locale)}
+                    </span>
+                    <span className="inline-flex h-5 items-center rounded-full bg-red-600/[0.10] px-2 text-xs font-medium text-red-700">
+                      -{room.promotion.discountPercent}%
+                    </span>
+                  </div>
+                )}
                 <span className="text-lg font-semibold tabular-nums text-slate-900">
-                  {formatSum(room.priceSum, locale)}
+                  {formatSum(room.promotion ? room.promotion.newPriceSum : room.priceSum, locale)}
                 </span>
                 <span className="text-xs font-normal text-slate-900/70">
                   {" "}
                   / {dict.perNight}
                 </span>
+                {room.promotion && (
+                  <div className="text-xs font-normal text-slate-900/50">
+                    {dict.discountUntil.replace("{date}", room.promotion.endDate)}
+                  </div>
+                )}
               </div>
 
               {soldOut ? (

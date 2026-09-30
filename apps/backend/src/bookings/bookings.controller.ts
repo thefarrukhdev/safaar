@@ -50,7 +50,7 @@ export class BookingsController {
   }
 
   @Post('bus')
-  @Roles(Role.USER)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   createBus(
     @CurrentActor() actor: RequestActor | undefined,
     @Body() dto: CreateBusBookingDto,

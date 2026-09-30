@@ -4,6 +4,7 @@
   "remove": "Sevimlilardan olib tashlash",
   "loginRequired": "Sevimliga qo'shish uchun tizimga kiring",
   "pending": "Saqlanmoqda…",
+  "error": "Xatolik yuz berdi. Qayta urinib ko'ring.",
   "perNight": "kecha",
   "emptyDescription": "Siz hali hech qanday mehmonxonani saralanganlarga qo'shmadingiz. Yoqtirgan ob'ektlaringizdagi yurakcha belgisini bosing!",
   "discoverAction": "Mehmonxonalarni kashf eting"

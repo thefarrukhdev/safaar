@@ -17,6 +17,7 @@
   "guests": "guests",
   "available": "available",
   "soldOut": "No rooms available",
+  "discountUntil": "until {date}",
   "book": "Book now",
   "reviews": "Reviews",
   "noReviews": "No reviews yet.",
@@ -36,6 +37,7 @@
   "nav": {
     "photos": "Photos",
     "amenities": "Amenities",
+    "rules": "Rules",
     "rooms": "Rooms",
     "reviews": "Reviews",
     "location": "Location"
@@ -60,5 +62,26 @@
     "mainViewAlt": "Main view",
     "photoCountSuffix": "photos",
     "allPhotos": "All photos"
+  },
+  "rulesSection": {
+    "title": "Hotel Rules",
+    "checkIn": "Check-in time",
+    "checkInFrom": "from {time}",
+    "checkOut": "Check-out time",
+    "checkOutUntil": "until {time}",
+    "cancellation": "Cancellation policy",
+    "cancellation_FLEXIBLE": "Flexible (Full refund)",
+    "cancellation_MODERATE": "Moderate (Under certain conditions)",
+    "cancellation_STRICT": "Strict (No refund or partial)",
+    "cancellation_NON_REFUNDABLE": "Non-refundable",
+    "smoking": "Smoking",
+    "smokingAllowed": "Smoking allowed",
+    "smokingNotAllowed": "Smoking not allowed",
+    "pets": "Pets",
+    "petsAllowed": "Pets allowed",
+    "petsNotAllowed": "No pets allowed",
+    "children": "Children",
+    "childrenAllowed": "Children allowed",
+    "childrenNotAllowed": "Adults only"
   }
 }

@@ -9,9 +9,10 @@ interface Props {
   value: string;
   onChange: (id: string) => void;
   placeholder: string;
+  label?: string;
 }
 
-export function CityPicker({ cities, value, onChange, placeholder }: Props) {
+export function CityPicker({ cities, value, onChange, placeholder, label }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = cities.find((c) => c.id === value);
@@ -39,12 +40,15 @@ export function CityPicker({ cities, value, onChange, placeholder }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-1 text-left focus:outline-hidden before:absolute before:inset-0 before:z-10"
       >
-        <span
-          className={`truncate text-base font-bold ${
-            selected ? "text-slate-900" : "text-slate-600"
-          }`}
-        >
-          {selected ? selected.name : placeholder}
+        <span className="flex flex-col">
+          {label && <span className="text-xs font-bold text-slate-500">{label}</span>}
+          <span
+            className={`truncate text-sm font-bold ${
+              selected ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"
+            }`}
+          >
+            {selected ? selected.name : placeholder}
+          </span>
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${
@@ -54,7 +58,7 @@ export function CityPicker({ cities, value, onChange, placeholder }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-[240px] max-h-60 overflow-y-auto rounded-xl border border-slate-900/[0.08] bg-white p-1.5 shadow-float dark:border-slate-800 dark:bg-slate-900">
+        <div className="absolute left-0 top-full z-50 mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto rounded-2xl border border-slate-900/[0.08] bg-white p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
           {cities.length === 0 && (
             <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
           )}

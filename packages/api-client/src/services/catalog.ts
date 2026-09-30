@@ -62,6 +62,8 @@ export interface RestaurantDetailView {
   description: string;
   cityName: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
   workingHours: string;
   checkInTime?: string;
   checkOutTime?: string;
@@ -99,6 +101,8 @@ export interface TransportDetailView {
   id: string;
   name: string;
   cityName: string;
+  latitude?: number;
+  longitude?: number;
   categoryKey: string;
   categoryDefault: string;
   seats: number;
@@ -122,6 +126,7 @@ type LocalizedValue = Localized | string | undefined;
 
 interface RawCatalogItem {
   id: string;
+  code?: string;
   name: Localized;
 }
 
@@ -210,7 +215,9 @@ async function fetchCatalog(
   } as any);
   const items = camelizeKeys<RawCatalogItem[]>(raw);
   return (items ?? []).map((item) => ({
-    id: item.id,
+    // Hotel amenities arrays use `code` (e.g. "hotel_2") not UUID — expose
+    // code as `id` so downstream `amenityName[code]` lookups resolve correctly.
+    id: item.code ?? item.id,
     name: pickLocale(item.name, locale),
   }));
 }
@@ -334,6 +341,8 @@ export const catalogService = {
       description: pickLocale(item.description, locale),
       cityName: pickLocale(item.city?.name ?? item.cityName, locale),
       address: item.address ?? "",
+      latitude: item.latitude ? Number(item.latitude) : undefined,
+      longitude: item.longitude ? Number(item.longitude) : undefined,
       workingHours: item.workingHours ?? "",
       checkInTime: item.checkInTime ?? "",
       checkOutTime: item.checkOutTime ?? "",
@@ -395,6 +404,8 @@ export const catalogService = {
       id: item.id,
       name: item.name ?? "",
       cityName: pickLocale(item.cityName, locale),
+      latitude: item.latitude ? Number(item.latitude) : undefined,
+      longitude: item.longitude ? Number(item.longitude) : undefined,
       categoryKey: item.categoryKey ?? "",
       categoryDefault: item.categoryDefault ?? "",
       seats: Number(item.seats ?? 0),

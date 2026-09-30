@@ -1,5 +1,5 @@
 import { PostgresService } from '../infrastructure/postgres.service';
-import { PromosService } from './promos.service';
+import { calculatePromoDiscount, PromosService } from './promos.service';
 
 type QueryCall = [sql: string, params?: readonly unknown[]];
 const queryCallsOf = (obj: { query: unknown }): QueryCall[] =>
@@ -98,5 +98,31 @@ describe('PromosService.validate', () => {
     const result = await service.validate({ code: 'ONE_USE' });
 
     expect(result.valid).toBe(false);
+  });
+});
+
+describe('calculatePromoDiscount (regression: percent discountType)', () => {
+  it('computes percentage discount when discountType is "percentage"', () => {
+    expect(calculatePromoDiscount(200_000, 'percentage', 10)).toBe(20_000);
+  });
+
+  it('computes percentage discount when discountType is "percent" (seed/admin alias)', () => {
+    expect(calculatePromoDiscount(200_000, 'percent', 20)).toBe(40_000);
+  });
+
+  it('computes fixed amount discount when discountType is "fixed"', () => {
+    expect(calculatePromoDiscount(200_000, 'fixed', 50_000)).toBe(50_000);
+  });
+
+  it('caps discount at subtotal so total does not become negative', () => {
+    expect(calculatePromoDiscount(30_000, 'fixed', 50_000)).toBe(30_000);
+    expect(calculatePromoDiscount(100_000, 'percent', 150)).toBe(100_000);
+  });
+
+  it('returns 0 for invalid or non-positive discount values', () => {
+    expect(calculatePromoDiscount(100_000, 'percent', 0)).toBe(0);
+    expect(calculatePromoDiscount(100_000, 'percent', -10)).toBe(0);
+    expect(calculatePromoDiscount(100_000, 'percent', NaN)).toBe(0);
+    expect(calculatePromoDiscount(100_000, null, 10)).toBe(0);
   });
 });

@@ -17,6 +17,7 @@
   "guests": "mehmon",
   "available": "ta bo'sh",
   "soldOut": "Bo'sh xona yo'q",
+  "discountUntil": "{date} gacha",
   "book": "Bron qilish",
   "reviews": "Sharhlar",
   "noReviews": "Hozircha sharhlar yo'q.",
@@ -36,6 +37,7 @@
   "nav": {
     "photos": "Rasmlar",
     "amenities": "Qulayliklar",
+    "rules": "Qoidalar",
     "rooms": "Xonalar",
     "reviews": "Sharhlar",
     "location": "Joylashuv"
@@ -60,5 +62,26 @@
     "mainViewAlt": "Asosiy ko'rinish",
     "photoCountSuffix": "ta rasm",
     "allPhotos": "Barcha rasmlar"
+  },
+  "rulesSection": {
+    "title": "Mehmonxona qoidalari",
+    "checkIn": "Kirish vaqti (Check-in)",
+    "checkInFrom": "{time} dan boshlab",
+    "checkOut": "Chiqish vaqti (Check-out)",
+    "checkOutUntil": "{time} gacha",
+    "cancellation": "Bekor qilish qoidasi",
+    "cancellation_FLEXIBLE": "Moslashuvchan (Pulni to'liq qaytarish mumkin)",
+    "cancellation_MODERATE": "O'rtacha (Ma'lum shartlar asosida)",
+    "cancellation_STRICT": "Qat'iy (Pul qaytarilmaydi yoki qisman)",
+    "cancellation_NON_REFUNDABLE": "Qaytarilmaydigan (Pul umuman qaytarilmaydi)",
+    "smoking": "Chekish",
+    "smokingAllowed": "Chekishga ruxsat berilgan",
+    "smokingNotAllowed": "Chekish mumkin emas",
+    "pets": "Uy hayvonlari",
+    "petsAllowed": "Uy hayvonlari bilan kelish mumkin",
+    "petsNotAllowed": "Uy hayvonlariga ruxsat berilmagan",
+    "children": "Bolalar",
+    "childrenAllowed": "Bolalar bilan kelish mumkin",
+    "childrenNotAllowed": "Faqat kattalar uchun"
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Clock, MapPin, PhoneCall, Star, Utensils, Search, SlidersHorizontal, Map } from "lucide-react";
 import { formatSum } from "@/lib/money";
 import type { Locale } from "@/i18n/config";
@@ -8,8 +8,8 @@ import type { CatalogDict } from "@/i18n/dictionaries";
 import Image from "next/image";
 import type { RestaurantItem } from "@/components/catalog/types";
 import { UniversalCard } from "@/components/ui/UniversalCard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { useQueryState, parseAsString } from "nuqs";
 
 export type { RestaurantItem };
 
@@ -56,15 +56,15 @@ export function RestaurantsView({
   items: RestaurantItem[];
   locale: Locale;
 }) {
-  const [query, setQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("all");
-  const [selectedCuisine, setSelectedCuisine] = useState("all");
+  const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""));
+  const [selectedCity, setSelectedCity] = useQueryState("city", parseAsString.withDefault("all"));
+  const [selectedCuisine, setSelectedCuisine] = useQueryState("cuisine", parseAsString.withDefault("all"));
+  const [selectedCategory, setSelectedCategory] = useQueryState("category", parseAsString.withDefault("all"));
 
   const cities = useMemo(
     () => Array.from(new Set(items.map((item) => item.cityName).filter(Boolean))),
     [items],
   );
-  
   
   const cuisineKeys: Record<string, string> = {
     "Milliy": "National",
@@ -81,25 +81,38 @@ export function RestaurantsView({
   );
 
   const filtered = useMemo(() => {
-    const normalizedQuery = query.toLowerCase();
     return items.filter((item) => {
+      const q = query.toLowerCase();
       const matchesQuery =
-        item.name.toLowerCase().includes(normalizedQuery) ||
-        item.cuisine.toLowerCase().includes(normalizedQuery) ||
-        item.cityName.toLowerCase().includes(normalizedQuery);
-      const matchesCity =
-        selectedCity === "all" ||
-        item.cityName.toLowerCase() === selectedCity.toLowerCase();
-      const matchesCuisine =
-        selectedCuisine === "all" || item.cuisine.toLowerCase().includes(selectedCuisine.toLowerCase());
+        !q ||
+        item.name.toLowerCase().includes(q) ||
+        (item.cuisine && item.cuisine.toLowerCase().includes(q));
+
+      const matchesCity = selectedCity === "all" || item.cityName === selectedCity;
+      const matchesCuisine = selectedCuisine === "all" || item.cuisine === selectedCuisine;
+      
+      // Ignoring selectedCategory for now as it wasn't strictly filtered in previous version,
+      // but we maintain it in URL state.
+      
       return matchesQuery && matchesCity && matchesCuisine;
     });
   }, [items, query, selectedCity, selectedCuisine]);
 
+  // Options for selects
+  const cityOptions = [
+    { value: "all", label: dict.allCities || "Barcha shaharlar" },
+    ...cities.map(c => ({ value: c, label: c }))
+  ];
+
+  const cuisineOptions = [
+    { value: "all", label: (dict as any).all || "Barchasi" },
+    ...dbCuisines.map(c => ({ value: c, label: (dict as any).cuisines?.[cuisineKeys[c] || c] || c }))
+  ];
+
   return (
     <div className="mx-auto w-full max-w-[1536px] flex-1 px-4 md:px-8 py-8 sm:px-6">
       {/* ═══ Header Banner ═══ */}
-      <div className="relative mb-4 sm:mb-6 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
+      <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         <Image
           src="/images/heroes/hero.png"
           alt="Restaurants hero"
@@ -121,133 +134,135 @@ export function RestaurantsView({
         </div>
       </div>
       
-      <div className="relative z-20 mb-6 w-full lg:w-4/5 mx-auto">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
-            className="pl-10 h-12 w-full rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
-          />
-        </div>
-      </div>
-      
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
-        {/* Sidebar Filters */}
-        <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-[260px] flex flex-col gap-6 rounded-xl border border-slate-900/[0.08] bg-card p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-            <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">{(dict as any).filtersTitle || "Filtrlar"}</h3>
+      {/* ═══ Premium Sticky Filter Bar ═══ */}
+      <div className="sticky top-20 z-30 mb-8 rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+          {/* Search Input */}
+          <div className="relative flex-1 group">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+              <Search className="h-5 w-5" />
+            </div>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
+              className="h-12 w-full rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 pl-11 pr-4 text-sm outline-none transition-all focus:border-primary-500 focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-primary-500/10 placeholder:text-slate-400"
+            />
           </div>
           
-          {/* City Filter */}
-          <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{(dict as any).city || "Shahar"}</h4>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="city" 
-                  checked={selectedCity === "all"} 
-                  onChange={() => setSelectedCity("all")}
-                  className="text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-slate-600 dark:text-slate-300">{dict.allCities || "Barcha shaharlar"}</span>
-              </label>
-              {cities.map(city => (
-                <label key={city} className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="city" 
-                    checked={selectedCity === city} 
-                    onChange={() => setSelectedCity(city)}
-                    className="text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-slate-600 dark:text-slate-300">{city}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Cuisine Filter */}
-          <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{(dict as any).cuisineType || "Oshxona turi"}</h4>
-            <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="cuisine_filter" 
-                  checked={selectedCuisine === "all"} 
-                  onChange={() => setSelectedCuisine("all")}
-                  className="text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-slate-600 dark:text-slate-300">{(dict as any).all || "Barchasi"}</span>
-              </label>
-              {dbCuisines.map(cuisine => (
-                <label key={cuisine} className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="cuisine_filter" 
-                    checked={selectedCuisine === cuisine} 
-                    onChange={() => setSelectedCuisine(cuisine)}
-                    className="text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-slate-600 dark:text-slate-300">{(dict as any).cuisines?.[cuisineKeys[cuisine] || cuisine] || cuisine}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content (Pills + Grid) */}
-        <div className="flex w-full flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <button 
-                onClick={() => setSelectedCuisine("all")}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCuisine === "all" ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
-              >
-                {(dict as any).all || "Barchasi"}
-              </button>
-              {popularCuisines.map(c => (
-                <button 
-                  key={c}
-                  onClick={() => setSelectedCuisine(c)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCuisine === c ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
-                >
-                  {(dict as any).cuisines?.[cuisineKeys[c] || c] || c}
-                </button>
-              ))}
+          <div className="hidden lg:block h-8 w-px bg-slate-200 dark:bg-slate-800" />
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-6 shrink-0">
+            {/* City Select */}
+            <div className="w-full sm:w-48">
+              <Select
+                value={selectedCity}
+                onChange={setSelectedCity}
+                options={cityOptions}
+                placeholder={(dict as any).city || "Shahar"}
+                className="w-full"
+                buttonClassName="h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                icon={<MapPin className="h-4 w-4 text-slate-500 mr-2" />}
+              />
             </div>
             
-            <button className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            {/* Cuisine Select (Mobile mostly, Desktop can use tabs or both) */}
+            <div className="w-full sm:w-48 lg:hidden">
+              <Select
+                value={selectedCuisine}
+                onChange={setSelectedCuisine}
+                options={cuisineOptions}
+                placeholder={(dict as any).cuisineType || "Oshxona turi"}
+                className="w-full"
+                buttonClassName="h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                icon={<Utensils className="h-4 w-4 text-slate-500 mr-2" />}
+              />
+            </div>
+
+            {/* Map Button */}
+            <button className="h-12 w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 focus:ring-4 focus:ring-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white dark:focus:ring-slate-800">
               <Map className="h-4 w-4" />
               {(dict as any).viewOnMap || "Xaritada ko'rish"}
             </button>
           </div>
-
-          <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-            <span>{((dict as any).resultsCount || "Jami: {count} ta restoran topildi").replace("{count}", filtered.length.toString())}</span>
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="mt-4">
-              <EmptyState
-                icon={<Utensils className="h-6 w-6" />}
-                title={(dict as any).empty?.title || "Siz izlagan shartlarga mos restoran topilmadi"}
-                description={(dict as any).emptyHint || "Filtrlarni o'zgartirib qayta urinib ko'ring"}
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((item) => (
-                <RestaurantCard key={item.id} item={item} dict={dict} locale={locale} />
-              ))}
-            </div>
-          )}
         </div>
+        
+        {/* Category/Cuisine Tabs (Desktop) */}
+        <div className="mt-4 hidden lg:flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+          <button 
+            onClick={() => setSelectedCuisine("all")}
+            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all ${
+              selectedCuisine === "all" 
+                ? 'bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900' 
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+            }`}
+          >
+            {(dict as any).all || "Barchasi"}
+          </button>
+          {popularCuisines.map(c => (
+            <button 
+              key={c}
+              onClick={() => setSelectedCuisine(c)}
+              className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all whitespace-nowrap ${
+                selectedCuisine === c 
+                  ? 'bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900' 
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              {(dict as any).cuisines?.[cuisineKeys[c] || c] || c}
+            </button>
+          ))}
+          
+          <div className="ml-auto">
+             <Select
+                value={selectedCuisine}
+                onChange={setSelectedCuisine}
+                options={cuisineOptions.filter(o => o.value === 'all' || !popularCuisines.includes(o.value))}
+                placeholder={(dict as any).moreCuisines || "Boshqa"}
+                className="w-32"
+                buttonClassName="h-10 bg-transparent border-0 shadow-none text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                menuClassName="right-0 left-auto w-48"
+              />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-6">
+        <div className="flex items-center justify-between text-sm font-medium text-slate-500 dark:text-slate-400">
+          <span>{((dict as any).resultsCount || "Jami: {count} ta restoran topildi").replace("{count}", filtered.length.toString())}</span>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-20 px-4 text-center dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm dark:bg-slate-800">
+              <Utensils className="h-8 w-8 text-slate-400" />
+            </div>
+            <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+              {(dict as any).empty?.title || "Siz izlagan shartlarga mos restoran topilmadi"}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md">
+              {(dict as any).emptyHint || "Filtrlarni o'zgartirib qayta urinib ko'ring yoki boshqa nom bilan izlang."}
+            </p>
+            <button
+              onClick={() => {
+                setQuery("");
+                setSelectedCity("all");
+                setSelectedCuisine("all");
+                setSelectedCategory("all");
+              }}
+              className="mt-6 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-500/20"
+            >
+              Filtrlarni tozalash
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((item) => (
+              <RestaurantCard key={item.id} item={item} dict={dict} locale={locale} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -101,6 +101,13 @@ interface RawCity {
   name: Localized;
 }
 
+interface RawRoomPromotion {
+  oldPriceSum: number;
+  newPriceSum: number;
+  discountPercent: number;
+  endDate: string;
+}
+
 interface RawRoom {
   id: string;
   name: Localized;
@@ -109,6 +116,7 @@ interface RawRoom {
   maxAdults?: number;
   totalInventory?: number;
   available?: number;
+  promotion?: RawRoomPromotion | null;
 }
 
 interface RawHotel {
@@ -126,6 +134,10 @@ interface RawHotel {
   longitude?: number;
   checkInTime?: string;
   checkOutTime?: string;
+  cancellation_policy_code?: string;
+  smoking_allowed?: boolean;
+  pets_allowed?: boolean;
+  children_allowed?: boolean;
   minPrice?: number;
   city?: RawCity;
   rooms?: RawRoom[];
@@ -158,6 +170,16 @@ function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
     priceSum: Number(raw.basePrice ?? 0),
     capacity: raw.baseOccupancy ?? raw.maxAdults ?? 1,
     available: raw.available ?? raw.totalInventory ?? 0,
+    ...(raw.promotion
+      ? {
+          promotion: {
+            oldPriceSum: Number(raw.promotion.oldPriceSum),
+            newPriceSum: Number(raw.promotion.newPriceSum),
+            discountPercent: Number(raw.promotion.discountPercent),
+            endDate: raw.promotion.endDate,
+          },
+        }
+      : {}),
   };
 }
 
@@ -172,6 +194,10 @@ export function toHotelDetail(raw: RawHotel, locale: Locale): HotelDetail {
     longitude: raw.longitude ?? 0,
     checkInTime: raw.checkInTime ?? "",
     checkOutTime: raw.checkOutTime ?? "",
+    cancellationPolicyCode: raw.cancellation_policy_code,
+    allowSmoking: raw.smoking_allowed,
+    allowPets: raw.pets_allowed,
+    allowChildren: raw.children_allowed,
     rooms: (raw.rooms ?? []).map((room) => toRoomView(room, locale)),
   };
 }
@@ -268,7 +294,15 @@ interface RawReview {
   authorName?: string;
   avatarUrl?: string;
   photos?: unknown;
-  isVerifiedGuest?: boolean;
+  // Backend (PUBLIC_REVIEW_COLUMNS / buses.service.ts) computes this as
+  // `verified` (booking_id IS NOT NULL), camelized to `verified` (no
+  // underscore to convert) — NOT `isVerifiedGuest`. The hotel-specific
+  // `/hotels/:id/reviews` endpoint (hotels.service.ts) does not compute
+  // this column at all yet, so it stays undefined there (pre-existing
+  // backend inconsistency, out of scope here).
+  verified?: boolean;
+  replyBody?: string;
+  repliedAt?: string;
   cleanliness?: number | null;
   staff?: number | null;
   location?: number | null;
@@ -296,11 +330,14 @@ export function toReviewView(raw: RawReview): ReviewView {
     ...(authorName ? { authorName } : {}),
     ...(raw.avatarUrl ? { avatarUrl: raw.avatarUrl } : {}),
     ...(photos && photos.length > 0 ? { photos } : {}),
-    ...(raw.isVerifiedGuest === true ? { isVerifiedGuest: true } : {}),
+    ...(raw.verified === true ? { isVerifiedGuest: true } : {}),
     ...(optionalRating(raw.cleanliness) !== undefined ? { cleanliness: optionalRating(raw.cleanliness) } : {}),
     ...(optionalRating(raw.staff) !== undefined ? { staff: optionalRating(raw.staff) } : {}),
     ...(optionalRating(raw.location) !== undefined ? { location: optionalRating(raw.location) } : {}),
     ...(optionalRating(raw.valueForMoney) !== undefined ? { valueForMoney: optionalRating(raw.valueForMoney) } : {}),
+    ...(raw.replyBody ? { replyBody: raw.replyBody } : {}),
+    ...(raw.repliedAt ? { repliedAt: raw.repliedAt } : {}),
+    ...(raw.status ? { status: raw.status as ReviewView['status'] } : {}),
   };
 }
 

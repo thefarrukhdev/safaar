@@ -345,6 +345,16 @@ export function checkIn(id: string, token?: string | null) {
   );
 }
 
+export function board(id: string, token?: string | null) {
+  return request<BackendBooking>(
+    `/partners/bookings/${encodeURIComponent(id)}/board`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export function assignRoom(
   id: string,
   roomNumber: string,

@@ -1,6 +1,4 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { Role } from '@safaar/types';
-import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { PromosService } from './promos.service';
 import { ValidatePromoDto } from './dto/promo.dto';
@@ -17,7 +15,6 @@ export class PromosController {
 
   @Post('validate')
   @UseGuards(RolesGuard)
-  @Roles(Role.USER)
   validate(@Body() body: ValidatePromoDto) {
     return this.promosService.validate(body);
   }

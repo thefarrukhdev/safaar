@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 import { useState } from "react";
 import Image from "next/image";
-import { ShieldCheck, Camera } from "lucide-react";
+import { ShieldCheck, Camera, Clock } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import type { Locale } from "@/i18n/config";
 import type { ReviewsDict } from "@/i18n/dictionaries";
@@ -275,6 +275,17 @@ export function ReviewsList({
                   </div>
                 </div>
 
+                {/* Pending moderation notice — only ever present on the
+                    review just returned by POST /reviews itself; GET list
+                    responses never include `status` (always published),
+                    so this can never misfire on an already-public review. */}
+                {review.status && review.status !== "published" && (
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <Clock className="h-4 w-4 shrink-0" />
+                    {dict.pendingReviewNotice}
+                  </div>
+                )}
+
                 {/* Review Text */}
                 {review.body && (
                   <p className="text-base leading-relaxed text-slate-700">
@@ -303,6 +314,24 @@ export function ReviewsList({
                          </div>
                        </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Partner reply */}
+                {review.replyBody && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {dict.ownerReplyLabel}
+                      {review.repliedAt && (
+                        <span className="font-normal">
+                          • {formatReviewDate(review.repliedAt, locale)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm leading-relaxed text-slate-700">
+                      {review.replyBody}
+                    </p>
                   </div>
                 )}
               </div>

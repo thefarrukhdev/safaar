@@ -36,6 +36,7 @@ import {
 } from '../common/promotion';
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
+import { computeBookingReport } from '../reports/booking-reports.query';
 
 type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
 type PublicPartnerStatus =
@@ -2305,12 +2306,20 @@ export class PartnersService {
       params.push(String(body.address));
     }
     if (body.latitude !== undefined) {
+      // Regression (PARTNERS-LOCATION-NULL-ISLAND): xom `Number(...)`
+      // bo'sh satr/probel/`null`ni `0`ga aylantirardi (`Number("")===0`),
+      // ya'ni bo'sh joylashuv jimgina (0,0) "Null Island"ga saqlanardi.
+      // `latitude`/`longitude` ustunlari NULL bo'lishi mumkin — bo'sh
+      // qiymat "joylashuv o'chirildi/hali belgilanmagan" deb NULLga
+      // tushishi kerak, `0`ga emas. Xuddi shu yordamchi funksiya allaqachon
+      // shu faylda boshqa joylarda (masalan avtobus kompaniyasi manzili
+      // uchun) ishlatiladi — shu bilan bir xil pattern.
       sets.push(`latitude = $${idx++}`);
-      params.push(Number(body.latitude));
+      params.push(this.parseOptionalDecimal(body.latitude));
     }
     if (body.longitude !== undefined) {
       sets.push(`longitude = $${idx++}`);
-      params.push(Number(body.longitude));
+      params.push(this.parseOptionalDecimal(body.longitude));
     }
     if (Array.isArray(body.nearbyPlaces) || Array.isArray(body.nearby_places)) {
       sets.push(`nearby_places = $${idx++}::jsonb`);
@@ -4084,21 +4093,28 @@ export class PartnersService {
       sets.push(`status = $${paramIdx++}`);
       params.push(BookingStatus.CONFIRMED.toLowerCase());
       // Store operational timestamps in the booking policy snapshot.
+      // `policy_snapshot` iaan `jsonb_set()` faqat JSON OBYEKT ustida
+      // ishlaydi — agar ustun (eski/qo'lda yozilgan qator sabab) massiv,
+      // string yoki raqam bo'lib chiqsa, Postgres "cannot set path in
+      // scalar"/"path element ... is not an integer" bilan xato tashlaydi
+      // (production 500 — PARTNERS-BOARD-500 tasdiqlangan sabab). `CASE`
+      // buni bitta shu qatorning o'zida, boshqa bronlarga tegmasdan,
+      // xavfsiz '{}'ga normallashtiradi.
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'OCCUPIED', now);
     } else if (status === 'boarded') {
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{boarded_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{boarded_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
     } else if (status === 'completed') {
       sets.push(`status = $${paramIdx++}`);
       params.push(BookingStatus.COMPLETED.toLowerCase());
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(COALESCE(policy_snapshot, '{}'::jsonb), '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'VACANT_DIRTY', now);
@@ -4265,6 +4281,28 @@ export class PartnersService {
         amount: overview.pending_balance,
       },
     ];
+  }
+
+  /**
+   * `GET /partners/reports` — shu hamkorning bronlari domen (hotel/
+   * restaurant/bus/vehicle) bo'yicha yig'ma hisobot. Har doim
+   * `organizationId` bilan qat'iy cheklangan — boshqa hamkorning
+   * ma'lumoti hech qachon qaytmaydi. Agregatsiya mantiq
+   * `computeBookingReport()`da — admin tomoni (`AdminService.partnerReports`)
+   * bilan bir xil, ikkinchi mustaqil SQL YOZILMAYDI.
+   */
+  async reports(actor: RequestActor | undefined, query: QueryLike = {}) {
+    const organizationId = this.organizationId(actor);
+    return computeBookingReport(this.pg, {
+      organizationId,
+      from: this.optionalString(query.from) ?? undefined,
+      to: this.optionalString(query.to) ?? undefined,
+      domain: this.optionalString(query.domain) ?? undefined,
+      paymentMethod:
+        this.optionalString(query.paymentMethod ?? query.payment_method) ??
+        undefined,
+      status: this.optionalString(query.status) ?? undefined,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -5036,16 +5074,21 @@ export class PartnersService {
   }
 
   /**
-   * `latitude`/`longitude` uchun: berilmagan/bo'sh/raqam bo'lmagan qiymatni
-   * `null`ga tushiradi — Postgres `NUMERIC` ustuniga `NaN` yozishga urinish
-   * (masalan `updateListingLocation()`dagi tekshiruvsiz `Number(...)` bilan
-   * bo'lgani kabi) DB darajasida xato beradi; bu yerda shunchaki jimgina
-   * e'tiborsiz qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega
-   * emas, shu bilan bir xil "best-effort" uslubda).
+   * `latitude`/`longitude` uchun: berilmagan/bo'sh (shu jumladan faqat
+   * probeldan iborat)/raqam bo'lmagan qiymatni `null`ga tushiradi —
+   * Postgres `NUMERIC` ustuniga `NaN`/`Infinity` yozishga urinish (masalan
+   * xom `Number(...)` bilan bo'lgani kabi — PARTNERS-LOCATION-NULL-ISLAND
+   * regressiyasi: bo'sh satr `Number("")===0` orqali jimgina (0,0) "Null
+   * Island"ga aylanardi) DB darajasida xato beradi yoki noto'g'ri `0`/`NaN`
+   * qiymatni jimgina yozib qo'yardi; bu yerda shunchaki e'tiborsiz
+   * qoldiriladi (endpoint hech qanday DTO validatsiyasiga ega emas, shu
+   * bilan bir xil "best-effort" uslubda).
    */
   private parseOptionalDecimal(value: unknown): number | null {
-    if (value === undefined || value === null || value === '') return null;
-    const parsed = Number(value);
+    if (value === undefined || value === null) return null;
+    const normalized = typeof value === 'string' ? value.trim() : value;
+    if (normalized === '') return null;
+    const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : null;
   }
 

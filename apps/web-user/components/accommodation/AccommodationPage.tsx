@@ -3,7 +3,8 @@ import Image from "next/image";
 import { Suspense } from "react";
 import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { api } from "@/lib/api";
+import { api, ApiRequestError } from "@/lib/api";
+import { getSession } from "@/lib/auth/session";
 import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
@@ -11,6 +12,7 @@ import { ActiveFilters } from "@/components/hotels/ActiveFilters";
 import { Button } from "@/components/ui/Button";
 import { AccommodationCategoryTabs } from "@/components/features/accommodation/AccommodationCategoryTabs";
 import { AccommodationListWithMap } from "@/components/features/accommodation/AccommodationListWithMap";
+import type { AccommodationFavoritesContext } from "@/components/accommodation/AccommodationCard";
 import type { HotelListItem } from "@/types/view";
 
 const PAGE_SIZE = 9;
@@ -27,6 +29,30 @@ function int(value: string | undefined): number | undefined {
   if (value === undefined || value === "") return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : undefined;
+}
+
+/** Joriy foydalanuvchining sevimli mehmonxonalari (hotel.id -> favorite id).
+ * Bitta so'rov (`GET /me/favorites`) — ro'yxatdagi har bir karta uchun
+ * alohida so'rov yuborilmaydi. Sessiya yo'q yoki xato bo'lsa — bo'sh. */
+async function getHotelFavoriteIdsOrEmpty(
+  token: string | undefined,
+): Promise<Record<string, string>> {
+  if (!token) return {};
+  try {
+    const favorites = await api.users.getFavorites({ token });
+    const ids: Record<string, string> = {};
+    for (const favorite of favorites) {
+      if (favorite.targetType === "hotel") {
+        ids[favorite.targetId] = favorite.id;
+      }
+    }
+    return ids;
+  } catch (error: unknown) {
+    if (error instanceof ApiRequestError) {
+      return {};
+    }
+    throw error;
+  }
 }
 
 export interface AccommodationPageProps {
@@ -66,9 +92,10 @@ export async function AccommodationPage({
   const amenitiesRaw = sp.amenities;
   const amenities = Array.isArray(amenitiesRaw) ? amenitiesRaw : (typeof amenitiesRaw === "string" ? [amenitiesRaw] : undefined);
 
-  const [common, dict, cities, hotelsResult] = await Promise.all([
+  const [common, dict, favDict, cities, hotelsResult, session] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "hotels"),
+    getDictionary(locale, "favorites"),
     api.catalog.getCities(locale),
     api.hotels.getHotels(locale, {
       cityId,
@@ -86,7 +113,16 @@ export async function AccommodationPage({
       guests,
       amenities,
     }),
+    getSession(),
   ]);
+
+  const favoriteIds = await getHotelFavoriteIdsOrEmpty(session?.accessToken);
+  const favorites: AccommodationFavoritesContext = {
+    authed: !!session,
+    loginHref: `/${locale}/login?next=${encodeURIComponent(basePath)}`,
+    dict: favDict,
+    ids: favoriteIds,
+  };
 
   const all: HotelListItem[] = hotelsResult.items;
   const total = hotelsResult.total;
@@ -210,6 +246,7 @@ export async function AccommodationPage({
           safePage={safePage}
           totalPages={totalPages}
           currentParams={currentParams}
+          favorites={favorites}
           filters={
             <Suspense key="filters" fallback={null}>
               <HotelFilters

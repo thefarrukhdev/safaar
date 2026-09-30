@@ -601,6 +601,14 @@ export class PartnersController {
     return this.partnersService.financeOverview(actor);
   }
 
+  @Get('reports')
+  reports(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | string[] | undefined>,
+  ) {
+    return this.partnersService.reports(actor, query);
+  }
+
   @Get('finance/ledger')
   ledger(
     @CurrentActor() actor: RequestActor | undefined,

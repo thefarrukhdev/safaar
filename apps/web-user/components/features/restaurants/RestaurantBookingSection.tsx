@@ -79,27 +79,38 @@ export function RestaurantBookingSection({
     setLoading(true);
 
     try {
-      const { api } = await import("@/lib/api");
+      const { createRestaurantBookingAction } = await import(
+        "@/lib/services/booking/actions"
+      );
+      // Server action ishlatiladi (to'g'ridan-to'g'ri client fetch emas):
+      // faqat u serverdagi httpOnly sessiyani (`getSession()`) o'qib,
+      // bronni HAQIQIY login qilgan foydalanuvchi hisobiga bog'lay oladi
+      // ("Mening bronlarim"da ko'rinishi uchun) — client-side `api.*`
+      // chaqiruvi hech qanday tokenni avtomatik biriktirmaydi.
+      //
       // MUHIM: xom karta raqami/CVV/amal qilish muddati bu yerda HECH
       // QACHON yig'ilmaydi va backendga yuborilmaydi. Karta to'lovi
       // (uzcard/humo/visa/mastercard) — Uzum Checkout'ning HAQIQIY hosted
       // (redirect) sahifasida amalga oshiriladi, xuddi mehmonxona bron
-      // oqimidagi kabi (`lib/services/booking/actions.ts`).
-      const booking = await api.bookings.createHotelBooking({
-        hotelId: restaurant.id,
-        roomId: selectedTableId || restaurant.id,
-        checkIn: date,
-        checkOut: date,
-        slotTime: slotTime,
-        guests: guests,
+      // oqimidagi kabi.
+      const res = await createRestaurantBookingAction({
+        restaurantId: restaurant.id,
+        tableId: selectedTableId || restaurant.id,
+        date,
+        slotTime,
+        guests,
         totalPrice: totalAmount,
         guestName,
         guestPhone,
         guestEmail,
-        source: "web-user",
         paymentMethod,
         agreeTerms,
       });
+
+      if (!res.ok || !res.bookingId) {
+        setErrorMsg(res.error || bDict.error || "Xatolik yuz berdi");
+        return;
+      }
 
       if (paymentMethod === "cash") {
         // Naqd pul — backend booking'ni booking yaratishning bir qismi
@@ -107,7 +118,7 @@ export function RestaurantBookingSection({
         // To'lovning o'zi hali qilingani YO'Q (joyida olinadi) — shu
         // sabab pastdagi ekran "to'lov qilindi" emas, "bron tasdiqlandi"
         // deb ko'rsatadi.
-        setSuccessBookingId(booking.bookingNumber || booking.id);
+        setSuccessBookingId(res.bookingNumber || res.bookingId);
         setShowBookingModal(false);
         return;
       }
@@ -119,11 +130,11 @@ export function RestaurantBookingSection({
       // orqali HAQIQIY Uzum Checkout redirect URL'ini oladi (yoki backend
       // 503 `PAYMENT_PROVIDER_NOT_CONFIGURED` qaytarsa — aniq xato holati
       // ko'rsatiladi, muvaffaqiyat sifatida yashirilmaydi).
-      const guestTokenParam = booking.guestAccessToken
-        ? `&guestToken=${encodeURIComponent(booking.guestAccessToken)}`
+      const guestTokenParam = res.guestAccessToken
+        ? `&guestToken=${encodeURIComponent(res.guestAccessToken)}`
         : "";
       router.push(
-        `/${locale}/booking/${booking.id}?payment=pending&provider=${paymentMethod}${guestTokenParam}`,
+        `/${locale}/booking/${res.bookingId}?payment=pending&provider=${paymentMethod}${guestTokenParam}`,
       );
     } catch (err: unknown) {
       setErrorMsg(bDict.error || "Xatolik yuz berdi");

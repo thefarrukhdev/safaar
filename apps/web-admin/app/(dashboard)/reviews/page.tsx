@@ -154,6 +154,30 @@ export default function ReviewsPage() {
         ),
       },
       {
+        key: "reply",
+        label: "Hamkor javobi",
+        render: (r) => (
+          <div className="max-w-xs">
+            {r.replyBody ? (
+              <>
+                <p className="line-clamp-2 text-[var(--text-secondary)]">{r.replyBody}</p>
+                {r.repliedAt && (
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {new Date(r.repliedAt).toLocaleDateString("uz-UZ", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-[var(--text-muted)]">Javob yo&apos;q</span>
+            )}
+          </div>
+        ),
+      },
+      {
         key: "status",
         label: "Holat",
         render: (r) => (

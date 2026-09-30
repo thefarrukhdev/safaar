@@ -21,12 +21,13 @@ import { useBeds } from "../../_hooks/use-beds";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useRoomTypes } from "../../_hooks/use-room-types";
+import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
 import { useDataStore } from "../../_stores/data-store";
 import { cn } from "../../_lib/utils/cn";
 import { formatMoney } from "../../_lib/utils/format";
 import { TODAY_ISO } from "../../_lib/utils/date";
-import { getPartnerLabels, hasBeds, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBeds, isDacha, isRestaurant, hasBuses } from "../../_lib/utils/partner-labels";
 import type { ReservationView } from "../../_lib/domain/types";
 import { ReservationBar } from "./_components/reservation-bar";
 import { DachaAvailabilityView } from "./_components/dacha-availability-view";
@@ -81,12 +82,29 @@ export function CalendarView() {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const isHostel = hasBeds(partnerType);
+  const isBus = hasBuses(partnerType);
 
-  const { data: rooms } = useRooms();
+  const { data: roomsData } = useRooms();
+  const { data: vehicles } = useVehicles();
   const { data: reservations } = useReservations();
   const { data: roomTypes } = useRoomTypes();
   useBeds();
   const beds = useDataStore((s) => s.beds);
+
+  const rooms = useMemo(() => {
+    if (isBus) {
+      return vehicles.map(v => ({
+        id: v.id,
+        roomTypeId: v.id,
+        number: v.plateNumber || v.name,
+        floor: 1,
+        roomTypeName: v.name,
+        isListed: v.status === 'active',
+        nightlyPrice: v.pricePerDay,
+      }));
+    }
+    return roomsData;
+  }, [roomsData, vehicles, isBus]);
 
   const [viewMode, setViewMode] = useState<ViewMode>(14);
   const [startOffset, setStartOffset] = useState(0);
@@ -162,6 +180,7 @@ export function CalendarView() {
       roomTypeId: row.roomTypeId,
       roomNumber: row.roomNumber,
       bedId: row.bedId,
+      vehicleId: isBus ? row.key : undefined,
     });
     setWalkInOpen(true);
   };
@@ -192,7 +211,10 @@ export function CalendarView() {
         }
 
         const ciOffset = dayDiff(r.checkIn, startDate);
-        const coOffset = dayDiff(r.checkOut, startDate);
+        let coOffset = dayDiff(r.checkOut, startDate);
+        if (coOffset <= ciOffset) {
+          coOffset = ciOffset + 1;
+        }
 
         // Oraliqdan tashqarida bo'lsa — o'tkazib yuborish
         if (coOffset <= 0 || ciOffset >= viewMode) continue;
@@ -234,7 +256,10 @@ export function CalendarView() {
         return false;
       }
       const ciOffset = dayDiff(r.checkIn, startDate);
-      const coOffset = dayDiff(r.checkOut, startDate);
+      let coOffset = dayDiff(r.checkOut, startDate);
+      if (coOffset <= ciOffset) {
+        coOffset = ciOffset + 1;
+      }
       return coOffset > 0 && ciOffset < viewMode;
     });
     const total = visible.reduce((sum, r) => sum + r.totalPrice, 0);

@@ -81,10 +81,14 @@ export function ReservationDetailView({ id }: { id: string }) {
     );
   }
 
+  const today = new Date().toISOString().split("T")[0];
+  const isPastCheckIn = today > data.checkIn;
+  const isPastCheckOut = today > data.checkOut;
+
   const balance = data.totalPrice - data.paidAmount;
-  const canCheckIn = data.status === BookingStatus.CONFIRMED;
+  const canCheckIn = data.status === BookingStatus.CONFIRMED && !isPastCheckOut;
   const canCheckOut = data.status === "IN_HOUSE";
-  const canConfirm = data.status === BookingStatus.PENDING;
+  const canConfirm = data.status === BookingStatus.PENDING && !isPastCheckIn;
   const canCancel =
     data.status === BookingStatus.CONFIRMED || data.status === "IN_HOUSE";
 

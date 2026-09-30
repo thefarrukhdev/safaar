@@ -12,6 +12,7 @@ import { PaymentsService } from '../../src/payments/payments.service';
 import { UsersService } from '../../src/users/users.service';
 import type { PostgresService } from '../../src/infrastructure/postgres.service';
 import type { JobQueueService } from '../../src/infrastructure/job-queue.service';
+import type { UploadsService } from '../../src/uploads/uploads.service';
 
 const userActor = {
   id: '00000000-0000-2001-0000-000000000001',
@@ -57,6 +58,7 @@ describe('Security regression tests', () => {
     const users = new UsersService(
       pg as unknown as PostgresService,
       jobsMock() as unknown as JobQueueService,
+      { create: jest.fn() } as unknown as UploadsService,
     );
 
     await expect(

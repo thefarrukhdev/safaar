@@ -4,6 +4,7 @@
   "remove": "Remove from favorites",
   "loginRequired": "Sign in to add to favorites",
   "pending": "Saving…",
+  "error": "Something went wrong. Please try again.",
   "perNight": "night",
   "emptyDescription": "You haven't added any hotels to your favorites yet. Click the heart icon on properties you like!",
   "discoverAction": "Discover hotels"

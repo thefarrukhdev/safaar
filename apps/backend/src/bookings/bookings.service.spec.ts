@@ -121,10 +121,11 @@ describe('BookingsService.createHotel guest checkout', () => {
       firstName: ' Laziz ',
       lastName: ' Shakarov ',
       email: 'LAZIZ@EXAMPLE.COM ',
-      phone: ' +998901234567 ',
+      phone: '90 123 45 67',
     });
 
     expect(result.booking.user_id).toBeNull();
+    expect(result.booking.status).toBe('pending');
     expect(result.booking.guest_name).toBe('Laziz Shakarov');
     expect(result.booking.guest_email).toBe('laziz@example.com');
     expect(result.booking.guest_phone).toBe('+998901234567');
@@ -145,6 +146,10 @@ describe('BookingsService.createHotel guest checkout', () => {
     // `GET /bookings/:id` guest uchun doim 401 bilan rad etaveradi.
     expect(result.guestAccessToken).toEqual(expect.any(String));
     expect(result.guestAccessToken!.length).toBeGreaterThan(20);
+    expect(result.payment).toMatchObject({
+      provider: 'click',
+      status: 'pending',
+    });
   });
 
   it('populates booking.user_id when an authenticated customer books (regression: guest-checkout guard was stripping the actor for everyone)', async () => {
@@ -175,6 +180,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(authedActor, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      user_id: 'attacker-controlled-user-id',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -185,6 +191,125 @@ describe('BookingsService.createHotel guest checkout', () => {
     // EMAS (ishlab chiqarilmasligi ham kerak, keraksiz cache yozuvi
     // qoldirmaslik uchun).
     expect(result.guestAccessToken).toBeUndefined();
+  });
+
+  it('keeps authenticated CASH booking ownership on the JWT actor', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const actor: RequestActor = {
+      id: 'user-cash',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+    const result = await service.createHotel(actor, {
+      hotel_id: 'hotel-1',
+      agree_terms: true,
+      user_id: 'spoofed-user',
+      room_id: 'room-1',
+      check_in: '2026-08-10',
+      check_out: '2026-08-12',
+      payment_method: 'cash',
+    });
+
+    expect(result.booking).toMatchObject({
+      user_id: 'user-cash',
+      status: 'confirmed',
+    });
+    expect(result.payment).toMatchObject({ status: 'awaiting_cash' });
+  });
+
+  it('rejects an anonymous booking when the guest name is missing', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_email: 'guest@example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_NAME_REQUIRED' },
+    });
+  });
+
+  it('rejects an anonymous booking with no phone or email', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_CONTACT_REQUIRED' },
+    });
+  });
+
+  it('rejects malformed guest contact before creating inventory or payment rows', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+        guest_phone: '123',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_PHONE_INVALID' },
+    });
+    expect(pg.transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed guest email but accepts syntactically valid unverified contact without OTP', async () => {
+    pg.query.mockResolvedValueOnce([hotelRow]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        guest_name: 'Test Guest',
+        guest_email: 'not-an-email',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'BOOKING_GUEST_EMAIL_INVALID' },
+    });
+    expect(pg.transaction).not.toHaveBeenCalled();
   });
 
   it('confirms a cash-payment booking immediately instead of leaving it pending forever (regression: cash bookings had no path to confirmed and would auto-expire)', async () => {
@@ -210,6 +335,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -218,6 +345,9 @@ describe('BookingsService.createHotel guest checkout', () => {
 
     expect(result.booking.status).toBe('confirmed');
     expect(result.booking.confirmed_at).not.toBeNull();
+    expect(result.booking.user_id).toBeNull();
+    expect(result.booking.guest_name).toBe('Test Guest');
+    expect(result.booking.guest_email).toBe('guest@example.com');
     // `payment` endi `null` bo'lishi ham mumkin (0 UZS bron), lekin bu
     // testda summa 0 EMAS — qator yaratilishi SHART.
     expect(result.payment).not.toBeNull();
@@ -252,6 +382,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -293,6 +425,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -331,6 +465,8 @@ describe('BookingsService.createHotel guest checkout', () => {
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -346,6 +482,343 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.booking.total_amount).toBe(180000);
     expect(result.booking.commission_amount).toBe(18000);
   });
+
+  it('throws 409 PROMO_LIMIT_REACHED when promo usage limit is exhausted during booking creation', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'SUMMER10',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 10,
+    });
+    promos.redeem.mockResolvedValueOnce(false);
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        agree_terms: true,
+        guest_name: 'Test Guest',
+        guest_email: 'guest@example.com',
+        room_id: 'room-1',
+        check_in: '2026-08-10',
+        check_out: '2026-08-12',
+        rooms: 1,
+        promo_code: 'SUMMER10',
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'PROMO_LIMIT_REACHED' },
+    });
+  });
+
+  it('does not redeem or consume promo code on a 0-discount free restaurant reservation', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'SUMMER10',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 10,
+    });
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          ...hotelRow,
+          partner_type: 'restaurant',
+          check_in_time: '09:00',
+          check_out_time: '23:00',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '0',
+          total_inventory: 10,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // INSERT booking_status_history
+      .mockResolvedValueOnce([]) // UPDATE bookings SET status = 'confirmed'
+      .mockResolvedValueOnce([]); // INSERT booking_status_history (free_booking_confirmed)
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      agree_terms: true,
+      guest_name: 'Test Guest',
+      guest_email: 'guest@example.com',
+      room_id: 'room-1',
+      check_in: '2026-10-10',
+      check_out: '2026-10-10',
+      slot_time: '19:00',
+      booking_type: 'restaurant',
+      promo_code: 'SUMMER10',
+    });
+
+    expect(result.booking.discount_amount).toBe(0);
+    expect(result.booking.total_amount).toBe(0);
+    expect(promos.redeem).not.toHaveBeenCalled();
+  });
+
+  it('uses an active 50% partner promotion for booking/payment and ignores a spoofed client amount', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '400000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '400000',
+          promotion_new_price: '200000',
+          promotion_discount_percent: 50,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-10-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-03',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+      total_amount: 1,
+      totalPrice: 1,
+      price: 1,
+    });
+
+    expect(result.booking.subtotal).toBe(800000);
+    expect(result.booking.discount_amount).toBe(400000);
+    expect(result.booking.total_amount).toBe(400000);
+    expect(result.booking.price_snapshot).toMatchObject({
+      base_price_per_night: 400000,
+      effective_price_per_night: 200000,
+      partner_promotion: {
+        id: 'promotion-1',
+        discount_percent: 50,
+        discount_amount: 400000,
+      },
+    });
+    expect(result.payment).toMatchObject({ amount: 400000 });
+  });
+
+  /**
+   * "SAFAAR — PROMOTIONS BACKEND LOGIC AUDIT": hamkor 150 000 so'mlik xonaga
+   * ANIQ 140 000 so'm belgilaydi, frontend foizni `Math.round(6.666...) = 7`
+   * deb yuboradi. Ilgari bron/to'lov summasi foizdan qayta hisoblanib 139 500
+   * chiqardi — hamkor ham, admin ham tasdiqlamagan raqam. Endi bron ham,
+   * to'lov ham tasdiqlangan ANIQ narxni oladi.
+   */
+  it('charges the exact approved promotion price when the stored percent rounds differently', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '150000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-02',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+      total_price: 1,
+      totalPrice: 1,
+    });
+
+    expect(result.booking.subtotal).toBe(150000);
+    expect(result.booking.discount_amount).toBe(10000);
+    expect(result.booking.total_amount).toBe(140000);
+    expect(result.booking.price_snapshot).toMatchObject({
+      base_price_per_night: 150000,
+      effective_price_per_night: 140000,
+    });
+    expect(result.payment).toMatchObject({ amount: 140000 });
+  });
+
+  /**
+   * Promotion 150 000 -> 140 000 sifatida tasdiqlangan, keyin hamkor xona
+   * narxini 200 000 ga oshirdi. Ilgari mijozdan 200 000 - 7% = 186 000
+   * olinardi; endi tasdiqlangan 140 000 olinadi.
+   */
+  it('keeps charging the approved price after base_price is raised later', async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '200000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '150000',
+          promotion_new_price: '140000',
+          promotion_discount_percent: 7,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      room_id: 'room-1',
+      check_in: '2026-10-01',
+      check_out: '2026-10-02',
+      rooms: 1,
+      agree_terms: true,
+      guest_name: 'Guest',
+      guest_phone: '+998901234567',
+      payment_method: 'uzcard',
+    });
+
+    expect(result.booking.subtotal).toBe(200000);
+    expect(result.booking.discount_amount).toBe(60000);
+    expect(result.booking.total_amount).toBe(140000);
+    expect(result.payment).toMatchObject({ amount: 140000 });
+  });
+
+  it('rejects SCHOOL21 server-side when the room has an active partner promotion', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'SCHOOL21',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 21,
+    });
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '400000',
+          total_inventory: 1,
+          promotion_id: 'promotion-1',
+          promotion_old_price: '400000',
+          promotion_new_price: '200000',
+          promotion_discount_percent: 50,
+          promotion_start_date: '2026-09-01',
+          promotion_end_date: '2026-10-31',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-01',
+        check_out: '2026-10-03',
+        rooms: 1,
+        agree_terms: true,
+        guest_name: 'Guest',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'PROMO_STACKING_NOT_ALLOWED' },
+    });
+
+    expect(promos.redeem).not.toHaveBeenCalled();
+  });
+
+  it.each(['expired', 'future', 'pending_review', 'rejected'])(
+    'allows SCHOOL21 when a %s partner promotion is excluded by the authoritative room query',
+    async () => {
+      promos.validate.mockResolvedValueOnce({
+        code: 'SCHOOL21',
+        valid: true,
+        discount_type: 'percentage',
+        discount_value: 10,
+      });
+      pg.query
+        .mockResolvedValueOnce([hotelRow])
+        // The lateral SQL filters non-active rows, so no promotion columns
+        // are present regardless of which ineligible state caused exclusion.
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            hotel_id: 'hotel-1',
+            base_price: '100000',
+            total_inventory: 1,
+          },
+        ])
+        .mockResolvedValueOnce([{ booked_count: 0 }])
+        .mockResolvedValueOnce([{ blocked_count: 0 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-01',
+        check_out: '2026-10-03',
+        rooms: 1,
+        agree_terms: true,
+        guest_name: 'Guest',
+        guest_phone: '+998901234567',
+        promo_code: 'SCHOOL21',
+      });
+
+      expect(result.booking.subtotal).toBe(200000);
+      expect(result.booking.discount_amount).toBe(20000);
+      expect(result.booking.total_amount).toBe(180000);
+      expect(promos.redeem).toHaveBeenCalledWith('SCHOOL21', expect.anything());
+    },
+  );
 
   it('rejects an invalid/expired promo code with 400 before touching inventory', async () => {
     promos.validate.mockResolvedValueOnce({
@@ -392,6 +865,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
@@ -425,6 +899,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({
@@ -462,6 +937,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       check_in: '2026-08-10',
       check_out: '2026-08-12',
       rooms: 1,
+      guest_name: 'Test Guest',
       guest_email: 'guest@example.com',
     });
 
@@ -495,6 +971,7 @@ describe('BookingsService.createHotel guest checkout', () => {
       check_in: '2026-08-10',
       check_out: '2026-08-12',
       rooms: 1,
+      guest_name: 'Test Guest',
       guest_email: 'guest@example.com',
     });
 
@@ -522,6 +999,7 @@ describe('BookingsService.createHotel guest checkout', () => {
         check_in: '2026-08-10',
         check_out: '2026-08-12',
         rooms: 1,
+        guest_name: 'Test Guest',
         guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
@@ -633,6 +1111,8 @@ describe('BookingsService.createHotel guest checkout', () => {
       await service.createHotel(undefined, {
         hotel_id: 'hotel-1',
         agree_terms: true,
+        guest_name: 'Test Guest',
+        guest_email: 'guest@example.com',
         room_id: 'room-1',
         check_in: '2026-08-10',
         check_out: '2026-08-12',
@@ -726,11 +1206,13 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
       check_in: '2026-08-10',
       slot_time: '19:00',
       guest_name: 'Laziz',
+      guest_email: 'laziz@example.com',
     });
 
     expect(result.booking.type).toBe('restaurant');
     expect(result.booking.check_out).toBe('2026-08-10');
     expect(result.booking.slot_time).toBe('19:00');
+    expect(result.booking.guest_email).toBe('laziz@example.com');
 
     const conflictCall = pg.query.mock.calls[2];
     expect(String(conflictCall[0])).toContain('90 minutes');
@@ -791,6 +1273,8 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
         room_id: 'table-1',
         check_in: '2026-08-10',
         slot_time: '19:00',
+        guest_name: 'Test Guest',
+        guest_email: 'guest@example.com',
       }),
     ).rejects.toMatchObject({ status: 409 });
   });
@@ -831,6 +1315,7 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
       check_in: '2026-08-10',
       slot_time: slotTime,
       guest_name: 'Laziz',
+      guest_email: 'laziz@example.com',
     });
 
   describe("yarim tundan o'tuvchi ish vaqti 07:01 -> 01:53 (production: Osh markazi)", () => {
@@ -959,6 +1444,39 @@ describe('BookingsService.createBus (regression: BUG-04 seat double-selling)', (
     expect(result.booking.trip_id).toBe('trip-1');
     expect(result.booking.user_id).toBe('user-1');
     expect(pg.transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('guest avtobus bronini user_id=NULL va guest access token bilan yaratadi', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { id: 'trip-1', company_id: 'company-1', base_price: '50000' },
+      ])
+      .mockResolvedValueOnce([
+        { partner_organization_id: 'partner-1', commission_rate: 12 },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'seat-1', seat_code: '12A', status: 'available', price: '50000' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.createBus(undefined, {
+      trip_id: 'trip-1',
+      seats: ['12A'],
+      firstName: 'Laziz',
+      lastName: 'Shakarov',
+      phone: '90 123 45 67',
+    });
+
+    expect(result.booking).toMatchObject({
+      user_id: null,
+      guest_name: 'Laziz Shakarov',
+      guest_phone: '+998901234567',
+    });
+    expect(result.guestAccessToken).toEqual(expect.any(String));
   });
 
   it("o'rindiq allaqachon band bo'lsa SEAT_NOT_AVAILABLE bilan rad etadi va bron yaratmaydi (tranzaksiya ichida qulflangan holatni ko'radi)", async () => {

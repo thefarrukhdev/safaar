@@ -38,7 +38,7 @@ export default async function HomePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [common, dict, cities, featuredResult, rawDeals, publicStats, banners] = await Promise.all([
+  const [common, dict, cities, featuredResult, rawDeals, publicStats, banners, destinations] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "home"),
     api.catalog.getCities(locale),
@@ -46,6 +46,7 @@ export default async function HomePage({
     api.cms.getDeals(locale),
     api.cms.getPublicStats().catch(() => null),
     api.cms.getBanners(locale).catch(() => []),
+    api.catalog.getDestinations(locale).catch(() => []),
   ]);
 
   const hotels = [...featuredResult.items];
@@ -72,8 +73,8 @@ export default async function HomePage({
           <Hero dict={dict.hero} bannerUrl={bannerUrl}>
             <div className="w-full space-y-4">
               <SearchBar locale={locale} dict={common.search} cities={cities} />
-              {cities.length > 0 && (
-                <CityPills cities={cities} locale={locale} />
+              {destinations.length > 0 && (
+                <CityPills destinations={destinations} locale={locale} />
               )}
             </div>
           </Hero>

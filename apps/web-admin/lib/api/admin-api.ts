@@ -546,6 +546,8 @@ function toReview(row: ApiRecord): AdminReview {
       : 'published') as AdminReviewStatus,
     createdAt: asString(row.created_at, new Date().toISOString()),
     updatedAt: asString(row.updated_at, new Date().toISOString()),
+    replyBody: row.reply_body ? asString(row.reply_body) : null,
+    repliedAt: row.replied_at ? asString(row.replied_at) : null,
   };
 }
 
@@ -2159,12 +2161,12 @@ export const AdminApi = {
     const { data } = await apiClient.get('/catalog/regions');
     return unknownItems(data).map((row) => toRegion(asRecord(row)));
   },
-  createRegion: async (name: string): Promise<CatalogRegion> => {
-    const { data } = await apiClient.post('/admin/catalog/regions', { name });
+  createRegion: async (name: string, isActive?: boolean): Promise<CatalogRegion> => {
+    const { data } = await apiClient.post('/admin/catalog/regions', { name, isActive });
     return toRegion(asRecord(data));
   },
-  updateRegion: async (id: string, name: string): Promise<CatalogRegion> => {
-    const { data } = await apiClient.patch(`/admin/catalog/regions/${id}`, { name });
+  updateRegion: async (id: string, name: string, isActive?: boolean): Promise<CatalogRegion> => {
+    const { data } = await apiClient.patch(`/admin/catalog/regions/${id}`, { name, isActive });
     return toRegion(asRecord(data));
   },
   deleteRegion: async (id: string): Promise<void> => {
@@ -2174,12 +2176,12 @@ export const AdminApi = {
     const { data } = await apiClient.get('/catalog/amenities');
     return unknownItems(data).map((row) => toAmenity(asRecord(row)));
   },
-  createAmenity: async (code: string, name: string): Promise<CatalogAmenity> => {
-    const { data } = await apiClient.post('/admin/catalog/amenities', { code, name });
+  createAmenity: async (code: string, name: string, isActive?: boolean): Promise<CatalogAmenity> => {
+    const { data } = await apiClient.post('/admin/catalog/amenities', { code, name, isActive });
     return toAmenity(asRecord(data));
   },
-  updateAmenity: async (id: string, name: string): Promise<CatalogAmenity> => {
-    const { data } = await apiClient.patch(`/admin/catalog/amenities/${id}`, { name });
+  updateAmenity: async (id: string, name: string, isActive?: boolean): Promise<CatalogAmenity> => {
+    const { data } = await apiClient.patch(`/admin/catalog/amenities/${id}`, { name, isActive });
     return toAmenity(asRecord(data));
   },
   deleteAmenity: async (id: string): Promise<void> => {

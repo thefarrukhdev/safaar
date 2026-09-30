@@ -171,6 +171,11 @@ export interface AdminReview {
   status: AdminReviewStatus;
   createdAt: string;
   updatedAt: string;
+  // Backend (admin.service.ts::reviewsList) selects reply_body/replied_at
+  // but never reply_by — partner identity is PII and intentionally not
+  // exposed here, so the frontend must not expect it either.
+  replyBody: string | null;
+  repliedAt: string | null;
 }
 
 export interface AdminRefund {

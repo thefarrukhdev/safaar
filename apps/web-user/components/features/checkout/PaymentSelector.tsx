@@ -9,12 +9,14 @@ import type { CheckoutDict } from "@/i18n/dictionaries";
 // `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
 // orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
 // belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
-export type PaymentMethodId =
-  | "uzcard"
-  | "humo"
-  | "visa"
-  | "mastercard"
-  | "cash";
+//
+// `id` HAR DOIM haqiqiy `PaymentMethodId` bo'lishi shart — backend
+// `payment_method`ni `@IsIn(['click','payme','uzcard','humo','visa',
+// 'mastercard','cash'])` bilan qat'iy tekshiradi (bookings/dto/booking.dto.ts),
+// umumiy "card" qiymati 400 bilan rad etiladi. Quyidagi bitta "karta" UI
+// varianti (barcha 4 tarmoqni bitta plitkada ko'rsatadi) shu sabab haqiqiy
+// submit qiymati sifatida "uzcard"ni ishlatadi, generic "card"ni emas.
+export type PaymentMethodId = "uzcard" | "humo" | "visa" | "mastercard" | "cash";
 
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
@@ -40,42 +42,15 @@ const CARD_THEME = {
   iconBg: "bg-emerald-600 text-white",
 };
 
-const INTL_CARD_THEME = {
-  badgeBg: "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800",
-  badgeText: "text-indigo-700 dark:text-indigo-300",
-  borderSelected: "border-indigo-500 ring-2 ring-indigo-500/20",
-  bgSelected: "bg-indigo-50/40 dark:bg-indigo-950/20",
-  iconBg: "bg-indigo-600 text-white",
-};
-
-// Fee stavkalari — mahsulot talabi bo'yicha tasdiqlangan, backend'dagi
-// `card-scheme-fee.ts`dagi bilan BIR XIL (2026-09-16). Bu yerda FAQAT
-// informativ belgi (badge) sifatida ko'rsatiladi — yakuniy summa hech
-// qachon shu qiymatdan frontendda HISOBLANMAYDI, backend qaytargan
-// haqiqiy `fee_amount`/`amount` ishlatiladi (checkout sahifasida).
-//
-// `id` HAR DOIM haqiqiy `PaymentMethodId` bo'lishi shart — backend
-// `payment_method`ni `@IsIn(["uzcard","humo","visa","mastercard","cash"])`
-// bilan qat'iy tekshiradi (`bookings/dto/booking.dto.ts`), umumiy "card"
-// qiymati 400 bilan rad etiladi.
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
-    name: "Milliy kartalar orqali to'lash",
-    subtitle: "Uzcard, Humo orqali xavfsiz to'lov",
-    badges: ["3D-Secure xavfsizlik"],
+    name: "Karta orqali to'lash",
+    subtitle: "Uzcard, Humo, Visa va Mastercard",
+    badges: [],
     type: "local_card",
     dictKey: "local_card" as any,
     colorTheme: CARD_THEME,
-  },
-  {
-    id: "visa",
-    name: "Xalqaro kartalar orqali to'lash",
-    subtitle: "Visa, Mastercard orqali xavfsiz to'lov",
-    badges: ["3D-Secure xavfsizlik"],
-    type: "intl_card",
-    dictKey: "intl_card" as any,
-    colorTheme: INTL_CARD_THEME,
   },
   {
     id: "cash",
@@ -151,90 +126,90 @@ export function PaymentSelector({
                 }
               }}
               className={cn(
-                "group relative flex cursor-pointer items-start justify-between rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
+                "group relative flex flex-col gap-3 cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
                 isSelected
                   ? cn(option.colorTheme.borderSelected, option.colorTheme.bgSelected)
                   : "border-slate-200 bg-card hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-slate-700"
               )}
             >
-              <div className="flex items-start gap-3.5">
-                {/* Method Icon / Logo Badge */}
-                <div
-                  className={cn(
-                    "flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 mt-0.5",
-                    option.type === "local_card" || option.type === "intl_card"
-                      ? "mr-2"
-                      : cn("h-9 w-9 rounded-xl shadow-sm", option.colorTheme.iconBg)
-                  )}
-                >
-                  {option.type === "local_card" && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                        <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
-                      </div>
-                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                        <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
-                      </div>
-                    </div>
-                  )}
-                  {option.type === "intl_card" && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                        <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
-                      </div>
-                      <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
-                        <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
-                      </div>
-                    </div>
-                  )}
-                  {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {nameText}
-                    </span>
+              <div className="flex items-start justify-between w-full gap-3">
+                <div className="flex items-start gap-3.5 w-full">
+                  {/* Method Icon */}
+                  <div
+                    className={cn(
+                      "flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 mt-0.5",
+                      "h-9 w-9 rounded-xl shadow-sm",
+                      option.colorTheme.iconBg
+                    )}
+                  >
+                    {(option.type === "local_card" || option.type === "intl_card") && <CreditCard className="h-5 w-5 stroke-[2.2]" />}
+                    {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
                   </div>
-                  {subtitleText && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {subtitleText}
-                    </p>
-                  )}
 
-                  {badges.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {badges.map((badge: string, i: number) => (
-                        <span
-                          key={i}
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
-                            option.colorTheme.badgeBg,
-                            option.colorTheme.badgeText
-                          )}
-                        >
-                          {badge.includes("xavfsizlik") && <ShieldCheck className="h-3 w-3" />}
-                          {badge}
-                        </span>
-                      ))}
+                  <div className="flex flex-col gap-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {nameText}
+                      </span>
                     </div>
-                  )}
+                    {subtitleText && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {subtitleText}
+                      </p>
+                    )}
+
+                    {badges.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {badges.map((badge: string, i: number) => (
+                          <span
+                            key={i}
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+                              option.colorTheme.badgeBg,
+                              option.colorTheme.badgeText
+                            )}
+                          >
+                            {badge.includes("xavfsizlik") && <ShieldCheck className="h-3 w-3" />}
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Custom Radio Circle indicator */}
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center pt-0.5">
+                  <div
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                      isSelected
+                        ? "border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500"
+                        : "border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
+                    )}
+                  >
+                    {isSelected && <CheckCircle2 className="h-4 w-4 stroke-[3]" />}
+                  </div>
                 </div>
               </div>
 
-              {/* Custom Radio Circle indicator */}
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center pt-0.5">
-                <div
-                  className={cn(
-                    "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
-                    isSelected
-                      ? "border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500"
-                      : "border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
-                  )}
-                >
-                  {isSelected && <CheckCircle2 className="h-4 w-4 stroke-[3]" />}
+              {/* Extras (Logos) below the text */}
+              {option.type === "local_card" && (
+                <div className="flex items-center flex-wrap gap-2 ml-[50px]">
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                    <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                    <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                    <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 dark:border-slate-700">
+                    <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}

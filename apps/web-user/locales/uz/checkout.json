@@ -29,6 +29,7 @@
   "specialRequestsPlaceholder": "Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing...",
   "promoCode": "Promokod (agar bo'lsa)",
   "applyPromo": "Qo'llash",
+  "promoApplied": "Chegirma qo'llanildi:",
   "agreeTermsPrefix": "Men ",
   "termsLink": "Ommaviy Oferta",
   "agreeTermsSuffix": " shartlariga roziman.",
@@ -54,31 +55,23 @@
       "title": "Uzcard / Humo (Plastik karta)",
       "desc": "Barcha milliy Uzcard va Humo plastik kartalari orqali to'g'ridan-to'g'ri to'lov",
       "badges": [
-        "3D-Secure xavfsizlik",
         "Milliy karta"
       ]
     },
     "cash": {
       "title": "Joyida to'lash (Naqd / Terminal)",
       "desc": "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
-      "badges": [
-        "Oldindan to'lovsiz",
-        "Moslashuvchan bekor qilish"
-      ]
+      "badges": []
     },
     "local_card": {
       "title": "Milliy kartalar",
       "desc": "Uzcard, Humo, Visa, Mastercard orqali xavfsiz to'lov",
-      "badges": [
-        "3D-Secure xavfsizlik"
-      ]
+      "badges": []
     },
     "intl_card": {
       "title": "Xalqaro kartalar",
       "desc": "Visa, Mastercard orqali xavfsiz to'lov",
-      "badges": [
-        "3D-Secure xavfsizlik"
-      ]
+      "badges": []
     }
   },
   "errors": {

@@ -35,6 +35,15 @@ export function PromotionsView() {
   };
 
   useEffect(() => {
+    // AuthGuard renders this page only once the Zustand `persist` store has
+    // rehydrated and confirmed a session (see auth-guard.tsx) — but a
+    // cold reload landing directly on this route can still commit this
+    // component's first render before that rehydration resolves, firing
+    // this effect once with `accessToken === undefined`. Every other
+    // authenticated Partner data hook (use-reservations.ts, use-vehicles.ts)
+    // guards on `enabled: Boolean(accessToken)` for exactly this reason —
+    // mirror that here instead of sending a request with no token at all.
+    if (!accessToken) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPromotions();
   }, [accessToken]);

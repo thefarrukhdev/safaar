@@ -38,6 +38,10 @@ import {
   toPromotionApiShape,
   type PromotionRow,
 } from '../common/promotion';
+import {
+  computeBookingReport,
+  computeBookingReportByPartner,
+} from '../reports/booking-reports.query';
 
 type DbRow = Record<string, unknown>;
 
@@ -431,6 +435,24 @@ function isForeignKeyViolation(error: unknown): boolean {
   const code = (error as { code?: unknown }).code;
   // 23503 = foreign_key_violation, 23001 = restrict_violation (explicit ON DELETE RESTRICT)
   return code === '23503' || code === '23001';
+}
+
+// `undefined` — so'rovda umuman berilmagan (mavjud qiymat o'zgarishsiz
+// qoladi); `true`/`false` — admin ANIQ shu holatni so'ragan.
+function parseIsActive(body: Record<string, unknown>): boolean | undefined {
+  const raw = body.is_active ?? body.isActive;
+  return raw === undefined ? undefined : Boolean(raw);
+}
+
+function slugifyName(value: string): string {
+  const slug = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'city';
 }
 
 function partnerTypeFromHotel(row: DbRow): string {
@@ -2472,6 +2494,38 @@ export class AdminService {
     );
   }
 
+  /**
+   * `GET /admin/partner-reports` — `partner`/`organizationId` berilmasa
+   * BARCHA hamkorlar bo'yicha (domenlarga yig'ilgan) umumiy hisobot +
+   * har bir hamkor bo'yicha ajratilgan qator qaytadi; berilsa bitta
+   * hamkorga cheklangan hisobot. Agregatsiya mantiq
+   * `computeBookingReport()`/`computeBookingReportByPartner()`da — hamkor
+   * tomoni (`PartnersService.reports`) bilan bir xil, faqat bu yerda
+   * `organizationId` majburiy EMAS (admin barcha hamkorni ko'ra oladi).
+   */
+  async partnerReports(query: QueryLike = {}) {
+    const organizationId =
+      this.optionalQueryString(query, 'organizationId') ??
+      this.optionalQueryString(query, 'partner') ??
+      undefined;
+    const filters = {
+      organizationId,
+      from: this.optionalQueryString(query, 'from') ?? undefined,
+      to: this.optionalQueryString(query, 'to') ?? undefined,
+      domain: this.optionalQueryString(query, 'domain') ?? undefined,
+      paymentMethod:
+        this.optionalQueryString(query, 'paymentMethod') ??
+        this.optionalQueryString(query, 'payment_method') ??
+        undefined,
+      status: this.optionalQueryString(query, 'status') ?? undefined,
+    };
+    const [report, byPartner] = await Promise.all([
+      computeBookingReport(this.postgres, filters),
+      computeBookingReportByPartner(this.postgres, filters),
+    ]);
+    return { ...report, partners: byPartner };
+  }
+
   async partnerAdjustment(
     actor: RequestActor | undefined,
     id: string,
@@ -4503,7 +4557,7 @@ export class AdminService {
   }
 
   async promoCreate(body: Record<string, unknown>) {
-    const code = String(body.code ?? 'safaar10').toUpperCase();
+    const code = String(body.code ?? 'safaar10').trim().toUpperCase();
     const validUntilRaw = body.validUntil ?? body.valid_until;
     const validUntilDate = validUntilRaw
       ? new Date(String(validUntilRaw))
@@ -4555,7 +4609,7 @@ export class AdminService {
     let paramIndex = 1;
 
     if (body.code !== undefined) {
-      const code = String(body.code).toUpperCase();
+      const code = String(body.code).trim().toUpperCase();
       sets.push(`slug = $${paramIndex++}`);
       params.push(code.toLowerCase().replace(/\s+/g, '-'));
       sets.push(`title = $${paramIndex++}::jsonb`);
@@ -4680,22 +4734,43 @@ export class AdminService {
   }
 
   async regionCreate(body: Record<string, unknown>) {
+    const isActive = parseIsActive(body) ?? true;
     const rows = await this.rows(
-      `insert into regions (id, name, created_at, updated_at)
-       values (gen_random_uuid(), ($1)::jsonb, now(), now())
-       returning id::text, name, created_at, updated_at`,
-      [this.localizedNameJson(body)],
+      `insert into regions (id, name, is_active, created_at, updated_at)
+       values (gen_random_uuid(), ($1)::jsonb, $2, now(), now())
+       returning id::text, name, is_active, created_at, updated_at`,
+      [this.localizedNameJson(body), isActive],
     );
     void this.cache.delByPattern('catalog:*');
     return rows[0];
   }
 
+  // `name` va `is_active` mustaqil ravishda ixtiyoriy — faqat
+  // `{is_active: false}` bilan chaqirilganda (ya'ni faqat faollik
+  // almashtirilganda) nom talab qilinmasligi/o'zgarmasligi kerak, aks
+  // holda oddiy toggle so'rovi `NAME_REQUIRED` bilan muvaffaqiyatsiz
+  // tugar edi.
   async regionUpdate(id: string, body: Record<string, unknown>) {
+    const sets: string[] = ['updated_at = now()'];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.name !== undefined || body.uz !== undefined) {
+      sets.push(`name = ($${idx++})::jsonb`);
+      params.push(this.localizedNameJson(body));
+    }
+    const isActive = parseIsActive(body);
+    if (isActive !== undefined) {
+      sets.push(`is_active = $${idx++}`);
+      params.push(isActive);
+    }
+    params.push(id);
+
     const rows = await this.rows(
-      `update regions set name = ($1)::jsonb, updated_at = now()
-       where id = $2::uuid
-       returning id::text, name, created_at, updated_at`,
-      [this.localizedNameJson(body), id],
+      `update regions set ${sets.join(', ')}
+       where id = $${idx}::uuid
+       returning id::text, name, is_active, created_at, updated_at`,
+      params,
     );
     if (!rows[0]) {
       throw new NotFoundException({
@@ -4734,6 +4809,116 @@ export class AdminService {
     return { id, deleted: true };
   }
 
+  /**
+   * "Viloyat va Shaharlar" sahifasi haqiqatda faqat `regions` jadvalini
+   * boshqargan (pastdagi `regionCreate/Update/Delete`) — mustaqil `cities`
+   * yozish yo'li UMUMAN yo'q edi. Natijada admin "yangi shahar" deb
+   * kiritgan har qanday qator aslida `regions`ga tushib qolardi: admin
+   * ro'yxati o'zi yozgan jadvalini o'qigani uchun DARHOL yangilangandek
+   * ko'rinadi, lekin web-user shahar tanlagichi haqiqiy `cities`
+   * jadvalidan o'qiydi (`CatalogService.cities()`) — shu sabab hech qachon
+   * ko'rinmaydi. Bu yerdan boshlab `regions` bilan bir xil naqshda,
+   * lekin haqiqiy `cities` jadvaliga yozadigan CRUD qo'shiladi.
+   */
+  async cityCreate(body: Record<string, unknown>) {
+    const regionId = String(body.region_id ?? body.regionId ?? '').trim();
+    if (!regionId) {
+      throw new BadRequestException({
+        code: 'REGION_ID_REQUIRED',
+        message: 'Hudud (region_id) tanlanishi shart',
+      });
+    }
+    const name = this.localizedNameJson(body);
+    const nameRaw = body.name ?? body;
+    const uzName =
+      nameRaw && typeof nameRaw === 'object' && !Array.isArray(nameRaw)
+        ? String((nameRaw as Record<string, unknown>).uz ?? '')
+        : String(nameRaw ?? '');
+    const slug = `${slugifyName(uzName)}-${randomUUID().slice(0, 8)}`;
+
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `insert into cities (id, region_id, name, slug, created_at, updated_at)
+         values (gen_random_uuid(), $1::uuid, ($2)::jsonb, $3, now(), now())
+         returning id::text, region_id::text, name, slug, created_at, updated_at`,
+        [regionId, name, slug],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new BadRequestException({
+          code: 'REGION_NOT_FOUND',
+          message: 'Tanlangan hudud topilmadi',
+        });
+      }
+      throw error;
+    }
+    void this.cache.delByPattern('catalog:*');
+    return rows[0];
+  }
+
+  async cityUpdate(id: string, body: Record<string, unknown>) {
+    const regionId = String(body.region_id ?? body.regionId ?? '').trim();
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        regionId
+          ? `update cities set name = ($1)::jsonb, region_id = $2::uuid, updated_at = now()
+             where id = $3::uuid
+             returning id::text, region_id::text, name, slug, created_at, updated_at`
+          : `update cities set name = ($1)::jsonb, updated_at = now()
+             where id = $2::uuid
+             returning id::text, region_id::text, name, slug, created_at, updated_at`,
+        regionId
+          ? [this.localizedNameJson(body), regionId, id]
+          : [this.localizedNameJson(body), id],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new BadRequestException({
+          code: 'REGION_NOT_FOUND',
+          message: 'Tanlangan hudud topilmadi',
+        });
+      }
+      throw error;
+    }
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'CITY_NOT_FOUND',
+        message: 'Shahar topilmadi',
+      });
+    }
+    void this.cache.delByPattern('catalog:*');
+    return rows[0];
+  }
+
+  async cityDelete(id: string) {
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `delete from cities where id = $1::uuid returning id::text`,
+        [id],
+      );
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictException({
+          code: 'CITY_IN_USE',
+          message:
+            "Bu shaharga mehmonxona yoki boshqa yozuvlar bog'langan, shuning uchun o'chirib bo'lmaydi.",
+        });
+      }
+      throw error;
+    }
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'CITY_NOT_FOUND',
+        message: 'Shahar topilmadi',
+      });
+    }
+    void this.cache.delByPattern('catalog:*');
+    return { id, deleted: true };
+  }
+
   async amenityCreate(body: Record<string, unknown>) {
     const code = String(body.code ?? '')
       .trim()
@@ -4745,13 +4930,14 @@ export class AdminService {
         message: 'Qulaylik kodi kiritilishi shart',
       });
     }
+    const isActive = parseIsActive(body) ?? true;
     let rows: DbRow[];
     try {
       rows = await this.rows(
-        `insert into amenities (id, code, name, created_at, updated_at)
-         values (gen_random_uuid(), $1, ($2)::jsonb, now(), now())
-         returning id::text, code, name, created_at, updated_at`,
-        [code, this.localizedNameJson(body)],
+        `insert into amenities (id, code, name, is_active, created_at, updated_at)
+         values (gen_random_uuid(), $1, ($2)::jsonb, $3, now(), now())
+         returning id::text, code, name, is_active, created_at, updated_at`,
+        [code, this.localizedNameJson(body), isActive],
       );
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -4766,12 +4952,29 @@ export class AdminService {
     return rows[0];
   }
 
+  // regionUpdate() bilan bir xil sabab: is_active'ni nomdan mustaqil
+  // ravishda toggle qilish imkonini beradi.
   async amenityUpdate(id: string, body: Record<string, unknown>) {
+    const sets: string[] = ['updated_at = now()'];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.name !== undefined || body.uz !== undefined) {
+      sets.push(`name = ($${idx++})::jsonb`);
+      params.push(this.localizedNameJson(body));
+    }
+    const isActive = parseIsActive(body);
+    if (isActive !== undefined) {
+      sets.push(`is_active = $${idx++}`);
+      params.push(isActive);
+    }
+    params.push(id);
+
     const rows = await this.rows(
-      `update amenities set name = ($1)::jsonb, updated_at = now()
-       where id = $2::uuid
-       returning id::text, code, name, created_at, updated_at`,
-      [this.localizedNameJson(body), id],
+      `update amenities set ${sets.join(', ')}
+       where id = $${idx}::uuid
+       returning id::text, code, name, is_active, created_at, updated_at`,
+      params,
     );
     if (!rows[0]) {
       throw new NotFoundException({

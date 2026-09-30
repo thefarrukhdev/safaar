@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 rounded-full bg-transparent px-4 py-3 transition-colors duration-200 hover:bg-slate-900/[0.03] md:px-5 cursor-pointer";
+const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-5 py-4 transition-colors duration-200 hover:bg-slate-900/[0.03] md:px-5 md:py-3 md:rounded-full cursor-pointer";
 
 export function SearchBar({
   locale,
@@ -135,7 +135,7 @@ export function SearchBar({
     <div className="mx-auto w-full relative z-50">
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col rounded-xl border border-slate-900/[0.12] bg-white p-2  transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full sm:p-2"
+        className="relative flex flex-col rounded-[24px] border border-slate-900/[0.12] bg-white shadow-xl shadow-slate-900/5 transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center md:rounded-full p-0 md:p-2 divide-y divide-slate-900/[0.08] md:divide-y-0"
       >
         {/* 1. Shahar / Destinatsiya */}
         <div 
@@ -157,6 +157,7 @@ export function SearchBar({
                 setShowRecent(false); // inputga yozilsa/tanlansa yopilsin
               }}
               placeholder={dict.cityPlaceholder}
+              label={dict.city}
             />
           </div>
           
@@ -214,7 +215,7 @@ export function SearchBar({
         <span className="hidden h-6 w-px bg-slate-900/[0.12] md:block" aria-hidden="true"></span>
 
         {/* 2. Sanalar (Kirish - Chiqish) */}
-        <div className="min-w-0 flex-1 px-2 md:px-0">
+        <div className="min-w-0 flex-1">
           <SearchDatePicker locale={locale} dict={dict} />
         </div>
 
@@ -224,17 +225,18 @@ export function SearchBar({
         <div className={fieldWrapperClass}>
           <div className="flex w-full items-center gap-3">
             <Users className="h-5 w-5 shrink-0 text-primary-600 group-hover:text-primary-700 transition-colors" aria-hidden />
-            <div className="flex-1">
+            <div className="flex flex-col flex-1">
+              <span className="text-xs font-bold text-slate-500">{dict.guests}</span>
               <GuestPicker value={guests} onChange={setGuests} />
             </div>
           </div>
         </div>
 
         {/* 4. Qidirish tugmasi */}
-        <div className="shrink-0 md:pl-2">
+        <div className="shrink-0 p-3 md:p-0 md:pl-2">
           <Button
             type="submit"
-            className="w-full md:w-auto h-12 md:h-12 px-8 uppercase tracking-wide rounded-full  bg-blue-600 text-white font-medium transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] "
+            className="w-full md:w-auto h-14 md:h-12 px-8 uppercase tracking-wide rounded-xl md:rounded-full bg-blue-600 text-white font-bold transition-[background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-blue-700 active:scale-[0.97] shadow-lg shadow-blue-600/20"
           >
             <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
             <span>{dict.submit}</span>

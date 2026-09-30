@@ -77,7 +77,6 @@ export interface Bed {
   label: string;
   status: RoomStatus;
   isListed: boolean;
-  photos: ListingPhoto[];
   /** Ixtiyoriy — yo'q bo'lsa Room/RoomType narxi ishlatiladi. */
   nightlyPrice?: number;
   occupant?: {

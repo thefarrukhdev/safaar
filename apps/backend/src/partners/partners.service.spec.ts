@@ -3407,6 +3407,7 @@ describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST
     const [sql] = updateCall!;
     expect(String(sql)).toContain("jsonb_typeof(policy_snapshot) = 'object'");
     expect(String(sql)).not.toMatch(/jsonb_set\(COALESCE\(policy_snapshot/);
+    expect(String(sql)).toContain('updated_at = $1::timestamptz');
   });
 
   it('board: missing booking rejects with 404 BOOKING_EXPIRED, no UPDATE is attempted', async () => {
@@ -3504,6 +3505,129 @@ describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST
     expect(String(updateCall![0])).toContain(
       "jsonb_typeof(policy_snapshot) = 'object'",
     );
+  });
+});
+
+describe('PartnersService transport/vehicle booking contract (regression: vehicle booking board & complete)', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-vehicle-1',
+    sessionId: 'session-1',
+  };
+  const vehicleBookingDbRow = {
+    id: 'f0bc79ba-84df-4971-8858-97530dbcdded',
+    type: 'bus',
+    status: 'confirmed',
+    partner_organization_id: 'org-vehicle-1',
+    hotel_id: null,
+    room_id: null,
+    vehicle_id: 'v-123',
+    check_in: '2026-09-29',
+    check_out: '2026-09-30',
+    slot_time: null,
+    vehicle_name: 'Laziz',
+    vehicle_plate_number: '01 A345BA',
+    paid_amount: 500000,
+    policy_snapshot: {},
+    price_snapshot: {
+      vehicle_id: 'v-123',
+      check_in: '2026-09-29',
+      check_out: '2026-09-30',
+      days: 1,
+    },
+    guest_name: 'Adhambek',
+    guest_email: 'adhambek7717@gmail.com',
+    guest_phone: '+998 94 217 79 39',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('booking: vehicle booking with hotel_id = null is retrieved successfully via LEFT JOIN vehicles', async () => {
+    pg.query.mockResolvedValueOnce([vehicleBookingDbRow]);
+
+    const result = await service.booking(actor, 'f0bc79ba-84df-4971-8858-97530dbcdded');
+    expect(result).toBeDefined();
+    expect(result['id']).toBe('f0bc79ba-84df-4971-8858-97530dbcdded');
+    expect(result['vehicle_name']).toBe('Laziz');
+    expect(result['vehicle_plate_number']).toBe('01 A345BA');
+    expect(result['hotel_id']).toBeNull();
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('LEFT JOIN vehicles v2 ON v2.id = b.vehicle_id');
+    expect(String(sql)).not.toContain('hotel_id IS NOT NULL');
+    expect(params).toEqual(['f0bc79ba-84df-4971-8858-97530dbcdded']);
+  });
+
+  it('board: vehicle booking boarded_at is stored in policy_snapshot and never updates hotel housekeeping', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingDbRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE bookings SET policy_snapshot = jsonb_set(...)
+      .mockResolvedValueOnce([
+        {
+          ...vehicleBookingDbRow,
+          policy_snapshot: { boarded_at: '2026-09-29T10:00:00.000Z' },
+        },
+      ]); // final SELECT
+
+    const res = await service.bookingStatus(
+      actor,
+      'f0bc79ba-84df-4971-8858-97530dbcdded',
+      'boarded',
+    );
+    expect(res).toBeDefined();
+
+    // Verify no housekeeping queries were issued to hotel_rooms or room_beds
+    const allSql = queryCallsOf(pg).map(([s]) => String(s));
+    expect(allSql.some((s) => s.includes('UPDATE hotel_rooms'))).toBe(false);
+    expect(allSql.some((s) => s.includes('UPDATE room_beds'))).toBe(false);
+
+    // Verify boarded_at query was executed
+    const boardCall = allSql.find((s) => s.includes('boarded_at'));
+    expect(boardCall).toBeDefined();
+    expect(String(boardCall)).toContain('updated_at = $1::timestamptz');
+  });
+
+  it('complete: vehicle booking status is set to completed and never updates hotel housekeeping', async () => {
+    pg.query
+      .mockResolvedValueOnce([vehicleBookingDbRow]) // this.booking()
+      .mockResolvedValueOnce([]) // UPDATE policy_snapshot checked_out_at
+      .mockResolvedValueOnce([]) // UPDATE status = completed
+      .mockResolvedValueOnce([
+        {
+          ...vehicleBookingDbRow,
+          status: 'completed',
+          policy_snapshot: { checked_out_at: '2026-09-30T10:00:00.000Z' },
+        },
+      ]); // final SELECT
+
+    const res = await service.bookingStatus(
+      actor,
+      'f0bc79ba-84df-4971-8858-97530dbcdded',
+      'completed',
+    );
+    expect(res).toBeDefined();
+    expect(res['status']).toBe('completed');
+
+    // Verify no housekeeping queries were issued
+    const allSql = queryCallsOf(pg).map(([s]) => String(s));
+    expect(allSql.some((s) => s.includes('UPDATE hotel_rooms'))).toBe(false);
+    expect(allSql.some((s) => s.includes('UPDATE room_beds'))).toBe(false);
+
+    // Verify checked_out_at query was executed
+    const completeCall = allSql.find((s) => s.includes('checked_out_at'));
+    expect(completeCall).toBeDefined();
+    expect(String(completeCall)).toContain('updated_at = $1::timestamptz');
   });
 });
 

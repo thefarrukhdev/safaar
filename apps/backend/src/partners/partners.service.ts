@@ -4081,13 +4081,13 @@ export class PartnersService {
   ) {
     const booking = (await this.booking(actor, id)) as Record<string, unknown>;
     const now = new Date().toISOString();
-    const sets: string[] = ['updated_at = $1'];
+    const sets: string[] = ['updated_at = $1::timestamptz'];
     const params: unknown[] = [now];
 
     let paramIdx = 2;
 
     if (status === 'confirmed') {
-      sets.push(`status = $${paramIdx++}`, `confirmed_at = $1`);
+      sets.push(`status = $${paramIdx++}`, `confirmed_at = $1::timestamptz`);
       params.push(BookingStatus.CONFIRMED.toLowerCase());
     } else if (status === 'checked_in') {
       sets.push(`status = $${paramIdx++}`);
@@ -4100,21 +4100,25 @@ export class PartnersService {
       // (production 500 — PARTNERS-BOARD-500 tasdiqlangan sabab). `CASE`
       // buni bitta shu qatorning o'zida, boshqa bronlarga tegmasdan,
       // xavfsiz '{}'ga normallashtiradi.
+      // $1 to_jsonb($1::text) ichida ishlatilgani sababli, Postgres uni text
+      // deb xulosa qiladi; shu sababli `updated_at = $1::timestamptz` kastingi
+      // majburiy, aks holda Postgres 42804 (expression is of type text)
+      // bilan 500 tashlaydi.
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_in_at}', to_jsonb($1::text)), updated_at = $1::timestamptz WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'OCCUPIED', now);
     } else if (status === 'boarded') {
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{boarded_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{boarded_at}', to_jsonb($1::text)), updated_at = $1::timestamptz WHERE id = $2`,
         [now, id],
       );
     } else if (status === 'completed') {
       sets.push(`status = $${paramIdx++}`);
       params.push(BookingStatus.COMPLETED.toLowerCase());
       await this.pg.query(
-        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
+        `UPDATE bookings SET policy_snapshot = jsonb_set(CASE WHEN jsonb_typeof(policy_snapshot) = 'object' THEN policy_snapshot ELSE '{}'::jsonb END, '{checked_out_at}', to_jsonb($1::text)), updated_at = $1::timestamptz WHERE id = $2`,
         [now, id],
       );
       await this.updateBookingInventoryStatus(booking, 'VACANT_DIRTY', now);

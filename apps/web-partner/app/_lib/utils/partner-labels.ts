@@ -204,7 +204,7 @@ const BUS_LABELS: PartnerLabels = {
   unitsPageDescription: "Kompaniyangizdagi barcha ijaraga beriladigan avtomobillar ro'yxati.",
   listingTitle: "Rent Car E'loni",
   checkInLabel: "Olib ketish vaqti",
-  checkOutLabel: "Qaytarish vaqti",
+  checkOutLabel: "Qaytarib keldi",
   guestLabel: "Mijoz",
   frontDeskTitle: "Ijara Boshqaruvi",
   frontDeskDescription: "Bugungi ijaraga beriladigan va qaytadigan avtomobillar.",

@@ -6,6 +6,9 @@ build
 .next
 out
 .turbo
+
+# Next.js auto-generated (do not commit)
+next-env.d.ts
 apps/backend/prisma/generated/
 
 # old standalone frontend repository kept for history/reference

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from "react-leaflet";
 import type { AttractionCatalogView } from "@safaar/api-client";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { Navigation } from "lucide-react";
 
@@ -42,7 +41,7 @@ function LocateMeControl() {
             e.stopPropagation();
             map.locate({ setView: true, maxZoom: 14 });
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 transition-transform hover:scale-105 hover:bg-white :bg-slate-700 border border-slate-200"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 transition-all duration-200 ease-out hover:bg-slate-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           title="Mening joylashuvim"
         >
           <Navigation className="h-5 w-5" />
@@ -60,7 +59,6 @@ export default function AttractionsMap({
   hoveredId?: string | null;
 }) {
   const [mounted, setMounted] = useState(false);
-  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -71,12 +69,12 @@ export default function AttractionsMap({
     return L.divIcon({
       className: "custom-marker bg-transparent border-none",
       html: `
-        <div class="relative flex items-center justify-center transition-all duration-300 ${isHovered ? 'scale-110 z-50' : 'scale-100 z-10'}">
-          <div class="flex items-center gap-1 rounded-full px-2.5 py-1.5 ${ isHovered ? 'bg-rose-600 text-white ring-2 ring-rose-200 ' : 'bg-slate-900 text-white ' }">
+        <div class="relative flex items-center justify-center transition-all duration-200 ease-out ${isHovered ? 'scale-110 z-50' : 'scale-100 z-10'}">
+          <div class="flex items-center gap-1 rounded-full px-2.5 py-1.5 ${ isHovered ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white' }">
             <span class="text-[11px] font-bold tracking-tight whitespace-nowrap">★ ${attr.rating.toFixed(1)}</span>
           </div>
           <!-- Tiny triangle pointer -->
-          <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-[6px] border-l-transparent border-r-transparent ${ isHovered ? 'border-t-rose-600' : 'border-t-slate-900 ' }"></div>
+          <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-[6px] border-l-transparent border-r-transparent ${ isHovered ? 'border-t-blue-600' : 'border-t-slate-900' }"></div>
         </div>
       `,
       iconSize: [48, 28],
@@ -89,7 +87,7 @@ export default function AttractionsMap({
     const count = cluster.getChildCount();
     return L.divIcon({
       html: `
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white ring-4 ring-primary-100">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white border-[3px] border-white">
           <span class="text-sm font-bold">${count}</span>
         </div>
       `,
@@ -100,14 +98,12 @@ export default function AttractionsMap({
   };
 
   if (!mounted) {
-    return <div className="h-full w-full bg-[#E5E5DF] [#1A1A1A] animate-pulse" />;
+    return <div className="h-full w-full bg-slate-100 animate-pulse" />;
   }
 
   const defaultCenter: [number, number] = [41.2995, 69.2401];
-  const isDark = resolvedTheme === "dark";
   
   // CARTO now requires API keys, so we use standard OpenStreetMap.
-  // For dark mode, we use a CSS filter trick on the tiles.
   const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
@@ -115,7 +111,7 @@ export default function AttractionsMap({
       <MapContainer
         center={defaultCenter}
         zoom={12}
-        className={`h-full w-full ${isDark ? 'map-dark-mode' : ''}`}
+        className="h-full w-full"
         scrollWheelZoom={true}
         zoomControl={false}
       >
@@ -148,7 +144,7 @@ export default function AttractionsMap({
                 <Popup className="safaar-popup min-w-[200px]">
                   <div className="flex flex-col gap-2 w-[220px]">
                     {attr.imageUrl && (
-                      <div className="relative h-28 w-full rounded-md overflow-hidden">
+                      <div className="relative h-28 w-full rounded-2xl overflow-hidden bg-slate-100">
                         <Image 
                           src={attr.imageUrl} 
                           alt={attr.name} 
@@ -158,8 +154,8 @@ export default function AttractionsMap({
                         />
                       </div>
                     )}
-                    <div>
-                      <h4 className="font-bold text-sm leading-tight text-slate-900">{attr.name}</h4>
+                    <div className="px-1 pb-1">
+                      <h4 className="font-semibold text-sm leading-tight text-slate-900">{attr.name}</h4>
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2">{attr.description}</p>
                     </div>
                   </div>
@@ -176,30 +172,38 @@ export default function AttractionsMap({
           font-family: inherit;
         }
         .safaar-popup .leaflet-popup-content-wrapper {
-          border-radius: 12px;
-          padding: 4px;
+          border-radius: 16px;
+          padding: 8px;
+          box-shadow: none;
+          border: 1px solid #e2e8f0;
+        }
+        .safaar-popup .leaflet-popup-tip {
+          box-shadow: none;
+          border-right: 1px solid #e2e8f0;
+          border-bottom: 1px solid #e2e8f0;
         }
         .safaar-popup .leaflet-popup-content {
-          margin: 8px;
+          margin: 0;
         }
         .leaflet-control-zoom {
-          border: none !important;
-          
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 8px !important;
+          overflow: hidden;
+          box-shadow: none !important;
           margin-top: 24px !important;
           margin-right: 24px !important;
         }
         .leaflet-control-zoom a {
-          background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
-          color: ${isDark ? '#cbd5e1' : '#334155'} !important;
-          border-color: ${isDark ? '#334155' : '#e2e8f0'} !important;
+          background-color: #ffffff !important;
+          color: #334155 !important;
+          border-color: #e2e8f0 !important;
         }
         .leaflet-control-zoom a:hover {
-          background-color: ${isDark ? '#334155' : '#f8fafc'} !important;
+          background-color: #f8fafc !important;
         }
-        
-        /* Magic CSS trick to make standard OpenStreetMap Dark Mode! */
-        .map-dark-mode .leaflet-tile-pane {
-          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        .custom-cluster-icon {
+          background: transparent;
+          border: none;
         }
       `}} />
     </div>

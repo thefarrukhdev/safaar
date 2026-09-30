@@ -45,6 +45,7 @@ import {
 } from "../../../_lib/utils/format";
 import { useAuthStore } from "../../../_stores/auth-store";
 import { useDataStore } from "../../../_stores/data-store";
+import { useVehicles } from "../../../_hooks/use-vehicles";
 import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
 
 export function ReservationDetailView({ id }: { id: string }) {
@@ -55,6 +56,7 @@ export function ReservationDetailView({ id }: { id: string }) {
   const checkOut = useCheckOut();
   useBeds();
   const beds = useDataStore((s) => s.beds);
+  const { data: vehicles } = useVehicles();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);
@@ -194,16 +196,25 @@ export function ReservationDetailView({ id }: { id: string }) {
                 icon={restaurant ? <UtensilsCrossed className="h-4 w-4" aria-hidden /> : <BedDouble className="h-4 w-4" aria-hidden />}
                 label={labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)}
                 value={
-                  <>
-                    {data.roomTypeName}
-                    {data.roomNumber && (
+                  labels.isBus && vehicles?.find((v) => v.id === data.roomTypeId) ? (
+                    <>
+                      {vehicles.find((v) => v.id === data.roomTypeId)?.name}
                       <span className="ml-1 font-mono text-brand-700 dark:text-brand-300">
-                        · {data.roomNumber}
-                        {data.bedId &&
-                          ` · ${beds.find((b) => b.id === data.bedId)?.label ?? ""}`}
+                        · {vehicles.find((v) => v.id === data.roomTypeId)?.plateNumber}
                       </span>
-                    )}
-                  </>
+                    </>
+                  ) : (
+                    <>
+                      {data.roomTypeName}
+                      {data.roomNumber && (
+                        <span className="ml-1 font-mono text-brand-700 dark:text-brand-300">
+                          · {data.roomNumber}
+                          {data.bedId &&
+                            ` · ${beds.find((b) => b.id === data.bedId)?.label ?? ""}`}
+                        </span>
+                      )}
+                    </>
+                  )
                 }
               />
               <InfoItem

@@ -542,6 +542,11 @@ function ReservationCard({
                   </span>
                   <SourceBadge source={reservation.source} />
                   <ReservationStatusBadge status={reservation.status} />
+                  {reservation.paidAmount >= reservation.totalPrice && reservation.totalPrice > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">paid</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">awaiting_cash</span>
+                  )}
                 </div>
                 <h3 className="mt-2 truncate text-lg font-semibold">
                   {reservation.guest.fullName}

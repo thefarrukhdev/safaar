@@ -152,7 +152,7 @@ export const bookingsService = {
   async createVehicleBooking(
     input: CreateVehicleRentalInput,
     options?: { token?: string },
-  ): Promise<BookingView> {
+  ): Promise<BookingView & { guestAccessToken?: string }> {
     const fullName =
       input.fullName ??
       [input.firstName, input.lastName]

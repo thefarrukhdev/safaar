@@ -45,11 +45,38 @@ const CARD_THEME = {
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   {
     id: "uzcard",
-    name: "Karta orqali to'lash",
-    subtitle: "Uzcard, Humo, Visa va Mastercard",
+    name: "Uzcard",
+    subtitle: "1.5% komissiya",
     badges: [],
     type: "local_card",
     dictKey: "local_card" as any,
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "humo",
+    name: "Humo",
+    subtitle: "1.5% komissiya",
+    badges: [],
+    type: "local_card",
+    dictKey: "local_card" as any,
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "visa",
+    name: "Visa",
+    subtitle: "3.5% komissiya",
+    badges: [],
+    type: "intl_card",
+    dictKey: "intl_card" as any,
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "mastercard",
+    name: "Mastercard",
+    subtitle: "3.5% komissiya",
+    badges: [],
+    type: "intl_card",
+    dictKey: "intl_card" as any,
     colorTheme: CARD_THEME,
   },
   {
@@ -57,10 +84,10 @@ const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
     dictKey: "cash" as any,
     type: "cash",
     colorTheme: {
-      badgeBg: "bg-amber-50  border-amber-200 ",
-      badgeText: "text-amber-800 ",
+      badgeBg: "bg-amber-50 border-amber-200",
+      badgeText: "text-amber-800",
       borderSelected: "border-amber-500 ring-2 ring-amber-500/20",
-      bgSelected: "bg-amber-50/40 ",
+      bgSelected: "bg-amber-50/40",
       iconBg: "bg-amber-500 text-white",
     },
   },
@@ -194,20 +221,28 @@ export function PaymentSelector({
               </div>
 
               {/* Extras (Logos) below the text */}
-              {option.type === "local_card" && (
+              {(option.type === "local_card" || option.type === "intl_card") && (
                 <div className="flex items-center flex-wrap gap-2 ml-[50px]">
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
-                    <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
-                  </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
-                    <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
-                  </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
-                    <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
-                  </div>
-                  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
-                    <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
-                  </div>
+                  {option.id === "uzcard" && (
+                    <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                      <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
+                    </div>
+                  )}
+                  {option.id === "humo" && (
+                    <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                      <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
+                    </div>
+                  )}
+                  {option.id === "visa" && (
+                    <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                      <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
+                    </div>
+                  )}
+                  {option.id === "mastercard" && (
+                    <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+                      <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

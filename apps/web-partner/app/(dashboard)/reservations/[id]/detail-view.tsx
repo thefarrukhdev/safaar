@@ -303,6 +303,14 @@ export function ReservationDetailView({ id }: { id: string }) {
             </CardTitle>
           </CardHeader>
           <CardBody className="flex flex-col gap-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-semibold">To'lov Holati</span>
+              {data.paidAmount >= data.totalPrice && data.totalPrice > 0 ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">paid</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">awaiting_cash</span>
+              )}
+            </div>
             <FinanceRow label="Jami summa" value={formatMoney(data.totalPrice)} />
             <FinanceRow
               label="To'langan"

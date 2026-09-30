@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { ShieldCheck, CheckCircle2 } from "lucide-react";
 import { createRestaurantBookingAction, createVehicleBookingAction } from "@/lib/services/booking/actions";
+import { PaymentSelector, type PaymentMethodId } from "./PaymentSelector";
+import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
+import { previewPayment } from "@/lib/services/payments/actions";
 
 export function UnifiedCheckoutClient() {
   const searchParams = useSearchParams();
@@ -28,14 +31,14 @@ export function UnifiedCheckoutClient() {
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("+998");
   const [guestEmail, setGuestEmail] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">(isNoCardType ? "cash" : "card");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpire, setCardExpire] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(isNoCardType ? "cash" : "uzcard");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | undefined>(undefined);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (type === "restaurant" || type === "transport") {
@@ -53,8 +56,9 @@ export function UnifiedCheckoutClient() {
     setLoading(true);
 
     try {
+      let bookingRes: { ok: boolean; bookingId?: string; guestAccessToken?: string; error?: string };
       if (type === "restaurant") {
-        const res = await createRestaurantBookingAction({
+        bookingRes = await createRestaurantBookingAction({
           restaurantId: entityId,
           tableId: subEntityId,
           date: checkIn,
@@ -64,34 +68,41 @@ export function UnifiedCheckoutClient() {
           guestName,
           guestPhone,
           guestEmail,
-          paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
+          paymentMethod,
           agreeTerms,
         });
-
-        if (res.ok && res.bookingId) {
-          setSuccessBookingId(res.bookingId);
-        } else {
-          setErrorMsg(res.error || t.error);
-        }
       } else if (type === "transport") {
-        const res = await createVehicleBookingAction({
+        bookingRes = await createVehicleBookingAction({
           vehicleId: entityId,
           checkIn,
           checkOut,
           guestName,
           guestPhone,
           guestEmail,
-          paymentMethod: paymentMethod === "card" ? "uzcard" : "cash",
+          paymentMethod,
         });
-
-        if (res.ok && res.bookingId) {
-          setSuccessBookingId(res.bookingId);
-        } else {
-          setErrorMsg(res.error || t.error);
-        }
       } else {
         // Fallback or implementation for hotel (future)
         setErrorMsg("Only restaurant and transport bookings are fully implemented in this demo.");
+        setLoading(false);
+        return;
+      }
+
+      if (bookingRes.ok && bookingRes.bookingId) {
+        if (paymentMethod !== "cash") {
+          const paymentResult = await previewPayment(bookingRes.bookingId, paymentMethod, bookingRes.guestAccessToken);
+          if (paymentResult.error || !paymentResult.payment?.paymentUrl) {
+            setErrorMsg(paymentResult.error || "Payment session error");
+          } else {
+            setSuccessBookingId(bookingRes.bookingId);
+            setGuestToken(bookingRes.guestAccessToken);
+            setPaymentUrl(paymentResult.payment.paymentUrl);
+          }
+        } else {
+          setSuccessBookingId(bookingRes.bookingId);
+        }
+      } else {
+        setErrorMsg(bookingRes.error || t.error);
       }
     } catch (err) {
       setErrorMsg(t.error);
@@ -100,7 +111,7 @@ export function UnifiedCheckoutClient() {
     }
   };
 
-  if (successBookingId) {
+  if (successBookingId && !paymentUrl) {
     return (
       <div className="mx-auto max-w-lg mt-10 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-md  ">
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
@@ -186,58 +197,10 @@ export function UnifiedCheckoutClient() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700  cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        value="card" 
-                        checked={paymentMethod === "card"} 
-                        onChange={() => setPaymentMethod("card")} 
-                        className="text-primary-600 focus:ring-primary-500" 
-                      />
-                      {t.card}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700  cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        value="cash" 
-                        checked={paymentMethod === "cash"} 
-                        onChange={() => setPaymentMethod("cash")} 
-                        className="text-primary-600 focus:ring-primary-500" 
-                      />
-                      {t.cash}
-                    </label>
-                  </div>
-                  {paymentMethod === "card" && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700  mb-1">
-                          {t.cardNumber}
-                        </label>
-                        <input
-                          type="text"
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                          placeholder="0000 0000 0000 0000"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700  mb-1">
-                          {t.cardExpire}
-                        </label>
-                        <input
-                          type="text"
-                          value={cardExpire}
-                          onChange={(e) => setCardExpire(e.target.value)}
-                          placeholder="MM/YY"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500   "
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <PaymentSelector 
+                    defaultValue={paymentMethod} 
+                    onChange={setPaymentMethod} 
+                  />
                 </div>
               )}
             </section>
@@ -311,6 +274,19 @@ export function UnifiedCheckoutClient() {
           </div>
         </div>
       </div>
+      
+      {paymentUrl && successBookingId && (
+        <UzumCheckoutFrame
+          checkoutUrl={paymentUrl}
+          bookingId={successBookingId}
+          guestToken={guestToken}
+          onPaid={() => {
+            setPaymentUrl(null);
+            router.refresh();
+          }}
+          onClose={() => setPaymentUrl(null)}
+        />
+      )}
     </div>
   );
 }

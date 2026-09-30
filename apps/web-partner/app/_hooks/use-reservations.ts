@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { pageItems, toReservation } from "../_lib/api/adapters";
 import { partners } from "../_lib/api";
 import { useDataStore, type WalkInDraft } from "../_stores/data-store";
@@ -124,6 +125,7 @@ export function useConfirmReservation() {
       confirmLocal(id);
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
     },
+    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
   });
 }
 
@@ -140,6 +142,7 @@ export function useRejectReservation() {
       rejectLocal(id);
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
     },
+    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
   });
 }
 
@@ -161,6 +164,7 @@ export function useCheckIn() {
       checkInLocal(id);
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
     },
+    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
   });
 }
 

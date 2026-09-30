@@ -260,7 +260,7 @@ export async function createVehicleBookingAction(input: {
       },
       options
     );
-    return { ok: true, bookingId: booking.bookingNumber || booking.id };
+    return { ok: true, bookingId: booking.bookingNumber || booking.id, guestAccessToken: booking.guestAccessToken };
   } catch (err: unknown) {
     return { 
       ok: false, 

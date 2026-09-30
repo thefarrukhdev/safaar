@@ -827,3 +827,51 @@ export function updateVehicle(id: string, body: Record<string, unknown>, token?:
   return request<BackendVehicle>(`/partners/vehicles/${id}`, { method: 'PATCH', body, token });
 }
 
+
+export function addRoomImage(
+  hotelId: string,
+  roomId: string,
+  body: Record<string, unknown>,
+  token?: string | null,
+) {
+  return request<{ hotel_id: string; room_id: string; image_id: string; image_url: string }>(
+    `/partners/hotels/${encodeURIComponent(hotelId)}/rooms/${encodeURIComponent(roomId)}/images`,
+    {
+      method: 'POST',
+      body,
+      token,
+    },
+  );
+}
+
+export function deleteRoomImage(
+  hotelId: string,
+  roomId: string,
+  imageId: string,
+  token?: string | null,
+) {
+  return request<{ hotel_id: string; room_id: string; image_id: string; deleted: boolean }>(
+    `/partners/hotels/${encodeURIComponent(hotelId)}/rooms/${encodeURIComponent(roomId)}/images/${encodeURIComponent(imageId)}`,
+    {
+      method: 'DELETE',
+      token,
+    },
+  );
+}
+
+export function updateRoomImage(
+  hotelId: string,
+  roomId: string,
+  imageId: string,
+  body: Record<string, unknown>,
+  token?: string | null,
+) {
+  return request<{ hotel_id: string; room_id: string; image_id: string }>(
+    `/partners/hotels/${encodeURIComponent(hotelId)}/rooms/${encodeURIComponent(roomId)}/images/${encodeURIComponent(imageId)}`,
+    {
+      method: 'PATCH',
+      body,
+      token,
+    },
+  );
+}

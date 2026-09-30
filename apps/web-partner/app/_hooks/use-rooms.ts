@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePrimaryHotel } from "./use-primary-hotel";
 import { pageItems, toRoom } from "../_lib/api/adapters";
 import { partners } from "../_lib/api";
 import { useAuthStore } from "../_stores/auth-store";
@@ -119,6 +120,57 @@ export function useBulkCreateRooms() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+    },
+  });
+}
+
+export function useAddRoomPhoto() {
+  const qc = useQueryClient();
+  const { data: hotel } = usePrimaryHotel();
+  const hotelId = hotel?.id;
+  const token = useAuthStore((s) => s.tokens?.accessToken);
+
+  return useMutation({
+    mutationFn: async ({ roomId, fileId }: { roomId: string; fileId: string }) => {
+      if (!hotelId) throw new Error('Hotel ID not found');
+      return partners.addRoomImage(hotelId, roomId, { file_id: fileId }, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms', hotelId] });
+    },
+  });
+}
+
+export function useDeleteRoomPhoto() {
+  const qc = useQueryClient();
+  const { data: hotel } = usePrimaryHotel();
+  const hotelId = hotel?.id;
+  const token = useAuthStore((s) => s.tokens?.accessToken);
+
+  return useMutation({
+    mutationFn: async ({ roomId, imageId }: { roomId: string; imageId: string }) => {
+      if (!hotelId) throw new Error('Hotel ID not found');
+      return partners.deleteRoomImage(hotelId, roomId, imageId, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms', hotelId] });
+    },
+  });
+}
+
+export function useUpdateRoomPhoto() {
+  const qc = useQueryClient();
+  const { data: hotel } = usePrimaryHotel();
+  const hotelId = hotel?.id;
+  const token = useAuthStore((s) => s.tokens?.accessToken);
+
+  return useMutation({
+    mutationFn: async ({ roomId, imageId, values }: { roomId: string; imageId: string; values: Record<string, unknown> }) => {
+      if (!hotelId) throw new Error('Hotel ID not found');
+      return partners.updateRoomImage(hotelId, roomId, imageId, values, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms', hotelId] });
     },
   });
 }

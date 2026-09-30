@@ -256,6 +256,37 @@ export class PartnersController {
     return this.partnersService.deleteRoom(actor, id, roomId);
   }
 
+  @Post('hotels/:id/rooms/:roomId/images')
+  addRoomImage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomId') roomId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.addRoomImage(actor, id, roomId, body);
+  }
+
+  @Delete('hotels/:id/rooms/:roomId/images/:imageId')
+  deleteRoomImage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomId') roomId: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.partnersService.deleteRoomImage(actor, id, roomId, imageId);
+  }
+
+  @Patch('hotels/:id/rooms/:roomId/images/:imageId')
+  updateRoomImage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomId') roomId: string,
+    @Param('imageId') imageId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateRoomImage(actor, id, roomId, imageId, body);
+  }
+
   @Get('hotels/:id/beds')
   beds(
     @CurrentActor() actor: RequestActor | undefined,

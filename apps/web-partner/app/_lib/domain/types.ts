@@ -1,4 +1,5 @@
 import type { BookingStatus } from "@safaar/types";
+import { ListingPhoto } from "./listing";
 
 /**
  * Mehmonxona staff paneli uchun domain turlari.
@@ -55,6 +56,7 @@ export interface Room {
   roomTypeName: string;
   /** Turistlarga sotuvda ko'rinadimi. */
   isListed: boolean;
+  photos: ListingPhoto[];
   /** Agar xona alohida narxda e'lon qilinsa. */
   nightlyPrice?: number;
   status: RoomStatus;
@@ -75,6 +77,7 @@ export interface Bed {
   label: string;
   status: RoomStatus;
   isListed: boolean;
+  photos: ListingPhoto[];
   /** Ixtiyoriy — yo'q bo'lsa Room/RoomType narxi ishlatiladi. */
   nightlyPrice?: number;
   occupant?: {

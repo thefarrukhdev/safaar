@@ -24,6 +24,7 @@ import { roomStatusLabel } from "../../../../_components/domain/room-status-badg
 import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "../../../../_lib/utils/partner-labels";
 import { partners } from "../../../../_lib/api";
 import { getPrimaryHotel } from "../../../../_hooks/use-primary-hotel";
+import { RoomPhotosEditor } from "../_components/room-photos-editor";
 
 const schema = z.object({
   number: z.string().min(1, "Raqam/nomini kiriting"),
@@ -268,6 +269,10 @@ export function RoomDialog({ open, onClose, editing }: Props) {
             </span>
           </label>
         </div>
+
+        {editing && (
+          <RoomPhotosEditor room={editing} />
+        )}
 
         <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
           {editing ? (

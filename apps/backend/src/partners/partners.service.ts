@@ -1218,10 +1218,220 @@ export class PartnersService {
   // Rooms
   // ---------------------------------------------------------------------------
 
+
+  async addRoomImage(
+    actor: RequestActor | undefined,
+    id: string,
+    roomId: string,
+    body: Record<string, unknown>,
+  ) {
+    await this.assertHotel(id, actor);
+    const uploadedFileId = this.optionalString(body.file_id ?? body.fileId);
+
+    if (uploadedFileId) {
+      if (!actor?.id) {
+        throw new ForbiddenException({
+          code: 'IMAGE_OWNER_REQUIRED',
+          message: 'Rasm egasi aniqlanmadi',
+        });
+      }
+
+      const [uploaded] = await this.pg.query<{
+        id: string;
+        url: string | null;
+      }>(
+        `SELECT id::text, url
+         FROM media_files
+         WHERE id = $1::uuid
+           AND owner_id = $2::uuid
+           AND deleted_at IS NULL`,
+        [uploadedFileId, actor.id],
+      );
+      if (!uploaded?.url) {
+        throw new BadRequestException({
+          code: 'IMAGE_UPLOAD_NOT_FOUND',
+          message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
+        });
+      }
+
+      const [order] = await this.pg.query<{
+        next_order: number;
+        image_count: number;
+      }>(
+        `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
+                count(*)::int as image_count
+         FROM media_files
+         WHERE owner_type = 'room' AND owner_id = $1::uuid AND deleted_at IS NULL`,
+        [roomId],
+      );
+
+      await this.pg.query(
+        `UPDATE media_files
+         SET owner_type = 'room', owner_id = $1::uuid, bucket = 'image',
+             visibility = 'public',
+             caption = nullif($3, ''),
+             category = nullif($4, ''),
+             sort_order = $5,
+             is_cover = $6
+         WHERE id = $2::uuid AND deleted_at IS NULL`,
+        [
+          roomId,
+          uploaded.id,
+          String(body.caption ?? ''),
+          String(body.category ?? ''),
+          order?.next_order ?? 0,
+          (order?.image_count ?? 0) === 0,
+        ],
+      );
+      await this.touchHotel(id, new Date().toISOString());
+      this.notifyListingChanged(
+        { id, partner_organization_id: actor.organizationId },
+        actor,
+        'updated',
+        ['rooms'],
+      );
+      return { hotel_id: id, room_id: roomId, image_id: uploaded.id, image_url: uploaded.url };
+    }
+
+    throw new BadRequestException({
+      code: 'IMAGE_UPLOAD_REQUIRED',
+      message: 'Rasmni avval serverga yuklash kerak',
+    });
+  }
+
+  async deleteRoomImage(
+    actor: RequestActor | undefined,
+    id: string,
+    roomId: string,
+    imageId: string,
+  ) {
+    await this.assertHotel(id, actor);
+    const now = new Date().toISOString();
+    const result = await this.pg.query<{ id: string }>(
+      `UPDATE media_files
+       SET deleted_at = $1
+       WHERE owner_type = 'room'
+         AND owner_id = $2::uuid
+         AND deleted_at IS NULL
+         AND (id::text = $3 OR url = $3)
+       RETURNING id::text`,
+      [now, roomId, imageId],
+    );
+    await this.touchHotel(id, now);
+    this.notifyListingChanged(
+      { id, partner_organization_id: actor?.organizationId },
+      actor,
+      'updated',
+      ['rooms'],
+    );
+    return {
+      hotel_id: id,
+      room_id: roomId,
+      image_id: result[0]?.id ?? imageId,
+      deleted: result.length > 0,
+    };
+  }
+
+  async updateRoomImage(
+    actor: RequestActor | undefined,
+    id: string,
+    roomId: string,
+    imageId: string,
+    body: Record<string, unknown>,
+  ) {
+    await this.assertHotel(id, actor);
+    const now = new Date().toISOString();
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.caption !== undefined) {
+      sets.push(`caption = nullif($${idx++}, '')`);
+      params.push(String(body.caption));
+    }
+    if (body.category !== undefined) {
+      sets.push(`category = nullif($${idx++}, '')`);
+      params.push(String(body.category));
+    }
+    if (body.sortOrder !== undefined || body.sort_order !== undefined) {
+      sets.push(`sort_order = $${idx++}`);
+      params.push(Number(body.sortOrder ?? body.sort_order));
+    }
+    if (body.isCover !== undefined || body.is_cover !== undefined) {
+      const isCover = Boolean(body.isCover ?? body.is_cover);
+      if (isCover) {
+        await this.pg.query(
+          `UPDATE media_files
+           SET is_cover = false
+           WHERE owner_type = 'room'
+             AND owner_id = $1::uuid
+             AND deleted_at IS NULL`,
+          [roomId],
+        );
+      }
+      sets.push(`is_cover = $${idx++}`);
+      params.push(isCover);
+    }
+
+    if (sets.length === 0) {
+      const [image] = await this.pg.query(
+        `SELECT id::text, owner_id::text, url, caption, category, sort_order, is_cover
+         FROM media_files
+         WHERE owner_type = 'room'
+           AND owner_id = $1::uuid
+           AND id = $2::uuid
+           AND deleted_at IS NULL`,
+        [roomId, imageId],
+      );
+      if (!image) {
+        throw new NotFoundException('Rasm topilmadi');
+      }
+      return { hotel_id: id, room_id: roomId, ...image };
+    }
+
+    sets.push(`updated_at = $${idx++}`);
+    params.push(now);
+    params.push(roomId, imageId);
+
+    const result = await this.pg.query(
+      `UPDATE media_files
+       SET ${sets.join(', ')}
+       WHERE owner_type = 'room'
+         AND owner_id = $${idx}::uuid
+         AND id = $${idx + 1}::uuid
+         AND deleted_at IS NULL
+       RETURNING id::text, owner_id::text, url, caption, category, sort_order, is_cover`,
+      params,
+    );
+
+    if (result.length === 0) {
+      throw new NotFoundException('Rasm topilmadi');
+    }
+
+    await this.touchHotel(id, now);
+    this.notifyListingChanged(
+      { id, partner_organization_id: actor?.organizationId },
+      actor,
+      'updated',
+      ['rooms'],
+    );
+    return { hotel_id: id, room_id: roomId, ...result[0] };
+  }
+
   async rooms(actor: RequestActor | undefined, id: string) {
     await this.assertHotel(id, actor);
     return this.pg.query(
-      `SELECT * FROM hotel_rooms WHERE hotel_id = $1 ORDER BY code ASC`,
+      `SELECT r.*,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'id', m.id, 'url', m.url, 'caption', m.caption, 'category', m.category, 'sort_order', m.sort_order, 'is_cover', m.is_cover
+                ))
+                 FROM media_files m
+                 WHERE m.owner_type = 'room' AND m.owner_id = r.id AND m.deleted_at IS NULL),
+                '[]'::json
+              ) as media
+       FROM hotel_rooms r
+       WHERE r.hotel_id = $1 ORDER BY r.code ASC`,
       [id],
     );
   }

@@ -52,6 +52,7 @@ export interface BackendHotel {
 }
 
 export interface BackendRoom {
+  media?: unknown[];
   id: string;
   room_type_id?: string;
   code?: string;
@@ -258,6 +259,7 @@ export function toRoom(room: BackendRoom): Room {
     status,
     roomTypeName: localized(room.name),
     isListed: room.is_listed ?? room.status === 'active',
+    photos: Array.isArray(room.media) ? room.media : [],
     nightlyPrice: room.base_price ?? undefined,
     _rawStatus: room.status,
   } as Room & { _rawStatus?: string };

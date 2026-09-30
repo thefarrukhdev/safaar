@@ -36,6 +36,8 @@
   "search": {
     "passengers": "Пассажиры",
     "passengerUnit": "чел.",
+    "from": "Откуда",
+    "selectDate": "Выберите дату",
     "searchButton": "Поиск",
     "safeTravelTitle": "Безопасная поездка",
     "safeTravelDesc": "Все транспортные средства прошли техосмотр",

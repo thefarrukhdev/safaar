@@ -152,7 +152,7 @@ export function TransportView({
                 { value: "all", label: dict.allCities },
                 ...cities.map((city) => ({ value: city, label: city })),
               ]}
-              label="Qayerdan"
+              label={dict.search.from}
               buttonClassName="border-transparent bg-transparent  p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
               menuClassName="w-56 mt-4"
             />
@@ -165,7 +165,8 @@ export function TransportView({
             <div className="flex-1">
               <DatePicker
                 locale={locale}
-                label="Olish sanasi"
+                label={dict.checkIn}
+                placeholder={dict.search.selectDate}
                 value={checkIn}
                 onChange={(val) => {
                   setCheckIn(val);
@@ -180,7 +181,8 @@ export function TransportView({
             <div className="flex-1">
               <DatePicker
                 locale={locale}
-                label="Qaytarish sanasi"
+                label={dict.checkOut}
+                placeholder={dict.search.selectDate}
                 value={checkOut}
                 onChange={setCheckOut}
                 min={checkIn || new Date().toISOString().slice(0, 10)}
@@ -202,7 +204,7 @@ export function TransportView({
                 { value: "with", label: dict.driverIncluded },
                 { value: "without", label: dict.withoutDriver },
               ]}
-              label="Haydovchi"
+              label={dict.driver}
               buttonClassName="border-transparent bg-transparent  p-0 h-auto hover:bg-transparent focus-visible:ring-0 text-sm md:text-base px-0"
               menuClassName="w-56 mt-4"
             />
@@ -212,7 +214,7 @@ export function TransportView({
           <div className="mt-2 md:mt-0 p-2 md:pl-2 md:pr-0">
             <div className="w-full md:w-14 h-12 md:h-14 bg-primary-600 text-white rounded-2xl md:rounded-full flex items-center justify-center">
               <Search className="w-5 h-5 md:w-6 md:h-6" />
-              <span className="md:hidden ml-2 font-bold text-sm">Izlash</span>
+              <span className="md:hidden ml-2 font-bold text-sm">{dict.search.searchButton}</span>
             </div>
           </div>
         </div>

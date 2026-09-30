@@ -23,6 +23,7 @@
     "format": "pnpm -r --if-present run format"
   },
   "devDependencies": {
-    "turbo": "^2.10.12"
+    "turbo": "^2.10.12",
+    "vercel": "^61.1.0"
   }
 }

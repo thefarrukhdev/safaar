@@ -36,6 +36,8 @@
   "search": {
     "passengers": "Passengers",
     "passengerUnit": "passengers",
+    "from": "From",
+    "selectDate": "Select date",
     "searchButton": "Search",
     "safeTravelTitle": "Safe Travel",
     "safeTravelDesc": "All vehicles have passed technical inspection",

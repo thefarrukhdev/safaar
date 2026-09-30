@@ -36,6 +36,8 @@
   "search": {
     "passengers": "Yo'lovchilar",
     "passengerUnit": "kishi",
+    "from": "Qayerdan",
+    "selectDate": "Sana tanlang",
     "searchButton": "Qidirish",
     "safeTravelTitle": "Xavfsiz sayohat",
     "safeTravelDesc": "Barcha transport vositalari texnik ko'rikdan o'tgan",

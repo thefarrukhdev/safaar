@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -24,13 +24,18 @@ export function Lightbox({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   useEffect(() => {
-    setMounted(true);
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      setCurrentIndex(initialIndex);
+      const t = setTimeout(() => setCurrentIndex(initialIndex), 0);
+      return () => {
+        document.body.style.overflow = "unset";
+        clearTimeout(t);
+      }
     } else {
       document.body.style.overflow = "unset";
     }
@@ -38,6 +43,18 @@ export function Lightbox({
       document.body.style.overflow = "unset";
     };
   }, [isOpen, initialIndex]);
+
+  const showNext = useCallback(() => {
+    if (currentIndex < images.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    }
+  }, [currentIndex, images.length]);
+
+  const showPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+    }
+  }, [currentIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,19 +65,7 @@ export function Lightbox({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, currentIndex]);
-
-  const showNext = () => {
-    if (currentIndex < images.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
-
-  const showPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
+  }, [isOpen, showNext, showPrev, onClose]);
 
   if (!mounted || !isOpen || images.length === 0) return null;
 

@@ -14,7 +14,18 @@ export async function GET(req: NextRequest) {
 
   const params = new URLSearchParams();
   for (const [key, value] of searchParams.entries()) {
-    if (key !== "locale") params.set(key, value);
+    if (key !== "locale" && key !== "neLat" && key !== "neLng" && key !== "swLat" && key !== "swLng") {
+      params.set(key, value);
+    }
+  }
+
+  const neLat = searchParams.get("neLat");
+  const neLng = searchParams.get("neLng");
+  const swLat = searchParams.get("swLat");
+  const swLng = searchParams.get("swLng");
+
+  if (neLat && neLng && swLat && swLng) {
+    params.set("bounds", `${swLat},${swLng},${neLat},${neLng}`);
   }
 
   const locale = searchParams.get("locale") ?? "uz";

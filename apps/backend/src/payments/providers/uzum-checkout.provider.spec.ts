@@ -409,7 +409,10 @@ describe('UzumCheckoutProvider.register — real wire-format (mocked fetch, hech
   it('viewType berilsa — aynan shu qiymat yuboriladi (masalan IFRAME)', async () => {
     const fetchSpy = mockFetchOnce({
       errorCode: 0,
-      result: { orderId: 'order-iframe', paymentRedirectUrl: 'https://checkout.example/iframe' },
+      result: {
+        orderId: 'order-iframe',
+        paymentRedirectUrl: 'https://checkout.example/iframe',
+      },
     });
     const p = new UzumCheckoutProvider(mkConfig(FULL_UZUM_CONFIG));
     await p.register({ ...registerInput, viewType: 'IFRAME' });

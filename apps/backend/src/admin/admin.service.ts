@@ -34,7 +34,6 @@ import {
   UzumCheckoutProvider,
 } from '../payments/providers/uzum-checkout.provider';
 import {
-  livePromotionPredicate,
   PROMOTION_RETURNING_SQL,
   toPromotionApiShape,
   type PromotionRow,
@@ -4577,7 +4576,9 @@ export class AdminService {
   }
 
   async promoCreate(body: Record<string, unknown>) {
-    const code = String(body.code ?? 'safaar10').trim().toUpperCase();
+    const code = String(body.code ?? 'safaar10')
+      .trim()
+      .toUpperCase();
     const validUntilRaw = body.validUntil ?? body.valid_until;
     const validUntilDate = validUntilRaw
       ? new Date(String(validUntilRaw))
@@ -5871,6 +5872,9 @@ export class AdminService {
       { status: decision },
     );
     this.invalidateAdminCache();
+    if (decision === 'published') {
+      void this.cache.del('cms:promotions:active');
+    }
     return toPromotionApiShape(promotion);
   }
 
@@ -5909,33 +5913,13 @@ export class AdminService {
    * summalar. Ya'ni to'lov/bron tarixi promotion qatoriga BOG'LIQ EMAS —
    * qator o'chsa ham hisob-kitob o'zgarmaydi.
    *
-   * STATUS DARVOZASI: AYNAN HOZIR kuchda bo'lgan (`published` + bugungi
-   * sana `[start_date, end_date]` oralig'ida) chegirmani o'chirib
-   * BO'LMAYDI — bunday chegirma shu daqiqada ommaviy narxga ta'sir
-   * qilmoqda (`/hotels/:id`, `/bookings/quote`, `/cms/offers`), ya'ni uni
-   * jimgina yo'q qilish mijoz ko'rgan narxni ogohlantirishsiz oshirib
-   * yuboradi. `pending_review`, `rejected`, muddati tugagan yoki hali
-   * boshlanmagan `published` chegirmalar — o'chirilishi mumkin (ular hozir
-   * hech qanday ommaviy narxga ta'sir qilmaydi). Shart
-   * `livePromotionPredicate()` — narxlash yo'llari ishlatadigan AYNAN bir
-   * xil predikat, shuning uchun "o'chirilishi mumkin" va "ommaviy narxga
-   * ta'sir qilmaydi" tushunchalari bir-biridan ajralib keta olmaydi.
+   * STATUS DARVOZASI: Admin super foydalanuvchi sifatida barcha holatlardagi
+   * (pending_review, rejected, published) chegirma arizalarini o'chira oladi.
+   * Agar ko'rsatilgan id bo'yicha chegirma topilmasa, 404 PROMOTION_NOT_FOUND
+   * qaytariladi.
    *
-   * DIQQAT (mavjud API cheklovi, bu yerda o'zgartirilmadi): `published`
-   * chegirmani `reject` qilib bo'lmaydi — `decidePromotion()` faqat
-   * `pending_review`dan o'tishga ruxsat beradi, aks holda 409
-   * `PROMOTION_ALREADY_DECIDED`. Ya'ni hozir kuchda bo'lgan chegirmani
-   * muddatidan oldin to'xtatish yo'li UMUMAN yo'q, va shu sababli u
-   * `end_date` o'tmaguncha o'chirilmaydi. Agar mahsulot "kuchda bo'lgan
-   * chegirmani darhol to'xtatish" imkonini talab qilsa — bu ALOHIDA qaror
-   * (masalan `unpublish`/`end_date = CURRENT_DATE - 1` oqimi), DELETE
-   * semantikasiga jimgina qo'shib qo'yiladigan narsa emas.
-   *
-   * Bitta shartli `DELETE ... WHERE ... RETURNING` — alohida SELECT-keyin-
-   * DELETE emas, ya'ni poyga holati (race) xavfsiz va takroriy chaqiriq
-   * deterministik (ikkinchi marta 404). Fallback SELECT faqat 404/409 ni
-   * ajratish uchun, 0 qator qaytganda ishlaydi — `decidePromotion()` va
-   * `withdrawalDecision()`dagi bir xil naqsh.
+   * Bitta `DELETE ... WHERE id = $1::uuid RETURNING` — poyga holati (race)
+   * xavfsiz va takroriy chaqiriq deterministik (ikkinchi marta 404).
    */
   async deletePromotion(actor: RequestActor | undefined, id: string) {
     const [deleted] = await this.postgres.query<{
@@ -5944,26 +5928,14 @@ export class AdminService {
     }>(
       `DELETE FROM promotions
        WHERE id = $1::uuid
-         AND NOT (${livePromotionPredicate()})
        RETURNING id::text, status::text`,
       [id],
     );
 
     if (!deleted) {
-      const [existing] = await this.postgres.query<{ status: string }>(
-        `SELECT status::text FROM promotions WHERE id = $1::uuid`,
-        [id],
-      );
-      if (!existing) {
-        throw new NotFoundException({
-          code: 'PROMOTION_NOT_FOUND',
-          message: 'Chegirma topilmadi',
-        });
-      }
-      throw new ConflictException({
-        code: 'PROMOTION_INVALID_STATUS',
-        message:
-          "Hozir kuchda bo'lgan chegirmani (published, sanasi davom etayotgan) o'chirib bo'lmaydi — u ayni damda ommaviy narxga ta'sir qilmoqda. Muddati (end_date) tugagandan keyin o'chirish mumkin.",
+      throw new NotFoundException({
+        code: 'PROMOTION_NOT_FOUND',
+        message: 'Chegirma topilmadi',
       });
     }
 
@@ -5976,6 +5948,7 @@ export class AdminService {
       null,
     );
     this.invalidateAdminCache();
+    void this.cache.del('cms:promotions:active');
     return { id, deleted: true };
   }
 }

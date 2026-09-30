@@ -47,8 +47,7 @@ const CARD_SCHEMES = Object.keys(CARD_SCHEME_FEE_RATES) as CardScheme[];
 
 export function isCardScheme(value: unknown): value is CardScheme {
   return (
-    typeof value === 'string' &&
-    (CARD_SCHEMES as string[]).includes(value)
+    typeof value === 'string' && (CARD_SCHEMES as string[]).includes(value)
   );
 }
 

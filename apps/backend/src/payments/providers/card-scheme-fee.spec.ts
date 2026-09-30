@@ -26,7 +26,7 @@ describe('isCardScheme', () => {
     expect(isCardScheme('mastercard')).toBe(true);
   });
 
-  it("boshqa provayder qiymatlarini (click/payme/cash/uzum/uzum_checkout) rad etadi", () => {
+  it('boshqa provayder qiymatlarini (click/payme/cash/uzum/uzum_checkout) rad etadi', () => {
     expect(isCardScheme('click')).toBe(false);
     expect(isCardScheme('payme')).toBe(false);
     expect(isCardScheme('cash')).toBe(false);

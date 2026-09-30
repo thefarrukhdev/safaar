@@ -3556,7 +3556,10 @@ describe('PartnersService transport/vehicle booking contract (regression: vehicl
   it('booking: vehicle booking with hotel_id = null is retrieved successfully via LEFT JOIN vehicles', async () => {
     pg.query.mockResolvedValueOnce([vehicleBookingDbRow]);
 
-    const result = await service.booking(actor, 'f0bc79ba-84df-4971-8858-97530dbcdded');
+    const result = await service.booking(
+      actor,
+      'f0bc79ba-84df-4971-8858-97530dbcdded',
+    );
     expect(result).toBeDefined();
     expect(result['id']).toBe('f0bc79ba-84df-4971-8858-97530dbcdded');
     expect(result['vehicle_name']).toBe('Laziz');
@@ -3564,7 +3567,9 @@ describe('PartnersService transport/vehicle booking contract (regression: vehicl
     expect(result['hotel_id']).toBeNull();
 
     const [sql, params] = queryCallsOf(pg)[0];
-    expect(String(sql)).toContain('LEFT JOIN vehicles v2 ON v2.id = b.vehicle_id');
+    expect(String(sql)).toContain(
+      'LEFT JOIN vehicles v2 ON v2.id = b.vehicle_id',
+    );
     expect(String(sql)).not.toContain('hotel_id IS NOT NULL');
     expect(params).toEqual(['f0bc79ba-84df-4971-8858-97530dbcdded']);
   });

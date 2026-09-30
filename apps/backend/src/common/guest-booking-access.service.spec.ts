@@ -7,7 +7,9 @@ describe('GuestBookingAccessService', () => {
 
   beforeEach(() => {
     cache = { get: jest.fn(), set: jest.fn() };
-    service = new GuestBookingAccessService(cache as unknown as AppCacheService);
+    service = new GuestBookingAccessService(
+      cache as unknown as AppCacheService,
+    );
   });
 
   it('issue() — 30 kunlik TTL bilan, faqat { bookingId } saqlaydi (xom token EMAS)', async () => {

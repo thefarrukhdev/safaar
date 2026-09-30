@@ -1,7 +1,6 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { authSessionStore } from '../auth/session-store';
-import { livePromotionPredicate } from '../common/promotion';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -2384,6 +2383,7 @@ describe('AdminService frontend action endpoints', () => {
       );
       expect(auditCall).toBeDefined();
       expect(auditCall![1]?.[3]).toBe('promotion.approve');
+      expect(cacheMock.del).toHaveBeenCalledWith('cms:promotions:active');
     });
 
     it('rejectPromotion transitions pending_review -> rejected', async () => {
@@ -2439,7 +2439,7 @@ describe('AdminService frontend action endpoints', () => {
   describe('deletePromotion (DELETE /admin/promotions/:id — admin "Chegirma arizalari" delete button)', () => {
     const promotionId = '00000000-0000-0000-0000-0000000000f1';
 
-    it('hard-deletes a deletable promotion in one conditional statement (no SELECT-then-DELETE), audit-logs it and busts the admin cache', async () => {
+    it('hard-deletes a promotion in one statement, audit-logs it and busts the admin and cms caches', async () => {
       pgMock.query
         .mockResolvedValueOnce([{ id: promotionId, status: 'rejected' }]) // DELETE ... RETURNING
         .mockResolvedValueOnce([]); // audit_logs insert
@@ -2453,17 +2453,12 @@ describe('AdminService frontend action endpoints', () => {
       );
       expect(deleteCall).toBeDefined();
       expect(deleteCall![1]).toEqual([promotionId]);
-      // The status gate must be part of the same statement, and it must be
-      // the shared "currently live" predicate — not a re-spelled copy.
-      expect(String(deleteCall![0])).toContain(
-        `NOT (${livePromotionPredicate()})`,
-      );
-      // No pre-flight SELECT on the happy path.
-      expect(
-        pgMock.query.mock.calls.filter(([sql]) =>
-          String(sql).includes('SELECT status::text FROM promotions'),
-        ),
-      ).toHaveLength(0);
+      expect(String(deleteCall![0])).toContain('DELETE FROM promotions');
+      expect(String(deleteCall![0])).toContain('WHERE id = $1::uuid');
+      expect(String(deleteCall![0])).not.toContain("status = 'published'");
+      expect(String(deleteCall![0])).not.toContain('CURRENT_DATE');
+      expect(String(deleteCall![0])).not.toContain('start_date');
+      expect(String(deleteCall![0])).not.toContain('end_date');
 
       const auditCall = pgMock.query.mock.calls.find(([sql]) =>
         String(sql).includes('insert into audit_logs'),
@@ -2472,26 +2467,61 @@ describe('AdminService frontend action endpoints', () => {
       expect(auditCall![1]?.[3]).toBe('promotion.delete');
       expect(auditCall![1]?.[4]).toBe('promotion');
       expect(auditCall![1]?.[5]).toBe(promotionId);
-      expect(cacheMock.delByPattern).toHaveBeenCalledWith('admin:*');
-    });
-
-    it('refuses to delete a promotion that is published AND inside its date window (it is priced into live public offers right now) with 409 PROMOTION_INVALID_STATUS', async () => {
-      pgMock.query
-        .mockResolvedValueOnce([]) // DELETE blocked by the live-promotion gate
-        .mockResolvedValueOnce([{ status: 'published' }]); // fallback lookup
-
-      await expect(
-        service.deletePromotion(actor, promotionId),
-      ).rejects.toMatchObject({
-        status: 409,
-        response: { code: 'PROMOTION_INVALID_STATUS' },
+      expect(JSON.parse(auditCall![1]?.[6] as string)).toEqual({
+        status: 'rejected',
       });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('admin:*');
+      expect(cacheMock.del).toHaveBeenCalledWith('cms:promotions:active');
     });
 
-    it('deletes a non-existent promotion with 404 PROMOTION_NOT_FOUND, matching approve/reject', async () => {
+    it('deletes a published promotion successfully (admin can delete promotions in any status without 409 conflict)', async () => {
       pgMock.query
-        .mockResolvedValueOnce([]) // DELETE -> 0 rows
-        .mockResolvedValueOnce([]); // fallback lookup -> not found
+        .mockResolvedValueOnce([{ id: promotionId, status: 'published' }]) // DELETE ... RETURNING
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.deletePromotion(actor, promotionId);
+
+      expect(result).toEqual({ id: promotionId, deleted: true });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![1]?.[3]).toBe('promotion.delete');
+      expect(auditCall![1]?.[4]).toBe('promotion');
+      expect(auditCall![1]?.[5]).toBe(promotionId);
+      expect(JSON.parse(auditCall![1]?.[6] as string)).toEqual({
+        status: 'published',
+      });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('admin:*');
+      expect(cacheMock.del).toHaveBeenCalledWith('cms:promotions:active');
+    });
+
+    it('deletes a pending_review promotion successfully', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([{ id: promotionId, status: 'pending_review' }]) // DELETE ... RETURNING
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.deletePromotion(actor, promotionId);
+
+      expect(result).toEqual({ id: promotionId, deleted: true });
+
+      const auditCall = pgMock.query.mock.calls.find(([sql]) =>
+        String(sql).includes('insert into audit_logs'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![1]?.[3]).toBe('promotion.delete');
+      expect(auditCall![1]?.[4]).toBe('promotion');
+      expect(auditCall![1]?.[5]).toBe(promotionId);
+      expect(JSON.parse(auditCall![1]?.[6] as string)).toEqual({
+        status: 'pending_review',
+      });
+      expect(cacheMock.delByPattern).toHaveBeenCalledWith('admin:*');
+      expect(cacheMock.del).toHaveBeenCalledWith('cms:promotions:active');
+    });
+
+    it('deletes a non-existent promotion with 404 PROMOTION_NOT_FOUND', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // DELETE -> 0 rows
 
       await expect(
         service.deletePromotion(actor, promotionId),
@@ -2502,7 +2532,7 @@ describe('AdminService frontend action endpoints', () => {
     });
 
     it('does not audit-log or invalidate cache when nothing was deleted', async () => {
-      pgMock.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      pgMock.query.mockResolvedValueOnce([]);
 
       await expect(
         service.deletePromotion(actor, promotionId),
@@ -2514,6 +2544,7 @@ describe('AdminService frontend action endpoints', () => {
         ),
       ).toBe(false);
       expect(cacheMock.delByPattern).not.toHaveBeenCalled();
+      expect(cacheMock.del).not.toHaveBeenCalled();
     });
   });
 });

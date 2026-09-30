@@ -195,7 +195,9 @@ describe('PaymentsService.createPayment — provider almashtirish (regression: e
       fee_amount: 17_500,
       currency: 'UZS',
     };
-    pg.query.mockResolvedValueOnce([bookingRow]).mockResolvedValueOnce([liveVisaRow]);
+    pg.query
+      .mockResolvedValueOnce([bookingRow])
+      .mockResolvedValueOnce([liveVisaRow]);
 
     const result = await service.createPayment(owner, 'booking-1', {
       provider: 'mastercard',
@@ -231,7 +233,7 @@ describe('PaymentsService.createPayment — amount/fee tampering himoyasi', () =
       fee: 0,
       total: 1,
       fee_rate: 0,
-    } as Record<string, unknown>);
+    });
 
     expect(checkout.register).toHaveBeenCalledWith(
       expect.objectContaining({ amountSom: 507_500 }),

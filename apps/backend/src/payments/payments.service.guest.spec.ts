@@ -55,7 +55,9 @@ describe('PaymentsService — guest to‘lov (bookingga bog‘langan, unguessabl
     guestAccess.resolve.mockResolvedValue('booking-guest-1');
     pg.query
       .mockResolvedValueOnce([guestBooking])
-      .mockResolvedValueOnce([{ id: 'payment-1', booking_id: 'booking-guest-1', provider: 'humo' }]);
+      .mockResolvedValueOnce([
+        { id: 'payment-1', booking_id: 'booking-guest-1', provider: 'humo' },
+      ]);
 
     const result = await service.payment(
       undefined,
@@ -92,7 +94,11 @@ describe('PaymentsService — guest to‘lov (bookingga bog‘langan, unguessabl
     pg.query.mockResolvedValueOnce([guestBooking]);
 
     await expect(
-      service.payment(undefined, 'booking-guest-1', 'token-for-another-booking'),
+      service.payment(
+        undefined,
+        'booking-guest-1',
+        'token-for-another-booking',
+      ),
     ).rejects.toMatchObject({ status: 401 });
   });
 
@@ -167,7 +173,9 @@ describe('PaymentsService — guest to‘lov (bookingga bog‘langan, unguessabl
     };
     pg.query
       .mockResolvedValueOnce([ownedBooking])
-      .mockResolvedValueOnce([{ id: 'payment-owned', booking_id: 'booking-owned-1' }]);
+      .mockResolvedValueOnce([
+        { id: 'payment-owned', booking_id: 'booking-owned-1' },
+      ]);
 
     const result = await service.payment(owner, 'booking-owned-1');
 

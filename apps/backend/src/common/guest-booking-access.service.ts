@@ -56,7 +56,11 @@ export class GuestBookingAccessService {
   /** Yangi bron uchun opaque guest-access tokenini yaratadi va saqlaydi. */
   async issue(bookingId: string): Promise<string> {
     const token = randomBytes(32).toString('base64url');
-    await this.cache.set(this.key(token), { bookingId }, this.ACCESS_TTL_SECONDS);
+    await this.cache.set(
+      this.key(token),
+      { bookingId },
+      this.ACCESS_TTL_SECONDS,
+    );
     return token;
   }
 

@@ -11,7 +11,7 @@ import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 
 import { promotions, type Promotion } from "../../../../_lib/api/endpoints/promotions";
-import { useRooms } from "../../../../_hooks/use-rooms";
+import { useRoomTypes } from "../../../../_hooks/use-room-types";
 import { useVehicles } from "../../../../_hooks/use-vehicles";
 import { useAuthStore } from "../../../../_stores/auth-store";
 import { hasBuses } from "../../../../_lib/utils/partner-labels";
@@ -41,7 +41,7 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const isBus = hasBuses(partnerType);
 
-  const { data: rooms = [] } = useRooms();
+  const { data: roomTypes = [] } = useRoomTypes();
   const { data: vehicles = [] } = useVehicles();
 
   const activeOptions = useMemo(() => {
@@ -50,11 +50,10 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
         .filter(v => v.status === "active")
         .map(v => ({ id: v.id, label: `${v.plateNumber} (${v.name})`, type: "vehicle" as const, price: v.pricePerDay || 0 }));
     } else {
-      return rooms
-        .filter(r => (r as any)._rawStatus === "active" && !r.number.startsWith("DELETED_"))
-        .map(r => ({ id: r.id, label: `Xona: ${r.number}`, type: "room" as const, price: r.nightlyPrice || 0 }));
+      return roomTypes
+        .map(rt => ({ id: rt.id, label: `Xona turi: ${rt.name}`, type: "roomType" as const, price: rt.basePrice || 0 }));
     }
-  }, [rooms, vehicles, isBus]);
+  }, [roomTypes, vehicles, isBus]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),

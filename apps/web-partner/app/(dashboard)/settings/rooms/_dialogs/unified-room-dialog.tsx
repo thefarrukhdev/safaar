@@ -56,6 +56,26 @@ const BUS_AMENITY_OPTIONS = [
   { value: "gps", label: "GPS Navigatsiya" },
 ];
 
+const HOTEL_ROOM_TYPES = [
+  { value: "Standard", label: "Standard — standart xona" },
+  { value: "Superior", label: "Superior — yaxshilangan standart xona" },
+  { value: "Deluxe", label: "Deluxe — yuqori qulaylikdagi xona" },
+  { value: "Lux", label: "Lux — premium xona" },
+  { value: "Junior Suite", label: "Junior Suite — kichik suite" },
+  { value: "Suite", label: "Suite — alohida yotoq va mehmonxona" },
+  { value: "Family Room", label: "Family Room — oilaviy xona" },
+  { value: "Apartment", label: "Apartment — oshxona/yashash maydoniga ega xona" },
+];
+
+const BED_TYPES = [
+  { value: "Single Bed", label: "Single Bed" },
+  { value: "Twin Beds", label: "Twin Beds" },
+  { value: "Double Bed", label: "Double Bed" },
+  { value: "Queen Bed", label: "Queen Bed" },
+  { value: "King Bed", label: "King Bed" },
+  { value: "Bunk Bed", label: "Bunk Bed" },
+];
+
 // Mode: 'room' — xonalar bo'limidan, 'type-only' — listing/e'lon bo'limidan (faqat tur tahrirlash)
 export type UnifiedRoomDialogMode = "room" | "type-only";
 
@@ -299,12 +319,26 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
                 <Label htmlFor="ur-name">
                   {isBus ? "Avtomobil modeli" : restaurant ? "Stol nomi" : "Xona turi nomi"}
                 </Label>
-                <Input
-                  id="ur-name"
-                  placeholder={isBus ? "Sedan, Miniven..." : restaurant ? "2 kishilik, VIP..." : "Standart, Lyuks..."}
-                  aria-invalid={Boolean(err.name)}
-                  {...form.register("name")}
-                />
+                {isBus || restaurant ? (
+                  <Input
+                    id="ur-name"
+                    placeholder={isBus ? "Sedan, Miniven..." : "2 kishilik, VIP..."}
+                    aria-invalid={Boolean(err.name)}
+                    {...form.register("name")}
+                  />
+                ) : (
+                  <select
+                    id="ur-name"
+                    className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all duration-150 hover:border-[var(--border-strong)] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    aria-invalid={Boolean(err.name)}
+                    {...form.register("name")}
+                  >
+                    <option value="" disabled>Xona turini tanlang</option>
+                    {HOTEL_ROOM_TYPES.map(rt => (
+                      <option key={rt.value} value={rt.value}>{rt.label}</option>
+                    ))}
+                  </select>
+                )}
                 {err.name && <p className="text-xs text-red-600">{err.name.message}</p>}
               </div>
 
@@ -334,11 +368,24 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
                 <>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ur-bed">{isBus ? "Uzatma (KPP)" : "Karavot turi"}</Label>
-                    <Input
-                      id="ur-bed"
-                      placeholder={isBus ? "Avtomat" : "1 king bed"}
-                      {...form.register("bedType")}
-                    />
+                    {isBus ? (
+                      <Input
+                        id="ur-bed"
+                        placeholder="Avtomat"
+                        {...form.register("bedType")}
+                      />
+                    ) : (
+                      <select
+                        id="ur-bed"
+                        className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all duration-150 hover:border-[var(--border-strong)] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                        {...form.register("bedType")}
+                      >
+                        <option value="">Tanlang (ixtiyoriy)</option>
+                        {BED_TYPES.map(bt => (
+                          <option key={bt.value} value={bt.value}>{bt.label}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ur-size">{isBus ? "Bagaj hajmi (L)" : "Maydon (m²)"}</Label>

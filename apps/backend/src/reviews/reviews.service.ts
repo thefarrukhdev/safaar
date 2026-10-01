@@ -496,18 +496,45 @@ export class ReviewsService {
     actor: RequestActor,
     review: Record<string, unknown>,
   ) {
-    const [booking] = await this.pg.query<{
-      partner_organization_id: string;
-    }>('SELECT partner_organization_id FROM bookings WHERE id = $1', [
-      String(review['booking_id'] ?? ''),
-    ]);
-    if (
-      booking &&
-      actor.actorType === 'partner' &&
-      booking.partner_organization_id === actor.organizationId
-    ) {
-      return;
+    if (review['booking_id']) {
+      const [booking] = await this.pg.query<{
+        partner_organization_id: string;
+      }>('SELECT partner_organization_id FROM bookings WHERE id = $1', [
+        String(review['booking_id']),
+      ]);
+      if (
+        booking &&
+        actor.actorType === 'partner' &&
+        booking.partner_organization_id === actor.organizationId
+      ) {
+        return;
+      }
+      throw new ForbiddenException({
+        code: 'REVIEW_REPLY_FORBIDDEN',
+        message: 'Bu sharh sizning tashkilotingizga tegishli emas',
+      });
     }
+
+    if (review['target_type'] === 'hotel') {
+      const rows = await this.pg.query<{ partner_organization_id: string }>(
+        'SELECT partner_organization_id FROM hotels WHERE id = $1',
+        [String(review['target_id'] ?? '')],
+      );
+      const hotel = rows?.[0];
+      if (hotel && hotel.partner_organization_id === actor.organizationId) {
+        return;
+      }
+    } else if (review['target_type'] === 'bus_company') {
+      const rows = await this.pg.query<{ partner_organization_id: string }>(
+        'SELECT partner_organization_id FROM bus_companies WHERE id = $1',
+        [String(review['target_id'] ?? '')],
+      );
+      const bus = rows?.[0];
+      if (bus && bus.partner_organization_id === actor.organizationId) {
+        return;
+      }
+    }
+
     throw new ForbiddenException({
       code: 'REVIEW_REPLY_FORBIDDEN',
       message: 'Bu sharh sizning tashkilotingizga tegishli emas',

@@ -623,6 +623,14 @@ describe('BookingsService.createHotel guest checkout', () => {
       },
     });
     expect(result.payment).toMatchObject({ amount: 400000 });
+
+    const roomQueryCall = pg.query.mock.calls.find(([sql]) =>
+      String(sql).includes('FROM hotel_rooms hr'),
+    );
+    expect(roomQueryCall).toBeDefined();
+    expect(String(roomQueryCall![0])).toContain(
+      '(p.entity_id = hr.id OR p.entity_id = hr.room_type_id)',
+    );
   });
 
   /**

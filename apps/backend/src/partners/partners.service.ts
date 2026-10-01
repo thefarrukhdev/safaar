@@ -1218,7 +1218,6 @@ export class PartnersService {
   // Rooms
   // ---------------------------------------------------------------------------
 
-
   async addRoomImage(
     actor: RequestActor | undefined,
     id: string,
@@ -1290,7 +1289,12 @@ export class PartnersService {
         'updated',
         ['rooms'],
       );
-      return { hotel_id: id, room_id: roomId, image_id: uploaded.id, image_url: uploaded.url };
+      return {
+        hotel_id: id,
+        room_id: roomId,
+        image_id: uploaded.id,
+        image_url: uploaded.url,
+      };
     }
 
     throw new BadRequestException({
@@ -5004,13 +5008,17 @@ export class PartnersService {
         ? await this.pg.query<{ id: string }>(
             `SELECT hr.id::text FROM hotel_rooms hr
              JOIN hotels h ON h.id = hr.hotel_id
-             WHERE hr.id = $1 AND h.partner_organization_id = $2`,
+             WHERE (hr.id::text = $1 OR hr.room_type_id::text = $1) AND h.partner_organization_id::text = $2
+             UNION
+             SELECT rt.id::text FROM room_types rt
+             JOIN hotels h ON h.partner_organization_id::text = $2
+             WHERE rt.id::text = $1 AND rt.code LIKE '%' || h.id::text || '%'`,
             [entityId, organizationId],
           )
         : await this.pg.query<{ id: string }>(
             `SELECT v.id::text FROM vehicles v
              JOIN bus_companies bc ON bc.id = v.company_id
-             WHERE v.id = $1 AND bc.partner_organization_id = $2`,
+             WHERE v.id::text = $1 AND bc.partner_organization_id::text = $2`,
             [entityId, organizationId],
           );
     if (!owned) {
@@ -5057,13 +5065,16 @@ export class PartnersService {
       'PROMOTION_ENTITY_TYPE_REQUIRED',
       'Obyekt turini tanlang',
     );
-    if (entityTypeRaw !== 'room' && entityTypeRaw !== 'vehicle') {
+    const entityType =
+      entityTypeRaw === 'roomType' || entityTypeRaw === 'room_type'
+        ? 'room'
+        : entityTypeRaw;
+    if (entityType !== 'room' && entityType !== 'vehicle') {
       throw new BadRequestException({
         code: 'PROMOTION_ENTITY_TYPE_INVALID',
         message: "entityType 'room' yoki 'vehicle' bo'lishi kerak",
       });
     }
-    const entityType = entityTypeRaw;
     const entityId = this.requiredString(
       body.entityId,
       'PROMOTION_ENTITY_ID_REQUIRED',
@@ -5156,6 +5167,207 @@ export class PartnersService {
       ],
     );
     return toPromotionApiShape(promotion);
+  }
+
+  /**
+   * `GET /partners/reviews` — hamkor tashkilotiga tegishli mehmonxona,
+   * avtomobil/avtobus yoki bronlar bo'yicha mijozlar qoldirgan barcha sharhlar.
+   */
+  async reviews(actor: RequestActor | undefined, query: QueryLike = {}) {
+    const organizationId = this.organizationId(actor);
+    const targetType = this.optionalString(
+      query['target_type'] ?? query['targetType'],
+    );
+    const targetId = this.optionalString(
+      query['target_id'] ?? query['targetId'],
+    );
+
+    const conditions: string[] = [
+      '(h.partner_organization_id::text = $1 OR bc.partner_organization_id::text = $1 OR b.partner_organization_id::text = $1)',
+    ];
+    const params: unknown[] = [organizationId];
+    let idx = 2;
+
+    if (targetType) {
+      conditions.push(`r.target_type = $${idx++}`);
+      params.push(targetType);
+    }
+    if (targetId) {
+      conditions.push(`r.target_id::text = $${idx++}`);
+      params.push(targetId);
+    }
+
+    const rows = await this.pg.query(
+      `SELECT r.id::text,
+              r.user_id::text,
+              r.booking_id::text,
+              r.target_type,
+              r.target_id::text,
+              r.rating::float8,
+              r.cleanliness::float8,
+              r.staff::float8,
+              r.location::float8,
+              r.value_for_money::float8,
+              r.photos,
+              r.body,
+              r.status::text,
+              r.reply_body,
+              r.reply_by::text,
+              r.replied_at,
+              r.created_at,
+              r.updated_at,
+              CASE
+                WHEN r.author_type = 'GUEST'
+                  THEN COALESCE(NULLIF(TRIM(COALESCE(r.guest_name, '')), ''), 'Mehmon')
+                ELSE COALESCE(
+                  NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+                  'Mijoz'
+                )
+              END AS author_name
+       FROM reviews r
+       LEFT JOIN users u ON u.id = r.user_id
+       LEFT JOIN hotels h ON r.target_type = 'hotel' AND h.id = r.target_id
+       LEFT JOIN bus_companies bc ON r.target_type = 'bus_company' AND bc.id = r.target_id
+       LEFT JOIN bookings b ON b.id = r.booking_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY r.created_at DESC`,
+      params,
+    );
+
+    return rows.map((r: Record<string, unknown>) => ({
+      id: String(r.id),
+      hotel_id: String(r.target_id),
+      hotelId: String(r.target_id),
+      target_id: String(r.target_id),
+      targetId: String(r.target_id),
+      target_type: r.target_type,
+      targetType: r.target_type,
+      booking_id: r.booking_id ? String(r.booking_id) : null,
+      bookingId: r.booking_id ? String(r.booking_id) : null,
+      verified: Boolean(r.booking_id),
+      user_id: r.user_id ? String(r.user_id) : '',
+      userId: r.user_id ? String(r.user_id) : '',
+      author_name: r.author_name,
+      authorName: r.author_name,
+      rating: Number(r.rating ?? 0),
+      cleanliness: r.cleanliness != null ? Number(r.cleanliness) : null,
+      staff: r.staff != null ? Number(r.staff) : null,
+      location: r.location != null ? Number(r.location) : null,
+      value_for_money:
+        r.value_for_money != null ? Number(r.value_for_money) : null,
+      photos: Array.isArray(r.photos) ? r.photos : [],
+      body: String(r.body ?? ''),
+      status: (r.status as 'pending' | 'published' | 'rejected') ?? 'pending',
+      reply_body: r.reply_body ? String(r.reply_body) : null,
+      replyBody: r.reply_body ? String(r.reply_body) : null,
+      reply_by: r.reply_by ? String(r.reply_by) : null,
+      replyBy: r.reply_by ? String(r.reply_by) : null,
+      replied_at: r.replied_at ? String(r.replied_at) : null,
+      repliedAt: r.replied_at ? String(r.replied_at) : null,
+      created_at: String(r.created_at),
+      createdAt: String(r.created_at),
+      updated_at: String(r.updated_at),
+      updatedAt: String(r.updated_at),
+    }));
+  }
+
+  /**
+   * `POST /partners/reviews/:id/reply` — hamkor o'z tashkilotiga tegishli
+   * sharhga javob yozadi.
+   */
+  async replyReview(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const currentActor = this.requireActor(actor);
+    const organizationId = this.organizationId(currentActor);
+
+    const [review] = await this.pg.query<{
+      id: string;
+      booking_id: string | null;
+      target_type: string;
+      target_id: string;
+      reply_body: string | null;
+    }>(
+      `SELECT r.id::text, r.booking_id::text, r.target_type, r.target_id::text, r.reply_body
+       FROM reviews r
+       LEFT JOIN hotels h ON r.target_type = 'hotel' AND h.id = r.target_id
+       LEFT JOIN bus_companies bc ON r.target_type = 'bus_company' AND bc.id = r.target_id
+       LEFT JOIN bookings b ON b.id = r.booking_id
+       WHERE r.id::text = $1
+         AND (h.partner_organization_id::text = $2 OR bc.partner_organization_id::text = $2 OR b.partner_organization_id::text = $2)
+       LIMIT 1`,
+      [id, organizationId],
+    );
+
+    if (!review) {
+      throw new NotFoundException({
+        code: 'REVIEW_NOT_FOUND',
+        message: 'Sharh topilmadi yoki sizning tashkilotingizga tegishli emas',
+      });
+    }
+
+    if (review.reply_body !== null && review.reply_body !== undefined) {
+      throw new ConflictException({
+        code: 'REVIEW_ALREADY_REPLIED',
+        message: 'Bu sharhga allaqachon javob berilgan',
+      });
+    }
+
+    const replyBody = String(body.reply ?? body.body ?? '').trim();
+    if (!replyBody) {
+      throw new BadRequestException({
+        code: 'REVIEW_REPLY_BODY_REQUIRED',
+        message: 'Javob matni bo‘sh bo‘lishi mumkin emas',
+      });
+    }
+
+    const repliedAt = new Date().toISOString();
+    const [updated] = await this.pg.query<{
+      id: string;
+      target_id: string;
+      user_id: string | null;
+      booking_id: string | null;
+      rating: number;
+      body: string;
+      status: string;
+      reply_body: string;
+      reply_by: string;
+      replied_at: string;
+      created_at: string;
+    }>(
+      `UPDATE reviews
+       SET reply_body = $1, reply_by = $2, replied_at = $3, updated_at = $3
+       WHERE id::text = $4
+       RETURNING id::text, target_id::text, user_id::text, booking_id::text, rating::float8, body, status::text, reply_body, reply_by::text, replied_at, created_at`,
+      [replyBody, currentActor.id, repliedAt, id],
+    );
+
+    return {
+      id: updated.id,
+      hotelId: updated.target_id,
+      hotel_id: updated.target_id,
+      targetId: updated.target_id,
+      target_id: updated.target_id,
+      bookingId: updated.booking_id ? String(updated.booking_id) : null,
+      booking_id: updated.booking_id ? String(updated.booking_id) : null,
+      verified: Boolean(updated.booking_id),
+      userId: updated.user_id ? String(updated.user_id) : '',
+      user_id: updated.user_id ? String(updated.user_id) : '',
+      rating: Number(updated.rating),
+      body: updated.body,
+      status: updated.status,
+      reply: updated.reply_body,
+      reply_body: updated.reply_body,
+      replyBody: updated.reply_body,
+      reply_by: updated.reply_by,
+      replyBy: updated.reply_by,
+      replied_at: updated.replied_at,
+      repliedAt: updated.replied_at,
+      created_at: updated.created_at,
+      createdAt: updated.created_at,
+    };
   }
 
   // ---------------------------------------------------------------------------

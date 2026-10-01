@@ -866,4 +866,50 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
     expect(rooms[0].base_price).toBe(200000);
     expect(rooms[0].effective_price).toBe(140000);
   });
+
+  it('attaches promotion targeted to room_type_id when room has no direct promotion', async () => {
+    const cache = { getOrSet: jest.fn() } as unknown as AppCacheService;
+    const pg = { query: jest.fn() } as unknown as jest.Mocked<PostgresService>;
+    const service = new HotelsService(cache, pg);
+
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-100',
+          code: 'STD-1',
+          base_occupancy: 2,
+          max_adults: 2,
+          max_children: 1,
+          total_inventory: 5,
+          base_price: 300000,
+          status: 'active',
+          room_type_name: { uz: 'Standart' },
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'promotion-type-1',
+          entity_id: 'type-100',
+          old_price_sum: 300000,
+          new_price_sum: 250000,
+          discount_percent: 17,
+          start_date: '2026-09-01',
+          end_date: '2026-12-31',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const rooms = await service.rooms('hotel-1');
+
+    expect(rooms[0].base_price).toBe(300000);
+    expect(rooms[0].effective_price).toBe(250000);
+    expect(rooms[0].promotion).toMatchObject({
+      old_price_sum: 300000,
+      new_price_sum: 250000,
+      discount_percent: 17,
+    });
+  });
 });

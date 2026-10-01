@@ -31,6 +31,8 @@ describe('corsOriginsFromEnv', () => {
       'https://a.example',
       'https://b.example',
       'https://c.example',
+      'https://partner.safaar.uz',
+      'https://safaar-partner-ten.vercel.app',
     ]);
   });
 
@@ -45,6 +47,8 @@ describe('corsOriginsFromEnv', () => {
       'https://web-user-rho.vercel.app',
       'https://www.safaar.uz',
       'https://safaar.uz',
+      'https://partner.safaar.uz',
+      'https://safaar-partner-ten.vercel.app',
     ]);
     // The exact origin values a real browser request from the custom domain
     // would send (no trailing slash) must be present verbatim.

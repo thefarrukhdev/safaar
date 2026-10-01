@@ -46,6 +46,26 @@ function booleanValue(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+interface ActivePromotionRow {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  name: string;
+  old_price_sum: number | string;
+  new_price_sum: number | string;
+  discount_percent: number | string;
+  end_date: string;
+  status: string;
+  room_base_price: number | string | null;
+  hotel_slug: string | null;
+  hotel_city_name: unknown;
+  hotel_image: string | null;
+  vehicle_price_per_day: number | string | null;
+  bus_company_id: string | null;
+  bus_company_name: string | null;
+  bus_image: string | null;
+}
+
 @Injectable()
 export class CmsService {
   constructor(
@@ -106,13 +126,13 @@ export class CmsService {
     const cmsOffers = await this.collection('offers');
 
     // Note: Cache this query as well to avoid DB hammering
-    let promos: any[] = [];
+    let promos: Array<Record<string, unknown>> = [];
     try {
       promos = await this.cache.getOrSet(
         'cms:promotions:active',
         300,
         async () => {
-          const rows = await this.postgres.query(`
+          const rows = await this.postgres.query<ActivePromotionRow>(`
           SELECT
             p.id, p.entity_type, p.entity_id, p.entity_name as name,
             p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
@@ -123,7 +143,13 @@ export class CmsService {
             bc.id as bus_company_id, bc.name as bus_company_name,
             (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.visibility = 'public' LIMIT 1) as bus_image
           FROM promotions p
-          LEFT JOIN hotel_rooms hr ON p.entity_type = 'room' AND p.entity_id = hr.id
+          LEFT JOIN LATERAL (
+            SELECT hr.hotel_id, hr.base_price
+            FROM hotel_rooms hr
+            WHERE p.entity_type = 'room' AND (p.entity_id = hr.id OR p.entity_id = hr.room_type_id)
+            ORDER BY (CASE WHEN p.entity_id = hr.id THEN 0 ELSE 1 END) ASC, hr.created_at ASC
+            LIMIT 1
+          ) hr ON TRUE
           LEFT JOIN hotels h ON hr.hotel_id = h.id
           LEFT JOIN cities hc ON h.city_id = hc.id
           LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
@@ -133,7 +159,7 @@ export class CmsService {
             AND p.end_date >= CURRENT_DATE
         `);
 
-          return rows.map((row) => {
+          return (rows ?? []).map((row) => {
             const isRoom = row.entity_type === 'room';
             const roomPrice = isRoom
               ? calculateRoomPrice(row.room_base_price, {

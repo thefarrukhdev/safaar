@@ -30,9 +30,15 @@ type QueryExecutor = Pick<PostgresService, 'query'> | PostgresTransaction;
 export function activeRoomPromotionPredicate(
   alias: string,
   roomIdExpression?: string,
+  roomTypeIdExpression?: string,
 ): string {
+  const entityMatch = roomTypeIdExpression
+    ? `AND (${alias}.entity_id = ${roomIdExpression} OR ${alias}.entity_id = ${roomTypeIdExpression})`
+    : roomIdExpression
+      ? `AND ${alias}.entity_id = ${roomIdExpression}`
+      : '';
   return `${alias}.entity_type = 'room'
-    ${roomIdExpression ? `AND ${alias}.entity_id = ${roomIdExpression}` : ''}
+    ${entityMatch}
     AND ${livePromotionPredicate(alias)}`;
 }
 

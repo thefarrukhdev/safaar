@@ -539,8 +539,8 @@ export class BookingsService {
          LEFT JOIN LATERAL (
            SELECT p.*
            FROM promotions p
-           WHERE ${activeRoomPromotionPredicate('p', 'hr.id')}
-           ORDER BY p.updated_at DESC, p.created_at DESC
+           WHERE ${activeRoomPromotionPredicate('p', 'hr.id', 'hr.room_type_id')}
+           ORDER BY (CASE WHEN p.entity_id = hr.id THEN 0 ELSE 1 END) ASC, p.updated_at DESC, p.created_at DESC
            LIMIT 1
          ) ap ON TRUE
          WHERE hr.id = $1 AND hr.hotel_id = $2 AND hr.status = 'active'

@@ -343,7 +343,9 @@ describe('CmsService pages', () => {
         discount_percent: 20,
         image_url: 'https://cdn.example.com/bus.jpg',
       });
-      expect((promoDeal!.title as Record<string, string>).uz).toBe('Chevrolet Cobalt');
+      expect((promoDeal!.title as Record<string, string>).uz).toBe(
+        'Chevrolet Cobalt',
+      );
     });
 
     it('clamps a public vehicle deal to the CURRENT vehicles.price_per_day (regression: audit found /cms/offers advertised the raw unclamped new_price_sum even after the base price_per_day was lowered post-approval)', async () => {

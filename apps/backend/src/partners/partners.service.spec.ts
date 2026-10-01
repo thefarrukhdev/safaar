@@ -3698,3 +3698,205 @@ describe("PartnersService.reports (GET /partners/reports — this partner's own 
     ]);
   });
 });
+
+describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /partners/reviews/:id/reply)', () => {
+  let pg: { query: jest.Mock };
+  let service: PartnersService;
+  const actor: RequestActor = {
+    id: 'user-partner-1',
+    role: Role.PARTNER,
+    actorType: 'partner',
+    organizationId: 'org-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn().mockResolvedValue([]) };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('reviews() scopes query to actor partner_organization_id and formats output for PartnerReview interface', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'review-1',
+        user_id: 'user-123',
+        booking_id: 'booking-1',
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+        rating: 4.5,
+        cleanliness: 5,
+        staff: 4,
+        location: 5,
+        value_for_money: 4,
+        photos: ['https://cdn.example.com/p1.jpg'],
+        body: 'Ajoyib mehmonxona!',
+        status: 'published',
+        reply_body: null,
+        reply_by: null,
+        replied_at: null,
+        created_at: '2026-09-30T10:00:00Z',
+        updated_at: '2026-09-30T10:00:00Z',
+        author_name: 'Ali Valiyev',
+      },
+    ]);
+
+    const result = await service.reviews(actor);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: 'review-1',
+      hotelId: 'hotel-1',
+      hotel_id: 'hotel-1',
+      bookingId: 'booking-1',
+      verified: true,
+      userId: 'user-123',
+      user_id: 'user-123',
+      authorName: 'Ali Valiyev',
+      author_name: 'Ali Valiyev',
+      rating: 4.5,
+      body: 'Ajoyib mehmonxona!',
+      status: 'published',
+      replyBody: null,
+      createdAt: '2026-09-30T10:00:00Z',
+    });
+
+    const [sql, params] = queryCallsOf(pg)[0];
+    expect(String(sql)).toContain('h.partner_organization_id::text = $1');
+    expect(String(sql)).toContain('bc.partner_organization_id::text = $1');
+    expect(String(sql)).toContain('b.partner_organization_id::text = $1');
+    expect(params).toEqual(['org-1']);
+  });
+
+  it('replyReview() allows partner to reply to a review and stores reply', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'review-1',
+          booking_id: 'booking-1',
+          target_type: 'hotel',
+          target_id: 'hotel-1',
+          reply_body: null,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'review-1',
+          target_id: 'hotel-1',
+          user_id: 'user-123',
+          rating: 5,
+          body: 'Yaxshi',
+          status: 'published',
+          reply_body: 'Tashrifingiz uchun rahmat!',
+          reply_by: 'user-partner-1',
+          replied_at: '2026-09-30T12:00:00Z',
+          created_at: '2026-09-30T10:00:00Z',
+        },
+      ]);
+
+    const result = await service.replyReview(actor, 'review-1', {
+      reply: 'Tashrifingiz uchun rahmat!',
+    });
+
+    expect(result).toMatchObject({
+      id: 'review-1',
+      hotelId: 'hotel-1',
+      reply: 'Tashrifingiz uchun rahmat!',
+      replyBody: 'Tashrifingiz uchun rahmat!',
+      replyBy: 'user-partner-1',
+    });
+
+    const updateCall = queryCallsOf(pg)[1];
+    expect(String(updateCall[0])).toContain('UPDATE reviews');
+    expect(String(updateCall[0])).toContain('SET reply_body = $1');
+    expect(updateCall[1][0]).toBe('Tashrifingiz uchun rahmat!');
+    expect(updateCall[1][1]).toBe('user-partner-1');
+  });
+
+  it('replyReview() throws NotFoundException if review does not belong to partner org', async () => {
+    pg.query.mockResolvedValueOnce([]); // not found or not owned
+
+    await expect(
+      service.replyReview(actor, 'foreign-review', { reply: 'Salom' }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'REVIEW_NOT_FOUND' },
+    });
+  });
+
+  it('replyReview() throws ConflictException if review was already replied', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'review-1',
+        booking_id: 'booking-1',
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+        reply_body: 'Oldingi javob',
+      },
+    ]);
+
+    await expect(
+      service.replyReview(actor, 'review-1', { reply: 'Yangi javob' }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'REVIEW_ALREADY_REPLIED' },
+    });
+  });
+
+  it('replyReview() throws BadRequestException if reply text is empty', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'review-1',
+        booking_id: 'booking-1',
+        target_type: 'hotel',
+        target_id: 'hotel-1',
+        reply_body: null,
+      },
+    ]);
+
+    await expect(
+      service.replyReview(actor, 'review-1', { reply: '   ' }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: { code: 'REVIEW_REPLY_BODY_REQUIRED' },
+    });
+  });
+
+  it('createPromotion() accepts room_type entityId when owned via hotel_rooms or room_types', async () => {
+    pg.query
+      .mockResolvedValueOnce([{ id: 'type-1' }]) // ownership check
+      .mockResolvedValueOnce([
+        {
+          id: 'promo-1',
+          entity_type: 'room',
+          entity_id: 'type-1',
+          entity_name: 'Standart xona turi',
+          old_price_sum: 500000,
+          new_price_sum: 450000,
+          discount_percent: 10,
+          start_date: '2026-10-01',
+          end_date: '2026-10-10',
+          status: 'pending_review',
+          created_at: '2026-09-30T10:00:00Z',
+        },
+      ]);
+
+    const result = await service.createPromotion(actor, {
+      entityType: 'roomType',
+      entityId: 'type-1',
+      entityName: 'Standart xona turi',
+      oldPriceSum: 500000,
+      newPriceSum: 450000,
+      discountPercent: 10,
+      startDate: '2026-10-01',
+      endDate: '2026-10-10',
+    });
+
+    expect(result).toMatchObject({
+      id: 'promo-1',
+      entityType: 'room',
+      entityId: 'type-1',
+    });
+  });
+});

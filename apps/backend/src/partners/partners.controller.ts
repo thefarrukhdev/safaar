@@ -284,7 +284,13 @@ export class PartnersController {
     @Param('imageId') imageId: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.updateRoomImage(actor, id, roomId, imageId, body);
+    return this.partnersService.updateRoomImage(
+      actor,
+      id,
+      roomId,
+      imageId,
+      body,
+    );
   }
 
   @Get('hotels/:id/beds')
@@ -784,5 +790,22 @@ export class PartnersController {
     @Body() body: Record<string, unknown>,
   ) {
     return this.partnersService.createPromotion(actor, body);
+  }
+
+  @Get('reviews')
+  reviews(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query?: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.reviews(actor, query);
+  }
+
+  @Post('reviews/:id/reply')
+  replyReview(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.replyReview(actor, id, body);
   }
 }

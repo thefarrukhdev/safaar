@@ -407,17 +407,17 @@ export class HotelsService {
       [hotelId],
     );
 
-    const roomNames = await this.loadRoomNames(
-      roomRows.map((r: Record<string, unknown>) => String(r.id)),
+    const roomIds = roomRows.map((r: Record<string, unknown>) => String(r.id));
+    const roomTypeIds = roomRows.map((r: Record<string, unknown>) =>
+      String(r.room_type_id),
     );
+    const allRoomRelatedIds = Array.from(new Set([...roomIds, ...roomTypeIds]));
+
+    const roomNames = await this.loadRoomNames(roomIds);
     const roomPromotions = await loadActiveRoomPromotions(
       this.pg,
-      roomRows.map((r: Record<string, unknown>) => String(r.id)),
+      allRoomRelatedIds,
     );
-
-    const roomIds = roomRows.map((r: Record<string, unknown>) => String(r.id));
-    const roomTypeIds = roomRows.map((r: Record<string, unknown>) => String(r.room_type_id));
-    const allRoomRelatedIds = Array.from(new Set([...roomIds, ...roomTypeIds]));
 
     const roomMediaMap = new Map<string, string[]>();
     if (allRoomRelatedIds.length > 0) {
@@ -442,7 +442,10 @@ export class HotelsService {
     return roomRows.map((r: Record<string, unknown>) => {
       const roomTypeName = localized(r.room_type_name);
       const translation = roomNames.get(String(r.id));
-      const activePromotion = roomPromotions.get(String(r.id)) ?? null;
+      const activePromotion =
+        roomPromotions.get(String(r.id)) ??
+        roomPromotions.get(String(r.room_type_id)) ??
+        null;
       const pricing = calculateRoomPrice(Number(r.base_price), activePromotion);
       const promotion = activePromotion
         ? {
@@ -471,10 +474,12 @@ export class HotelsService {
         status: r.status,
         available: Number(r.total_inventory),
         promotion,
-        images: Array.from(new Set([
-          ...(roomMediaMap.get(String(r.id)) || []),
-          ...(roomMediaMap.get(String(r.room_type_id)) || [])
-        ])),
+        images: Array.from(
+          new Set([
+            ...(roomMediaMap.get(String(r.id)) || []),
+            ...(roomMediaMap.get(String(r.room_type_id)) || []),
+          ]),
+        ),
       };
     });
   }

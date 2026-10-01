@@ -164,6 +164,13 @@ describe('activeRoomPromotionPredicate — status/sana darvozasi o‘zgarmadi', 
     );
   });
 
+  it('scopes to both room-id and room-type-id expressions when both are supplied', () => {
+    const sql = activeRoomPromotionPredicate('p', 'hr.id', 'hr.room_type_id');
+    expect(sql).toContain(
+      '(p.entity_id = hr.id OR p.entity_id = hr.room_type_id)',
+    );
+  });
+
   it('is composed from the shared livePromotionPredicate(), so the pricing gate and the admin delete gate cannot drift apart', () => {
     expect(activeRoomPromotionPredicate('p')).toContain(
       livePromotionPredicate('p'),

@@ -277,11 +277,14 @@ export default function TeamPage() {
     {
       key: "role",
       label: "Rol",
-      render: (u) => (
-        <span className={cn("px-2.5 py-1 rounded-md text-xs font-medium border", ROLE_COLORS[u.role] || "bg-slate-100 text-slate-700")}>
-          {ROLE_LABELS[u.role] || u.role}
-        </span>
-      ),
+      render: (u) => {
+        const roleKey = u.role.toUpperCase() as AdminRole;
+        return (
+          <span className={cn("px-2.5 py-1 rounded-md text-xs font-medium border", ROLE_COLORS[roleKey] || "bg-slate-100 text-slate-700")}>
+            {ROLE_LABELS[roleKey] || u.role}
+          </span>
+        );
+      },
     },
     {
       key: "phone",

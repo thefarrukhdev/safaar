@@ -35,15 +35,17 @@ export default function DataTable<T>({
   onRetry,
 }: DataTableProps<T>) {
   return (
-    <div className={cn("overflow-x-auto rounded-xl border border-[var(--border)] bg-white", className)}>
+    <div className={cn("overflow-x-auto overflow-y-visible rounded-xl border border-[var(--border)] bg-white", className)}>
       <table className="w-full text-sm whitespace-nowrap">
         <thead>
           <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
-            {columns.map((col) => (
+            {columns.map((col, index) => (
               <th
                 key={col.key}
                 className={cn(
                   "px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider",
+                  index === 0 && "rounded-tl-xl",
+                  index === columns.length - 1 && "rounded-tr-xl",
                   col.className
                 )}
               >

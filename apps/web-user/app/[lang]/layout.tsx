@@ -71,9 +71,9 @@ export async function generateMetadata({
       url: `/${locale}`,
     },
     icons: {
-      icon: "/icon.png?v=2",
-      shortcut: "/icon.png?v=2",
-      apple: "/icon.png?v=2",
+      icon: "/icon.png?v=8",
+      shortcut: "/icon.png?v=8",
+      apple: "/icon.png?v=8",
     },
     robots: { index: true, follow: true },
   };

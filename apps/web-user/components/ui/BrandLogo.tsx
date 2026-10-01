@@ -21,7 +21,7 @@ export function BrandLogo({ href, brand, className, variant = "light" }: BrandLo
       )}
       title={brand}
     >
-      <div className={cn("relative flex items-center transition-all duration-300", isDark ? "brightness-0 invert" : "")}>
+      <div className="relative flex items-center transition-all duration-300">
         <Image 
           src="/logo.png" 
           alt={brand} 

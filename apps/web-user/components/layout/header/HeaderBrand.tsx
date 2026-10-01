@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface HeaderBrandProps {
@@ -16,9 +17,16 @@ export function HeaderBrand({ href, brand, className }: HeaderBrandProps) {
         className
       )}
     >
-      <span className="text-xl font-black tracking-tight text-blue-600 transition-colors sm:text-2xl group-data-[transparent=true]/header:text-white">
-        {brand}
-      </span>
+      <div className="relative flex items-center transition-all duration-300 group-data-[transparent=true]/header:brightness-0 group-data-[transparent=true]/header:invert">
+        <Image 
+          src="/logo.png" 
+          alt={brand} 
+          width={240} 
+          height={60} 
+          className="object-contain w-auto h-8 sm:h-10"
+          priority
+        />
+      </div>
     </Link>
   );
 }

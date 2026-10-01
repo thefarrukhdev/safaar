@@ -21,6 +21,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  scrollable?: boolean;
 }
 
 export default function DataTable<T>({
@@ -33,9 +34,10 @@ export default function DataTable<T>({
   isLoading,
   isError,
   onRetry,
+  scrollable = true,
 }: DataTableProps<T>) {
   return (
-    <div className={cn("overflow-x-auto overflow-y-visible rounded-xl border border-[var(--border)] bg-white", className)}>
+    <div className={cn(scrollable ? "overflow-x-auto" : "overflow-visible", "rounded-xl border border-[var(--border)] bg-white", className)}>
       <table className="w-full text-sm whitespace-nowrap">
         <thead>
           <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">

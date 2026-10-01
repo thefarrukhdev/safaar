@@ -380,7 +380,8 @@ export default function TeamPage() {
   ];
 
   return (
-    <div className="animate-fade-in flex flex-col h-full">
+    <>
+      <div className="animate-fade-in flex flex-col h-full gap-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -406,17 +407,19 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <DataTable
-        columns={columns}
-        data={filteredUsers}
-        keyField="id"
-        emptyMessage="Xodimlar topilmadi"
-        isLoading={loading}
-        isError={error}
-        onRetry={fetchUsers}
-        className="flex-1"
-      />
+      <Card padding="none" className="flex-1 flex flex-col min-h-0">
+        <DataTable
+          columns={columns}
+          data={filteredUsers}
+          keyField="id"
+          emptyMessage="Xodimlar topilmadi"
+          isLoading={loading}
+          isError={error}
+          onRetry={fetchUsers}
+          className="border-0 shadow-none rounded-none flex-1"
+          scrollable={false}
+        />
+      </Card>
 
       {/* Permission Matrix — real backend rolePermissions (2026-09-14).
           Heading/error text intentionally matches what
@@ -529,17 +532,19 @@ export default function TeamPage() {
         )}
       </Card>
 
+      </div>
+
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
-            <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-fade-in">
+            <div className="p-5 border-b border-[var(--border)] flex items-center justify-between shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">
                 {editingUser ? "Xodimni tahrirlash" : "Yangi xodim qo'shish"}
               </h2>
             </div>
             
-            <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">F.I.SH</label>
                 <input
@@ -606,7 +611,7 @@ export default function TeamPage() {
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
 
-              <div className="pt-4 flex gap-3">
+              <div className="pt-4 flex gap-3 mt-4 shrink-0">
                 <Button type="button" variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
                   Bekor qilish
                 </Button>
@@ -618,6 +623,6 @@ export default function TeamPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

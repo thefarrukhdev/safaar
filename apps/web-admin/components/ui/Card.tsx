@@ -5,10 +5,13 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   hover?: boolean;
-  padding?: "sm" | "md" | "lg";
+  padding?: "none" | "sm" | "md" | "lg";
+  title?: string;
+  description?: string;
 }
 
 const paddingStyles = {
+  none: "p-0",
   sm: "p-4",
   md: "p-5",
   lg: "p-6",

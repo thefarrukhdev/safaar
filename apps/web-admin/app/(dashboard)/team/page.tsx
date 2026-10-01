@@ -297,12 +297,19 @@ export default function TeamPage() {
     {
       key: "lastLogin",
       label: "So'nggi faollik",
-      render: (u) => (
-        <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-          <Calendar size={14} />
-          {new Date(u.lastLogin).toLocaleString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-        </div>
-      ),
+      render: (u) => {
+        if (!u.lastLogin) return <span className="text-slate-400">—</span>;
+        const d = new Date(u.lastLogin);
+        const day = d.getDate().toString().padStart(2, '0');
+        const months = ["Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek"];
+        const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return (
+          <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+            <Calendar size={14} />
+            {`${day} ${months[d.getMonth()]} ${time}`}
+          </div>
+        );
+      },
     },
     {
       key: "isActive",
@@ -488,7 +495,7 @@ export default function TeamPage() {
                               <span className="text-[var(--text-muted)] text-xs ml-1">({permission})</span>
                             </td>
                             {adminRoleMatrix.map((role) => {
-                              const granted = role.permissions.includes(permission);
+                              const granted = role.id.toUpperCase() === "SUPER_ADMIN" || role.permissions.includes(permission);
                               return (
                                 <td key={role.id} className="text-center px-3">
                                   {granted ? (

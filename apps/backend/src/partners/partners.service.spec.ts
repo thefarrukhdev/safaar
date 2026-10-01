@@ -3705,6 +3705,7 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
   const actor: RequestActor = {
     id: 'user-partner-1',
     role: Role.PARTNER,
+    roles: [Role.PARTNER],
     actorType: 'partner',
     organizationId: 'org-1',
   };
@@ -3810,8 +3811,8 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
     const updateCall = queryCallsOf(pg)[1];
     expect(String(updateCall[0])).toContain('UPDATE reviews');
     expect(String(updateCall[0])).toContain('SET reply_body = $1');
-    expect(updateCall[1][0]).toBe('Tashrifingiz uchun rahmat!');
-    expect(updateCall[1][1]).toBe('user-partner-1');
+    expect(updateCall[1]![0]).toBe('Tashrifingiz uchun rahmat!');
+    expect(updateCall[1]![1]).toBe('user-partner-1');
   });
 
   it('replyReview() throws NotFoundException if review does not belong to partner org', async () => {

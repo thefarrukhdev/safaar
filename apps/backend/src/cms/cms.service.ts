@@ -161,16 +161,17 @@ export class CmsService {
 
           return (rows ?? []).map((row) => {
             const isRoom = row.entity_type === 'room';
-            const roomPrice = isRoom
-              ? calculateRoomPrice(row.room_base_price, {
-                  id: String(row.id),
-                  entity_id: '',
-                  old_price_sum: Number(row.old_price_sum),
-                  new_price_sum: Number(row.new_price_sum),
-                  discount_percent: Number(row.discount_percent),
-                  end_date: String(row.end_date),
-                })
-              : null;
+            const roomPrice =
+              isRoom && row.room_base_price != null
+                ? calculateRoomPrice(row.room_base_price, {
+                    id: String(row.id),
+                    entity_id: '',
+                    old_price_sum: Number(row.old_price_sum),
+                    new_price_sum: Number(row.new_price_sum),
+                    discount_percent: Number(row.discount_percent),
+                    end_date: String(row.end_date),
+                  })
+                : null;
             // Xona filialiga bir xil naqsh (yuqoridagi `roomPrice`): mashina
             // uchun ham ommaviy e'lon qilingan narx joriy
             // `vehicles.price_per_day`dan HECH QACHON oshmasligi kerak —
@@ -179,7 +180,9 @@ export class CmsService {
             // (tekshirilmagan) `new_price_sum`i to'g'ridan-to'g'ri ommaga
             // ko'rsatilardi.
             const vehiclePrice =
-              !isRoom && row.entity_type === 'vehicle'
+              !isRoom &&
+              row.entity_type === 'vehicle' &&
+              row.vehicle_price_per_day != null
                 ? calculateVehiclePrice(row.vehicle_price_per_day, {
                     id: String(row.id),
                     entity_id: '',
@@ -281,6 +284,23 @@ export class CmsService {
         ? general.languages.map(String)
         : [];
 
+      let heroBackgrounds: Record<string, string> = {};
+      try {
+        const bgRows = await this.postgres.query<{
+          page: string;
+          image_url: string;
+        }>(
+          `SELECT page, image_url FROM hero_backgrounds WHERE is_active = true ORDER BY sort_order ASC, created_at DESC`,
+        );
+        for (const bg of bgRows ?? []) {
+          if (!heroBackgrounds[bg.page]) {
+            heroBackgrounds[bg.page] = bg.image_url;
+          }
+        }
+      } catch {
+        heroBackgrounds = {};
+      }
+
       return {
         support_phone: textValue(general.support_phone),
         support_email: textValue(general.support_email),
@@ -288,6 +308,7 @@ export class CmsService {
         languages,
         currency: textValue(general.currency),
         social_links: objectValue(general.social_links),
+        hero_backgrounds: heroBackgrounds,
       };
     });
   }

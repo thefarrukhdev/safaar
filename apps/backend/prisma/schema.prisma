@@ -328,6 +328,23 @@ model PromotionBanner {
   @@map("promotion_banners")
 }
 
+model HeroBackground {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  page      String   @db.VarChar(64)
+  title     Json?
+  subtitle  Json?
+  imageUrl  String   @map("image_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  metadata  Json?    @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([page, isActive])
+  @@index([isActive, sortOrder])
+  @@map("hero_backgrounds")
+}
+
 model Amenity {
   id         String         @id @default(uuid()) @db.Uuid
   code       String         @unique @db.VarChar(80)

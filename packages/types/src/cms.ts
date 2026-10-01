@@ -43,3 +43,23 @@ export interface PublicStats {
   total_bookings: number;
   total_partners: number;
 }
+
+export interface HeroBackground {
+  id: string;
+  page: string;
+  title?: Record<string, string> | string | null;
+  title_text?: string;
+  subtitle?: Record<string, string> | string | null;
+  subtitle_text?: string;
+  image_url: string;
+  imageUrl?: string;
+  is_active: boolean;
+  isActive?: boolean;
+  sort_order: number;
+  sortOrder?: number;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  createdAt?: string;
+  updated_at: string;
+  updatedAt?: string;
+}

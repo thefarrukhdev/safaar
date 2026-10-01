@@ -384,6 +384,62 @@ describe('CmsService pages', () => {
       });
     });
 
+    it('falls back gracefully to old_price_sum and new_price_sum when room_base_price or vehicle_price_per_day is null', async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'promo-room-null-base',
+            entity_type: 'room',
+            entity_id: 'room-unlinked',
+            name: 'Deluxe Room',
+            room_base_price: null,
+            old_price_sum: '600000',
+            new_price_sum: '450000',
+            discount_percent: 25,
+            end_date: '2026-10-01',
+            status: 'published',
+            hotel_slug: 'luxury-hotel',
+            hotel_city_name: { uz: 'Samarqand' },
+            hotel_image: null,
+            bus_company_id: null,
+            bus_company_name: null,
+            bus_image: null,
+          },
+          {
+            id: 'promo-veh-null-base',
+            entity_type: 'vehicle',
+            entity_id: 'veh-unlinked',
+            name: 'Damas Rental',
+            vehicle_price_per_day: null,
+            old_price_sum: '200000',
+            new_price_sum: '150000',
+            discount_percent: 25,
+            end_date: '2026-10-01',
+            status: 'published',
+            hotel_slug: null,
+            hotel_city_name: null,
+            hotel_image: null,
+            bus_company_id: 'bus-1',
+            bus_company_name: 'Damas Co',
+            bus_image: null,
+          },
+        ]);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+      const roomDeal = result.find((r) => r.id === 'promo-room-null-base');
+      const vehDeal = result.find((r) => r.id === 'promo-veh-null-base');
+
+      expect(roomDeal).toMatchObject({
+        old_price: 600000,
+        new_price: 450000,
+      });
+      expect(vehDeal).toMatchObject({
+        old_price: 200000,
+        new_price: 150000,
+      });
+    });
+
     it('a real database error on the promotions query is logged and degrades to zero promo deals — it never fabricates a fake/error-shaped promotion card', async () => {
       const dbError = Object.assign(
         new Error('invalid input value for enum "PromotionStatus": "approved"'),
@@ -402,6 +458,55 @@ describe('CmsService pages', () => {
       expect(
         result.some((r) => JSON.stringify(r).includes('invalid input value')),
       ).toBe(false);
+    });
+  });
+
+  describe('publicSettings()', () => {
+    it('returns general settings including hero_backgrounds map', async () => {
+      postgres.query
+        .mockResolvedValueOnce([
+          {
+            value: {
+              support_phone: '+998712000000',
+              support_email: 'support@safaar.uz',
+              languages: ['uz', 'ru', 'en'],
+              currency: 'UZS',
+            },
+          },
+        ])
+        .mockResolvedValueOnce([
+          { page: 'home', image_url: '/registon-blue-sky.jpeg' },
+          { page: 'hotels', image_url: '/images/heroes/hotels_hero.jpg' },
+        ]);
+
+      const settings = (await service.publicSettings()) as Record<
+        string,
+        unknown
+      >;
+
+      expect(settings.support_phone).toBe('+998712000000');
+      expect(settings.hero_backgrounds).toEqual({
+        home: '/registon-blue-sky.jpeg',
+        hotels: '/images/heroes/hotels_hero.jpg',
+      });
+    });
+
+    it('gracefully degrades hero_backgrounds to empty object if database fails', async () => {
+      postgres.query
+        .mockResolvedValueOnce([
+          {
+            value: {
+              support_phone: '+998712000000',
+            },
+          },
+        ])
+        .mockRejectedValueOnce(new Error('Table does not exist'));
+
+      const settings = (await service.publicSettings()) as Record<
+        string,
+        unknown
+      >;
+      expect(settings.hero_backgrounds).toEqual({});
     });
   });
 });

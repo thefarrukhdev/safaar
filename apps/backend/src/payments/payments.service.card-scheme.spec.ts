@@ -1,9 +1,6 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
-import {
-  PostgresService,
-  type PostgresTransaction,
-} from '../infrastructure/postgres.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 import { PaymentsService } from './payments.service';
 
 /**

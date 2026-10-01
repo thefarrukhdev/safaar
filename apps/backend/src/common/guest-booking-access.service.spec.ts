@@ -18,7 +18,11 @@ describe('GuestBookingAccessService', () => {
     expect(token.length).toBeGreaterThan(30);
 
     expect(cache.set).toHaveBeenCalledTimes(1);
-    const [key, value, ttl] = cache.set.mock.calls[0];
+    const [key, value, ttl] = cache.set.mock.calls[0] as [
+      string,
+      unknown,
+      number,
+    ];
     expect(String(key)).toMatch(/^booking:guest-access:[0-9a-f]{64}$/);
     expect(String(key)).not.toContain(token);
     expect(value).toEqual({ bookingId: 'booking-1' });

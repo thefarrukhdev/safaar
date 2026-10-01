@@ -847,4 +847,31 @@ set title = excluded.title,
     discount_percentage = excluded.discount_percentage,
     updated_at = now();
 
+insert into hero_backgrounds (id, page, title, subtitle, image_url, is_active, sort_order, created_at, updated_at)
+values
+  ('00000000-0000-7010-0000-000000000001', 'home',
+   '{"uz":"Orzuyingizdagi mehmonxonani bugun toping","ru":"Найдите отель вашей мечты сегодня","en":"Find your dream hotel today"}',
+   '{"uz":"O''zbekiston bo''ylab mehmonxonalarni kafolatlangan eng arzon narxlarda kashf eting. Soniyalar ichida bron qiling.","ru":"Откройте для себя отели по всему Узбекистану по лучшим ценам.","en":"Discover hotels across Uzbekistan with guaranteed best prices."}',
+   '/registon-blue-sky.jpeg', true, 1, now(), now()),
+  ('00000000-0000-7010-0000-000000000002', 'hotels',
+   '{"uz":"O''zbekiston bo''ylab mehmonxonalar qidirish xizmati","ru":"Поиск отелей по всему Узбекистану","en":"Hotel search service across Uzbekistan"}',
+   '{"uz":"O''zingizga mos va qulay mehmonxonalarni eng yaxshi narxlarda kashf eting.","ru":"Откройте для себя подходящие и удобные отели по лучшим ценам.","en":"Discover comfortable hotels that suit you best."}',
+   '/images/heroes/hotels_hero.jpg', true, 2, now(), now()),
+  ('00000000-0000-7010-0000-000000000003', 'restaurants',
+   '{"uz":"Restoranlar va Milliy Taomlar","ru":"Рестораны и национальная кухня","en":"Restaurants and National Cuisine"}',
+   '{"uz":"O''zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.","ru":"Лучшие рестораны Узбекистана, национальная кухня и уютные чайханы.","en":"Uzbekistan''s finest restaurants, traditional dining and cozy teahouses."}',
+   '/images/heroes/hero.png', true, 3, now(), now()),
+  ('00000000-0000-7010-0000-000000000004', 'transport',
+   '{"uz":"Avto Ijarasi va Transfer Xizmatlari","ru":"Аренда авто и трансфер","en":"Car Rental and Transfer Services"}',
+   '{"uz":"O''zbekiston bo''ylab qulay sayohat qilish uchun avtomobil ijarasi, VIP taksi va aeroport transferlari.","ru":"Аренда автомобилей, VIP такси и трансферы из аэропорта для комфортных путешествий по Узбекистану.","en":"Car rental, VIP taxi, and airport transfers for comfortable travel across Uzbekistan."}',
+   '/images/heroes/transport_hero.jpg', true, 4, now(), now())
+on conflict (id) do update
+set page = excluded.page,
+    title = excluded.title,
+    subtitle = excluded.subtitle,
+    image_url = excluded.image_url,
+    is_active = excluded.is_active,
+    sort_order = excluded.sort_order,
+    updated_at = now();
+
 commit;

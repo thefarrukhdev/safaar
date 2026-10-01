@@ -45,7 +45,7 @@ export class CmsController {
     return this.cmsService.collection('faqs');
   }
 
-  @Get('settings/public')
+  @Get(['settings/public', 'cms/settings'])
   publicSettings() {
     return this.cmsService.publicSettings();
   }

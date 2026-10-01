@@ -32,6 +32,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ChatModule } from './chat/chat.module';
 import { JobsModule } from './jobs/jobs.module';
 import { AiTranslateModule } from './ai-translate/ai-translate.module';
+import { HeroBackgroundsModule } from './hero-backgrounds/hero-backgrounds.module';
 import { validateEnv } from './config/env.validation';
 import { MaintenanceGuard } from './common/maintenance.guard';
 
@@ -80,6 +81,7 @@ import { MaintenanceGuard } from './common/maintenance.guard';
     RealtimeModule,
     ChatModule,
     AiTranslateModule,
+    HeroBackgroundsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -91,9 +91,9 @@ export async function generateMetadata({
       images: ["/icon-512x512.png"],
     },
     icons: {
-      icon: "/icon.png?v=8",
-      shortcut: "/icon.png?v=8",
-      apple: "/icon.png?v=8",
+      icon: [ { url: "/favicon.ico", sizes: "any" }, { url: "/icon.png?v=9", type: "image/png" } ],
+      shortcut: "/favicon.ico",
+      apple: "/apple-icon.png?v=9",
     },
     robots: { index: true, follow: true },
   };

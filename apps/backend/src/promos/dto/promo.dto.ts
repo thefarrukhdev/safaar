@@ -23,4 +23,14 @@ export class ValidatePromoDto {
   @IsOptional()
   @IsUUID()
   roomId?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  vehicle_id?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  vehicleId?: string;
 }

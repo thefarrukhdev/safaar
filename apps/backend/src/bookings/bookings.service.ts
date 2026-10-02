@@ -29,7 +29,6 @@ import { isSlotWithinOperatingHours } from '../common/operating-hours';
 import {
   activeRoomPromotionPredicate,
   calculateRoomPrice,
-  isSchool21Code,
   type ActiveRoomPromotion,
 } from '../common/room-pricing';
 import {
@@ -1369,10 +1368,11 @@ export class BookingsService {
       const effectiveSubtotal = unitPrice.effectivePrice * nights * rooms;
       const partnerDiscountAmount = baseSubtotal - effectiveSubtotal;
 
-      if (partnerPromotion && promo && isSchool21Code(promo.code)) {
+      if (partnerPromotion && promo) {
         throw new BadRequestException({
           code: 'PROMO_STACKING_NOT_ALLOWED',
-          message: 'SCHOOL21 faol hamkor chegirmasi bilan birga qo‘llanilmaydi',
+          message:
+            "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi",
         });
       }
 
@@ -1644,10 +1644,11 @@ export class BookingsService {
       // uchun, xuddi shu suiiste'mol yo'li (bitta obyektga ikkita chegirmani
       // birlashtirish) mashinalar uchun ham ochiladi, shuning uchun bir xil
       // himoya qo'llaniladi.
-      if (vehiclePromotion && promo && isSchool21Code(promo.code)) {
+      if (vehiclePromotion && promo) {
         throw new BadRequestException({
           code: 'PROMO_STACKING_NOT_ALLOWED',
-          message: 'SCHOOL21 faol hamkor chegirmasi bilan birga qo‘llanilmaydi',
+          message:
+            "Ushbu transport vositasiga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz transportlar uchun amal qiladi",
         });
       }
 

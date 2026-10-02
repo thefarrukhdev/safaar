@@ -4,10 +4,8 @@ import {
   type PostgresTransaction,
 } from '../infrastructure/postgres.service';
 import type { ValidatePromoDto } from './dto/promo.dto';
-import {
-  isSchool21Code,
-  loadActiveRoomPromotions,
-} from '../common/room-pricing';
+import { loadActiveRoomPromotions } from '../common/room-pricing';
+import { loadActiveVehiclePromotions } from '../common/vehicle-pricing';
 
 interface PromoRow {
   id: string;
@@ -86,7 +84,7 @@ export class PromosService {
     );
 
     const roomId = body.room_id ?? body.roomId;
-    if (valid && roomId && isSchool21Code(code)) {
+    if (valid && roomId) {
       const activePromotions = await loadActiveRoomPromotions(this.pg, [
         roomId,
       ]);
@@ -97,6 +95,27 @@ export class PromosService {
           discount_type: null,
           discount_value: 0,
           reason: 'PROMO_STACKING_NOT_ALLOWED',
+          message:
+            "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi",
+        };
+      }
+    }
+
+    const vehicleId = body.vehicle_id ?? body.vehicleId;
+    if (valid && vehicleId) {
+      const activeVehiclePromotions = await loadActiveVehiclePromotions(
+        this.pg,
+        [vehicleId],
+      );
+      if (activeVehiclePromotions.has(vehicleId)) {
+        return {
+          code,
+          valid: false,
+          discount_type: null,
+          discount_value: 0,
+          reason: 'PROMO_STACKING_NOT_ALLOWED',
+          message:
+            "Ushbu transport vositasiga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz transportlar uchun amal qiladi",
         };
       }
     }

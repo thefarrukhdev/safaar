@@ -106,9 +106,12 @@ export class HotelsService {
       params.push(query.city_id);
     }
 
-    if (query.search) {
-      conditions.push(`(h.address ILIKE $${paramIndex} OR ht.name ILIKE $${paramIndex})`);
-      params.push(`%${query.search}%`);
+    const search = first(query.search);
+    if (search) {
+      conditions.push(
+        `(h.address ILIKE $${paramIndex} OR ht.name ILIKE $${paramIndex})`,
+      );
+      params.push(`%${search}%`);
       paramIndex++;
     }
 

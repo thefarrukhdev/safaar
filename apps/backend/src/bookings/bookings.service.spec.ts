@@ -781,6 +781,56 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(promos.redeem).not.toHaveBeenCalled();
   });
 
+  it('rejects general promo code (PROMO2025/MUXLISA) when room has an active partner promotion', async () => {
+    promos.validate.mockResolvedValueOnce({
+      code: 'PROMO2025',
+      valid: true,
+      discount_type: 'percentage',
+      discount_value: 15,
+    });
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '400000',
+          total_inventory: 2,
+          promotion_id: 'p-1',
+          promotion_old_price: '400000',
+          promotion_new_price: '200000',
+          promotion_discount_percent: 50,
+          promotion_start_date: '2026-09-01T00:00:00.000Z',
+          promotion_end_date: '2026-10-30T00:00:00.000Z',
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }])
+      .mockResolvedValueOnce([{ blocked_count: 0 }]);
+
+    await expect(
+      service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-01',
+        check_out: '2026-10-03',
+        rooms: 1,
+        agree_terms: true,
+        guest_name: 'Guest',
+        guest_phone: '+998901234567',
+        promo_code: 'PROMO2025',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: {
+        code: 'PROMO_STACKING_NOT_ALLOWED',
+        message:
+          "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi",
+      },
+    });
+
+    expect(promos.redeem).not.toHaveBeenCalled();
+  });
+
   it.each(['expired', 'future', 'pending_review', 'rejected'])(
     'allows SCHOOL21 when a %s partner promotion is excluded by the authoritative room query',
     async () => {

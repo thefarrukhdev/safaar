@@ -99,6 +99,101 @@ describe('PromosService.validate', () => {
 
     expect(result.valid).toBe(false);
   });
+
+  it('rejects promo code for room with an active promotion (anti-stacking rule for any promo code)', async () => {
+    // 1. Promo lookup succeeds
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'promo-1',
+        code: 'PROMO2025',
+        discount_type: 'percentage',
+        discount_value: 15,
+        usage_limit: 100,
+        used_count: 0,
+        valid_until: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    ]);
+    // 2. Active room promotion found
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'promo-active-1',
+        entity_id: '4823084c-8c33-4cc9-828d-7d20e4d9df8f',
+        old_price_sum: 400000,
+        new_price_sum: 200000,
+        discount_percent: 50,
+        end_date: '2026-10-08',
+      },
+    ]);
+
+    const result = await service.validate({
+      code: 'PROMO2025',
+      roomId: '4823084c-8c33-4cc9-828d-7d20e4d9df8f',
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.discount_value).toBe(0);
+    expect(result.reason).toBe('PROMO_STACKING_NOT_ALLOWED');
+  });
+
+  it('accepts promo code for room without an active promotion', async () => {
+    // 1. Promo lookup succeeds
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'promo-1',
+        code: 'PROMO2025',
+        discount_type: 'percentage',
+        discount_value: 15,
+        usage_limit: 100,
+        used_count: 0,
+        valid_until: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    ]);
+    // 2. No active room promotion found
+    pg.query.mockResolvedValueOnce([]);
+
+    const result = await service.validate({
+      code: 'PROMO2025',
+      roomId: 'aae5566b-1a81-454a-9697-3a67deda247e',
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.discount_value).toBe(15);
+    expect(result.discount_type).toBe('percentage');
+  });
+
+  it('rejects promo code for vehicle with an active promotion', async () => {
+    // 1. Promo lookup succeeds
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'promo-1',
+        code: 'AUTO10',
+        discount_type: 'percentage',
+        discount_value: 10,
+        usage_limit: 50,
+        used_count: 0,
+        valid_until: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    ]);
+    // 2. Active vehicle promotion found
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'vpromo-1',
+        entity_id: 'vehicle-1',
+        old_price_sum: 500000,
+        new_price_sum: 350000,
+        discount_percent: 30,
+        end_date: '2026-10-10',
+      },
+    ]);
+
+    const result = await service.validate({
+      code: 'AUTO10',
+      vehicleId: 'vehicle-1',
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('PROMO_STACKING_NOT_ALLOWED');
+  });
 });
 
 describe('calculatePromoDiscount (regression: percent discountType)', () => {

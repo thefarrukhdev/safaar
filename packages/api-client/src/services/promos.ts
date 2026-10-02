@@ -16,8 +16,28 @@ export const promosService = {
   /**
    * `POST /promos/validate` — checkout'da promo-kodni tekshiradi.
    */
-  async validate(code: string): Promise<{ valid: boolean; discount_type: string; discount_value: number }> {
-    const raw = await rawApi.post<{ valid: boolean; discount_type: string; discount_value: number }>("/promos/validate", { code });
+  async validate(
+    code: string,
+    roomId?: string,
+    vehicleId?: string
+  ): Promise<{
+    valid: boolean;
+    discount_type: string | null;
+    discount_value: number;
+    reason?: string;
+    message?: string;
+  }> {
+    const raw = await rawApi.post<{
+      valid: boolean;
+      discount_type: string | null;
+      discount_value: number;
+      reason?: string;
+      message?: string;
+    }>("/promos/validate", {
+      code,
+      roomId,
+      vehicleId,
+    });
     return raw;
   },
 };

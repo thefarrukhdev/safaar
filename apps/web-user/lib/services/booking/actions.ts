@@ -161,9 +161,13 @@ export async function createBusBookingAction(
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${paymentMethod}`);
 }
 
-export async function validatePromoAction(code: string) {
+export async function validatePromoAction(
+  code: string,
+  roomId?: string,
+  vehicleId?: string
+) {
   try {
-    const res = await api.promos.validate(code);
+    const res = await api.promos.validate(code, roomId, vehicleId);
     return { success: true, data: res };
   } catch (error) {
     return {

@@ -36,7 +36,7 @@ export function CheckoutForm({
  dict: CheckoutDict;
  hotelId: string;
  hotelName: string;
- room: { id: string; name: string; priceSum: number; capacity: number };
+ room: { id: string; name: string; priceSum: number; capacity: number; basePriceSum?: number };
  defaults: { checkIn: string; checkOut: string; guests: number };
  isGuest?: boolean;
 }) {
@@ -83,12 +83,22 @@ export function CheckoutForm({
  if (!promoCode.trim()) return;
  setPromoLoading(true);
  setPromoError("");
- const res = await validatePromoAction(promoCode.trim());
+ const res = await validatePromoAction(promoCode.trim(), room.id);
  if (res.success && res.data) {
- setPromoDiscount({ type: res.data.discount_type, value: Number(res.data.discount_value) });
+   if (res.data.valid) {
+     setPromoDiscount({ type: res.data.discount_type || "percent", value: Number(res.data.discount_value) });
+   } else {
+     setPromoDiscount(null);
+     const errMessage =
+       res.data.message ||
+       (res.data.reason === "PROMO_STACKING_NOT_ALLOWED"
+         ? "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi"
+         : dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
+     setPromoError(errMessage);
+   }
  } else {
- setPromoDiscount(null);
- setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
+   setPromoDiscount(null);
+   setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
  }
  setPromoLoading(false);
  };
@@ -285,6 +295,11 @@ export function CheckoutForm({
  />
  <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-4 rounded-xl active:scale-[0.97]">{dict.applyPromo}</Button>
  </div>
+ {room.basePriceSum && room.basePriceSum > room.priceSum && (
+   <p className="text-xs text-amber-600 mt-1">
+     💡 Ushbu xonaga aksiya chegirmasi qo'llanilgan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi.
+   </p>
+ )}
  {promoError && <span className="text-xs font-medium text-red-600 mt-1">{promoError}</span>}
  {promoDiscount && <span className="text-xs font-medium text-green-600 mt-1">{(dict as any).promoApplied || "Chegirma qo'llanildi:"} {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
  </label>

@@ -160,12 +160,13 @@ export default async function Page({
     "@type": "Hotel",
     name: hotel.name,
     description: hotel.description,
-    image: hotel.images,
-    address: hotel.address ? {
+    image: hotel.images.length > 0 ? hotel.images : ["https://safaar.uz/icon-512x512.png"],
+    address: {
       "@type": "PostalAddress",
-      streetAddress: hotel.address,
-      addressLocality: hotel.cityName
-    } : undefined,
+      streetAddress: hotel.address || "Toshkent ko'chasi",
+      addressLocality: hotel.cityName || "Toshkent",
+      addressCountry: "UZ"
+    },
     aggregateRating: (hotel.rating > 0 && hotel.reviewsCount > 0) ? {
       "@type": "AggregateRating",
       ratingValue: hotel.rating,

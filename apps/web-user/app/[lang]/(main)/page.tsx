@@ -15,6 +15,7 @@ import { BannerStrip } from "@/components/features/home/BannerStrip";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { CityPills } from "@/components/features/home/CityPills";
+import { config } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -72,12 +73,28 @@ export default async function HomePage({
     endsAt: d.endsAt,
   }));
 
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Safaar",
+    "url": `${config.siteUrl}/${locale}`,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": `${config.siteUrl}/${locale}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string"
+    }
+  };
 
   return (
-    <main className="relative flex flex-1 flex-col bg-white text-slate-900">
-      {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
-      <div className="flex min-h-svh flex-col justify-between">
-        <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <main className="relative flex flex-1 flex-col bg-white text-slate-900">
+        {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
+        <div className="flex min-h-svh flex-col justify-between">
+          <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
           <Hero dict={dict.hero} bannerUrl={bannerUrl} heroBg={heroBg}>
             <div className="w-full space-y-4">
               <SearchBar locale={locale} dict={common.search} cities={cities} />
@@ -119,5 +136,6 @@ export default async function HomePage({
         </Suspense>
       </div>
     </main>
+    </>
   );
 }

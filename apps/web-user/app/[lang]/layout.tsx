@@ -58,6 +58,12 @@ export async function generateMetadata({
     applicationName: "Safaar",
     manifest: "/manifest.webmanifest",
     appleWebApp: { capable: true, title: "Safaar", statusBarStyle: "default" },
+    keywords: [
+      "O'zbekiston mehmonxonalari", "bron qilish", "Safaar", "hotels in Uzbekistan", 
+      "гостиницы в Узбекистане", "бронирование отелей", "Uzbekistan hotels", 
+      "Tashkent hotels", "Samarkand hotels", "Bukhara hotels", "Khiva hotels", 
+      "cheap hotels in Uzbekistan", "luxury hotels Uzbekistan", "mehmonxona", "mehmonxonalar"
+    ],
     alternates: {
       canonical: `/${locale}`,
       languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])) as Record<string, string>,
@@ -69,6 +75,20 @@ export async function generateMetadata({
       title,
       description,
       url: `/${locale}`,
+      images: [
+        {
+          url: "/icon-512x512.png",
+          width: 512,
+          height: 512,
+          alt: "Safaar Logo",
+        }
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/icon-512x512.png"],
     },
     icons: {
       icon: "/icon.png?v=8",

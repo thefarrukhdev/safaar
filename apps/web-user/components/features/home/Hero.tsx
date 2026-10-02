@@ -1,13 +1,27 @@
 import Image from "next/image";
 import type { HomeDict } from "@/i18n/dictionaries";
 
-export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], children?: React.ReactNode, bannerUrl?: string }) {
+export function Hero({
+  dict,
+  children,
+  bannerUrl,
+  heroBg,
+}: {
+  dict: HomeDict["hero"];
+  children?: React.ReactNode;
+  bannerUrl?: string;
+  heroBg?: {
+    imageUrl?: string;
+    title?: string;
+    subtitle?: string;
+  };
+}) {
   return (
     <section className="relative flex min-h-[70vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-[120px] md:-mt-[100px]">
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src={bannerUrl || "/registon-blue-sky.jpeg"}
+          src={heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.jpeg"}
           alt="Safaar — O'zbekiston"
           fill
           priority
@@ -32,14 +46,14 @@ export function Hero({ dict, children, bannerUrl }: { dict: HomeDict["hero"], ch
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-in fade-in zoom-in-95 duration-700 delay-100 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_4px_rgba(0,0,0,0.4)]"
           style={{ fontFamily: "var(--font-manrope, sans-serif)" }}
         >
-          {dict.title}
+          {heroBg?.title || dict.title}
         </h1>
 
         {/* Subtitle — Body LG: Inter 400 */}
         <p
           className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-white/90 sm:text-lg md:text-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both drop-shadow-md"
         >
-          {dict.subtitle}
+          {heroBg?.subtitle || dict.subtitle}
         </p>
       </div>
 

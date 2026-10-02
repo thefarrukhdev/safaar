@@ -51,10 +51,16 @@ export function RestaurantsView({
   dict,
   items,
   locale,
+  heroBg,
 }: {
   dict: CatalogDict["restaurants"];
   items: RestaurantItem[];
   locale: Locale;
+  heroBg?: {
+    imageUrl?: string;
+    title?: string;
+    subtitle?: string;
+  };
 }) {
   const [query, setQuery] = useQueryState("q", parseAsString.withDefault(""));
   const [selectedCity, setSelectedCity] = useQueryState("city", parseAsString.withDefault("all"));
@@ -114,7 +120,7 @@ export function RestaurantsView({
       {/* ═══ Header Banner ═══ */}
       <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl border border-slate-200 px-5 sm:px-8 md:px-12">
         <Image
-          src="/images/heroes/hero.png"
+          src={heroBg?.imageUrl || "/images/heroes/hero.png"}
           alt="Restaurants hero"
           fill
           priority
@@ -126,10 +132,10 @@ export function RestaurantsView({
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">
-            {dict.title}
+            {heroBg?.title || dict.title}
           </h1>
           <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80">
-            {dict.subtitle || "O'zbekistonning eng sara restoran va kafelari"}
+            {heroBg?.subtitle || dict.subtitle || "O'zbekistonning eng sara restoran va kafelari"}
           </p>
         </div>
       </div>

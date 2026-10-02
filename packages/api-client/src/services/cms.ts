@@ -259,3 +259,40 @@ export const cmsService = {
     };
   },
 };
+
+export interface HeroBackground {
+  id: string;
+  page: string;
+  imageUrl: string;
+  title?: { uz?: string; ru?: string; en?: string };
+  titleText?: string;
+  subtitle?: { uz?: string; ru?: string; en?: string };
+  subtitleText?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export const heroBackgroundsApi = {
+  async getHeroMap(): Promise<Record<string, HeroBackground>> {
+    try {
+      const raw = await rawApi.get<Record<string, unknown>>("/hero-backgrounds/map", {
+        next: { revalidate: 60, tags: ["cms", "hero-backgrounds"] },
+      });
+      return camelizeKeys<Record<string, HeroBackground>>(raw) ?? {};
+    } catch (e) {
+      console.warn("Failed to fetch hero backgrounds map, using fallbacks:", e);
+      return {};
+    }
+  },
+
+  async getByPage(page: string): Promise<HeroBackground | null> {
+    try {
+      const raw = await rawApi.get<unknown>(`/hero-backgrounds/${encodeURIComponent(page)}`, {
+        next: { revalidate: 60, tags: ["cms", `hero-${page}`] },
+      });
+      return camelizeKeys<HeroBackground>(raw) ?? null;
+    } catch {
+      return null;
+    }
+  },
+};

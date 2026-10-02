@@ -39,15 +39,23 @@ export default async function TransportPage({
   const checkIn = sp.checkIn ?? "";
   const checkOut = sp.checkOut ?? "";
 
-  const [transportDict, transports] = await Promise.all([
+  const [transportDict, transports, heroMap] = await Promise.all([
     getDictionary(locale, "transport"),
     api.catalog.getTransports(locale, { checkIn, checkOut }),
+    api.heroBackgrounds.getHeroMap(),
   ]);
 
   const items: TransportItem[] = transports.map((item) => ({
     ...item,
     categoryKey: toTransportCategory(item.categoryKey),
   }));
+
+  const transportHero = heroMap["transport"];
+  const heroBg = transportHero ? {
+    imageUrl: transportHero.imageUrl,
+    title: typeof transportHero.title === "object" ? transportHero.title?.[locale] : transportHero.titleText,
+    subtitle: typeof transportHero.subtitle === "object" ? transportHero.subtitle?.[locale] : transportHero.subtitleText,
+  } : undefined;
 
   return (
     <main className="flex flex-1 flex-col">
@@ -58,6 +66,7 @@ export default async function TransportPage({
           locale={locale}
           initialCheckIn={checkIn}
           initialCheckOut={checkOut}
+          heroBg={heroBg}
         />
       </Suspense>
     </main>

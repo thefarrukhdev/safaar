@@ -1,7 +1,7 @@
 import { authService } from "./services/auth";
 import { bookingsService } from "./services/bookings";
 import { catalogService } from "./services/catalog";
-import { cmsService } from "./services/cms";
+import { cmsService, heroBackgroundsApi } from "./services/cms";
 import { currencyService } from "./services/currency";
 import { hotelsService } from "./services/hotels";
 import { promosService } from "./services/promos";
@@ -14,6 +14,7 @@ export const api = {
   bookings: bookingsService,
   catalog: catalogService,
   cms: cmsService,
+  heroBackgrounds: heroBackgroundsApi,
   currency: currencyService,
   hotels: hotelsService,
   promos: promosService,

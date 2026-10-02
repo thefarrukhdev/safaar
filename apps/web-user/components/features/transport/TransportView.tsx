@@ -66,12 +66,18 @@ export function TransportView({
   locale,
   initialCheckIn = "",
   initialCheckOut = "",
+  heroBg,
 }: {
   dict: TransportDict;
   items: TransportItem[];
   locale: Locale;
   initialCheckIn?: string;
   initialCheckOut?: string;
+  heroBg?: {
+    imageUrl?: string;
+    title?: string;
+    subtitle?: string;
+  };
 }) {
   // Using nuqs for URL-driven state
   const [selectedCategory, setSelectedCategory] = useQueryState("category", parseAsString.withDefault("all"));
@@ -119,7 +125,7 @@ export function TransportView({
       {/* Header Banner */}
       <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl md:rounded-[32px] border border-slate-200 px-5 sm:px-8 md:px-12">
         <Image
-          src="/images/heroes/transport_hero.jpg"
+          src={heroBg?.imageUrl || "/images/heroes/transport_hero.jpg"}
           alt="Transport"
           fill
           priority
@@ -131,10 +137,10 @@ export function TransportView({
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-2 text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
-            {dict.title}
+            {heroBg?.title || dict.title}
           </h1>
           <p className="text-sm sm:text-base font-medium leading-relaxed text-white/90 max-w-lg">
-            {dict.subtitle}
+            {heroBg?.subtitle || dict.subtitle}
           </p>
         </div>
       </div>

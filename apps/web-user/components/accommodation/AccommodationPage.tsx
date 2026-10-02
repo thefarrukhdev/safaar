@@ -92,7 +92,7 @@ export async function AccommodationPage({
   const amenitiesRaw = sp.amenities;
   const amenities = Array.isArray(amenitiesRaw) ? amenitiesRaw : (typeof amenitiesRaw === "string" ? [amenitiesRaw] : undefined);
 
-  const [common, dict, favDict, cities, hotelsResult, session] = await Promise.all([
+  const [common, dict, favDict, cities, hotelsResult, session, heroMap] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "hotels"),
     getDictionary(locale, "favorites"),
@@ -114,6 +114,7 @@ export async function AccommodationPage({
       amenities,
     }),
     getSession(),
+    api.heroBackgrounds.getHeroMap(),
   ]);
 
   const favoriteIds = await getHotelFavoriteIdsOrEmpty(session?.accessToken);
@@ -159,6 +160,13 @@ export async function AccommodationPage({
   else if (type === "resort") bannerKey = "resorts";
 
   const dynamicBanner = (dict.banners as any)?.[bannerKey] || {};
+  
+  const heroData = heroMap["hotels"];
+  const heroBg = heroData ? {
+    imageUrl: heroData.imageUrl,
+    title: typeof heroData.title === "object" ? heroData.title?.[locale] : heroData.titleText,
+    subtitle: typeof heroData.subtitle === "object" ? heroData.subtitle?.[locale] : heroData.subtitleText,
+  } : undefined;
 
   return (
     <main className="relative mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col px-3 sm:px-4 md:px-8 pb-8 pt-3 sm:pt-6">
@@ -167,7 +175,7 @@ export async function AccommodationPage({
       <div className="relative mb-3 sm:mb-6 flex h-[140px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 sm:px-8 md:px-12">
         {/* Background photo */}
         <Image
-          src="/images/heroes/hotels_hero.jpg"
+          src={heroBg?.imageUrl || "/images/heroes/hotels_hero.jpg"}
           alt="Hotels hero"
           fill
           priority
@@ -180,10 +188,10 @@ export async function AccommodationPage({
 
         <div className="relative z-10 w-full sm:max-w-[70%] lg:max-w-[55%]">
           <h1 className="mb-1.5 sm:mb-2.5 text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
-            {dynamicBanner.title || dict.bannerTitle}
+            {heroBg?.title || dynamicBanner.title || dict.bannerTitle}
           </h1>
           <p className="hidden sm:block text-[13px] sm:text-[14px] font-medium leading-relaxed text-white/80 drop-shadow">
-            {dynamicBanner.subtitle || dict.bannerSubtitle}
+            {heroBg?.subtitle || dynamicBanner.subtitle || dict.bannerSubtitle}
           </p>
         </div>
         

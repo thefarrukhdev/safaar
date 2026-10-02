@@ -34,15 +34,23 @@ export default async function RestaurantsPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [restaurantsDict, restaurants] = await Promise.all([
+  const [restaurantsDict, restaurants, heroMap] = await Promise.all([
     getDictionary(locale, "restaurants"),
     api.catalog.getRestaurants(locale),
+    api.heroBackgrounds.getHeroMap(),
   ]);
+
+  const restaurantsHero = heroMap["restaurants"];
+  const heroBg = restaurantsHero ? {
+    imageUrl: restaurantsHero.imageUrl,
+    title: typeof restaurantsHero.title === "object" ? restaurantsHero.title?.[locale] : restaurantsHero.titleText,
+    subtitle: typeof restaurantsHero.subtitle === "object" ? restaurantsHero.subtitle?.[locale] : restaurantsHero.subtitleText,
+  } : undefined;
 
   return (
     <main className="flex flex-1 flex-col">
       <Suspense fallback={<div>Loading...</div>}>
-        <RestaurantsView dict={restaurantsDict} items={restaurants} locale={locale} />
+        <RestaurantsView dict={restaurantsDict} items={restaurants} locale={locale} heroBg={heroBg} />
       </Suspense>
     </main>
   );

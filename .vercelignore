@@ -9,6 +9,10 @@ node_modules
 .next
 .turbo
 .git
+.claude
+.antigravity
+graphify-out
+test-results
 dist
 build
 out

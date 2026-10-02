@@ -10,7 +10,7 @@ export default function LoginPage() {
           Tizimga Kirish
         </h2>
         <p className="text-sm text-slate-500">
-          Email manzil va parolingizni kiritib tizimga kiring.
+          Telefon raqam va parolingizni kiritib tizimga kiring.
         </p>
       </div>
 

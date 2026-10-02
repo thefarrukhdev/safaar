@@ -1,6 +1,6 @@
 'use client';
 
-import { Mail, Save, ShieldCheck } from 'lucide-react';
+import { Phone, Save, ShieldCheck } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -76,7 +76,7 @@ export function ProfileSettingsView() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Access emaili</Label>
+              <Label htmlFor="email">Email manzil</Label>
               <Input
                 id="email"
                 type="email"
@@ -108,7 +108,7 @@ export function ProfileSettingsView() {
             <div>
               <h3 className="text-sm font-semibold">Access holati</h3>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Bu profil admin tomonidan tasdiqlangan email orqali ishlaydi.
+                Bu profil admin tomonidan tasdiqlangan hisob orqali ishlaydi.
               </p>
             </div>
           </CardBody>
@@ -117,12 +117,12 @@ export function ProfileSettingsView() {
         <Card>
           <CardBody className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
-              <Mail className="h-5 w-5" aria-hidden />
+              <Phone className="h-5 w-5" aria-hidden />
             </div>
             <div>
               <h3 className="text-sm font-semibold">Kirish usuli</h3>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Tasdiqlangan email bilan kabinetga kiriladi.
+                Tasdiqlangan telefon raqam va parol bilan kabinetga kiriladi.
               </p>
             </div>
           </CardBody>

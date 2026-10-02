@@ -1,5 +1,5 @@
 {
-  "name": "Safaar — Mehmonxona bron qilish",
+  "name": "Safaar \u2014 Mehmonxona bron qilish",
   "short_name": "Safaar",
   "description": "O'zbekiston bo'ylab mehmonxonalarni onlayn bron qiling.",
   "start_url": "/uz",
@@ -14,26 +14,17 @@
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon.png",
       "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/safaar.uz-favicon.png",
-      "sizes": "178x178",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }

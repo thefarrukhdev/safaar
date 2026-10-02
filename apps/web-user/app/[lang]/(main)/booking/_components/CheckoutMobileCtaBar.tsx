@@ -4,6 +4,7 @@ import { useIsTargetHidden } from "@/hooks/use-target-hidden";
 import { Button } from "@/components/ui/Button";
 import { formatSum } from "@/lib/money";
 import { cn } from "@/lib/cn";
+import { Lock } from "lucide-react";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
 export interface CheckoutMobileCtaBarProps {
@@ -58,8 +59,9 @@ export function CheckoutMobileCtaBar({
           
           loading={pending}
           disabled={disabled}
-          className="shrink-0 font-bold px-6 py-6 text-base bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-xl active:scale-[0.98] transition-transform"
+          className="shrink-0 font-bold px-6 py-6 text-base bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
         >
+          <Lock className="w-4 h-4" />
           {resolvedButtonText}
         </Button>
       </div>

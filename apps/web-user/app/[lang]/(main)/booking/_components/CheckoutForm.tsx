@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState, useRef } from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Lock } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 import { createBookingAction, validatePromoAction, type CheckoutState } from "@/lib/booking/actions";
@@ -331,12 +331,13 @@ export function CheckoutForm({
  <div id="checkout-original-cta" className="w-full mt-2">
  <Button
  type="submit"
- variant="accent"
+ variant="primary"
  size="lg"
- className="w-full rounded-xl py-6 text-base font-bold active:scale-[0.98] transition-transform"
+ className="w-full rounded-xl py-6 text-base font-bold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
  loading={pending || isSmsLoading}
  disabled={nights < 1 || !agreeTerms}
  >
+ <Lock className="w-4 h-4" />
  {dict.payButton || dict.confirm}
  </Button>
  </div>

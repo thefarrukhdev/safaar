@@ -194,26 +194,18 @@ export function PaymentSelector({
  {/* Extras (Logos) below the text */}
  {option.type === "local_card" && (
  <div className="flex items-center flex-wrap gap-2 ml-[50px]">
- {option.id === "uzcard" && (
  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
  <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
  </div>
- )}
- {option.id === "humo" && (
  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
  <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
  </div>
- )}
- {option.id === "visa" && (
  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
  <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
  </div>
- )}
- {option.id === "mastercard" && (
  <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
  <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
  </div>
- )}
  </div>
  )}
  </div>

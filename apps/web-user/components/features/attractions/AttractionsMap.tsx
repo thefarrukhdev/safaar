@@ -8,7 +8,7 @@ import L from "leaflet";
 import Image from "next/image";
 import Link from "next/link";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { Navigation } from "lucide-react";
+import { Navigation, ChevronRight } from "lucide-react";
 
 // A component to auto-fit the map bounds to all markers
 function FitBounds({ attractions }: { attractions: AttractionCatalogView[] }) {
@@ -157,15 +157,18 @@ export default function AttractionsMap({
                         />
                       </div>
                     )}
-                    <div className="px-1 pb-1">
+                    <div className="px-1.5 pb-1">
                       <h4 className="font-semibold text-sm leading-tight text-slate-900">{attr.name}</h4>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{attr.description}</p>
-                      <div className="mt-3">
+                      <p className="text-xs text-slate-500 mt-1.5 line-clamp-2">{attr.description}</p>
+                      <div className="mt-3.5 border-t border-slate-100 pt-2.5">
                         <Link 
                           href={`/${locale}/attractions/${attr.id}`}
-                          className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.97]"
+                          className="group flex w-full items-center justify-between rounded-lg py-1 text-[13px] font-semibold text-slate-900 transition-colors hover:text-blue-600 active:scale-[0.98]"
                         >
-                          Batafsil
+                          <span>Batafsil ma'lumot</span>
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-50 transition-colors group-hover:bg-blue-50">
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </span>
                         </Link>
                       </div>
                     </div>
@@ -183,9 +186,9 @@ export default function AttractionsMap({
           font-family: inherit;
         }
         .safaar-popup .leaflet-popup-content-wrapper {
-          border-radius: 16px;
-          padding: 8px;
-          box-shadow: none;
+          border-radius: 20px;
+          padding: 10px;
+          box-shadow: 0 12px 48px -12px rgba(0,0,0,0.15), 0 4px 16px -4px rgba(0,0,0,0.05);
           border: 1px solid #e2e8f0;
         }
         .safaar-popup .leaflet-popup-tip {

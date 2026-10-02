@@ -7,3 +7,11 @@ export function useAmenities() {
     queryFn: () => catalog.listAmenities(),
   });
 }
+
+export function useCities() {
+  return useQuery({
+    queryKey: ["catalog", "cities"],
+    queryFn: () => catalog.listCities(),
+    staleTime: 1000 * 60 * 10, // 10 daqiqa keshlaymiz
+  });
+}

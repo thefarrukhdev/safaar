@@ -167,7 +167,13 @@ export function useUpdateListingLocation() {
         };
       });
     }
-    return partners.updateListingLocation(hotelId!, values, token).then(toListing);
+    return partners.updateListingLocation(hotelId!, {
+      ...(values.cityId !== undefined && { city_id: values.cityId }),
+      ...(values.address !== undefined && { address: values.address }),
+      ...(values.latitude !== undefined && { latitude: values.latitude }),
+      ...(values.longitude !== undefined && { longitude: values.longitude }),
+      ...(values.nearbyPlaces !== undefined && { nearbyPlaces: values.nearbyPlaces }),
+    }, token).then(toListing);
   });
 }
 

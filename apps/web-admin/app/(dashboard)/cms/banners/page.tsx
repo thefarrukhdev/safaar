@@ -165,9 +165,9 @@ export default function BannersPage() {
     <div className="p-6 max-w-[1400px] mx-auto animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">Bannerlar</h1>
+          <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">Bannerlar va Orqa Fonlar</h1>
           <p className="text-[var(--muted-foreground)] mt-1">
-            Safaar platformasining asosiy sahifasidagi orqa fon va slayder rasmlarini boshqarish
+            Safaar platformasining bannerlari va bo'limlarining (Mehmonxona, Restoran v.b) orqa fon rasmlarini boshqarish
           </p>
         </div>
         <Button onClick={handleAddNew} icon={<Plus size={16} />}>
@@ -210,7 +210,7 @@ export default function BannersPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-[var(--foreground)]">Havola (bosilganda ochiladigan sahifa)</label>
+            <label className="text-sm font-medium text-[var(--foreground)]">Havola yoki Yo'nalish (Sahifa manzili)</label>
             <input
               type="text"
               value={link}
@@ -218,6 +218,10 @@ export default function BannersPage() {
               placeholder="/hotels yoki /uz/deals"
               className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
             />
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed mt-1">
+              * Oddiy bannerlar uchun bosilganda o'tadigan havola (masalan, /uz/deals). <br />
+              * <b>Asosiy sahifalar orqa foni uchun:</b> qaysi bo'lim ekanligini aniq yozing. Masalan: <b>/</b> (bosh sahifa), <b>/hotels</b>, <b>/restaurants</b>, <b>/transport</b>, <b>/dachas</b>. (Web-user shu yo'nalishlarga qarab fonga avtomat rasmni joylaydi).
+            </p>
           </div>
 
           <div className="space-y-1">

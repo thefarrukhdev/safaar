@@ -128,6 +128,7 @@ export interface PhotoDraft {
 }
 
 export interface ListingLocationDraft {
+  cityId?: string;
   address?: string;
   latitude?: number;
   longitude?: number;

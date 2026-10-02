@@ -149,7 +149,20 @@ export function ReservationDetailView({ id }: { id: string }) {
             {canCheckIn && (
               <Button
                 size="sm"
-                onClick={() => setAssignOpen(true)}
+                loading={checkIn.isPending}
+                onClick={() => {
+                  // Xona allaqachon tayinlangan bo'lsa — to'g'ridan-to'g'ri check-in
+                  if (data.roomNumber) {
+                    checkIn.mutate(data.id, {
+                      onSuccess: () => toast.success(`${labels.checkInLabel} qilindi`),
+                      onError: (err: any) =>
+                        toast.error(err?.message || "Check-in amalga oshmadi"),
+                    });
+                  } else {
+                    // Xona tayinlanmagan — avval dialog orqali tayinla
+                    setAssignOpen(true);
+                  }
+                }}
               >
                 {labels.checkInLabel}
               </Button>

@@ -23,6 +23,7 @@ import {
   useListing,
   useUpdateListingLocation,
 } from '../../../_hooks/use-listing';
+import { useCities } from '../../../_hooks/use-catalog';
 import {
   searchAddress,
   type GeocodeResult,
@@ -49,7 +50,9 @@ export function LocationEditor({
 }) {
   const { data } = useListing();
   const updateLocation = useUpdateListingLocation();
+  const { data: cities = [], isLoading: citiesLoading } = useCities();
   const [addressDraft, setAddressDraft] = useState<string | null>(null);
+  const [cityIdDraft, setCityIdDraft] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [distance, setDistance] = useState('');
   const [locating, setLocating] = useState(false);
@@ -224,8 +227,47 @@ export function LocationEditor({
       <div className="flex flex-col gap-5">
         <div className="grid gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label>Shahar</Label>
-            <Input value={data.city} disabled />
+            <Label htmlFor="listing-city">Shahar</Label>
+            <select
+              id="listing-city"
+              disabled={citiesLoading || updateLocation.isPending}
+              value={cityIdDraft ?? ''}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                setCityIdDraft(selectedId);
+                if (selectedId) {
+                  updateLocation.mutate(
+                    { cityId: selectedId },
+                    {
+                      onSuccess: () => toast.success('Shahar yangilandi'),
+                      onError: (error) => {
+                        setCityIdDraft(null);
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : "Shahарni saqlab bo'lmadi",
+                        );
+                      },
+                    },
+                  );
+                }
+              }}
+              className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="" disabled>
+                {citiesLoading ? 'Yuklanmoqda...' : data.city || 'Shaharni tanlang'}
+              </option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {data.city && (
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Hozirgi shahar: <span className="font-medium">{data.city}</span>
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="listing-address">Manzil</Label>

@@ -189,9 +189,11 @@ const AttractionsMap = dynamic(() => import("./AttractionsMap"), {
 export function AttractionsView({
   dict,
   items,
+  locale,
 }: {
   dict: AttractionsDict;
   items: AttractionItem[];
+  locale: string;
 }) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -252,6 +254,7 @@ export function AttractionsView({
                   item={item}
                   categoryLabel={dict.categories?.[item.categoryKey] ?? item.categoryDefault}
                   index={index}
+                  locale={locale}
                   onHover={(hovering) => setHoveredId(hovering ? item.id : null)}
                 />
               ))}
@@ -263,7 +266,7 @@ export function AttractionsView({
       {/* ── RIGHT: Sticky Map Panel (Desktop) ──────────────────── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col overflow-hidden border-l border-slate-200">
         <div className="sticky top-0 h-full">
-          <AttractionsMap attractions={filtered} hoveredId={hoveredId} />
+          <AttractionsMap attractions={filtered} hoveredId={hoveredId} locale={locale} />
         </div>
       </div>
 
@@ -296,7 +299,7 @@ export function AttractionsView({
       {/* ── MOBILE BOTTOM SHEET: Map ──────────────────────────── */}
       <BottomSheet open={mapOpen} onClose={() => setMapOpen(false)} title={dict.map?.title || "Xarita"}>
         <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-slate-200">
-          <AttractionsMap attractions={filtered} hoveredId={hoveredId} />
+          <AttractionsMap attractions={filtered} hoveredId={hoveredId} locale={locale} />
         </div>
       </BottomSheet>
     </div>

@@ -6,6 +6,7 @@ import type { AttractionCatalogView } from "@safaar/api-client";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Image from "next/image";
+import Link from "next/link";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { Navigation } from "lucide-react";
 
@@ -53,10 +54,12 @@ function LocateMeControl() {
 
 export default function AttractionsMap({ 
   attractions,
-  hoveredId 
+  hoveredId,
+  locale,
 }: { 
   attractions: AttractionCatalogView[];
   hoveredId?: string | null;
+  locale: string;
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -157,6 +160,14 @@ export default function AttractionsMap({
                     <div className="px-1 pb-1">
                       <h4 className="font-semibold text-sm leading-tight text-slate-900">{attr.name}</h4>
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2">{attr.description}</p>
+                      <div className="mt-3">
+                        <Link 
+                          href={`/${locale}/attractions/${attr.id}`}
+                          className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.97]"
+                        >
+                          Batafsil
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </Popup>

@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ImageOff, MapPin, Heart, Star, Clock } from "lucide-react";
 import { gsap } from "gsap";
+import Link from "next/link";
 import type { AttractionItem } from "@/components/catalog/types";
 
 interface AttractionCardProps {
   item: AttractionItem;
   categoryLabel: string;
   index: number;
+  locale: string;
   onHover?: (hovering: boolean) => void;
 }
 
@@ -57,8 +59,8 @@ function FavoriteButton({ inset = false }: { inset?: boolean }) {
   );
 }
 
-export function AttractionCard({ item, categoryLabel, index, onHover }: AttractionCardProps) {
-  const cardRef = useRef<HTMLElement>(null);
+export function AttractionCard({ item, categoryLabel, index, locale, onHover }: AttractionCardProps) {
+  const cardRef = useRef<HTMLAnchorElement>(null);
   const catStyle = CATEGORY_STYLES[item.categoryKey] ?? CATEGORY_STYLES.historical;
 
   useEffect(() => {
@@ -78,11 +80,12 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
   }, [index]);
 
   return (
-    <article
+    <Link
+      href={`/${locale}/attractions/${item.id}`}
       ref={cardRef}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
-      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 ease-out hover:border-slate-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 ease-out hover:border-slate-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white block"
     >
       {/* ── Image Container ─────────────────────────────────────── */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
@@ -139,6 +142,6 @@ export function AttractionCard({ item, categoryLabel, index, onHover }: Attracti
           </p>
         )}
       </div>
-    </article>
+    </Link>
   );
 }

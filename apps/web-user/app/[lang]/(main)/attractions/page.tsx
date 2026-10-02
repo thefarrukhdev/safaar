@@ -46,7 +46,7 @@ export default async function AttractionsPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <AttractionsView dict={attractionsDict} items={items} />
+      <AttractionsView dict={attractionsDict} items={items} locale={locale} />
     </main>
   );
 }

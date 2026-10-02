@@ -1235,3 +1235,23 @@ Real sandboxga qarshi: `register()` → yangi `orderId` (`af06bbf6-...`),
 o'zgarishisiz, `develop`ga chiqarish + qaytadan pull qilishdan keyin
 ham to'g'ri ishlayotgani tasdiqlandi. To'liq test to'plami: **695/695**
 (694 + yangi regressiya testi), `tsc --noEmit` toza, ESLint 0 xato.
+
+## 2026-10-02 — Uzum Checkout Production muhitiga o'tish (Haqiqiy API)
+
+Uzum Checkout vakili (Ansar Nevretdinov) tomonidan rasmiy tasdiqlandi:
+1. **Production bazaviy URL:** `https://checkout-key.uzumcheckout.uz`
+2. **Statik IP allowlist:** `51.250.78.204` Uzum tomonidan ruxsatnomalar ro'yxatiga qo'shildi.
+3. **Production terminal:** `7680088a-4154-4e95-8a06-e1f854579b0d` (INTELLEX).
+4. **Tarmoq va autentifikatsiya tekshiruvi:** `safaar-gateway` (Tinyproxy `100.105.86.75:3128`) orqali `https://checkout-key.uzumcheckout.uz/api/v1/payment/register` ga so'rovlar muvaffaqiyatli yetib borishi va autentifikatsiya to'g'riligi tasdiqlandi.
+5. **Konfiguratsiya yangilandi:**
+   - Production host (`/home/scarygun/safaar-stack/backend.env`) test (`test-chk-api.uzumcheckout.uz`, `cf542ca1-...`) dan haqiqiy production parametrlariga o'tkazildi:
+     `UZUM_CHECKOUT_BASE_URL=https://checkout-key.uzumcheckout.uz`
+     `UZUM_CHECKOUT_TERMINAL_ID=7680088a-4154-4e95-8a06-e1f854579b0d`
+     `UZUM_CHECKOUT_API_KEY=299ff14d01fbd8bf935c6111cfa7b9365857780fd6d079bcfc77a8b85f0be730`
+   - Mahalliy `apps/backend/.env` ham yangilandi.
+   - Production backend konteyneri (`safaar-backend`) yangi muhit parametrlari bilan qayta ishga tushirildi va `healthy` holatga o'tdi.
+6. **Muddati o'tgan (stale) to'lovlar va inventar bloklanishi muammosi bartaraf etildi**:
+   - `PaymentsService.failStaleUzumTransactions()` cronida faqat `provider = 'uzum'` tekshirilgani sababli, `uzum_checkout` to'lovlari 30 daqiqadan keyin avtomatik `failed`ga o'tmasdan `processing`da osilib qolardi. Bu esa `expireStaleBookings` orqali bron qilingan xona/o'rindiq inventari o'z vaqtida bo'shatilishini to'sib qo'ygan va `reconcileUzumCheckoutPaymentsCron`da keraksiz `errorCode 3005` ogohlantirishlarini keltirib chiqarayotgan edi.
+   - SQL sharti `(provider = 'uzum' OR provider = 'uzum_checkout')` ga kengaytirildi va regressiya testlari bilan qoplandi.
+
+

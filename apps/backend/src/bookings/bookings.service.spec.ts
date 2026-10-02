@@ -1231,6 +1231,9 @@ describe('BookingsService.createHotel restaurant (time-slot) reservations', () =
       'completed',
       '2026-08-10',
       '19:00',
+      null,
+      'laziz@example.com',
+      null,
     ]);
   });
 
@@ -2724,3 +2727,255 @@ describe('BookingsService — booking confirmation email uses an active CMS temp
     );
   });
 });
+
+describe('BookingsService — Unpaid booking handling & guest self-service cancel (regression: user re-entry false sold-out)', () => {
+  let service: BookingsService;
+  let pg: jest.Mocked<Pick<PostgresService, 'query'>> & {
+    transaction: jest.Mock;
+  };
+  let events: {
+    bookingStatusChanged: jest.Mock;
+    partnerDashboardUpdated: jest.Mock;
+    adminDashboardUpdated: jest.Mock;
+  };
+  let cache: {
+    get: jest.Mock;
+    set: jest.Mock;
+    del: jest.Mock;
+  };
+
+  const hotelRow = {
+    id: 'hotel-1',
+    partner_organization_id: 'partner-1',
+    partner_type: 'hotel',
+    commission_rate: 12,
+    check_in_time: null,
+    check_out_time: null,
+  };
+
+  const actor: RequestActor = {
+    id: 'user-1',
+    actorType: 'user',
+    role: Role.USER,
+    roles: [Role.USER],
+  };
+
+  beforeEach(() => {
+    pg = {
+      query: jest.fn(),
+      transaction: jest.fn((operation: (tx: unknown) => unknown) =>
+        Promise.resolve(operation({ query: pg.query })),
+      ),
+    };
+    events = {
+      bookingStatusChanged: jest.fn(),
+      partnerDashboardUpdated: jest.fn(),
+      adminDashboardUpdated: jest.fn(),
+    };
+    cache = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    };
+    service = new BookingsService(
+      pg as unknown as PostgresService,
+      events as unknown as EventsService,
+      { send: jest.fn() } as unknown as EmailService,
+      noopPromosService() as unknown as PromosService,
+      {
+        buildCheckoutUrl: jest.fn().mockReturnValue(null),
+      } as unknown as PaymentsService,
+      cache as unknown as AppCacheService,
+    );
+  });
+
+  it("createHotel conflict check excludes user's own unpaid pending booking for hotel room", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }]) // booked_count query
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // blocked_count query
+      .mockResolvedValueOnce([]) // INSERT INTO bookings
+      .mockResolvedValueOnce([]) // addStatusHistory
+      .mockResolvedValueOnce([]) // SELECT payments
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      agree_terms: true,
+      room_id: 'room-1',
+      check_in: '2026-10-02',
+      check_out: '2026-10-03',
+      rooms: 1,
+      guests: 2,
+      firstName: 'Laziz',
+      lastName: 'Shakarov',
+      email: 'laziz@example.com',
+      phone: '+998901234567',
+    });
+
+    const bookedCountCall = pg.query.mock.calls[2];
+    expect(String(bookedCountCall[0])).toContain("status IN ('pending', 'awaiting_payment')");
+    expect(String(bookedCountCall[0])).toContain('guest_email = $8');
+    expect(String(bookedCountCall[0])).toContain('guest_phone = $9');
+    expect(bookedCountCall[1]).toContain('laziz@example.com');
+    expect(bookedCountCall[1]).toContain('+998901234567');
+  });
+
+  it("createHotel conflict check excludes guest's own unpaid pending booking when guest only provided phone", async () => {
+    pg.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          base_price: '100000',
+          total_inventory: 1,
+        },
+      ])
+      .mockResolvedValueOnce([{ booked_count: 0 }]) // booked_count query
+      .mockResolvedValueOnce([{ blocked_count: 0 }]) // blocked_count query
+      .mockResolvedValueOnce([]) // INSERT INTO bookings
+      .mockResolvedValueOnce([]) // addStatusHistory
+      .mockResolvedValueOnce([]) // SELECT payments
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    await service.createHotel(undefined, {
+      hotel_id: 'hotel-1',
+      agree_terms: true,
+      room_id: 'room-1',
+      check_in: '2026-10-02',
+      check_out: '2026-10-03',
+      rooms: 1,
+      guests: 2,
+      firstName: 'Laziz',
+      phone: '+998901234567',
+    });
+
+    const bookedCountCall = pg.query.mock.calls[2];
+    expect(String(bookedCountCall[0])).toContain('guest_phone = $9');
+    expect(bookedCountCall[1]).toContain('+998901234567');
+    expect(bookedCountCall[1]).toContain(null); // email is null
+  });
+
+  it("createVehicleRental conflict check excludes user's own unpaid pending booking", async () => {
+    const vehicleLookup = {
+      id: 'vehicle-1',
+      price_per_day: '150000',
+      partner_organization_id: 'partner-1',
+      commission_rate: 12,
+    };
+    pg.query
+      .mockResolvedValueOnce([vehicleLookup]) // vehicle lookup
+      .mockResolvedValueOnce([{ id: 'vehicle-1', price_per_day: '150000' }]) // FOR UPDATE lock
+      .mockResolvedValueOnce([]) // conflicts query (none)
+      .mockResolvedValueOnce([]) // INSERT bookings
+      .mockResolvedValueOnce([]) // addStatusHistory
+      .mockResolvedValueOnce([]) // SELECT payments
+      .mockResolvedValueOnce([]); // INSERT payments
+
+    await service.createVehicleRental(undefined, {
+      vehicle_id: 'v-1',
+      agree_terms: true,
+      check_in: '2026-10-05',
+      check_out: '2026-10-07',
+      firstName: 'Laziz',
+      lastName: 'Shakarov',
+      email: 'laziz@example.com',
+      phone: '+998901234567',
+    });
+
+    const conflictCall = pg.query.mock.calls[2];
+    expect(String(conflictCall[0])).toContain("status IN ('pending', 'awaiting_payment')");
+    expect(String(conflictCall[0])).toContain('guest_email = $8');
+    expect(String(conflictCall[0])).toContain('guest_phone = $9');
+    expect(conflictCall[1]).toContain('laziz@example.com');
+    expect(conflictCall[1]).toContain('+998901234567');
+  });
+
+  it('cancelPreview for an unpaid pending booking returns 0 penalty and 0 paid', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'booking-pending-1',
+        status: 'pending',
+        user_id: 'user-1',
+        currency: 'UZS',
+        total_amount: '600000',
+      },
+    ]);
+
+    const result = await service.cancelPreview(actor, 'booking-pending-1');
+    expect(result).toEqual({
+      booking_id: 'booking-pending-1',
+      currency: 'UZS',
+      paid_amount: 0,
+      refund_amount: 0,
+      penalty_amount: 0,
+      policy: 'To‘lov amalga oshirilmagan — bepul bekor qilish',
+    });
+  });
+
+  it('guest can cancel their own booking using guestAccessToken', async () => {
+    const guestBooking = {
+      id: 'guest-b-1',
+      status: 'pending',
+      user_id: null,
+      currency: 'UZS',
+      total_amount: '600000',
+    };
+
+    cache.get.mockResolvedValueOnce({ bookingId: 'guest-b-1' });
+
+    pg.query
+      .mockResolvedValueOnce([guestBooking]) // assertBooking
+      .mockResolvedValueOnce([{ ...guestBooking, status: 'cancelled' }]) // UPDATE bookings
+      .mockResolvedValueOnce([]) // UPDATE trip_seats
+      .mockResolvedValueOnce([]) // SELECT paid payment (none)
+      .mockResolvedValueOnce([]); // addStatusHistory INSERT
+
+    const result = await service.cancel(
+      undefined,
+      'guest-b-1',
+      { reason: 'User cancelled' },
+      'valid-guest-token',
+    );
+
+    expect(result.status).toBe('cancelled');
+    expect(cache.get).toHaveBeenCalledWith(
+      expect.stringMatching(/^booking:guest-access:[a-f0-9]{64}$/),
+    );
+  });
+
+  it('expireStaleBookings ignores processing payments created within 5 minutes', async () => {
+    const expiredBooking = {
+      id: 'expired-1',
+      status: 'expired',
+      user_id: 'user-1',
+      partner_organization_id: 'partner-1',
+      total_amount: 50000,
+      currency: 'UZS',
+      payment_method: 'cash',
+    };
+
+    pg.query
+      .mockResolvedValueOnce([expiredBooking]) // UPDATE bookings RETURNING *
+      .mockResolvedValueOnce([]) // UPDATE trip_seats
+      .mockResolvedValueOnce([]) // addStatusHistory
+      .mockResolvedValueOnce([]); // unconfirmedRows UPDATE bookings
+
+    await service.expireStaleBookings();
+
+    const expireCall = pg.query.mock.calls[0];
+    expect(String(expireCall[0])).toContain(
+      "p.status = 'processing' AND p.created_at > $2::timestamptz - interval '5 minutes'",
+    );
+  });
+});
+

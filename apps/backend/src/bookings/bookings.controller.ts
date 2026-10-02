@@ -116,25 +116,26 @@ export class BookingsController {
   }
 
   @Post(':id/cancel-preview')
-  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   cancelPreview(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
+    @Query('guestToken') guestToken?: string,
   ) {
-    return this.bookingsService.cancelPreview(actor, id);
+    return this.bookingsService.cancelPreview(actor, id, guestToken);
   }
 
   @Post(':id/cancel')
-  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   cancel(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: CancelBookingDto,
+    @Query('guestToken') guestToken?: string,
   ) {
     return this.bookingsService.cancel(
       actor,
       id,
       body as unknown as Record<string, unknown>,
+      guestToken,
     );
   }
 

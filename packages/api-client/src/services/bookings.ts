@@ -186,16 +186,33 @@ export const bookingsService = {
   },
 
   /** `POST /bookings/:id/cancel-preview` — bekor qilish jarimasini hisoblash. */
-  async cancelPreview(id: string, options?: { token?: string }): Promise<CancelPreviewView> {
-    return rawApi.post<CancelPreviewView>(`/bookings/${encodeURIComponent(id)}/cancel-preview`, {}, options);
+  async cancelPreview(
+    id: string,
+    options?: { token?: string; guestToken?: string },
+  ): Promise<CancelPreviewView> {
+    return rawApi.post<CancelPreviewView>(
+      `/bookings/${encodeURIComponent(id)}/cancel-preview`,
+      {},
+      {
+        token: options?.token,
+        query: options?.guestToken ? { guestToken: options.guestToken } : undefined,
+      },
+    );
   },
 
   /** `POST /bookings/:id/cancel` — bronni bekor qilish. */
-  async cancelBooking(id: string, reason?: string, options?: { token?: string }): Promise<BookingView> {
+  async cancelBooking(
+    id: string,
+    reason?: string,
+    options?: { token?: string; guestToken?: string },
+  ): Promise<BookingView> {
     const raw = await rawApi.post<unknown>(
       `/bookings/${encodeURIComponent(id)}/cancel`,
       { reason },
-      options,
+      {
+        token: options?.token,
+        query: options?.guestToken ? { guestToken: options.guestToken } : undefined,
+      },
     );
     return toBookingView(camelizeKeys(raw));
   },

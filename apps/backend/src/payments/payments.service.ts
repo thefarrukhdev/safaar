@@ -1962,7 +1962,7 @@ export class PaymentsService {
       const rows = await this.pg.query<{ id: string }>(
         `UPDATE payments
          SET status = 'failed', updated_at = now()
-         WHERE provider = 'uzum'
+         WHERE (provider = 'uzum' OR provider = 'uzum_checkout')
            AND status IN ('pending', 'processing')
            AND created_at < now() - interval '30 minutes'
          RETURNING id`,

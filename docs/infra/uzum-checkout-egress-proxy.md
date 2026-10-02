@@ -92,9 +92,9 @@ LogLevel Connect              # logs "CONNECT host:443" + client IP only — no
 on `uzumbank.uz`). `(^|\.)uzumcheckout\.uz$` was added to the filter and
 verified end-to-end: `safaar-backend` container → proxy → `test-chk-api.
 uzumcheckout.uz/health` → `200 "Hello"`, egressing via `51.250.78.204`.
-The exact production Checkout host is still unconfirmed — likely a sibling
-of `uzumcheckout.uz` (e.g. `chk-api.uzumcheckout.uz`), add it here once
-known rather than guessing.
+**2026-10-02 update**: the exact production Checkout host was confirmed by
+Uzum support as `checkout-key.uzumcheckout.uz`. The tinyproxy filter `(^|\.)uzumcheckout\.uz$`
+covers it without changes. Egress from `51.250.78.204` was whitelisted by Uzum.
 
 **Separately discovered, unresolved blocker**: `test-chk-api.uzumcheckout.uz`
 returns HTTP 403 (generic nginx) for every path/method/header combination

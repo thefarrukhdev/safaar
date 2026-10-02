@@ -509,6 +509,7 @@ describe('PaymentsService — Uzum Merchant API', () => {
     await service.failStaleUzumTransactions();
     const upd = findCall(pg.query, "SET status = 'failed'");
     expect(String(upd?.[0])).toContain("provider = 'uzum'");
+    expect(String(upd?.[0])).toContain("provider = 'uzum_checkout'");
     expect(String(upd?.[0])).toContain("interval '30 minutes'");
   });
 });

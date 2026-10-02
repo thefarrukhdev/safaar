@@ -146,6 +146,34 @@ export class PromosService {
     return rows.length > 0;
   }
 
+  /**
+   * Bron bekor qilinganda yoki muddati tugaganda ilgari sarflangan promo-kodni
+   * qaytaradi (usedCount'ni atomik ravishda kamaytiradi).
+   */
+  async release(code: string, db: QueryExecutor = this.pg): Promise<boolean> {
+    const slug = String(code ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-');
+    if (!slug) {
+      return false;
+    }
+
+    const rows = await db.query<PromoRow>(
+      `update cms_entries
+       set metadata = jsonb_set(
+         metadata,
+         '{usedCount}',
+         to_jsonb(greatest(0, coalesce((metadata ->> 'usedCount')::int, 0) - 1))
+       )
+       where type = 'promo' and status = 'published' and slug = $1
+       returning id::text`,
+      [slug],
+    );
+
+    return rows.length > 0;
+  }
+
   /** `GET /promos` — hozir amal qiladigan promo-kodlar ro'yxati (ommaviy). */
   async active() {
     const rows = await this.rows(

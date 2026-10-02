@@ -825,6 +825,24 @@ describe('PaymentsService.reconcileUzumCheckoutPayments (fail-closed)', () => {
     expect(res).toEqual({ scanned: 0, updated: 0 });
     expect(pg.query).not.toHaveBeenCalled();
   });
+
+  it('failStaleUzumTransactions — 30 daqiqadan oshgan uzum_checkout to‘lovlarini ham failed qiladi', async () => {
+    const pg = {
+      query: jest.fn().mockResolvedValueOnce([{ id: 'p-checkout-1' }]),
+    };
+    const service = new PaymentsService(
+      pg as unknown as PostgresService,
+      { get: jest.fn() } as never,
+      { isConfigured: () => false } as never,
+      { isConfigured: () => false } as never,
+      new UzumProvider({ get: jest.fn() } as never),
+      new UzumCheckoutProvider({ get: () => undefined } as never),
+    );
+
+    await service.failStaleUzumTransactions();
+    const upd = findCall(pg.query, "SET status = 'failed'");
+    expect(String(upd?.[0])).toContain("provider = 'uzum_checkout'");
+  });
 });
 
 /**

@@ -81,7 +81,7 @@ Serverdagi `/home/scarygun/safaar-stack/backend.env` ga kiritilgan parametrlar:
 
 ```env
 # Uzum Checkout Production API
-UZUM_CHECKOUT_BASE_URL=https://api.uzumcheckout.uz
+UZUM_CHECKOUT_BASE_URL=https://checkout-key.uzumcheckout.uz
 UZUM_CHECKOUT_TERMINAL_ID=7680088a-4154-4e95-8a06-e1f854579b0d
 UZUM_CHECKOUT_API_KEY=299ff14d01fbd8bf935c6111cfa7b9365857780fd6d079bcfc77a8b85f0be730
 

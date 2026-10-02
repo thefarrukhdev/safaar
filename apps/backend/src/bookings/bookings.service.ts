@@ -273,7 +273,11 @@ export class BookingsService {
              AND expires_at < $2
              AND NOT EXISTS (
                SELECT 1 FROM payments p
-               WHERE p.booking_id = bookings.id AND p.status IN ('paid', 'processing')
+               WHERE p.booking_id = bookings.id
+                 AND (
+                   p.status = 'paid'
+                   OR (p.status = 'processing' AND p.created_at > $2::timestamptz - interval '5 minutes')
+                 )
              )
            RETURNING *`,
           [BS.EXPIRED, now, BS.PENDING, BS.AWAITING_PAYMENT],
@@ -565,6 +569,9 @@ export class BookingsService {
       // eng jiddiy moliyaviy xato). Endi ziddiyatli bronlardagi band
       // qilingan XONALAR SONI (`price_snapshot.rooms`) yig'indisi hisoblab,
       // `total_inventory` bilan solishtiriladi.
+      // Foydalanuvchi/mehmon to'lov oynasidan ortga qaytib yana qayta bron qilayotgan
+      // bo'lsa, o'zining avvalgi to'lanmagan pending/awaiting_payment broni uni
+      // bloklab qo'ymasligi uchun ziddiyat hisobidan chiqariladi.
       const activeExclusions = [BS.CANCELLED, BS.EXPIRED, BS.COMPLETED];
       const [{ booked_count: bookedCountRaw }] = isRestaurant
         ? await tx.query<{ booked_count: string | number }>(
@@ -575,8 +582,26 @@ export class BookingsService {
                AND check_in = $5::date
                AND slot_time IS NOT NULL
                AND slot_time < ($6::time + interval '90 minutes')
-               AND $6::time < (slot_time + interval '90 minutes')`,
-            [room.id, ...activeExclusions, checkIn, slotTime],
+               AND $6::time < (slot_time + interval '90 minutes')
+               AND NOT (
+                 status IN ('pending', 'awaiting_payment')
+                 AND (
+                   ($7::uuid IS NOT NULL AND user_id = $7::uuid)
+                   OR ($7::uuid IS NULL AND user_id IS NULL AND (
+                     ($8::text IS NOT NULL AND $8 != '' AND guest_email = $8)
+                     OR ($9::text IS NOT NULL AND $9 != '' AND guest_phone = $9)
+                   ))
+                 )
+               )`,
+            [
+              room.id,
+              ...activeExclusions,
+              checkIn,
+              slotTime,
+              userId ?? null,
+              guest.email || null,
+              guest.phone || null,
+            ],
           )
         : await tx.query<{ booked_count: string | number }>(
             `SELECT COALESCE(SUM(COALESCE((price_snapshot->>'rooms')::int, 1)), 0) AS booked_count
@@ -584,8 +609,26 @@ export class BookingsService {
              WHERE room_id = $1::uuid
                AND status NOT IN ($2, $3, $4)
                AND check_in < $5::date
-               AND $6::date < check_out`,
-            [room.id, ...activeExclusions, checkOut, checkIn],
+               AND $6::date < check_out
+               AND NOT (
+                 status IN ('pending', 'awaiting_payment')
+                 AND (
+                   ($7::uuid IS NOT NULL AND user_id = $7::uuid)
+                   OR ($7::uuid IS NULL AND user_id IS NULL AND (
+                     ($8::text IS NOT NULL AND $8 != '' AND guest_email = $8)
+                     OR ($9::text IS NOT NULL AND $9 != '' AND guest_phone = $9)
+                   ))
+                 )
+               )`,
+            [
+              room.id,
+              ...activeExclusions,
+              checkOut,
+              checkIn,
+              userId ?? null,
+              guest.email || null,
+              guest.phone || null,
+            ],
           );
 
       const bookedCount = Number(bookedCountRaw);
@@ -848,6 +891,9 @@ export class BookingsService {
         });
       }
 
+      // Foydalanuvchi/mehmon to'lov oynasidan ortga qaytib yana qayta bron qilayotgan
+      // bo'lsa, o'zining avvalgi to'lanmagan pending/awaiting_payment broni uni
+      // bloklab qo'ymasligi uchun ziddiyat hisobidan chiqariladi.
       const activeExclusions = [BS.CANCELLED, BS.EXPIRED, BS.COMPLETED];
       const conflicts = await tx.query<{ id: string }>(
         `SELECT id FROM bookings
@@ -855,8 +901,26 @@ export class BookingsService {
            AND status NOT IN ($2, $3, $4)
            AND check_in < $5::date
            AND $6::date < check_out
+           AND NOT (
+             status IN ('pending', 'awaiting_payment')
+             AND (
+               ($7::uuid IS NOT NULL AND user_id = $7::uuid)
+               OR ($7::uuid IS NULL AND user_id IS NULL AND (
+                 ($8::text IS NOT NULL AND $8 != '' AND guest_email = $8)
+                 OR ($9::text IS NOT NULL AND $9 != '' AND guest_phone = $9)
+               ))
+             )
+           )
          LIMIT 1`,
-        [locked.id, ...activeExclusions, checkOut, checkIn],
+        [
+          locked.id,
+          ...activeExclusions,
+          checkOut,
+          checkIn,
+          userId ?? null,
+          guest.email || null,
+          guest.phone || null,
+        ],
       );
 
       if (conflicts[0]) {
@@ -1317,8 +1381,27 @@ export class BookingsService {
     return this.createPayment(this.pg, booking);
   }
 
-  async cancelPreview(actor: RequestActor | undefined, id: string) {
-    const booking = await this.assertBooking(id, actor);
+  async cancelPreview(
+    actor: RequestActor | undefined,
+    id: string,
+    guestAccessToken?: string,
+  ) {
+    const booking = await this.assertBooking(id, actor, guestAccessToken);
+
+    if (
+      booking.status === BS.PENDING ||
+      booking.status === BS.AWAITING_PAYMENT
+    ) {
+      return {
+        booking_id: id,
+        currency: booking.currency,
+        paid_amount: 0,
+        refund_amount: 0,
+        penalty_amount: 0,
+        policy: 'To‘lov amalga oshirilmagan — bepul bekor qilish',
+      };
+    }
+
     const total = Number(booking.total_amount);
     const refundAmount = Math.round(total * 0.8);
 
@@ -1336,8 +1419,9 @@ export class BookingsService {
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
+    guestAccessToken?: string,
   ) {
-    const booking = await this.assertBooking(id, actor);
+    const booking = await this.assertBooking(id, actor, guestAccessToken);
 
     if (booking.status === BS.CANCELLED) {
       throw new UnprocessableEntityException({
@@ -1797,6 +1881,8 @@ export class BookingsService {
 
     return bookingRow;
   }
+
+
 
   private async addStatusHistory(
     db: PostgresTransaction,

@@ -11,12 +11,15 @@ import { PaymentSelector, type PaymentMethodId } from "./PaymentSelector";
 import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
 import { previewPayment } from "@/lib/services/payments/actions";
 
-export function UnifiedCheckoutClient() {
+import type { CheckoutDict } from "@/i18n/dictionaries";
+
+export function UnifiedCheckoutClient({ dict }: { dict?: CheckoutDict }) {
   const searchParams = useSearchParams();
   const params = useParams<{ lang?: string }>();
   const router = useRouter();
   const locale = params?.lang || "uz";
   const t = checkoutTranslations[locale as keyof typeof checkoutTranslations] || checkoutTranslations.uz;
+
 
   const type = searchParams.get("type") || "restaurant";
   const entityId = searchParams.get("entityId") || "";
@@ -200,6 +203,7 @@ export function UnifiedCheckoutClient() {
                   <PaymentSelector 
                     defaultValue={paymentMethod} 
                     onChange={setPaymentMethod} 
+                    dict={dict?.paymentMethods}
                   />
                 </div>
               )}

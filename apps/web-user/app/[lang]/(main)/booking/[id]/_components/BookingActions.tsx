@@ -14,18 +14,22 @@ import { useRouter } from "next/navigation";
 export function BookingActions({
   locale,
   isConfirmed,
+  isCancelled = false,
   bookingId,
   totalSum,
   paymentMethod = "online",
   token,
+  guestToken,
   dict,
 }: {
   locale: string;
   isConfirmed: boolean;
+  isCancelled?: boolean;
   bookingId?: string;
   totalSum?: number;
   paymentMethod?: string;
   token?: string;
+  guestToken?: string;
   dict: {
     voucher?: string;
     backHome?: string;
@@ -104,7 +108,7 @@ export function BookingActions({
     setLoadingPreview(true);
     setError(null);
     try {
-      const data = await api.bookings.cancelPreview(bookingId, { token });
+      const data = await api.bookings.cancelPreview(bookingId, { token, guestToken });
       setPreviewData(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
@@ -120,8 +124,8 @@ export function BookingActions({
     try {
       await api.bookings.cancelBooking(
         bookingId,
-        dict.actions?.userCancelledReason || "",
-        { token }
+        dict.actions?.userCancelledReason || "Foydalanuvchi tomonidan bekor qilindi",
+        { token, guestToken }
       );
       setCancelModalOpen(false);
       router.refresh();
@@ -164,13 +168,11 @@ export function BookingActions({
           </Button>
         )}
 
-        {/* `POST /bookings/:id/cancel(-preview)` — `@Roles(USER, PARTNER,
-            ADMIN, SUPER_ADMIN)`, guest-token qo'llab-quvvatlanmaydi
-            (controller darajasida). Guestga bu tugmani ko'rsatish har doim
-            401 bilan tugaydigan, chalkash amalni taklif qilardi — shu
-            sabab faqat `token` (login qilingan sessiya) mavjud bo'lganda
-            ko'rsatiladi. */}
-        {isConfirmed && bookingId && token && (
+        {/* Bekor qilish:
+            1) Tasdiqlangan (to'langan) bronlar uchun: tizimga kirgan foydalanuvchi (token)
+            2) To'lanmagan / kutilayotgan (!isConfirmed) bronlar uchun: tizimga kirgan user YOKI guest (guestToken)
+               Foydalanuvchi to'lashni istamasa yoki adashgan bo'lsa, xonani darhol bo'shatishi mumkin. */}
+        {!isCancelled && ((isConfirmed && token) || (!isConfirmed && (token || guestToken))) && bookingId && (
           <Button
             type="button"
             variant="secondary"
@@ -179,8 +181,20 @@ export function BookingActions({
             className="gap-2 font-bold text-red-600 hover:text-red-700  rounded-full active:scale-[0.97]"
           >
             <XCircle className="h-4 w-4" />
-            {dict.actions?.cancelBooking}
+            {dict.actions?.cancelBooking || "Bekor qilish"}
           </Button>
+        )}
+
+        {isCancelled && (
+          <Link href={`/${locale}/hotels`}>
+            <Button
+              variant="accent"
+              size="lg"
+              className="font-bold rounded-full active:scale-[0.97]"
+            >
+              Qayta bron qilish
+            </Button>
+          </Link>
         )}
 
         {isConfirmed && bookingId && token && (

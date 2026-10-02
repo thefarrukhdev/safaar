@@ -237,7 +237,6 @@ export function CheckoutForm({
           <PaymentSelector
             defaultValue="uzcard"
             name="paymentMethod"
-            allow={["uzcard"]}
             dict={dict.paymentMethods}
             onChange={setPaymentMethod}
           />

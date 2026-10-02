@@ -36,6 +36,10 @@ export function BookingChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await api.bookings.getMessages(bookingId, { token });
       setMessages(data || []);
@@ -58,7 +62,7 @@ export function BookingChat({
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || sending) return;
+    if (!text.trim() || sending || !token) return;
 
     setSending(true);
     try {

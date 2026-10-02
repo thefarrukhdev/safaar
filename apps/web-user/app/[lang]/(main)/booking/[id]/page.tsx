@@ -6,6 +6,7 @@ import {
   CreditCard,
   RotateCcw,
   ShieldCheck,
+  XCircle,
 } from "lucide-react";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -114,8 +115,9 @@ export default async function BookingDetailPage({
   // o'rnini bosmaydi (docs/frontend-payment-integration.md, 6-bo'lim).
   const isRefunded =
     payment?.status === "refunded" || payment?.status === "reversed";
+  const isCancelled = booking.status.toLowerCase() === "cancelled";
   const isProcessing =
-    !isConfirmed && !isFailed && !isRefunded && payment?.status === "processing";
+    !isConfirmed && !isFailed && !isRefunded && !isCancelled && payment?.status === "processing";
 
   return (
     <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
@@ -192,6 +194,18 @@ export default async function BookingDetailPage({
             daqiqa vaqt olishi mumkin — sahifani yangilab holatni qayta tekshiring.
           </p>
         </div>
+      ) : isCancelled ? (
+        <div className="flex flex-col gap-2 bg-slate-100 p-6 sm:p-8 ">
+          <div className="flex items-center gap-3">
+            <XCircle className="h-7 w-7 shrink-0 text-slate-600 " />
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900  sm:text-2xl">
+              Bron bekor qilingan
+            </h1>
+          </div>
+          <p className="text-sm font-medium text-slate-600 ">
+            Ushbu bron bekor qilingan va inventar ozod etilgan.
+          </p>
+        </div>
       ) : (
         <div className="bg-white p-6 sm:p-8 ">
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 ">
@@ -241,7 +255,7 @@ export default async function BookingDetailPage({
       </section>
       </div>
 
-      {(!isConfirmed && !isAwaitingCash && !isRefunded) || isFailed ? (
+      {(!isConfirmed && !isAwaitingCash && !isRefunded && !isCancelled) || isFailed ? (
         <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-6  ">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -271,6 +285,16 @@ export default async function BookingDetailPage({
             initialProvider={(providerQuery as PaymentProvider) ?? (payment?.provider as PaymentProvider) ?? "uzcard"}
             guestToken={guestTokenQuery}
             bookingAmount={booking.totalSum}
+            existingPayment={
+              payment?.status === "processing"
+                ? {
+                    provider: (payment.provider as PaymentProvider) || "uzcard",
+                    status: payment.status,
+                    url: payment.url,
+                    amount: payment.amount,
+                  }
+                : undefined
+            }
           />
         </section>
       ) : null}
@@ -278,10 +302,12 @@ export default async function BookingDetailPage({
       <BookingActions
         locale={locale}
         isConfirmed={isConfirmed}
+        isCancelled={isCancelled}
         bookingId={booking.id}
         totalSum={booking.totalSum}
         paymentMethod={payment?.provider || "online"}
         token={session?.accessToken}
+        guestToken={guestTokenQuery}
         dict={{
           voucher: dict.voucher,
           backHome: dict.backHome,
@@ -290,14 +316,16 @@ export default async function BookingDetailPage({
         }}
       />
 
-      <section className="mt-8">
-        <BookingChat
-          bookingId={booking.id}
-          token={session?.accessToken}
-          dict={dict.chat}
-          locale={locale}
-        />
-      </section>
+      {session?.accessToken && (
+        <section className="mt-8">
+          <BookingChat
+            bookingId={booking.id}
+            token={session.accessToken}
+            dict={dict.chat}
+            locale={locale}
+          />
+        </section>
+      )}
     </main>
   );
 }

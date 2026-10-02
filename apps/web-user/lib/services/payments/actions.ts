@@ -10,6 +10,7 @@ import type { PaymentProvider, PaymentResult } from "./payments";
 export interface RetryPaymentState {
   error?: string;
   url?: string;
+  provider?: string;
 }
 
 /**
@@ -103,7 +104,10 @@ export async function createPaymentSessionAction(
         token: session?.accessToken,
         guestToken,
       });
-      return { url: res.paymentUrl ?? "" };
+      return {
+        url: res.paymentUrl ?? "",
+        provider: (res.provider as PaymentProvider) ?? provider,
+      };
     },
     { error: "ERROR" },
   );
@@ -116,7 +120,7 @@ export async function createPaymentSessionAction(
   // buni SAFAAR sahifasi ICHIDAGI iframe'da ochadi (`UzumCheckoutFrame`).
   // Karta ma'lumotini hamon FAQAT Uzum'ning o'z sahifasi yig'adi.
   if (checkoutUrl) {
-    return { url: checkoutUrl };
+    return { url: checkoutUrl, provider: result.provider };
   }
 
   redirect(`/${locale}/booking/${bookingId}?payment=pending&provider=${provider}${guestTokenParam}`);

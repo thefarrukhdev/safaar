@@ -134,8 +134,8 @@ export function PaymentSelector({
           const isSelected = selected === option.id;
           const methodInfo: CheckoutDict["paymentMethods"][keyof CheckoutDict["paymentMethods"]] | undefined =
             option.dictKey ? dict?.[option.dictKey] : undefined;
-          const nameText = methodInfo?.title ?? option.name ?? option.dictKey ?? option.id;
-          const subtitleText = methodInfo?.desc ?? option.subtitle ?? "";
+          const nameText = option.name ?? methodInfo?.title ?? option.dictKey ?? option.id;
+          const subtitleText = option.subtitle ?? methodInfo?.desc ?? "";
           const badges: string[] = methodInfo?.badges ?? option.badges ?? [];
 
           return (

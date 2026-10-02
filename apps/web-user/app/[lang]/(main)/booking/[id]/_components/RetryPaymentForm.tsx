@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2 } from "lucide-react";
-import { createPaymentSessionAction, previewPayment, type RetryPaymentState } from "@/lib/payments/actions";
+import { AlertCircle } from "lucide-react";
+import { createPaymentSessionAction, type RetryPaymentState } from "@/lib/payments/actions";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { Button } from "@/components/ui/Button";
 import { formatSum } from "@/lib/money";
-import type { PaymentResult } from "@/lib/services/payments/payments";
 import { UzumCheckoutFrame } from "./UzumCheckoutFrame";
 
 // Onlayn to'lov usullari — "cash" bu yerda ATAYLAB YO'Q: backend
@@ -27,6 +26,30 @@ const METHOD_LABELS: Record<string, string> = {
   cash: "Joyida to'lash",
 };
 
+const CARD_SCHEME_FEE_RATES: Record<string, number> = {
+  uzcard: 0.015,
+  humo: 0.015,
+  visa: 0.035,
+  mastercard: 0.035,
+};
+
+function calculateFee(base: number, method: PaymentMethodId) {
+  const rate = CARD_SCHEME_FEE_RATES[method] ?? 0;
+  if (rate === 0 || !Number.isFinite(base) || base <= 0) {
+    return { baseAmount: base, feeRate: 0, feeAmount: 0, totalAmount: base };
+  }
+  const baseTiyin = Math.round(base * 100);
+  const rateBasisPoints = Math.round(rate * 10_000);
+  const feeTiyin = Math.round((baseTiyin * rateBasisPoints) / 10_000);
+  const feeAmount = feeTiyin / 100;
+  return {
+    baseAmount: base,
+    feeRate: rate,
+    feeAmount,
+    totalAmount: base + feeAmount,
+  };
+}
+
 const ERROR_MESSAGES: Record<string, string> = {
   AUTH_TOKEN_INVALID: "Sessiyangiz tugagan yoki token yaroqsiz. Iltimos, qayta kiring.",
   AUTH_SESSION_REVOKED: "Sessiyangiz bekor qilingan. Iltimos, qayta kiring.",
@@ -42,26 +65,31 @@ function errorMessage(code?: string): string {
   return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.ERROR;
 }
 
+export interface ExistingPaymentInfo {
+  provider: PaymentMethodId;
+  status: string;
+  url?: string;
+  amount?: number;
+}
+
 export function RetryPaymentForm({
   bookingId,
   locale,
   initialProvider = "uzcard",
   guestToken,
   bookingAmount,
+  existingPayment,
 }: {
   bookingId: string;
   locale: string;
   initialProvider?: PaymentMethodId;
   guestToken?: string;
   bookingAmount: number;
+  existingPayment?: ExistingPaymentInfo;
 }) {
   const [selected, setSelected] = useState<PaymentMethodId>(
     ONLINE_METHODS.includes(initialProvider) ? initialProvider : "uzcard",
   );
-  const [preview, setPreview] = useState<PaymentResult | null>(null);
-  const [previewError, setPreviewError] = useState<string | undefined>();
-  const [isPreviewing, startPreview] = useTransition();
-  const requestSeq = useRef(0);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
@@ -71,126 +99,90 @@ export function RetryPaymentForm({
     {},
   );
 
-  // Fallback yo'l: agar client state yo'qolib, forma `createPaymentSessionAction`
-  // orqali qayta yuborilsa, natijadagi URL shu yerda iframe sifatida ochiladi
-  // (endi hech qachon boshqa domenga redirect qilinmaydi).
+  // Fallback / muvaffaqiyatli sessiya URL'ini iframe sifatida ochish
   useEffect(() => {
-    if (state.url) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (state.url && !state.error) {
       setIframeUrl(state.url);
     }
-  }, [state.url]);
+  }, [state.url, state.error]);
+
+  const hasActiveSession = Boolean(
+    existingPayment && existingPayment.status === "processing" && existingPayment.url,
+  );
+  const isLockedToOther = hasActiveSession && existingPayment!.provider !== selected;
+  const stateMismatch = Boolean(state.provider && state.provider !== selected);
+  const providerMismatch = isLockedToOther || stateMismatch;
+  const mismatchProvider = (stateMismatch ? state.provider : existingPayment?.provider) ?? selected;
 
   const handlePayClick = () => {
-    if (preview?.paymentUrl) {
-      setIframeUrl(preview.paymentUrl);
+    const directUrl = providerMismatch
+      ? state.url || existingPayment?.url
+      : hasActiveSession && existingPayment?.provider === selected
+        ? existingPayment?.url
+        : null;
+
+    if (directUrl) {
+      setIframeUrl(directUrl);
       return;
     }
+
     formRef.current?.requestSubmit();
   };
 
-  const runPreview = (provider: PaymentMethodId) => {
-    setPreviewError(undefined);
-    const seq = ++requestSeq.current;
-    startPreview(async () => {
-      const result = await previewPayment(bookingId, provider, guestToken);
-      // Eskirgan (stale) javobni e'tiborsiz qoldiramiz — foydalanuvchi
-      // tez-tez usul almashtirsa, faqat ENG OXIRGI so'rov natijasi qabul
-      // qilinadi (poyga holati oldini olish).
-      if (seq !== requestSeq.current) return;
-      if (result.error) {
-        setPreviewError(result.error);
-        setPreview(null);
-        return;
-      }
-      setPreview(result.payment ?? null);
-    });
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    runPreview(selected);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleSelect = (id: PaymentMethodId) => {
     setSelected(id);
-    setPreview(null);
-    runPreview(id);
   };
 
-  // Backend boshqa (yangi so'ralgan) usulga o'ta olmasligi mumkin — agar
-  // eski to'lov allaqachon haqiqiy tashqi sessiyaga ega bo'lsa (masalan
-  // To'lov tizimida ro'yxatdan o'tgan buyurtma). Bu holda javobdagi `provider`
-  // foydalanuvchi tanlagan bilan mos kelmaydi — buni aniq ko'rsatamiz,
-  // xato deb yashirmaymiz (docs 3-bo'lim).
-  const providerMismatch = Boolean(preview && preview.provider !== selected);
-  const busy = isPreviewing || isConfirming;
-  const hasFee = Boolean(preview && preview.feeAmount > 0 && !providerMismatch);
+  const fee = calculateFee(bookingAmount, selected);
+  const hasFee = fee.feeAmount > 0 && !providerMismatch;
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="bookingId" value={bookingId} />
+      <input type="hidden" name="paymentMethod" value={selected} />
       {guestToken && <input type="hidden" name="guestToken" value={guestToken} />}
 
       <PaymentSelector
         defaultValue={selected}
-        name="paymentMethod"
+        name="paymentMethodSelector"
         allow={ONLINE_METHODS}
         onChange={handleSelect}
-        disabled={busy}
+        disabled={isConfirming}
       />
 
-      {/* Fee / yakuniy summa paneli — HAMMA raqam backend'dan (preview'dan),
-          frontend hech qanday fee/jamini mustaqil hisoblamaydi. */}
+      {/* Fee / yakuniy summa paneli */}
       <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900/60">
         <div className="flex items-center justify-between">
           <span className="text-slate-500 dark:text-slate-400">Bron summasi</span>
           <span className="font-semibold text-slate-900 dark:text-white">
-            {formatSum(preview?.baseAmount ?? bookingAmount)}
+            {formatSum(bookingAmount)}
           </span>
         </div>
         {hasFee && (
           <div className="flex items-center justify-between">
             <span className="text-slate-500 dark:text-slate-400">
-              {METHOD_LABELS[selected] ?? selected} to'lov haqi ({((preview!.feeRate) * 100).toFixed(1)}%)
+              {METHOD_LABELS[selected] ?? selected} to&apos;lov haqi ({(fee.feeRate * 100).toFixed(1)}%)
             </span>
             <span className="font-semibold text-amber-700 dark:text-amber-400">
-              + {formatSum(preview!.feeAmount)}
+              + {formatSum(fee.feeAmount)}
             </span>
           </div>
         )}
         <div className="mt-1 flex items-center justify-between border-t border-slate-200 pt-1.5 dark:border-slate-800">
-          <span className="font-bold text-slate-900 dark:text-white">Jami to'lanadigan summa</span>
+          <span className="font-bold text-slate-900 dark:text-white">Jami to&apos;lanadigan summa</span>
           <span className="flex items-center gap-1.5 font-extrabold text-primary-700 dark:text-primary-400">
-            {isPreviewing && !preview && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {formatSum(!providerMismatch && preview ? preview.amount : bookingAmount)}
+            {formatSum(providerMismatch && existingPayment?.amount ? existingPayment.amount : fee.totalAmount)}
           </span>
         </div>
       </div>
 
-      {/* MUHIM: `providerMismatch` bo'lsa ham forma hamon joriy `selected`
-          qiymatini yuboradi — bu XATO EMAS. Backend
-          (`PaymentsService.createPayment()`) so'ralgan usul mavjud, hali
-          yakunlanmagan HAQIQIY tashqi sessiyaga mos kelmasa, uni jim
-          tashlab yubormaydi — o'sha ESKI (eski `preview.provider`) qatorni
-          o'zining haqiqiy `payment_url`i bilan qaytaradi. Shu sabab tugma
-          bosilganda foydalanuvchi baribir TO'G'RI (eski, hali kutilayotgan)
-          checkoutga yo'naltiriladi — frontend buni qo'lda qayta yozishi
-          shart emas. */}
-      {providerMismatch && preview && (
+      {providerMismatch && (
         <p className="flex items-start gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          Siz avval boshlagan <strong>{METHOD_LABELS[preview.provider] ?? preview.provider}</strong> orqali
-          to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan
-          so'ng qayta urinib ko'ring.
-        </p>
-      )}
-
-      {previewError && (
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">
-          {errorMessage(previewError)}
+          Siz avval boshlagan <strong>{METHOD_LABELS[mismatchProvider] ?? mismatchProvider}</strong> orqali
+          to&apos;lov hali kutilmoqda. Avval o&apos;shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan
+          so&apos;ng qayta urinib ko&apos;ring.
         </p>
       )}
 
@@ -206,12 +198,12 @@ export function RetryPaymentForm({
         variant="accent"
         size="lg"
         loading={isConfirming}
-        disabled={busy || (!preview?.paymentUrl && !providerMismatch)}
+        disabled={isConfirming}
         className="w-full font-bold shadow-md"
       >
         {providerMismatch
-          ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[preview?.provider ?? ""] ?? ""})`
-          : `To'lash — ${formatSum(preview ? preview.amount : bookingAmount)}`}
+          ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[mismatchProvider] ?? ""})`
+          : `To'lash — ${formatSum(fee.totalAmount)}`}
       </Button>
 
       {iframeUrl && (

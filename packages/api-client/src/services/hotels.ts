@@ -52,6 +52,20 @@ export const hotelsService = {
     locale: Locale,
     params: HotelListParams = {},
   ): Promise<HotelListResult> {
+    let sort_by: string | undefined;
+    let order: string | undefined;
+
+    if (params.sort === "price_asc") {
+      sort_by = "min_price";
+      order = "asc";
+    } else if (params.sort === "price_desc") {
+      sort_by = "min_price";
+      order = "desc";
+    } else if (params.sort === "rating") {
+      sort_by = "rating_average";
+      order = "desc";
+    }
+
     const raw = await rawApi.get<unknown>("/hotels", {
       query: {
         city_id: params.cityId,
@@ -62,7 +76,8 @@ export const hotelsService = {
         page: params.page,
         limit: params.limit,
         featured: params.featured ? "true" : undefined,
-        sort: params.sort,
+        sort_by,
+        order,
         min_price: params.minPrice,
         max_price: params.maxPrice,
         ne_lat: params.neLat,

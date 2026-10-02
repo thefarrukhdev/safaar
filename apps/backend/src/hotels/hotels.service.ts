@@ -106,6 +106,12 @@ export class HotelsService {
       params.push(query.city_id);
     }
 
+    if (query.search) {
+      conditions.push(`(h.address ILIKE $${paramIndex} OR ht.name ILIKE $${paramIndex})`);
+      params.push(`%${query.search}%`);
+      paramIndex++;
+    }
+
     // `?min_stars=` yoki `?stars=` — mehmonxona yulduzlari bo'yicha filtr.
     // Frontendda "4 va yuqori", "3 va yuqori" tanlanganida `stars="4"`, `stars="3"` yuboriladi (>= stars).
     // Shuningdek, bir nechta yulduzlar (`stars="3,4,5"` yoki `stars=["3", "4"]`) ANY(...) orqali qo'llab-quvvatlanadi.

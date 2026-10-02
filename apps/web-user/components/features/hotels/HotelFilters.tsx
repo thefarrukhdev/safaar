@@ -25,15 +25,7 @@ export function HotelFilters({
   const [priceRange, setPriceRange] = useState<number>(
     Number(searchParams.get("max_price")) || 2000000
   );
-  const [selectedType, setSelectedType] = useState<string>(
-    pathname.includes("dachas")
-      ? "dachas"
-      : pathname.includes("sanatoriums")
-      ? "sanatoriums"
-      : pathname.includes("resorts")
-      ? "resorts"
-      : "hotels"
-  );
+
   const [amenities, setAmenities] = useState<string[]>(searchParams.getAll("amenities"));
   const [paymentType, setPaymentType] = useState<string | undefined>(searchParams.get("payment_type") ?? undefined);
 
@@ -117,6 +109,15 @@ export function HotelFilters({
         applyLabel={dict.filters.apply}
         resetLabel={dict.filters.reset}
       >
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Qidirish..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
         {/* NARX (1 KECHA) */}
         <FilterGroup title={dict.filters.pricePerNight}>
           <div className="flex flex-col gap-2 pt-1">
@@ -133,7 +134,7 @@ export function HotelFilters({
               step={50000}
               value={priceRange}
               onChange={(e) => setPriceRange(Number(e.target.value))}
-              className="h-2 w-full accent-blue-600 bg-slate-200 rounded-lg cursor-pointer "
+              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
           </div>
         </FilterGroup>
@@ -142,9 +143,9 @@ export function HotelFilters({
         <FilterGroup title={dict.filters.stars}>
           <div className="flex flex-col gap-2 pt-1">
             {[
-              { val: "5", label: dict.starOptions.five, starsCount: 5, count: 2 },
-              { val: "4", label: dict.starOptions.fourPlus, starsCount: 4, count: 3 },
-              { val: "3", label: dict.starOptions.threePlus, starsCount: 3, count: 5 },
+              { val: "5", label: dict.starOptions.five, starsCount: 5 },
+              { val: "4", label: dict.starOptions.fourPlus, starsCount: 4 },
+              { val: "3", label: dict.starOptions.threePlus, starsCount: 3 },
             ].map((item) => (
               <label
                 key={item.val}
@@ -166,42 +167,12 @@ export function HotelFilters({
                     </span>
                   </span>
                 </span>
-                <span className="text-slate-400 text-[11px] font-semibold">
-                  ({item.count})
-                </span>
               </label>
             ))}
           </div>
         </FilterGroup>
 
-        {/* MAHSULOT TURI */}
-        <FilterGroup title={dict.filters.propertyType}>
-          <div className="flex flex-col gap-2 pt-1">
-            {[
-              { id: "hotels", name: dict.types.hotels, count: 4 },
-              { id: "sanatoriums", name: dict.types.sanatoriums, count: 1 },
-              { id: "resorts", name: dict.types.resorts, count: 0 },
-            ].map((cat) => (
-              <label
-                key={cat.id}
-                className="flex items-center justify-between text-xs font-bold text-slate-700  cursor-pointer hover:text-blue-600"
-              >
-                <span className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedType === cat.id}
-                    onChange={() => setSelectedType(cat.id)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span>{cat.name}</span>
-                </span>
-                <span className="text-slate-400 text-[11px] font-semibold">
-                  ({cat.count})
-                </span>
-              </label>
-            ))}
-          </div>
-        </FilterGroup>
+
 
         {/* QULAYLIKLAR (AMENITIES) */}
         <FilterGroup title={dict.filters.amenities}>

@@ -15,6 +15,8 @@ export interface User {
   role?: Role;
   isBlocked?: boolean;
   blocked_reason?: string | null;
+  booking_blocked_until?: string | null;
+  booking_blocked_reason?: string | null;
   phone_verified_at?: string | null;
   email_verified_at?: string | null;
   last_login_at?: string | null;
@@ -45,6 +47,8 @@ export interface UserProfile extends User {
   status: UserStatus;
   preferred_language: Language;
   blocked_reason: string | null;
+  booking_blocked_until: string | null;
+  booking_blocked_reason: string | null;
   phone_verified_at: string | null;
   email_verified_at: string | null;
   last_login_at: string | null;

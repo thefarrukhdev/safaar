@@ -92,11 +92,7 @@ describe('HttpErrorFilter (regression: 429/ThrottlerException was never logged a
 
   beforeEach(() => {
     filter = new HttpErrorFilter();
-    warnSpy = jest.spyOn(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (filter as any).logger,
-      'warn',
-    );
+    warnSpy = jest.spyOn((filter as any).logger, 'warn');
   });
 
   it('logs a rate_limited WARN with method/path/ip when the guard throws ThrottlerException', () => {

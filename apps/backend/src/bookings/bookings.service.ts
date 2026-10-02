@@ -5,6 +5,8 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -36,8 +38,10 @@ import {
   type ActiveVehiclePromotion,
 } from '../common/vehicle-pricing';
 import { GuestBookingAccessService } from '../common/guest-booking-access.service';
+import { otpStore, type OtpChallenge } from '../auth/otp-store';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { EmailService } from '../infrastructure/email.service';
+import { SmsService } from '../infrastructure/sms.service';
 import {
   PostgresService,
   type PostgresTransaction,
@@ -49,6 +53,12 @@ import {
 import { EventsService } from '../realtime/events.service';
 import { PaymentsService } from '../payments/payments.service';
 import { isCardScheme } from '../payments/providers/card-scheme-fee';
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
 
 /**
  * DB-level booking status constants (lowercase, matching pg enum values).
@@ -154,6 +164,7 @@ export class BookingsService {
     private readonly promosService: PromosService,
     private readonly paymentsService: PaymentsService,
     private readonly cache: AppCacheService,
+    @Optional() private readonly smsService?: SmsService,
   ) {
     this.guestAccess = new GuestBookingAccessService(cache);
   }
@@ -385,6 +396,673 @@ export class BookingsService {
     }
   }
 
+  /**
+   * Foydalanuvchi yoki mehmon no-show (kelmaganlik) sababli 60 kunga
+   * bloklanganligini tekshiradi. Agar blok muddati hali tugamagan bo'lsa,
+   * har qanday yangi bron qilish darhol 403 Forbidden bilan to'xtatiladi.
+   */
+  async assertUserNotBlockedFromBooking(
+    actor: RequestActor | undefined,
+    phone?: string | null,
+    email?: string | null,
+  ): Promise<void> {
+    const rawActorId = actor?.id ? String(actor.id).trim() : null;
+    const userId = rawActorId && isUuid(rawActorId) ? rawActorId : null;
+    const normalizedPhone =
+      phone && isValidUzbekPhone(normalizePhone(phone))
+        ? normalizePhone(phone)
+        : null;
+    const rawEmail = email ? String(email).trim() : null;
+    const normalizedEmail =
+      rawEmail && isValidEmail(rawEmail) ? normalizeEmail(rawEmail) : null;
+
+    // 1. users jadvalida tekshirish
+    if (userId || normalizedPhone || normalizedEmail) {
+      const userRows = await this.pg.query<{
+        id: string;
+        booking_blocked_until: string | null;
+        booking_blocked_reason: string | null;
+      }>(
+        `SELECT id, booking_blocked_until, booking_blocked_reason
+         FROM users
+         WHERE (
+           ($1::uuid IS NOT NULL AND id = $1::uuid)
+           OR ($2::text IS NOT NULL AND phone = $2::text)
+           OR ($3::text IS NOT NULL AND lower(email) = lower($3::text))
+         )
+         AND booking_blocked_until IS NOT NULL
+         AND booking_blocked_until > NOW()
+         ORDER BY booking_blocked_until DESC
+         LIMIT 1`,
+        [userId, normalizedPhone, normalizedEmail],
+      );
+
+      if (userRows[0]?.booking_blocked_until) {
+        const until = new Date(userRows[0].booking_blocked_until).toISOString();
+        throw new ForbiddenException({
+          code: 'USER_BOOKING_BLOCKED',
+          message: `Siz avvalgi naqd to‘lovli broningizga kelmaganligingiz sababli 60 kunga bron qilishdan bloklangansiz. Blok muddati: ${until} gacha`,
+          blocked_until: until,
+          reason: userRows[0].booking_blocked_reason ?? 'no_show',
+        });
+      }
+    }
+
+    // 2. booking_penalties jadvalida tekshirish (telefon yoki user bo'yicha)
+    if (userId || normalizedPhone) {
+      try {
+        const penaltyRows = await this.pg.query<{
+          blocked_until: string;
+          reason: string;
+        }>(
+          `SELECT blocked_until, reason
+           FROM booking_penalties
+           WHERE (
+             ($1::uuid IS NOT NULL AND user_id = $1::uuid)
+             OR ($2::text IS NOT NULL AND phone = $2::text)
+           )
+           AND blocked_until > NOW()
+           ORDER BY blocked_until DESC
+           LIMIT 1`,
+          [userId, normalizedPhone],
+        );
+
+        if (penaltyRows[0]?.blocked_until) {
+          const until = new Date(penaltyRows[0].blocked_until).toISOString();
+          throw new ForbiddenException({
+            code: 'USER_BOOKING_BLOCKED',
+            message: `Siz avvalgi naqd to‘lovli broningizga kelmaganligingiz sababli 60 kunga bron qilishdan bloklangansiz. Blok muddati: ${until} gacha`,
+            blocked_until: until,
+            reason: penaltyRows[0].reason ?? 'no_show',
+          });
+        }
+      } catch (err: unknown) {
+        if (err instanceof ForbiddenException) {
+          throw err;
+        }
+        this.logger.debug?.(
+          `booking_penalties tekshiruvi: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
+  }
+
+  private isDemoAuthEnabled(): boolean {
+    return String(process.env.ENABLE_DEMO_AUTH ?? '').toLowerCase() === 'true';
+  }
+
+  private isPhoneAllowedForDemoAuth(phone: string): boolean {
+    const raw = process.env.DEMO_AUTH_ALLOWED_PHONES;
+    if (!raw) return false;
+    const allowed = raw
+      .split(',')
+      .map((entry) => normalizePhone(entry.trim()))
+      .filter((entry) => isValidUzbekPhone(entry));
+    return allowed.includes(phone);
+  }
+
+  async sendCashBookingOtp(
+    actor: RequestActor | undefined,
+    rawPhone: string,
+  ): Promise<{
+    challenge_id: string;
+    phone: string;
+    resend_after: number;
+    dev_code?: string;
+  }> {
+    const phone = normalizePhone(rawPhone);
+    if (!isValidUzbekPhone(phone)) {
+      throw new BadRequestException({
+        code: 'INVALID_PHONE',
+        message:
+          "Noto'g'ri telefon raqami. Format: +998XXXXXXXXX bo'lishi kerak",
+      });
+    }
+
+    // Bloklangan foydalanuvchiga SMS yuborib mablag' sarflamaymiz
+    await this.assertUserNotBlockedFromBooking(actor, phone);
+
+    let challenge: OtpChallenge;
+    try {
+      challenge = otpStore.create(phone, 'booking_cash_confirm');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === 'OTP_RESEND_TOO_SOON') {
+        throw new BadRequestException({
+          code: 'OTP_RESEND_TOO_SOON',
+          message: 'Kodni qayta yuborish uchun biroz kuting',
+        });
+      }
+      if (msg === 'OTP_RATE_LIMITED') {
+        throw new BadRequestException({
+          code: 'OTP_RATE_LIMITED',
+          message: 'SMS yuborish limiti oshib ketdi, keyinroq urinib ko‘ring',
+        });
+      }
+      throw err;
+    }
+
+    const code = otpStore.getDeliveryCode(challenge.id);
+
+    if (
+      this.isDemoAuthEnabled() ||
+      this.isPhoneAllowedForDemoAuth(phone) ||
+      !this.smsService
+    ) {
+      return {
+        challenge_id: challenge.id,
+        phone,
+        resend_after: challenge.resendAfter,
+        dev_code: code,
+      };
+    }
+
+    try {
+      const delivery = await this.smsService.send({
+        phone,
+        text: `Safaar: Naqd to'lovli bronni tasdiqlash kodi: ${code ?? '******'}`,
+      });
+      if (!delivery.accepted) {
+        throw new ServiceUnavailableException({
+          code: 'SMS_DELIVERY_FAILED',
+          message: 'Tasdiqlash kodini SMS orqali yuborib bo‘lmadi',
+        });
+      }
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ServiceUnavailableException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        `SMS OTP delivery error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw new ServiceUnavailableException({
+        code: 'SMS_DELIVERY_FAILED',
+        message: 'Tasdiqlash kodini SMS orqali yuborib bo‘lmadi',
+      });
+    }
+
+    return {
+      challenge_id: challenge.id,
+      phone,
+      resend_after: challenge.resendAfter,
+    };
+  }
+
+  verifyCashBookingOtp(
+    phone: string,
+    code: string,
+    challengeId?: string,
+  ): void {
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message: 'SMS tasdiqlash kodini kiriting',
+      });
+    }
+    const normalizedPhone = normalizePhone(phone);
+    if (!isValidUzbekPhone(normalizedPhone)) {
+      throw new BadRequestException({
+        code: 'INVALID_PHONE',
+        message:
+          "Noto'g'ri telefon raqami. Format: +998XXXXXXXXX bo'lishi kerak",
+      });
+    }
+    try {
+      otpStore.consume({
+        phone: normalizedPhone,
+        purpose: 'booking_cash_confirm',
+        code: code.trim(),
+        challengeId,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === 'OTP_EXPIRED') {
+        throw new BadRequestException({
+          code: 'OTP_EXPIRED',
+          message: 'Tasdiqlash kodi muddati o‘tgan, yangi kod so‘rang',
+        });
+      }
+      throw new BadRequestException({
+        code: 'OTP_INVALID',
+        message: 'Tasdiqlash kodi noto‘g‘ri',
+      });
+    }
+  }
+
+  private validateCashBookingOtpIfNeeded(
+    dto: Record<string, unknown>,
+    phone: string,
+  ): void {
+    const paymentMethod = this.paymentMethod(dto.payment_method);
+    if (paymentMethod !== 'cash') {
+      return;
+    }
+    const otpCode = String(dto.otp_code ?? dto.otpCode ?? '').trim();
+    const challengeId =
+      (dto.challenge_id ?? dto.challengeId)
+        ? String(dto.challenge_id ?? dto.challengeId)
+        : undefined;
+
+    if (otpCode) {
+      this.verifyCashBookingOtp(phone, otpCode, challengeId);
+    } else if (
+      String(process.env.ENFORCE_CASH_OTP ?? '').toLowerCase() === 'true'
+    ) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message:
+          'Naqd to‘lov bilan bron qilish uchun telefon raqamiga yuborilgan SMS kodni tasdiqlash shart',
+      });
+    }
+  }
+
+  async sendCashOtpForBooking(
+    actor: RequestActor | undefined,
+    bookingId: string,
+    guestToken?: string,
+  ) {
+    const booking = await this.assertBooking(bookingId, actor, guestToken);
+    if (booking.status === BS.CONFIRMED || booking.status === BS.COMPLETED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_CONFIRMED',
+        message: 'Bron allaqachon tasdiqlangan',
+      });
+    }
+
+    const rawPhone =
+      (typeof booking.guest_phone === 'string' && booking.guest_phone) ||
+      (actor ? await this.getUserPhone(actor.id) : null);
+    if (!rawPhone) {
+      throw new BadRequestException({
+        code: 'PHONE_REQUIRED',
+        message: 'Naqd to‘lov uchun telefon raqami ko‘rsatilmagan',
+      });
+    }
+
+    return this.sendCashBookingOtp(actor, String(rawPhone));
+  }
+
+  async confirmCashBooking(
+    actor: RequestActor | undefined,
+    bookingId: string,
+    dto: {
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+    },
+    guestToken?: string,
+  ) {
+    const booking = await this.assertBooking(bookingId, actor, guestToken);
+    if (booking.status === BS.CONFIRMED || booking.status === BS.COMPLETED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_CONFIRMED',
+        message: 'Bron allaqachon tasdiqlangan',
+      });
+    }
+
+    const rawPhone =
+      (typeof booking.guest_phone === 'string' && booking.guest_phone) ||
+      (actor ? await this.getUserPhone(actor.id) : null);
+    if (!rawPhone) {
+      throw new BadRequestException({
+        code: 'PHONE_REQUIRED',
+        message: 'Naqd to‘lov uchun telefon raqami ko‘rsatilmagan',
+      });
+    }
+
+    const phone = String(rawPhone);
+    await this.assertUserNotBlockedFromBooking(actor, phone);
+
+    const code = String(dto.otp_code ?? dto.otpCode ?? '').trim();
+    if (!code) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message: 'SMS tasdiqlash kodini kiriting',
+      });
+    }
+
+    const challengeId = dto.challenge_id ?? dto.challengeId;
+    this.verifyCashBookingOtp(phone, code, challengeId);
+
+    const now = new Date().toISOString();
+    return this.pg.transaction(async (tx) => {
+      const nextStatus =
+        booking.confirmation_mode === 'request_confirmation'
+          ? BS.AWAITING_PARTNER_CONFIRMATION
+          : BS.CONFIRMED;
+
+      const [updated] = await tx.query<BookingRow>(
+        `UPDATE bookings
+         SET status = $1, payment_method = 'cash', confirmed_at = $2, expires_at = NULL, updated_at = $2
+         WHERE id = $3
+         RETURNING *`,
+        [nextStatus, now, booking.id],
+      );
+
+      const [existingPayment] = await tx.query<{ id: string }>(
+        `SELECT id FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1`,
+        [booking.id],
+      );
+
+      let payment: Record<string, unknown> | undefined;
+      if (existingPayment) {
+        const [updatedPayment] = await tx.query<Record<string, unknown>>(
+          `UPDATE payments SET provider = 'cash', status = 'awaiting_cash', updated_at = $1 WHERE id = $2 RETURNING *`,
+          [now, existingPayment.id],
+        );
+        payment = updatedPayment;
+      } else {
+        const [newPayment] = await tx.query<Record<string, unknown>>(
+          `INSERT INTO payments (id, booking_id, provider, status, amount, base_amount, fee_rate, fee_amount, currency, created_at, updated_at)
+           VALUES ($1, $2, 'cash', 'awaiting_cash', $3, $3, 0, 0, $4, $5, $5)
+           RETURNING *`,
+          [
+            randomUUID(),
+            booking.id,
+            Number(booking.total_amount),
+            booking.currency || 'UZS',
+            now,
+          ],
+        );
+        payment = newPayment;
+      }
+
+      await this.addStatusHistory(
+        tx,
+        { id: booking.id, status: nextStatus },
+        'cash_booking_confirmed',
+      );
+
+      return {
+        booking: updated,
+        payment,
+      };
+    });
+  }
+
+  private async getUserPhone(userId: string): Promise<string | null> {
+    if (!isUuid(userId)) return null;
+    const [row] = await this.pg.query<{ phone: string | null }>(
+      `SELECT phone FROM users WHERE id = $1::uuid`,
+      [userId],
+    );
+    return row?.phone ?? null;
+  }
+
+  async applyNoShowPenalty(
+    bookingId: string,
+    reason = 'Mijoz kelmadi (No-show)',
+    actor?: RequestActor,
+  ) {
+    if (!isUuid(bookingId)) {
+      throw new NotFoundException({
+        code: 'BOOKING_NOT_FOUND',
+        message: 'Bron topilmadi',
+      });
+    }
+
+    const [booking] = await this.pg.query<
+      BookingRow & {
+        guest_phone: string | null;
+        user_id: string | null;
+      }
+    >(
+      `SELECT id, user_id, guest_phone, status, partner_organization_id, payment_method
+       FROM bookings WHERE id = $1::uuid`,
+      [bookingId],
+    );
+
+    if (!booking) {
+      throw new NotFoundException({
+        code: 'BOOKING_NOT_FOUND',
+        message: 'Bron topilmadi',
+      });
+    }
+
+    // Role va tashkilot tekshiruvi: Agar actor berilgan bo'lsa
+    if (actor) {
+      const isSuperAdmin =
+        actor.role === Role.SUPER_ADMIN || actor.actorType === 'admin';
+      if (!isSuperAdmin) {
+        if (
+          actor.actorType === 'partner' &&
+          booking.partner_organization_id !== actor.organizationId
+        ) {
+          throw new ForbiddenException({
+            code: 'BOOKING_FORBIDDEN',
+            message: 'Bu bron sizning tashkilotingizga tegishli emas',
+          });
+        }
+        if (actor.actorType !== 'partner') {
+          throw new ForbiddenException({
+            code: 'BOOKING_FORBIDDEN',
+            message:
+              'Faqat hamkor yoki admin no-show jarimasini qo‘llashi mumkin',
+          });
+        }
+      }
+    }
+
+    if (booking.status === BS.CANCELLED) {
+      throw new ConflictException({
+        code: 'BOOKING_ALREADY_CANCELLED',
+        message: 'Bron allaqachon bekor qilingan',
+      });
+    }
+
+    if (booking.status === BS.COMPLETED) {
+      throw new ConflictException({
+        code: 'BOOKING_ALREADY_COMPLETED',
+        message: 'Bron allaqachon yakunlangan',
+      });
+    }
+
+    const now = new Date().toISOString();
+    const penaltyDays = 60;
+    const blockedUntil = new Date(
+      Date.now() + penaltyDays * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const phone = booking.guest_phone
+      ? normalizePhone(booking.guest_phone)
+      : null;
+    const rawUserId = booking.user_id ? String(booking.user_id).trim() : null;
+    const userId = rawUserId && isUuid(rawUserId) ? rawUserId : null;
+
+    return this.pg.transaction(async (tx) => {
+      const [updated] = await tx.query<BookingRow>(
+        `UPDATE bookings
+         SET status = $1, cancelled_at = $2, cancel_reason_text = $3, updated_at = $2
+         WHERE id = $4
+         RETURNING *`,
+        [BS.CANCELLED, now, reason, booking.id],
+      );
+
+      await tx.query(
+        `UPDATE trip_seats
+         SET status = 'available', held_by_booking_id = NULL, held_until = NULL
+         WHERE held_by_booking_id = $1::uuid`,
+        [booking.id],
+      );
+
+      await tx.query(
+        `UPDATE payments
+         SET status = 'failed', updated_at = $1
+         WHERE booking_id = $2 AND status = 'awaiting_cash'`,
+        [now, booking.id],
+      );
+
+      if (phone || userId) {
+        try {
+          await tx.query(
+            `INSERT INTO booking_penalties (id, user_id, phone, booking_id, reason, blocked_until, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              randomUUID(),
+              userId,
+              phone ?? '',
+              booking.id,
+              'no_show',
+              blockedUntil,
+              now,
+            ],
+          );
+        } catch (err) {
+          this.logger.warn(
+            `booking_penalties yozishda ogohlantirish: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        }
+
+        if (userId) {
+          await tx.query(
+            `UPDATE users
+             SET booking_blocked_until = $1, booking_blocked_reason = $2, updated_at = $3
+             WHERE id = $4::uuid`,
+            [blockedUntil, 'no_show', now, userId],
+          );
+        }
+        if (phone) {
+          await tx.query(
+            `UPDATE users
+             SET booking_blocked_until = $1, booking_blocked_reason = $2, updated_at = $3
+             WHERE phone = $4`,
+            [blockedUntil, 'no_show', now, phone],
+          );
+        }
+      }
+
+      await tx.query(
+        `INSERT INTO booking_status_history (id, booking_id, status, action, actor_type, actor_id, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          randomUUID(),
+          booking.id,
+          BS.CANCELLED,
+          'no_show_penalty_applied',
+          actor?.role ?? 'system',
+          actor?.id ?? null,
+          JSON.stringify({
+            blocked_until: blockedUntil,
+            penalty_days: penaltyDays,
+            reason,
+          }),
+          now,
+        ],
+      );
+
+      return {
+        booking: updated,
+        blocked_until: blockedUntil,
+        penalty_days: penaltyDays,
+        reason,
+      };
+    });
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async processNoShowCashBookings(): Promise<void> {
+    try {
+      const staleCashBookings = await this.pg.query<
+        BookingRow & { guest_phone: string | null }
+      >(
+        `SELECT b.id, b.user_id, b.guest_phone, b.check_in, b.check_out, b.partner_organization_id
+         FROM bookings b
+         JOIN payments p ON p.booking_id = b.id
+         LEFT JOIN trips t ON t.id = b.trip_id
+         WHERE b.payment_method = 'cash'
+           AND b.status = $1
+           AND p.status = 'awaiting_cash'
+           AND (b.policy_snapshot->>'checked_in_at') IS NULL
+           AND (
+             (b.check_out IS NOT NULL AND b.check_out < CURRENT_DATE)
+             OR (b.check_in IS NOT NULL AND b.check_out IS NULL AND b.check_in < CURRENT_DATE - 1)
+             OR (b.type = 'bus' AND t.departure_at IS NOT NULL AND t.departure_at < NOW() - INTERVAL '2 hours')
+           )
+         LIMIT 50`,
+        [BS.CONFIRMED],
+      );
+
+      for (const booking of staleCashBookings) {
+        try {
+          await this.applyNoShowPenalty(
+            booking.id,
+            'Avtomatik tizim: Bron muddati o‘tgan, mijoz kelmadi (No-show) — 60 kunga bloklandi',
+          );
+          this.logger.log(
+            `No-show jarimasi qo'llandi: bookingId=${booking.id}`,
+          );
+        } catch (penErr) {
+          this.logger.error(
+            `No-show jarimasini qo'llashda xatolik bookingId=${booking.id}: ${penErr}`,
+          );
+        }
+      }
+    } catch (err) {
+      this.logger.error(`processNoShowCashBookings cron xatosi: ${err}`);
+    }
+  }
+
+  async unblockUserBooking(userIdOrPhone: string): Promise<boolean> {
+    const raw = String(userIdOrPhone ?? '').trim();
+    if (!raw) {
+      throw new BadRequestException({
+        code: 'TARGET_REQUIRED',
+        message: 'Telefon raqam yoki User ID ko‘rsatilishi shart',
+      });
+    }
+
+    const normalized = normalizePhone(raw);
+    const isPhone = isValidUzbekPhone(normalized);
+    const now = new Date().toISOString();
+
+    if (isPhone) {
+      await this.pg.query(
+        `UPDATE users SET booking_blocked_until = NULL, booking_blocked_reason = NULL, updated_at = $1 WHERE phone = $2`,
+        [now, normalized],
+      );
+      try {
+        await this.pg.query(
+          `UPDATE booking_penalties SET blocked_until = NOW() WHERE phone = $1 AND blocked_until > NOW()`,
+          [normalized],
+        );
+      } catch {
+        // booking_penalties jadvali mavjud bo'lmasa yoki xatolik bo'lsa o'tkazib yuborish
+      }
+      return true;
+    }
+
+    const validUuid = isUuid(raw) ? raw : null;
+    if (validUuid) {
+      await this.pg.query(
+        `UPDATE users SET booking_blocked_until = NULL, booking_blocked_reason = NULL, updated_at = $1 WHERE id = $2::uuid`,
+        [now, validUuid],
+      );
+      try {
+        await this.pg.query(
+          `UPDATE booking_penalties SET blocked_until = NOW() WHERE user_id = $1::uuid AND blocked_until > NOW()`,
+          [validUuid],
+        );
+      } catch {
+        // booking_penalties jadvali mavjud bo'lmasa yoki xatolik bo'lsa o'tkazib yuborish
+      }
+      return true;
+    }
+
+    throw new BadRequestException({
+      code: 'INVALID_TARGET',
+      message: 'Noto‘g‘ri telefon raqami yoki User ID formati',
+    });
+  }
+
   async createHotel(
     actor: RequestActor | undefined,
     dto: Record<string, unknown>,
@@ -520,6 +1198,8 @@ export class BookingsService {
     const nights = isRestaurant ? 1 : this.calculateNights(checkIn, checkOut);
     const rooms = isRestaurant ? 1 : Number(dto.rooms ?? 1);
     const guest = this.guestContact(actor, dto);
+
+    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
@@ -854,6 +1534,8 @@ export class BookingsService {
 
     const guest = this.guestContact(actor, dto);
 
+    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
+
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
 
@@ -1088,6 +1770,9 @@ export class BookingsService {
   ) {
     const userId = actor?.id ?? null;
     const guest = this.guestContact(actor, dto);
+
+    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
+
     const tripId = String(dto.trip_id ?? dto.tripId ?? '');
 
     const [trip] = await this.pg.query<TripRow>(
@@ -1881,8 +2566,6 @@ export class BookingsService {
 
     return bookingRow;
   }
-
-
 
   private async addStatusHistory(
     db: PostgresTransaction,

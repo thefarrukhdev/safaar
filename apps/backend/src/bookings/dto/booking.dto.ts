@@ -191,6 +191,29 @@ export class CreateHotelBookingDto {
   @IsOptional()
   @IsBoolean()
   agreeTerms?: boolean;
+
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'SMS OTP kodi (naqd to‘lov uchun)',
+  })
+  @IsOptional()
+  @IsString()
+  otp_code?: string;
+
+  @ApiPropertyOptional({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  otpCode?: string;
+
+  @ApiPropertyOptional({ description: 'OTP challenge ID' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  challengeId?: string;
 }
 
 export class CreateBusBookingDto {
@@ -284,6 +307,29 @@ export class CreateBusBookingDto {
   @IsOptional()
   @IsString()
   promoCode?: string;
+
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'SMS OTP kodi (naqd to‘lov uchun)',
+  })
+  @IsOptional()
+  @IsString()
+  otp_code?: string;
+
+  @ApiPropertyOptional({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  otpCode?: string;
+
+  @ApiPropertyOptional({ description: 'OTP challenge ID' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  challengeId?: string;
 }
 
 export class CreateVehicleRentalDto {
@@ -397,6 +443,68 @@ export class CreateVehicleRentalDto {
   @IsOptional()
   @IsString()
   promoCode?: string;
+
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'SMS OTP kodi (naqd to‘lov uchun)',
+  })
+  @IsOptional()
+  @IsString()
+  otp_code?: string;
+
+  @ApiPropertyOptional({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  otpCode?: string;
+
+  @ApiPropertyOptional({ description: 'OTP challenge ID' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  challengeId?: string;
+}
+
+export class SendCashOtpDto {
+  @ApiProperty({ example: '+998901234567', description: 'Telefon raqam' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+}
+
+export class ConfirmCashOtpDto {
+  @ApiPropertyOptional({ example: '123456', description: 'SMS OTP kodi' })
+  @IsOptional()
+  @IsString()
+  otp_code?: string;
+
+  @ApiPropertyOptional({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  otpCode?: string;
+
+  @ApiPropertyOptional({ description: 'OTP challenge ID' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  challengeId?: string;
+}
+
+export class UnblockBookingPenaltyDto {
+  @ApiProperty({
+    example: '+998901234567',
+    description: 'Telefon raqam yoki User ID',
+  })
+  @IsString()
+  @IsNotEmpty()
+  target!: string;
 }
 
 export class CancelBookingDto {

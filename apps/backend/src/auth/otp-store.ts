@@ -6,7 +6,8 @@ export type OtpPurpose =
   | 'partner_login'
   | 'password_reset'
   | 'partner_email_verify'
-  | 'partner_registration';
+  | 'partner_registration'
+  | 'booking_cash_confirm';
 
 export interface OtpChallenge {
   id: string;

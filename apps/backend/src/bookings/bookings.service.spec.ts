@@ -2822,7 +2822,9 @@ describe('BookingsService — Unpaid booking handling & guest self-service cance
     });
 
     const bookedCountCall = pg.query.mock.calls[2];
-    expect(String(bookedCountCall[0])).toContain("status IN ('pending', 'awaiting_payment')");
+    expect(String(bookedCountCall[0])).toContain(
+      "status IN ('pending', 'awaiting_payment')",
+    );
     expect(String(bookedCountCall[0])).toContain('guest_email = $8');
     expect(String(bookedCountCall[0])).toContain('guest_phone = $9');
     expect(bookedCountCall[1]).toContain('laziz@example.com');
@@ -2893,7 +2895,9 @@ describe('BookingsService — Unpaid booking handling & guest self-service cance
     });
 
     const conflictCall = pg.query.mock.calls[2];
-    expect(String(conflictCall[0])).toContain("status IN ('pending', 'awaiting_payment')");
+    expect(String(conflictCall[0])).toContain(
+      "status IN ('pending', 'awaiting_payment')",
+    );
     expect(String(conflictCall[0])).toContain('guest_email = $8');
     expect(String(conflictCall[0])).toContain('guest_phone = $9');
     expect(conflictCall[1]).toContain('laziz@example.com');
@@ -2978,4 +2982,3 @@ describe('BookingsService — Unpaid booking handling & guest self-service cance
     );
   });
 });
-

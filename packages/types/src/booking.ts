@@ -101,4 +101,8 @@ export interface CreateBookingDto {
   guestEmail?: string;
   guestPhone?: string;
   paymentMethod?: ApiPaymentMethod;
+  otp_code?: string;
+  otpCode?: string;
+  challenge_id?: string;
+  challengeId?: string;
 }

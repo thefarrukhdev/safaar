@@ -584,6 +584,15 @@ export class PartnersController {
     return this.partnersService.rejectBooking(actor, id, body);
   }
 
+  @Post('bookings/:id/no-show')
+  noShowBooking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.markNoShow(actor, id, body);
+  }
+
   @Post('bookings/:id/check-in')
   checkIn(
     @CurrentActor() actor: RequestActor | undefined,

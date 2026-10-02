@@ -38,6 +38,12 @@ import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
 import { computeBookingReport } from '../reports/booking-reports.query';
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
 type PublicPartnerStatus =
   | 'not_found'
@@ -4379,6 +4385,127 @@ export class PartnersService {
       );
 
       return updated;
+    });
+  }
+
+  /**
+   * Hamkor tomonidan mijoz kelmaganligini (No-show) qayd etish.
+   * Bron bekor qilinadi va mijoz 60 kunga yangi bron qilishdan bloklanadi.
+   */
+  async markNoShow(
+    actor: RequestActor | undefined,
+    id: string,
+    body?: Record<string, unknown>,
+  ) {
+    const booking = await this.booking(actor, id); // validate ownership
+
+    if (booking.status === BookingStatus.CANCELLED.toLowerCase()) {
+      throw new ConflictException({
+        code: 'BOOKING_ALREADY_CANCELLED',
+        message: 'Bron allaqachon bekor qilingan',
+      });
+    }
+
+    if (booking.status === BookingStatus.COMPLETED.toLowerCase()) {
+      throw new ConflictException({
+        code: 'BOOKING_ALREADY_COMPLETED',
+        message: 'Bron allaqachon yakunlangan',
+      });
+    }
+
+    const now = new Date().toISOString();
+    const reason = String(body?.reason ?? 'Mijoz kelmadi (No-show)');
+    const penaltyDays = 60;
+    const blockedUntil = new Date(
+      Date.now() + penaltyDays * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const phone = booking.guest_phone
+      ? this.normalizePhone(booking.guest_phone)
+      : null;
+    const rawUserId = booking.user_id ? String(booking.user_id).trim() : null;
+    const userId = rawUserId && isUuid(rawUserId) ? rawUserId : null;
+
+    return this.pg.transaction(async (tx) => {
+      const [updated] = await tx.query(
+        `UPDATE bookings SET status = $1, cancel_reason_text = $2, cancelled_at = $3, updated_at = $3 WHERE id = $4 RETURNING *`,
+        [BookingStatus.CANCELLED.toLowerCase(), reason, now, id],
+      );
+
+      await tx.query(
+        `UPDATE trip_seats
+         SET status = 'available', held_by_booking_id = NULL, held_until = NULL
+         WHERE held_by_booking_id = $1::uuid`,
+        [id],
+      );
+
+      await tx.query(
+        `UPDATE payments
+         SET status = 'failed', updated_at = $1
+         WHERE booking_id = $2 AND status = 'awaiting_cash'`,
+        [now, id],
+      );
+
+      if (phone || userId) {
+        try {
+          await tx.query(
+            `INSERT INTO booking_penalties (id, user_id, phone, booking_id, reason, blocked_until, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              randomUUID(),
+              userId,
+              phone ?? '',
+              id,
+              'no_show',
+              blockedUntil,
+              now,
+            ],
+          );
+        } catch {
+          // ignore if table not created
+        }
+
+        if (userId) {
+          await tx.query(
+            `UPDATE users SET booking_blocked_until = $1, booking_blocked_reason = $2, updated_at = $3 WHERE id = $4::uuid`,
+            [blockedUntil, 'no_show', now, userId],
+          );
+        }
+        if (phone) {
+          await tx.query(
+            `UPDATE users SET booking_blocked_until = $1, booking_blocked_reason = $2, updated_at = $3 WHERE phone = $4`,
+            [blockedUntil, 'no_show', now, phone],
+          );
+        }
+      }
+
+      await tx.query(
+        `INSERT INTO booking_status_history (id, booking_id, status, action, actor_type, actor_id, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          randomUUID(),
+          id,
+          BookingStatus.CANCELLED.toLowerCase(),
+          'no_show_penalty_applied',
+          actor?.role ?? 'partner',
+          actor?.id ?? null,
+          JSON.stringify({
+            blocked_until: blockedUntil,
+            penalty_days: penaltyDays,
+            reason,
+          }),
+          now,
+        ],
+      );
+
+      return {
+        ...updated,
+        booking: updated,
+        no_show: true,
+        penalty_applied: true,
+        penalty_days: penaltyDays,
+        blocked_until: blockedUntil,
+        reason,
+      };
     });
   }
 

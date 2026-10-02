@@ -17,6 +17,8 @@ model User {
   status                 UserStatus                  @default(unverified)
   preferredLanguage      Language                    @default(uz) @map("preferred_language")
   blockedReason          String?                     @map("blocked_reason")
+  bookingBlockedUntil    DateTime?                   @map("booking_blocked_until") @db.Timestamptz(6)
+  bookingBlockedReason   String?                     @map("booking_blocked_reason") @db.VarChar(255)
   phoneVerifiedAt        DateTime?                   @map("phone_verified_at") @db.Timestamptz(6)
   lastLoginAt            DateTime?                   @map("last_login_at") @db.Timestamptz(6)
   createdAt              DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -31,6 +33,7 @@ model User {
   analyticsEvents        AnalyticsEvent[]
   sessions               AuthSession[]
   bookings               Booking[]
+  bookingPenalties       BookingPenalty[]
   chatRooms              ChatRoom[]
   favorites              Favorite[]
   notifications          Notification[]
@@ -842,6 +845,7 @@ model Booking {
   ledgerEntries               PartnerLedgerEntry[]
   payments                    Payment[]
   refunds                     Refund[]
+  bookingPenalties            BookingPenalty[]
 
   @@index([userId, createdAt])
   @@index([partnerOrganizationId, status])
@@ -1325,6 +1329,22 @@ model OutboxEvent {
 
   @@index([status, createdAt])
   @@map("outbox_events")
+}
+
+model BookingPenalty {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  phone        String    @db.VarChar(20)
+  bookingId    String?   @map("booking_id") @db.Uuid
+  reason       String    @default("no_show") @db.VarChar(100)
+  blockedUntil DateTime  @map("blocked_until") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  booking      Booking?  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([phone, blockedUntil])
+  @@index([userId, blockedUntil])
+  @@map("booking_penalties")
 }
 
 enum Language {

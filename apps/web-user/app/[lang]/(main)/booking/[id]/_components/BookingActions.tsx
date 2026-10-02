@@ -12,327 +12,327 @@ import { useRouter } from "next/navigation";
 
 
 export function BookingActions({
-  locale,
-  isConfirmed,
-  isCancelled = false,
-  bookingId,
-  totalSum,
-  paymentMethod = "online",
-  token,
-  guestToken,
-  dict,
+ locale,
+ isConfirmed,
+ isCancelled = false,
+ bookingId,
+ totalSum,
+ paymentMethod = "online",
+ token,
+ guestToken,
+ dict,
 }: {
-  locale: string;
-  isConfirmed: boolean;
-  isCancelled?: boolean;
-  bookingId?: string;
-  totalSum?: number;
-  paymentMethod?: string;
-  token?: string;
-  guestToken?: string;
-  dict: {
-    voucher?: string;
-    backHome?: string;
-    actions?: {
-      printVoucher?: string;
-      cancelBooking?: string;
-      myBookings?: string;
-      backHome?: string;
-      error?: string;
-      userCancelledReason?: string;
-    };
-    cancelModal?: {
-      title?: string;
-      calculating?: string;
-      rulesIntro?: string;
-      paidAmount?: string;
-      refundAmount?: string;
-      penalty?: string;
-      penaltyAmount?: string;
-      policyLabel?: string;
-      cancelling?: string;
-      confirm?: string;
-      confirmCancel?: string;
-      cancel?: string;
-    };
-    refundModal?: {
-      title?: string;
-      reasonLabel?: string;
-      reasonPlaceholder?: string;
-      confirm?: string;
-      requesting?: string;
-    };
-  };
+ locale: string;
+ isConfirmed: boolean;
+ isCancelled?: boolean;
+ bookingId?: string;
+ totalSum?: number;
+ paymentMethod?: string;
+ token?: string;
+ guestToken?: string;
+ dict: {
+ voucher?: string;
+ backHome?: string;
+ actions?: {
+ printVoucher?: string;
+ cancelBooking?: string;
+ myBookings?: string;
+ backHome?: string;
+ error?: string;
+ userCancelledReason?: string;
+ };
+ cancelModal?: {
+ title?: string;
+ calculating?: string;
+ rulesIntro?: string;
+ paidAmount?: string;
+ refundAmount?: string;
+ penalty?: string;
+ penaltyAmount?: string;
+ policyLabel?: string;
+ cancelling?: string;
+ confirm?: string;
+ confirmCancel?: string;
+ cancel?: string;
+ };
+ refundModal?: {
+ title?: string;
+ reasonLabel?: string;
+ reasonPlaceholder?: string;
+ confirm?: string;
+ requesting?: string;
+ };
+ };
 }) {
-  const router = useRouter();
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [refundModalOpen, setRefundModalOpen] = useState(false);
-  const [refundReason, setRefundReason] = useState("");
-  const [refunding, setRefunding] = useState(false);
-  
-  interface PreviewData {
-    paid_amount?: number;
-    paidAmount?: number;
-    refund_amount?: number;
-    refundAmount?: number;
-    penalty_amount?: number;
-    penaltyAmount?: number;
-    currency?: string;
-    policy?: string;
-  }
-  
-  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+ const router = useRouter();
+ const [cancelModalOpen, setCancelModalOpen] = useState(false);
+ const [refundModalOpen, setRefundModalOpen] = useState(false);
+ const [refundReason, setRefundReason] = useState("");
+ const [refunding, setRefunding] = useState(false);
+ 
+ interface PreviewData {
+ paid_amount?: number;
+ paidAmount?: number;
+ refund_amount?: number;
+ refundAmount?: number;
+ penalty_amount?: number;
+ penaltyAmount?: number;
+ currency?: string;
+ policy?: string;
+ }
+ 
+ const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+ const [loadingPreview, setLoadingPreview] = useState(false);
+ const [cancelling, setCancelling] = useState(false);
+ const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isConfirmed && bookingId) {
-      trackBookingCompleted({
-        bookingId,
-        totalSum: totalSum || 0,
-        paymentMethod,
-      });
-    }
-  }, [isConfirmed, bookingId, totalSum, paymentMethod]);
+ useEffect(() => {
+ if (isConfirmed && bookingId) {
+ trackBookingCompleted({
+ bookingId,
+ totalSum: totalSum || 0,
+ paymentMethod,
+ });
+ }
+ }, [isConfirmed, bookingId, totalSum, paymentMethod]);
 
-  const handlePrint = () => {
-    if (typeof window !== "undefined") {
-      window.print();
-    }
-  };
+ const handlePrint = () => {
+ if (typeof window !== "undefined") {
+ window.print();
+ }
+ };
 
-  const handleCancelClick = async () => {
-    if (!bookingId) return;
-    setCancelModalOpen(true);
-    setLoadingPreview(true);
-    setError(null);
-    try {
-      const data = await api.bookings.cancelPreview(bookingId, { token, guestToken });
-      setPreviewData(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
-    } finally {
-      setLoadingPreview(false);
-    }
-  };
+ const handleCancelClick = async () => {
+ if (!bookingId) return;
+ setCancelModalOpen(true);
+ setLoadingPreview(true);
+ setError(null);
+ try {
+ const data = await api.bookings.cancelPreview(bookingId, { token, guestToken });
+ setPreviewData(data);
+ } catch (err: unknown) {
+ setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
+ } finally {
+ setLoadingPreview(false);
+ }
+ };
 
-  const confirmCancel = async () => {
-    if (!bookingId) return;
-    setCancelling(true);
-    setError(null);
-    try {
-      await api.bookings.cancelBooking(
-        bookingId,
-        dict.actions?.userCancelledReason || "Foydalanuvchi tomonidan bekor qilindi",
-        { token, guestToken }
-      );
-      setCancelModalOpen(false);
-      router.refresh();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
-    } finally {
-      setCancelling(false);
-    }
-  };
+ const confirmCancel = async () => {
+ if (!bookingId) return;
+ setCancelling(true);
+ setError(null);
+ try {
+ await api.bookings.cancelBooking(
+ bookingId,
+ dict.actions?.userCancelledReason || "Foydalanuvchi tomonidan bekor qilindi",
+ { token, guestToken }
+ );
+ setCancelModalOpen(false);
+ router.refresh();
+ } catch (err: unknown) {
+ setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
+ } finally {
+ setCancelling(false);
+ }
+ };
 
-  const handleRefundSubmit = async () => {
-    if (!bookingId || !refundReason.trim()) return;
-    setRefunding(true);
-    setError(null);
-    try {
-      await api.refunds.createRefund({ booking_id: bookingId, reason: refundReason }, { token });
-      setRefundModalOpen(false);
-      setRefundReason("");
-      router.push(`/${locale}/account/refunds`);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
-    } finally {
-      setRefunding(false);
-    }
-  };
+ const handleRefundSubmit = async () => {
+ if (!bookingId || !refundReason.trim()) return;
+ setRefunding(true);
+ setError(null);
+ try {
+ await api.refunds.createRefund({ booking_id: bookingId, reason: refundReason }, { token });
+ setRefundModalOpen(false);
+ setRefundReason("");
+ router.push(`/${locale}/account/refunds`);
+ } catch (err: unknown) {
+ setError(err instanceof Error ? err.message : (dict.actions?.error || "Error"));
+ } finally {
+ setRefunding(false);
+ }
+ };
 
-  return (
-    <>
-      <div className="flex flex-wrap items-center gap-3 pt-2">
-        {isConfirmed && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            onClick={handlePrint}
-            className="gap-2 font-bold rounded-full active:scale-[0.97]"
-          >
-            <Printer className="h-4 w-4" />
-            {dict.actions?.printVoucher ?? dict.voucher}
-          </Button>
-        )}
+ return (
+ <>
+ <div className="flex flex-wrap items-center gap-3 pt-2">
+ {isConfirmed && (
+ <Button
+ type="button"
+ variant="secondary"
+ size="lg"
+ onClick={handlePrint}
+ className="gap-2 font-bold rounded-full active:scale-[0.97]"
+ >
+ <Printer className="h-4 w-4" />
+ {dict.actions?.printVoucher ?? dict.voucher}
+ </Button>
+ )}
 
-        {/* Bekor qilish:
-            1) Tasdiqlangan (to'langan) bronlar uchun: tizimga kirgan foydalanuvchi (token)
-            2) To'lanmagan / kutilayotgan (!isConfirmed) bronlar uchun: tizimga kirgan user YOKI guest (guestToken)
-               Foydalanuvchi to'lashni istamasa yoki adashgan bo'lsa, xonani darhol bo'shatishi mumkin. */}
-        {!isCancelled && ((isConfirmed && token) || (!isConfirmed && (token || guestToken))) && bookingId && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            onClick={handleCancelClick}
-            className="gap-2 font-bold text-red-600 hover:text-red-700  rounded-full active:scale-[0.97]"
-          >
-            <XCircle className="h-4 w-4" />
-            {dict.actions?.cancelBooking || "Bekor qilish"}
-          </Button>
-        )}
+ {/* Bekor qilish:
+ 1) Tasdiqlangan (to'langan) bronlar uchun: tizimga kirgan foydalanuvchi (token)
+ 2) To'lanmagan / kutilayotgan (!isConfirmed) bronlar uchun: tizimga kirgan user YOKI guest (guestToken)
+ Foydalanuvchi to'lashni istamasa yoki adashgan bo'lsa, xonani darhol bo'shatishi mumkin. */}
+ {!isCancelled && ((isConfirmed && token) || (!isConfirmed && (token || guestToken))) && bookingId && (
+ <Button
+ type="button"
+ variant="secondary"
+ size="lg"
+ onClick={handleCancelClick}
+ className="gap-2 font-bold text-red-600 hover:text-red-700 rounded-full active:scale-[0.97]"
+ >
+ <XCircle className="h-4 w-4" />
+ {dict.actions?.cancelBooking || "Bekor qilish"}
+ </Button>
+ )}
 
-        {isCancelled && (
-          <Link href={`/${locale}/hotels`}>
-            <Button
-              variant="accent"
-              size="lg"
-              className="font-bold rounded-full active:scale-[0.97]"
-            >
-              Qayta bron qilish
-            </Button>
-          </Link>
-        )}
+ {isCancelled && (
+ <Link href={`/${locale}/hotels`}>
+ <Button
+ variant="accent"
+ size="lg"
+ className="font-bold rounded-full active:scale-[0.97]"
+ >
+ Qayta bron qilish
+ </Button>
+ </Link>
+ )}
 
-        {isConfirmed && bookingId && token && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            onClick={() => setRefundModalOpen(true)}
-            className="gap-2 font-bold text-amber-600 hover:text-amber-700  rounded-full active:scale-[0.97]"
-          >
-            <RotateCcw className="h-4 w-4" />
-            {(dict as any).actions?.requestRefund}
-          </Button>
-        )}
+ {isConfirmed && bookingId && token && (
+ <Button
+ type="button"
+ variant="secondary"
+ size="lg"
+ onClick={() => setRefundModalOpen(true)}
+ className="gap-2 font-bold text-amber-600 hover:text-amber-700 rounded-full active:scale-[0.97]"
+ >
+ <RotateCcw className="h-4 w-4" />
+ {(dict as any).actions?.requestRefund}
+ </Button>
+ )}
 
-        <Link href={`/${locale}/account/bookings`}>
-          <Button variant="secondary" size="lg" className="font-bold rounded-full active:scale-[0.97]">
-            {dict.actions?.myBookings}
-          </Button>
-        </Link>
+ <Link href={`/${locale}/account/bookings`}>
+ <Button variant="secondary" size="lg" className="font-bold rounded-full active:scale-[0.97]">
+ {dict.actions?.myBookings}
+ </Button>
+ </Link>
 
-        <Link href={`/${locale}`}>
-          <Button variant="ghost" size="lg" className="gap-2 font-semibold rounded-full active:scale-[0.97]">
-            <ArrowLeft className="h-4 w-4" />
-            {dict.actions?.backHome ?? dict.backHome}
-          </Button>
-        </Link>
-      </div>
+ <Link href={`/${locale}`}>
+ <Button variant="ghost" size="lg" className="gap-2 font-semibold rounded-full active:scale-[0.97]">
+ <ArrowLeft className="h-4 w-4" />
+ {dict.actions?.backHome ?? dict.backHome}
+ </Button>
+ </Link>
+ </div>
 
-      <Modal
-        isOpen={cancelModalOpen}
-        onClose={() => !cancelling && setCancelModalOpen(false)}
-        title={dict.cancelModal?.title}
-      >
-        <div className="space-y-4">
-          {loadingPreview ? (
-            <p className="text-sm text-slate-500">
-              {dict.cancelModal?.calculating}
-            </p>
-          ) : error ? (
-            <p className="text-sm text-red-500">{error}</p>
-          ) : previewData ? (
-            <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 ">
-              {dict.cancelModal?.rulesIntro && (
-                <p className="text-sm text-slate-700 ">
-                  {dict.cancelModal.rulesIntro}
-                </p>
-              )}
-              <ul className="text-sm space-y-2">
-                <li className="flex justify-between">
-                  <span className="text-slate-500">
-                    {dict.cancelModal?.paidAmount}
-                  </span>
-                  <span className="font-medium">
-                    {formatMoney((previewData.paid_amount ?? previewData.paidAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
-                  </span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-slate-500">
-                    {dict.cancelModal?.refundAmount}
-                  </span>
-                  <span className="font-medium text-emerald-600">
-                    {formatMoney((previewData.refund_amount ?? previewData.refundAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
-                  </span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-slate-500">
-                    {dict.cancelModal?.penaltyAmount}
-                  </span>
-                  <span className="font-medium text-red-600">
-                    {formatMoney((previewData.penalty_amount ?? previewData.penaltyAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
-                  </span>
-                </li>
-              </ul>
-              {previewData.policy && (
-                <div className="mt-4 text-xs text-slate-500">
-                  <strong>{dict.cancelModal?.policyLabel}</strong> {previewData.policy}
-                </div>
-              )}
-            </div>
-          ) : null}
+ <Modal
+ isOpen={cancelModalOpen}
+ onClose={() => !cancelling && setCancelModalOpen(false)}
+ title={dict.cancelModal?.title}
+ >
+ <div className="space-y-4">
+ {loadingPreview ? (
+ <p className="text-sm text-slate-500">
+ {dict.cancelModal?.calculating}
+ </p>
+ ) : error ? (
+ <p className="text-sm text-red-500">{error}</p>
+ ) : previewData ? (
+ <div className="space-y-3 rounded-xl bg-slate-900/[0.03] p-4 ">
+ {dict.cancelModal?.rulesIntro && (
+ <p className="text-sm text-slate-700 ">
+ {dict.cancelModal.rulesIntro}
+ </p>
+ )}
+ <ul className="text-sm space-y-2">
+ <li className="flex justify-between">
+ <span className="text-slate-500">
+ {dict.cancelModal?.paidAmount}
+ </span>
+ <span className="font-medium">
+ {formatMoney((previewData.paid_amount ?? previewData.paidAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
+ </span>
+ </li>
+ <li className="flex justify-between">
+ <span className="text-slate-500">
+ {dict.cancelModal?.refundAmount}
+ </span>
+ <span className="font-medium text-emerald-600">
+ {formatMoney((previewData.refund_amount ?? previewData.refundAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
+ </span>
+ </li>
+ <li className="flex justify-between">
+ <span className="text-slate-500">
+ {dict.cancelModal?.penaltyAmount}
+ </span>
+ <span className="font-medium text-red-600">
+ {formatMoney((previewData.penalty_amount ?? previewData.penaltyAmount ?? 0) as number, (previewData.currency as "UZS") || "UZS")}
+ </span>
+ </li>
+ </ul>
+ {previewData.policy && (
+ <div className="mt-4 text-xs text-slate-500">
+ <strong>{dict.cancelModal?.policyLabel}</strong> {previewData.policy}
+ </div>
+ )}
+ </div>
+ ) : null}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
-            <Button
-              variant="ghost"
-              onClick={() => setCancelModalOpen(false)}
-              disabled={cancelling}
-              className="rounded-full active:scale-[0.97]"
-            >
-              Yopish
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={confirmCancel}
-              className="text-red-600 hover:bg-red-50 :bg-red-950/30 rounded-full active:scale-[0.97]"
-              disabled={loadingPreview || cancelling || !!error}
-            >
-              {cancelling
-                ? (dict.cancelModal?.cancelling)
-                : (dict.cancelModal?.confirm)}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-      <Modal
-        isOpen={refundModalOpen}
-        onClose={() => !refunding && setRefundModalOpen(false)}
-        title={dict.refundModal?.title}
-      >
-        <div className="space-y-4">
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 ">
-              {dict.refundModal?.reasonLabel}
-            </label>
-            <textarea
-              className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500   "
-              rows={4}
-              placeholder={dict.refundModal?.reasonPlaceholder}
-              value={refundReason}
-              onChange={(e) => setRefundReason(e.target.value)}
-              disabled={refunding}
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
-            <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding} className="rounded-full active:scale-[0.97]">
-              Yopish
-            </Button>
-            <Button
-              onClick={handleRefundSubmit}
-              disabled={refunding || !refundReason.trim()}
-              className="rounded-full active:scale-[0.97]"
-            >
-              {refunding ? (dict.refundModal?.requesting) : (dict.refundModal?.confirm)}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </>
-  );
+ <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
+ <Button
+ variant="ghost"
+ onClick={() => setCancelModalOpen(false)}
+ disabled={cancelling}
+ className="rounded-full active:scale-[0.97]"
+ >
+ Yopish
+ </Button>
+ <Button
+ variant="secondary"
+ onClick={confirmCancel}
+ className="text-red-600 hover:bg-red-50 :bg-red-950/30 rounded-full active:scale-[0.97]"
+ disabled={loadingPreview || cancelling || !!error}
+ >
+ {cancelling
+ ? (dict.cancelModal?.cancelling)
+ : (dict.cancelModal?.confirm)}
+ </Button>
+ </div>
+ </div>
+ </Modal>
+ <Modal
+ isOpen={refundModalOpen}
+ onClose={() => !refunding && setRefundModalOpen(false)}
+ title={dict.refundModal?.title}
+ >
+ <div className="space-y-4">
+ {error && <p className="text-sm text-red-500">{error}</p>}
+ <div className="space-y-2">
+ <label className="text-sm font-medium text-slate-700 ">
+ {dict.refundModal?.reasonLabel}
+ </label>
+ <textarea
+ className="w-full rounded-xl border border-slate-900/[0.08] bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 "
+ rows={4}
+ placeholder={dict.refundModal?.reasonPlaceholder}
+ value={refundReason}
+ onChange={(e) => setRefundReason(e.target.value)}
+ disabled={refunding}
+ />
+ </div>
+ <div className="flex justify-end gap-3 pt-4 border-t border-slate-900/[0.08] ">
+ <Button variant="ghost" onClick={() => setRefundModalOpen(false)} disabled={refunding} className="rounded-full active:scale-[0.97]">
+ Yopish
+ </Button>
+ <Button
+ onClick={handleRefundSubmit}
+ disabled={refunding || !refundReason.trim()}
+ className="rounded-full active:scale-[0.97]"
+ >
+ {refunding ? (dict.refundModal?.requesting) : (dict.refundModal?.confirm)}
+ </Button>
+ </div>
+ </div>
+ </Modal>
+ </>
+ );
 }

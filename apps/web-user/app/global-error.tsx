@@ -7,39 +7,39 @@ import { AlertOctagon } from "lucide-react";
  * O'zining `<html>`/`<body>` ini render qiladi.
  */
 export default function GlobalError({
-  reset,
+ reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+ error: Error & { digest?: string };
+ reset: () => void;
 }) {
-  return (
-    <html lang="uz">
-      <body
-        style={{ margin: 0 }}
-        className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-20 text-center "
-      >
-        <div className="flex max-w-md flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 ">
-            <AlertOctagon className="h-10 w-10 text-red-600 " />
-          </div>
-          
-          <h1 className="mb-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl ">
-            Tizimda jiddiy xatolik 🛠
-          </h1>
-          
-          <p className="mb-8 text-sm font-medium text-slate-600 ">
-            Kechirasiz, kutilmagan xatolik yuz berdi va dastur ishlashdan to'xtadi. Iltimos, sahifani qayta yuklang yoki birozdan so'ng yana urinib ko'ring.
-          </p>
-          
-          <button
-            type="button"
-            onClick={() => reset()}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary-600 px-6 text-base font-bold text-white transition-all hover:bg-primary-700 active:scale-[0.98]"
-          >
-            Sahifani qayta yuklash
-          </button>
-        </div>
-      </body>
-    </html>
-  );
+ return (
+ <html lang="uz">
+ <body
+ style={{ margin: 0 }}
+ className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-20 text-center "
+ >
+ <div className="flex max-w-md flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-8">
+ <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 ">
+ <AlertOctagon className="h-10 w-10 text-red-600 " />
+ </div>
+ 
+ <h1 className="mb-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl ">
+ Tizimda jiddiy xatolik 🛠
+ </h1>
+ 
+ <p className="mb-8 text-sm font-medium text-slate-600 ">
+ Kechirasiz, kutilmagan xatolik yuz berdi va dastur ishlashdan to'xtadi. Iltimos, sahifani qayta yuklang yoki birozdan so'ng yana urinib ko'ring.
+ </p>
+ 
+ <button
+ type="button"
+ onClick={() => reset()}
+ className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-base font-bold text-white transition-all hover:bg-blue-700 active:scale-[0.98]"
+ >
+ Sahifani qayta yuklash
+ </button>
+ </div>
+ </body>
+ </html>
+ );
 }

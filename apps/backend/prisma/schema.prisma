@@ -463,6 +463,8 @@ model Hotel {
   medicalProfiles        Json                @default("[]") @map("medical_profiles")
   includedTreatments     Json                @default("[]") @map("included_treatments")
   mealPlanType           String?             @map("meal_plan_type") @db.VarChar(64)
+  allowsCash             Boolean             @default(true) @map("allows_cash")
+  allowsOnlinePayment    Boolean             @default(true) @map("allows_online_payment")
   bookings               Booking[]
   amenities              HotelAmenity[]
   rooms                  HotelRoom[]

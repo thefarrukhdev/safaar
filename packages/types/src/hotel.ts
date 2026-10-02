@@ -11,6 +11,8 @@ export interface Hotel {
   description?: string;
   amenities?: string[];
   images?: string[];
+  allows_cash?: boolean;
+  allows_online_payment?: boolean;
 }
 
 export type HotelLanguage = 'uz' | 'ru' | 'en';
@@ -102,6 +104,8 @@ export interface AdminHotelDetail extends AdminHotelListItem {
     children_allowed: boolean;
     extra_fees: unknown[];
     completed_at: string | null;
+    allows_cash?: boolean;
+    allows_online_payment?: boolean;
   };
   room_types: Array<{
     id: string;
@@ -147,4 +151,9 @@ export interface HotelSearchQuery {
   minPrice?: number;
   maxPrice?: number;
   stars?: number;
+  minStars?: number;
+  type?: string;
+  types?: string[];
+  amenities?: string[];
+  paymentType?: 'online_payment' | 'pay_at_property' | 'cash';
 }

@@ -331,7 +331,7 @@ describe('HotelsService.findAll', () => {
       // existing filters untouched
       expect(sql).toContain('po.type = $1');
       expect(sql).toContain('h.city_id = $');
-      expect(sql).toContain('h.stars = $');
+      expect(sql).toContain('h.stars >= $');
       expect(sql).toContain('h.rating_average >= $');
       // new filters all present together
       expect(sql).toContain('r.max_adults >=');
@@ -349,6 +349,178 @@ describe('HotelsService.findAll', () => {
           ['wifi', 'parking'],
         ]),
       );
+    });
+  });
+
+  describe('accommodation filters (price, stars, property types, payment types)', () => {
+    it('min_price and max_price add rp.min_price range conditions to SQL', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({
+        min_price: '500000',
+        max_price: '2000000',
+      });
+
+      const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('rp.min_price >= $');
+      expect(sql).toContain('rp.min_price <= $');
+      expect(params).toContain(500000);
+      expect(params).toContain(2000000);
+    });
+
+    it('rejects invalid min_price or max_price', async () => {
+      await expect(service.findAll({ min_price: '-10' })).rejects.toMatchObject(
+        {
+          status: 400,
+          response: { code: 'SEARCH_PRICE_INVALID' },
+        },
+      );
+
+      await expect(service.findAll({ max_price: 'abc' })).rejects.toMatchObject(
+        {
+          status: 400,
+          response: { code: 'SEARCH_PRICE_INVALID' },
+        },
+      );
+
+      await expect(
+        service.findAll({ min_price: '2000000', max_price: '500000' }),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_PRICE_INVALID' },
+      });
+    });
+
+    it('supports plural accommodation types via ?type= or ?types=', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ type: 'hotels' });
+      const [sql1, params1] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql1).toContain('po.type = $1');
+      expect(params1).toContain('hotel');
+
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ types: 'sanatoriums,resorts' });
+      const [sql2, params2] = pg.query.mock.calls[1] as [string, unknown[]];
+      expect(sql2).toContain('po.type::text = ANY($1::text[])');
+      expect(params2[0]).toEqual(['sanatorium', 'resort']);
+    });
+
+    it('supports stars multi-selection or min_stars filter', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ stars: '3,4,5' });
+      const [sql1, params1] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql1).toContain('h.stars = ANY($');
+      expect(params1).toContainEqual([3, 4, 5]);
+
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ min_stars: '4' });
+      const [sql2, params2] = pg.query.mock.calls[1] as [string, unknown[]];
+      expect(sql2).toContain('h.stars >= $');
+      expect(params2).toContain(4);
+    });
+
+    it('rejects invalid star values', async () => {
+      await expect(service.findAll({ stars: '0' })).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_STARS_INVALID' },
+      });
+
+      await expect(service.findAll({ stars: '6' })).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_STARS_INVALID' },
+      });
+
+      await expect(service.findAll({ min_stars: '7' })).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'SEARCH_STARS_INVALID' },
+      });
+    });
+
+    it('filters by payment_type (online_payment and pay_at_property / cash)', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ payment_type: 'online_payment' });
+      const [sql1] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql1).toContain('COALESCE(h.allows_online_payment, true) = true');
+
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ payment_type: 'pay_at_property' });
+      const [sql2] = pg.query.mock.calls[1] as [string, unknown[]];
+      expect(sql2).toContain('COALESCE(h.allows_cash, true) = true');
+    });
+
+    it('returns allows_cash and allows_online_payment fields in listing items', async () => {
+      const mockHotelRow = {
+        id: 'hotel-1',
+        partner_organization_id: 'partner-1',
+        slug: 'hotel-test',
+        city_id: 'city-1',
+        address: 'Amir Temur ko‘chasi 1',
+        latitude: 41.31,
+        longitude: 69.24,
+        stars: 4,
+        rating_average: 4.8,
+        reviews_count: 12,
+        status: 'published',
+        featured: false,
+        check_in_time: '14:00',
+        check_out_time: '12:00',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-02',
+        name: 'Test Hotel',
+        description: 'Test Desc',
+        city_name: 'Toshkent',
+        region_id: 'region-1',
+        min_price: 450000,
+        allows_cash: true,
+        allows_online_payment: false,
+        total_count: 1,
+      };
+
+      pg.query
+        .mockResolvedValueOnce([mockHotelRow]) // hotels query
+        .mockResolvedValueOnce([]) // names
+        .mockResolvedValueOnce([]) // descriptions
+        .mockResolvedValueOnce([]) // amenities
+        .mockResolvedValueOnce([]); // images
+
+      const result = await service.findAll({});
+      expect(result.items.length).toBe(1);
+      expect(result.items[0].allows_cash).toBe(true);
+      expect(result.items[0].allows_online_payment).toBe(false);
     });
   });
 });

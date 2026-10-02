@@ -15,27 +15,47 @@ import {
 // `partner_organizations.type` (PartnerOrganizationType) qiymatlaridan yashash
 // joyi turidagilari — `hotels` katalogi/detali faqat shularni ko'rsatadi
 // (`bus`, `restaurant` emas).
-const ACCOMMODATION_TYPES = new Set([
-  'hotel',
-  'hostel',
-  'guesthouse',
-  'motel',
-  'dacha',
-  'sanatorium',
-  'resort',
-  'mixed',
-]);
+const ACCOMMODATION_TYPE_MAP: Record<string, string> = {
+  hotel: 'hotel',
+  hotels: 'hotel',
+  hostel: 'hostel',
+  hostels: 'hostel',
+  guesthouse: 'guesthouse',
+  guesthouses: 'guesthouse',
+  motel: 'motel',
+  motels: 'motel',
+  dacha: 'dacha',
+  dachas: 'dacha',
+  sanatorium: 'sanatorium',
+  sanatoriums: 'sanatorium',
+  resort: 'resort',
+  resorts: 'resort',
+  mixed: 'mixed',
+};
 
 /**
- * `?type=` so'rov parametrini tekshiradi. Yaroqli yashash-joyi turi bo'lsa
- * o'sha qiymatni qaytaradi (kategoriya sahifalari — /dachas, /resorts,
- * /sanatoriums — uchun), aks holda `undefined` (umumiy /hotels ro'yxati).
+ * `?type=` yoki `?types=` so'rov parametrlarini tekshiradi va normallashtiradi.
+ * Birlik ("hotel", "dacha") va ko'plik ("hotels", "dachas") shakllarini qabul qiladi.
  */
-function normalizeAccommodationType(
+function normalizeAccommodationTypes(
   value: string | string[] | undefined,
-): string | undefined {
-  const v = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase();
-  return v && ACCOMMODATION_TYPES.has(v) ? v : undefined;
+): string[] {
+  if (!value) return [];
+  const rawList = Array.isArray(value) ? value : [value];
+  const result: string[] = [];
+
+  for (const item of rawList) {
+    if (typeof item !== 'string') continue;
+    const tokens = item.split(',').map((t) => t.trim().toLowerCase());
+    for (const token of tokens) {
+      const mapped = ACCOMMODATION_TYPE_MAP[token];
+      if (mapped && !result.includes(mapped)) {
+        result.push(mapped);
+      }
+    }
+  }
+
+  return result;
 }
 
 @Injectable()
@@ -66,10 +86,15 @@ export class HotelsService {
     // /sanatoriums) — aynan o'sha yashash-joyi turi ko'rsatiladi; berilmasa,
     // sukut bo'yicha "Mehmonxonalar" katalogi (sanatoriy/oromgoh o'z
     // bo'limlarida qoladi, transport/restoran esa hech qachon chiqmaydi).
-    const accommodationType = normalizeAccommodationType(query.type);
-    if (accommodationType) {
+    const accommodationTypes = normalizeAccommodationTypes(
+      query.types ?? query.type,
+    );
+    if (accommodationTypes.length === 1) {
       conditions.push(`po.type = $${paramIndex++}`);
-      params.push(accommodationType);
+      params.push(accommodationTypes[0]);
+    } else if (accommodationTypes.length > 1) {
+      conditions.push(`po.type::text = ANY($${paramIndex++}::text[])`);
+      params.push(accommodationTypes);
     } else {
       conditions.push(
         "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
@@ -81,9 +106,56 @@ export class HotelsService {
       params.push(query.city_id);
     }
 
-    if (query.stars) {
-      conditions.push(`h.stars = $${paramIndex++}`);
-      params.push(Number(query.stars));
+    // `?min_stars=` yoki `?stars=` — mehmonxona yulduzlari bo'yicha filtr.
+    // Frontendda "4 va yuqori", "3 va yuqori" tanlanganida `stars="4"`, `stars="3"` yuboriladi (>= stars).
+    // Shuningdek, bir nechta yulduzlar (`stars="3,4,5"` yoki `stars=["3", "4"]`) ANY(...) orqali qo'llab-quvvatlanadi.
+    const minStarsRaw = first(query.min_stars ?? query.minStars);
+    const starsRaw = query.stars;
+    if (minStarsRaw !== undefined && minStarsRaw !== '') {
+      const minStars = Number(minStarsRaw);
+      if (
+        !Number.isFinite(minStars) ||
+        !Number.isInteger(minStars) ||
+        minStars < 1 ||
+        minStars > 5
+      ) {
+        throw new BadRequestException({
+          code: 'SEARCH_STARS_INVALID',
+          message:
+            "min_stars parametri noto'g'ri (1-5 oralig'ida bo'lishi kerak)",
+        });
+      }
+      conditions.push(`h.stars >= $${paramIndex++}`);
+      params.push(minStars);
+    } else if (starsRaw !== undefined && starsRaw !== '') {
+      const rawStr = Array.isArray(starsRaw)
+        ? starsRaw.join(',')
+        : String(starsRaw);
+      const parts = rawStr
+        .split(',')
+        .map((s) => s.trim().replace(/\+$/, ''))
+        .filter(Boolean);
+      const starNums = parts.map(Number);
+      const hasInvalid =
+        starNums.length === 0 ||
+        starNums.some(
+          (n) => !Number.isFinite(n) || !Number.isInteger(n) || n < 1 || n > 5,
+        );
+
+      if (hasInvalid) {
+        throw new BadRequestException({
+          code: 'SEARCH_STARS_INVALID',
+          message: "stars parametri noto'g'ri (1-5 oralig'ida bo'lishi kerak)",
+        });
+      }
+
+      if (starNums.length > 1) {
+        conditions.push(`h.stars = ANY($${paramIndex++}::int[])`);
+        params.push(starNums);
+      } else {
+        conditions.push(`h.stars >= $${paramIndex++}`);
+        params.push(starNums[0]);
+      }
     }
 
     if (query.featured === 'true') {
@@ -93,6 +165,66 @@ export class HotelsService {
     if (query.min_rating) {
       conditions.push(`h.rating_average >= $${paramIndex++}`);
       params.push(Number(query.min_rating));
+    }
+
+    // `?min_price=` va `?max_price=` — 1 kechalik minimal xona narxi (rp.min_price) bo'yicha filtr.
+    const minPriceRaw = first(query.min_price ?? query.minPrice);
+    let minPrice: number | undefined;
+    if (minPriceRaw !== undefined && minPriceRaw !== '') {
+      const parsed = Number(minPriceRaw);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        throw new BadRequestException({
+          code: 'SEARCH_PRICE_INVALID',
+          message: "min_price parametri noto'g'ri",
+        });
+      }
+      minPrice = parsed;
+    }
+
+    const maxPriceRaw = first(query.max_price ?? query.maxPrice);
+    let maxPrice: number | undefined;
+    if (maxPriceRaw !== undefined && maxPriceRaw !== '') {
+      const parsed = Number(maxPriceRaw);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        throw new BadRequestException({
+          code: 'SEARCH_PRICE_INVALID',
+          message: "max_price parametri noto'g'ri",
+        });
+      }
+      maxPrice = parsed;
+    }
+
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
+      throw new BadRequestException({
+        code: 'SEARCH_PRICE_INVALID',
+        message: "min_price max_price dan katta bo'lishi mumkin emas",
+      });
+    }
+
+    if (minPrice !== undefined) {
+      conditions.push(`rp.min_price >= $${paramIndex++}`);
+      params.push(minPrice);
+    }
+
+    if (maxPrice !== undefined) {
+      conditions.push(`rp.min_price <= $${paramIndex++}`);
+      params.push(maxPrice);
+    }
+
+    // `?payment_type=` — to'lov turi bo'yicha filtr:
+    // "online_payment" (onlayn) yoki "pay_at_property" / "cash" (joyida naqd to'lash)
+    const paymentTypeRaw = first(query.payment_type ?? query.paymentType);
+    if (paymentTypeRaw !== undefined && paymentTypeRaw !== '') {
+      const pt = paymentTypeRaw.trim().toLowerCase();
+      if (pt === 'pay_at_property' || pt === 'cash') {
+        conditions.push('COALESCE(h.allows_cash, true) = true');
+      } else if (pt === 'online_payment' || pt === 'online') {
+        conditions.push('COALESCE(h.allows_online_payment, true) = true');
+      }
     }
 
     const bounds = parseGeoBounds(query.bounds);
@@ -264,6 +396,8 @@ export class HotelsService {
         ht.name, ht.description,
         c.name as city_name, c.region_id::text,
         rp.min_price::float8,
+        COALESCE(h.allows_cash, true) as allows_cash,
+        COALESCE(h.allows_online_payment, true) as allows_online_payment,
         COUNT(*) OVER()::int AS total_count
       FROM hotels h
       JOIN partner_organizations po ON po.id = h.partner_organization_id
@@ -304,6 +438,8 @@ export class HotelsService {
       amenities: listingData.amenities.get(String(r.id)) ?? [],
       images: listingData.images.get(String(r.id)) ?? [],
       min_price: Number(r.min_price || 0),
+      allows_cash: Boolean(r.allows_cash ?? true),
+      allows_online_payment: Boolean(r.allows_online_payment ?? true),
     }));
 
     const total = totalCount(rows);
@@ -324,6 +460,8 @@ export class HotelsService {
         h.check_in_time, h.check_out_time,
         h.cancellation_policy_code, h.smoking_allowed, h.pets_allowed, h.children_allowed,
         h.created_at, h.updated_at,
+        COALESCE(h.allows_cash, true) as allows_cash,
+        COALESCE(h.allows_online_payment, true) as allows_online_payment,
         ht.name, ht.description,
         c.name as city_name, c.region_id::text
       FROM hotels h
@@ -371,6 +509,8 @@ export class HotelsService {
       city: { id: h.city_id, region_id: h.region_id, name: h.city_name },
       amenities: listingData.amenities.get(String(h.id)) ?? [],
       images: listingData.images.get(String(h.id)) ?? [],
+      allows_cash: Boolean(h.allows_cash ?? true),
+      allows_online_payment: Boolean(h.allows_online_payment ?? true),
       rooms,
     };
   }

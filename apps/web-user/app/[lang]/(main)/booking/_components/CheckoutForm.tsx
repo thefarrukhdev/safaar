@@ -9,7 +9,7 @@ import { createBookingAction, validatePromoAction, type CheckoutState } from "@/
 import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { DatePicker } from "@/components/ui/DatePicker";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
 import { trackBookingStarted } from "@/lib/services/analytics/tracker";
 import { CheckoutMobileCtaBar } from "./CheckoutMobileCtaBar";
@@ -198,24 +198,18 @@ export function CheckoutForm({
  )}
 
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
- <div className="flex flex-col gap-1.5">
- <DatePicker
+ <div className="sm:col-span-2">
+ <DateRangePicker
  locale={locale}
- label={dict.checkIn}
- value={checkIn}
- onChange={setCheckIn}
+ checkInLabel={dict.checkIn}
+ checkOutLabel={dict.checkOut}
+ checkIn={checkIn}
+ checkOut={checkOut}
+ onCheckInChange={setCheckIn}
+ onCheckOutChange={setCheckOut}
  min={new Date().toISOString().split("T")[0]}
  />
  <input type="hidden" name="checkIn" value={checkIn} />
- </div>
- <div className="flex flex-col gap-1.5">
- <DatePicker
- locale={locale}
- label={dict.checkOut}
- value={checkOut}
- onChange={setCheckOut}
- min={checkIn || new Date().toISOString().split("T")[0]}
- />
  <input type="hidden" name="checkOut" value={checkOut} />
  </div>
  <label className="flex flex-col gap-1.5">

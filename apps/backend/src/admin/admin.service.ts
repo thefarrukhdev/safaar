@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { BookingStatus, Role } from '@safaar/types';
 import { randomUUID } from 'node:crypto';
-import * as argon2 from 'argon2';
 import type { RequestActor } from '../common/actor';
 import { rolePermissions } from '../common/permissions';
 import { resolveAccommodationCommissionRate } from '../common/finance';
@@ -19,7 +18,7 @@ import {
   parsePagination,
   type QueryLike,
 } from '../common/pagination';
-import { randomToken } from '../auth/security';
+import { hashPassword, randomToken } from '../auth/security';
 import { authSessionStore } from '../auth/session-store';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { SmsService } from '../infrastructure/sms.service';
@@ -1700,30 +1699,73 @@ export class AdminService {
     status: 'approved' | 'rejected' | 'more_information_required',
     body: Record<string, unknown> = {},
   ) {
-    const rows = await this.rows(
-      `
-        update partner_organizations
-        set status = $2::"PartnerStatus",
-            rejection_reason = case when $2 = 'rejected' then nullif($3, '') else rejection_reason end,
-            approved_by = case when $2 = 'approved' then $4::uuid else approved_by end,
-            approved_at = case when $2 = 'approved' then now() else approved_at end,
-            updated_at = now()
-        where id = $1::uuid
-        returning
-          id::text,
-          type::text,
-          legal_name,
-          brand_name,
-          city_id::text,
-          address,
-          status::text,
-          rejection_reason,
-          approved_by::text,
-          approved_at,
-          updated_at
-      `,
-      [id, status, String(body.reason ?? ''), adminActorUuid(actor)],
-    );
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `
+          update partner_organizations
+          set status = $2::"PartnerStatus",
+              rejection_reason = case when $2 = 'rejected' then nullif($3, '') else rejection_reason end,
+              approved_by = case when $2 = 'approved' then $4::uuid else approved_by end,
+              approved_at = case when $2 = 'approved' then now() else approved_at end,
+              updated_at = now()
+          where id = $1::uuid
+          returning
+            id::text,
+            type::text,
+            legal_name,
+            brand_name,
+            phone,
+            email,
+            contact_person,
+            initial_password_hash,
+            city_id::text,
+            address,
+            status::text,
+            rejection_reason,
+            approved_by::text,
+            approved_at,
+            updated_at
+        `,
+        [id, status, String(body.reason ?? ''), adminActorUuid(actor)],
+      );
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        (err as { code?: string }).code === '42703'
+      ) {
+        rows = await this.rows(
+          `
+            update partner_organizations
+            set status = $2::"PartnerStatus",
+                rejection_reason = case when $2 = 'rejected' then nullif($3, '') else rejection_reason end,
+                approved_by = case when $2 = 'approved' then $4::uuid else approved_by end,
+                approved_at = case when $2 = 'approved' then now() else approved_at end,
+                updated_at = now()
+            where id = $1::uuid
+            returning
+              id::text,
+              type::text,
+              legal_name,
+              brand_name,
+              phone,
+              email,
+              contact_person,
+              city_id::text,
+              address,
+              status::text,
+              rejection_reason,
+              approved_by::text,
+              approved_at,
+              updated_at
+          `,
+          [id, status, String(body.reason ?? ''), adminActorUuid(actor)],
+        );
+      } else {
+        throw err;
+      }
+    }
 
     if (!rows[0]) {
       throw new NotFoundException({
@@ -1732,11 +1774,87 @@ export class AdminService {
       });
     }
 
+    const org = rows[0];
+
+    if (status === 'approved') {
+      const existingUsers = await this.rows(
+        `select id::text from partner_users where organization_id = $1::uuid and deleted_at is null limit 1`,
+        [id],
+      );
+
+      let passwordHash = org['initial_password_hash']
+        ? String(org['initial_password_hash'])
+        : null;
+
+      if (body.password !== undefined && body.password !== null) {
+        const trimmed = String(body.password).trim();
+        if (trimmed.length < 8) {
+          throw new BadRequestException({
+            code: 'INVALID_PASSWORD',
+            message: "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+          });
+        }
+        passwordHash = await hashPassword(trimmed);
+      }
+
+      const email = String(org['email'] ?? '')
+        .trim()
+        .toLowerCase();
+
+      if (!existingUsers[0] && passwordHash && email) {
+        const userId = randomUUID();
+        const phone = String(org['phone'] ?? '').trim() || null;
+        const fullName = (org['contact_person'] ||
+          org['brand_name'] ||
+          org['legal_name'] ||
+          null) as string | null;
+
+        try {
+          await this.postgres.query(
+            `insert into partner_users
+               (id, organization_id, email, phone, password_hash, full_name, role, status, created_at, updated_at)
+             values ($1::uuid, $2::uuid, $3, $4, $5, $6, 'owner', 'active', now(), now())
+             on conflict (organization_id, email) do update
+             set password_hash = excluded.password_hash,
+                 phone = coalesce(excluded.phone, partner_users.phone),
+                 full_name = coalesce(excluded.full_name, partner_users.full_name),
+                 role = 'owner',
+                 status = 'active',
+                 updated_at = now()`,
+            [userId, id, email, phone, passwordHash, fullName],
+          );
+        } catch (err: unknown) {
+          if (
+            typeof err === 'object' &&
+            err !== null &&
+            (err as { code?: string }).code === '42703'
+          ) {
+            await this.postgres.query(
+              `insert into partner_users
+                 (id, organization_id, email, password_hash, full_name, role, status, created_at, updated_at)
+               values ($1::uuid, $2::uuid, $3, $4, $5, 'owner', 'active', now(), now())
+               on conflict (organization_id, email) do update
+               set password_hash = excluded.password_hash,
+                   full_name = coalesce(excluded.full_name, partner_users.full_name),
+                   role = 'owner',
+                   status = 'active',
+                   updated_at = now()`,
+              [userId, id, email, passwordHash, fullName],
+            );
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
     await this.audit('partner.moderation', actor, { partner_id: id, status });
     this.invalidateAdminCache();
     this.events.partnerDashboardUpdated(id);
     this.events.adminDashboardUpdated();
-    return rows[0];
+    const result = { ...rows[0] };
+    delete result.initial_password_hash;
+    return result;
   }
 
   async partnerStatus(
@@ -5479,7 +5597,7 @@ export class AdminService {
     // MARTA qaytariladi (2FA setup'dagi recovery-kodlar bilan bir xil
     // uslub) — yangi admin shu parol bilan kirib, keyin o'zgartiradi.
     const temporaryPassword = randomToken(9);
-    const passwordHash = await argon2.hash(temporaryPassword);
+    const passwordHash = await hashPassword(temporaryPassword);
     const now = new Date().toISOString();
 
     const rows = await this.rows(

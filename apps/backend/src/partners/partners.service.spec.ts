@@ -1,6 +1,7 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
+import { verifyPassword } from '../auth/security';
 import type { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -2805,6 +2806,123 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
     );
 
     expect(result.request?.contactPerson).toBe('Legacy Hotel LLC');
+  });
+
+  it('accepts and hashes a secure password, persisting initial_password_hash in partner_organizations', async () => {
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockResolvedValueOnce([
+        {
+          id: 'org-pwd',
+          type: 'hotel',
+          legal_name: 'Password Hotel',
+          brand_name: 'Password Hotel',
+          contact_person: 'Password Tester',
+          tax_id: '123456780',
+          phone: '+998901234560',
+          email: 'pwd@example.com',
+          city_id: 'city-1',
+          address: 'Registon 15',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-08-25T00:00:00.000Z',
+          updated_at: '2026-08-25T00:00:00.000Z',
+        },
+      ]);
+
+    const { token } = registrationVerificationStore.issue('+998901234560');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'Password Hotel',
+      contactPerson: 'Password Tester',
+      phone: '+998901234560',
+      email: 'pwd@example.com',
+      city: 'Samarqand',
+      address: 'Registon 15',
+      taxId: '123456780',
+      password: 'StrongPassword123!',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('Password Hotel');
+    const insertCall = queryCallsOf(pg)[2];
+    expect(insertCall[0]).toMatch(/initial_password_hash/);
+    const hashParam = insertCall[1]?.[10] as string;
+    expect(hashParam).toMatch(/^\$argon2id\$/);
+    const isValid = await verifyPassword(hashParam, 'StrongPassword123!');
+    expect(isValid).toBe(true);
+  });
+
+  it('rejects partner request when password is shorter than 8 characters', async () => {
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'Short Pwd Hotel',
+        contactPerson: 'Short Tester',
+        phone: '+998901234561',
+        email: 'short@example.com',
+        city: 'Samarqand',
+        address: 'Registon 15',
+        taxId: '123456781',
+        password: 'short',
+        phoneVerificationToken: 'some-token',
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PARTNER_REQUEST_INVALID',
+        fields: {
+          password: "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+        },
+      },
+    });
+  });
+
+  it('gracefully falls back when initial_password_hash column does not exist (42703)', async () => {
+    const err42703 = new Error('column initial_password_hash does not exist');
+    (err42703 as unknown as { code: string }).code = '42703';
+
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockRejectedValueOnce(err42703) // INSERT with initial_password_hash fails with 42703
+      .mockResolvedValueOnce([
+        {
+          id: 'org-fallback',
+          type: 'hotel',
+          legal_name: 'Fallback Hotel',
+          brand_name: 'Fallback Hotel',
+          contact_person: 'Fallback Tester',
+          tax_id: '123456782',
+          phone: '+998901234562',
+          email: 'fallback@example.com',
+          city_id: 'city-1',
+          address: 'Registon 16',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-08-25T00:00:00.000Z',
+          updated_at: '2026-08-25T00:00:00.000Z',
+        },
+      ]); // fallback INSERT succeeds
+
+    const { token } = registrationVerificationStore.issue('+998901234562');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'Fallback Hotel',
+      contactPerson: 'Fallback Tester',
+      phone: '+998901234562',
+      email: 'fallback@example.com',
+      city: 'Samarqand',
+      address: 'Registon 16',
+      taxId: '123456782',
+      password: 'StrongPassword123!',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('Fallback Hotel');
+    const calls = queryCallsOf(pg);
+    const fallbackCall = calls[3];
+    expect(fallbackCall[0]).not.toMatch(/initial_password_hash/);
   });
 });
 

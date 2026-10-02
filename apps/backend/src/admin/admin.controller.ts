@@ -139,8 +139,9 @@ export class AdminController {
   partnerApprove(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
+    @Body() body: Record<string, unknown> = {},
   ) {
-    return this.adminService.partnerDecision(actor, id, 'approved');
+    return this.adminService.partnerDecision(actor, id, 'approved', body);
   }
 
   @Post('partners/:id/reject')

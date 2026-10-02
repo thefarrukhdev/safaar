@@ -83,6 +83,35 @@ describe('AdminController — DELETE /admin/promotions/:id authorization', () =>
     expect(deletePromotion.mock.calls[0]).toEqual([actor, 'p-1']);
   });
 
+  it('delegates to AdminService.partnerDecision on partnerApprove passing actor, id, approved status and body', async () => {
+    const partnerDecision = jest
+      .fn()
+      .mockResolvedValue({ id: 'p-1', status: 'approved' });
+    const controller = new AdminController({
+      partnerDecision,
+    } as unknown as AdminService);
+    const actor = {
+      id: '00000000-0000-0000-0000-000000000001',
+      actorType: 'admin' as const,
+      role: Role.SUPER_ADMIN,
+      roles: [Role.SUPER_ADMIN],
+    };
+
+    const body = { password: 'OptionalPassword123!' };
+    await expect(
+      controller.partnerApprove(actor, 'p-1', body),
+    ).resolves.toEqual({
+      id: 'p-1',
+      status: 'approved',
+    });
+    expect(partnerDecision).toHaveBeenCalledWith(
+      actor,
+      'p-1',
+      'approved',
+      body,
+    );
+  });
+
   describe('RolesGuard against the real route metadata', () => {
     let guard: RolesGuard;
     let pg: { query: jest.Mock };

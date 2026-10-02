@@ -103,7 +103,9 @@ export const UZUM_CHECKOUT_FEE_BEARER: UzumCheckoutFeeBearer = 'USER';
  *   'GROSS_WITH_INVOICE'  — Uzum to'liq GROSS'ni o'tkazadi, komissiya alohida so'raladi
  */
 export type UzumCheckoutSettlementModel =
-  'REQUIRES_UZUM_CONFIRMATION' | 'NET_SETTLEMENT' | 'GROSS_WITH_INVOICE';
+  | 'REQUIRES_UZUM_CONFIRMATION'
+  | 'NET_SETTLEMENT'
+  | 'GROSS_WITH_INVOICE';
 
 export const UZUM_CHECKOUT_SETTLEMENT_MODEL: UzumCheckoutSettlementModel =
   'REQUIRES_UZUM_CONFIRMATION';

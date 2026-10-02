@@ -76,7 +76,10 @@ export function normalizeCommissionRate(
  */
 export type SafaarCommissionRegionTier = 'tashkent' | 'samarqand' | 'other';
 export type SafaarCommissionPropertyTier =
-  'star_4_5' | 'hotel' | 'guesthouse' | 'hostel';
+  | 'star_4_5'
+  | 'hotel'
+  | 'guesthouse'
+  | 'hostel';
 
 const SAFAAR_ACCOMMODATION_COMMISSION_TABLE: Readonly<
   Record<

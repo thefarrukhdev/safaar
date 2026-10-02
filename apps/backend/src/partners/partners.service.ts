@@ -25,7 +25,12 @@ import {
 } from '../infrastructure/postgres.service';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
-import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
+import {
+  hashPassword,
+  hashSecret,
+  partnerApiPepper,
+  randomToken,
+} from '../auth/security';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
 import { assertPublicHttpUrl } from '../common/ssrf-guard';
 import { isSlotWithinOperatingHours } from '../common/operating-hours';
@@ -491,6 +496,17 @@ export class PartnersService {
       fieldErrors.taxId = "STIR 9 ta raqamdan iborat bo'lishi kerak";
     }
 
+    const rawPassword =
+      body.password !== undefined && body.password !== null
+        ? String(body.password).trim()
+        : undefined;
+    if (rawPassword !== undefined) {
+      if (!rawPassword || rawPassword.length < 8) {
+        fieldErrors.password =
+          "Parol kamida 8 ta belgidan iborat bo'lishi kerak";
+      }
+    }
+
     if (Object.keys(fieldErrors).length > 0) {
       throw new BadRequestException({
         code: 'PARTNER_REQUEST_INVALID',
@@ -567,33 +583,76 @@ export class PartnersService {
       .filter(Boolean)
       .join('\n');
 
+    const initialPasswordHash = rawPassword
+      ? await hashPassword(rawPassword)
+      : null;
+
     const id = randomUUID();
-    const inserted = await this.pg.query(
-      `
-        insert into partner_organizations (
-          id, type, legal_name, brand_name, contact_person, tax_id, phone,
-          email, city_id, address, status, default_commission_rate,
-          created_at, updated_at
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $11)
-        returning id::text, type::text, legal_name, brand_name, contact_person,
-                  tax_id, phone, email, city_id::text, address, status::text,
-                  rejection_reason, created_at, updated_at
-      `,
-      [
-        id,
-        partnerType,
-        legalName,
-        brandName,
-        contactPerson,
-        taxId,
-        phone,
-        email,
-        cityId,
-        address,
-        now,
-      ],
-    );
+    let inserted: Array<Record<string, unknown>>;
+    try {
+      inserted = await this.pg.query(
+        `
+          insert into partner_organizations (
+            id, type, legal_name, brand_name, contact_person, tax_id, phone,
+            email, city_id, address, status, default_commission_rate,
+            initial_password_hash, created_at, updated_at
+          )
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $12)
+          returning id::text, type::text, legal_name, brand_name, contact_person,
+                    tax_id, phone, email, city_id::text, address, status::text,
+                    rejection_reason, created_at, updated_at
+        `,
+        [
+          id,
+          partnerType,
+          legalName,
+          brandName,
+          contactPerson,
+          taxId,
+          phone,
+          email,
+          cityId,
+          address,
+          initialPasswordHash,
+          now,
+        ],
+      );
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        (err as { code?: string }).code === '42703'
+      ) {
+        inserted = await this.pg.query(
+          `
+            insert into partner_organizations (
+              id, type, legal_name, brand_name, contact_person, tax_id, phone,
+              email, city_id, address, status, default_commission_rate,
+              created_at, updated_at
+            )
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $11)
+            returning id::text, type::text, legal_name, brand_name, contact_person,
+                      tax_id, phone, email, city_id::text, address, status::text,
+                      rejection_reason, created_at, updated_at
+          `,
+          [
+            id,
+            partnerType,
+            legalName,
+            brandName,
+            contactPerson,
+            taxId,
+            phone,
+            email,
+            cityId,
+            address,
+            now,
+          ],
+        );
+      } else {
+        throw err;
+      }
+    }
 
     return { item: this.publicPartnerRequestDto(inserted[0]) };
   }

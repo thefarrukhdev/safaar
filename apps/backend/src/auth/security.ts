@@ -4,6 +4,7 @@ import {
   timingSafeEqual,
   type BinaryLike,
 } from 'node:crypto';
+import * as argon2 from 'argon2';
 import { Role, type ActorType } from '@safaar/types';
 import { assertStrongSecret } from '../config/secret-strength';
 
@@ -269,5 +270,26 @@ function parseJson<T>(value: string): T | undefined {
     return JSON.parse(value) as T;
   } catch {
     return undefined;
+  }
+}
+
+/**
+ * Foydalanuvchi/hamkor parolini xavfsiz argon2id orqali xeshlaydi.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return argon2.hash(password);
+}
+
+/**
+ * Parolni xesh bilan solishtiradi (vaqt hujumlaridan himoyalangan).
+ */
+export async function verifyPassword(
+  hash: string,
+  plain: string,
+): Promise<boolean> {
+  try {
+    return await argon2.verify(hash, plain);
+  } catch {
+    return false;
   }
 }

@@ -91,7 +91,7 @@ describe('HotelsService.findAll', () => {
 
     const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain(
-      "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed')",
+      "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
     );
   });
 
@@ -140,7 +140,7 @@ describe('HotelsService.findAll', () => {
       const [sql, params] = pg.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('po.type = $1');
       expect(sql).not.toContain(
-        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed')",
+        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
       );
       expect(params[0]).toBe(type);
     },
@@ -173,7 +173,7 @@ describe('HotelsService.findAll', () => {
 
       const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain(
-        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed')",
+        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
       );
       expect(sql).not.toContain('po.type = $1');
     },

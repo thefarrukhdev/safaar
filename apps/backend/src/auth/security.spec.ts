@@ -1,9 +1,11 @@
 import { Role } from '@safaar/types';
 import {
+  hashPassword,
   jwtSecurityConfig,
   resetEphemeralJwtSecretsForTests,
   signJwt,
   verifyJwt,
+  verifyPassword,
 } from './security';
 
 describe('jwtSecurityConfig (regression: CRITICAL — hardcoded fallback secret bypassed its own strength check)', () => {
@@ -119,5 +121,24 @@ describe('jwtSecurityConfig (regression: CRITICAL — hardcoded fallback secret 
 
     const payload = verifyJwt(token, 'access');
     expect(payload?.sub).toBe('user-1');
+  });
+
+  describe('hashPassword and verifyPassword', () => {
+    it('hashes password with argon2 and verifies successfully', async () => {
+      const plain = 'SuperSecret123!';
+      const hash = await hashPassword(plain);
+      expect(hash).toMatch(/^\$argon2id\$/);
+
+      const valid = await verifyPassword(hash, plain);
+      expect(valid).toBe(true);
+
+      const invalid = await verifyPassword(hash, 'WrongPassword!');
+      expect(invalid).toBe(false);
+    });
+
+    it('verifyPassword safely returns false on invalid/corrupted hash', async () => {
+      const valid = await verifyPassword('not-a-valid-argon2-hash', 'password');
+      expect(valid).toBe(false);
+    });
   });
 });

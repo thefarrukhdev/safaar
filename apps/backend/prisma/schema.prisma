@@ -159,6 +159,7 @@ model PartnerOrganization {
   logoUrl               String?                  @map("logo_url")
   showcase              Boolean                  @default(false)
   contactPerson         String?                  @map("contact_person") @db.VarChar(255)
+  initialPasswordHash   String?                  @map("initial_password_hash") @db.VarChar(255)
   bookings              Booking[]
   busCompanies          BusCompany[]
   hotels                Hotel[]
@@ -180,6 +181,7 @@ model PartnerUser {
   id             String              @id @default(uuid()) @db.Uuid
   organizationId String              @map("organization_id") @db.Uuid
   email          String              @db.VarChar(255)
+  phone          String?             @db.VarChar(20)
   passwordHash   String              @map("password_hash") @db.VarChar(255)
   fullName       String?             @map("full_name") @db.VarChar(255)
   status         String              @default("active") @db.VarChar(32)

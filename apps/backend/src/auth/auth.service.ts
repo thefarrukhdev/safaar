@@ -107,7 +107,8 @@ interface OAuthExchangeRegisterContext {
 }
 
 type OAuthExchangeContext =
-  OAuthExchangeLoginContext | OAuthExchangeRegisterContext;
+  | OAuthExchangeLoginContext
+  | OAuthExchangeRegisterContext;
 
 function isOAuthExchangeRegisterContext(
   context: OAuthExchangeContext,
@@ -324,7 +325,8 @@ export class AuthService {
     // "qachon birinchi rozi bo'lgan"ni qayta yozib yubormaydi va ortiqcha
     // audit yozuvi yaratmaydi).
     const existingTermsAcceptedAt = rows[0]['terms_accepted_at'] as
-      string | null;
+      | string
+      | null;
     const termsAcceptedAt = existingTermsAcceptedAt ?? now;
     const termsVersion = existingTermsAcceptedAt
       ? (rows[0]['terms_version'] as string | null)

@@ -1,6 +1,7 @@
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { authSessionStore } from '../auth/session-store';
+import { verifyPassword } from '../auth/security';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -16,6 +17,7 @@ describe('AdminService frontend action endpoints', () => {
     notificationCreated: jest.Mock;
     hotelListingChanged: jest.Mock;
     partnerDashboardUpdated: jest.Mock;
+    adminDashboardUpdated: jest.Mock;
   };
   let smsMock: { send: jest.Mock };
   let cacheMock: {
@@ -43,6 +45,7 @@ describe('AdminService frontend action endpoints', () => {
       notificationCreated: jest.fn(),
       hotelListingChanged: jest.fn(),
       partnerDashboardUpdated: jest.fn(),
+      adminDashboardUpdated: jest.fn(),
     };
     smsMock = {
       send: jest
@@ -69,7 +72,7 @@ describe('AdminService frontend action endpoints', () => {
         partnerRequestDecided: jest.fn(),
         partnerDashboardUpdated: eventsMock.partnerDashboardUpdated,
         bookingStatusChanged: jest.fn(),
-        adminDashboardUpdated: jest.fn(),
+        adminDashboardUpdated: eventsMock.adminDashboardUpdated,
         notificationCreated: eventsMock.notificationCreated,
         supportTicketUpdated: jest.fn(),
         supportMessageCreated: jest.fn(),
@@ -163,6 +166,286 @@ describe('AdminService frontend action endpoints', () => {
     expect(sql).toContain("'under_review'");
     expect(sql).toContain("'more_information_required'");
     expect(sql).not.toContain("po.status <> 'approved'");
+  });
+
+  describe('partnerDecision — partner approval and automatic partner_users creation', () => {
+    const partnerId = '00000000-0000-3001-0000-000000000099';
+
+    it('creates a partner_users owner when approved and initial_password_hash exists', async () => {
+      const initialHash = '$argon2id$v=19$m=65536,t=3,p=4$someHashValue';
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'hotel',
+            legal_name: 'Bogi Shamol LLC',
+            brand_name: "Restaurant Bog'i Shamol",
+            phone: '+998907435006',
+            email: 'bogi.shamol@example.com',
+            contact_person: 'Muxlisa',
+            initial_password_hash: initialHash,
+            city_id: 'city-1',
+            address: 'Samarqand',
+            status: 'approved',
+            rejection_reason: null,
+            approved_by: actor.id,
+            approved_at: '2026-10-02T10:00:00.000Z',
+            updated_at: '2026-10-02T10:00:00.000Z',
+          },
+        ]) // UPDATE partner_organizations RETURNING
+        .mockResolvedValueOnce([]) // SELECT partner_users -> none
+        .mockResolvedValueOnce([]) // INSERT into partner_users
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.partnerDecision(
+        actor,
+        partnerId,
+        'approved',
+      );
+
+      expect(result['status']).toBe('approved');
+      expect(result['initial_password_hash']).toBeUndefined();
+
+      // Check partner_users SELECT
+      const selectUsersCall = pgMock.query.mock.calls[1];
+      expect(selectUsersCall[0]).toMatch(/select id::text from partner_users/);
+      expect(selectUsersCall[1]).toEqual([partnerId]);
+
+      // Check partner_users INSERT
+      const insertUserCall = pgMock.query.mock.calls[2];
+      expect(insertUserCall[0]).toMatch(/insert into partner_users/);
+      expect(insertUserCall[1]).toEqual(
+        expect.arrayContaining([
+          expect.any(String), // userId
+          partnerId,
+          'bogi.shamol@example.com',
+          '+998907435006',
+          initialHash,
+          'Muxlisa',
+        ]),
+      );
+
+      // Audit and events
+      expect(eventsMock.partnerDashboardUpdated).toHaveBeenCalledWith(
+        partnerId,
+      );
+      expect(eventsMock.adminDashboardUpdated).toHaveBeenCalled();
+    });
+
+    it('does not insert partner_users if a user already exists for the organization', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'hotel',
+            legal_name: 'Existing Partner LLC',
+            brand_name: 'Existing Partner',
+            phone: '+998901112233',
+            email: 'existing@example.com',
+            contact_person: 'Existing Admin',
+            initial_password_hash:
+              '$argon2id$v=19$m=65536,t=3,p=4$someHashValue',
+            status: 'approved',
+            approved_by: actor.id,
+          },
+        ]) // UPDATE partner_organizations
+        .mockResolvedValueOnce([{ id: 'existing-user-uuid' }]) // SELECT partner_users -> already exists
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      await service.partnerDecision(actor, partnerId, 'approved');
+
+      // Only 3 queries: UPDATE partner_organizations, SELECT partner_users, INSERT audit_logs
+      expect(pgMock.query).toHaveBeenCalledTimes(3);
+      const sqlQueries = pgMock.query.mock.calls.map(([sql]) => String(sql));
+      expect(
+        sqlQueries.some((s) => s.includes('insert into partner_users')),
+      ).toBe(false);
+    });
+
+    it('safely approves without error when initial_password_hash is null (Muxlisa legacy case)', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'restaurant',
+            legal_name: "Restaurant Bog'i Shamol",
+            brand_name: "Restaurant Bog'i Shamol",
+            phone: '+998907435006',
+            email: 'muxlisa@example.com',
+            contact_person: 'Muxlisa',
+            initial_password_hash: null, // no password provided on initial registration
+            status: 'approved',
+            approved_by: actor.id,
+          },
+        ]) // UPDATE partner_organizations
+        .mockResolvedValueOnce([]) // SELECT partner_users -> none
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      const result = await service.partnerDecision(
+        actor,
+        partnerId,
+        'approved',
+      );
+
+      expect(result['status']).toBe('approved');
+      // Skipped inserting partner_users without error
+      const sqlQueries = pgMock.query.mock.calls.map(([sql]) => String(sql));
+      expect(
+        sqlQueries.some((s) => s.includes('insert into partner_users')),
+      ).toBe(false);
+    });
+
+    it('allows admin to set a password on approval when initial_password_hash is absent', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'restaurant',
+            legal_name: "Restaurant Bog'i Shamol",
+            brand_name: "Restaurant Bog'i Shamol",
+            phone: '+998907435006',
+            email: 'muxlisa@example.com',
+            contact_person: 'Muxlisa',
+            initial_password_hash: null,
+            status: 'approved',
+            approved_by: actor.id,
+          },
+        ]) // UPDATE partner_organizations
+        .mockResolvedValueOnce([]) // SELECT partner_users -> none
+        .mockResolvedValueOnce([]) // INSERT into partner_users
+        .mockResolvedValueOnce([]); // audit_logs insert
+
+      await service.partnerDecision(actor, partnerId, 'approved', {
+        password: 'AdminSetPassword123!',
+      });
+
+      const insertCall = pgMock.query.mock.calls[2];
+      expect(insertCall[0]).toMatch(/insert into partner_users/);
+      const insertedHash = insertCall[1]?.[4] as string;
+      expect(insertedHash).toMatch(/^\$argon2id\$/);
+      const isValid = await verifyPassword(
+        insertedHash,
+        'AdminSetPassword123!',
+      );
+      expect(isValid).toBe(true);
+    });
+
+    it('does not create partner_users when status is rejected', async () => {
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            status: 'rejected',
+            rejection_reason: 'Incomplete documents',
+          },
+        ])
+        .mockResolvedValueOnce([]); // audit_logs
+
+      const result = await service.partnerDecision(
+        actor,
+        partnerId,
+        'rejected',
+        {
+          reason: 'Incomplete documents',
+        },
+      );
+
+      expect(result['status']).toBe('rejected');
+      expect(pgMock.query).toHaveBeenCalledTimes(2);
+      const sqlQueries = pgMock.query.mock.calls.map(([sql]) => String(sql));
+      expect(sqlQueries.some((s) => s.includes('partner_users'))).toBe(false);
+    });
+
+    it('throws BadRequestException when admin provides a password shorter than 8 characters', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          id: partnerId,
+          type: 'restaurant',
+          status: 'approved',
+          initial_password_hash: null,
+          approved_by: actor.id,
+        },
+      ]);
+
+      await expect(
+        service.partnerDecision(actor, partnerId, 'approved', {
+          password: 'short',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'INVALID_PASSWORD',
+          message: "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+        },
+      });
+    });
+
+    it('gracefully handles missing initial_password_hash column (42703) on partner_organizations', async () => {
+      const err42703 = new Error('column initial_password_hash does not exist');
+      (err42703 as unknown as { code: string }).code = '42703';
+
+      pgMock.query
+        .mockRejectedValueOnce(err42703) // first UPDATE throws 42703
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'restaurant',
+            phone: '+998907435006',
+            email: 'muxlisa@example.com',
+            status: 'approved',
+            approved_by: actor.id,
+          },
+        ]) // fallback UPDATE succeeds without initial_password_hash
+        .mockResolvedValueOnce([]) // SELECT partner_users -> none
+        .mockResolvedValueOnce([]); // audit_logs
+
+      const result = await service.partnerDecision(
+        actor,
+        partnerId,
+        'approved',
+      );
+      expect(result['status']).toBe('approved');
+    });
+
+    it('gracefully handles missing phone column (42703) on partner_users', async () => {
+      const err42703 = new Error('column phone does not exist');
+      (err42703 as unknown as { code: string }).code = '42703';
+
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: partnerId,
+            type: 'hotel',
+            phone: '+998901234567',
+            email: 'hotel@example.com',
+            initial_password_hash: '$argon2id$v=19$m=65536,t=3,p=4$someHash',
+            status: 'approved',
+            approved_by: actor.id,
+          },
+        ]) // UPDATE partner_organizations
+        .mockResolvedValueOnce([]) // SELECT partner_users -> none
+        .mockRejectedValueOnce(err42703) // INSERT with phone throws 42703
+        .mockResolvedValueOnce([]) // fallback INSERT without phone succeeds
+        .mockResolvedValueOnce([]); // audit_logs
+
+      const result = await service.partnerDecision(
+        actor,
+        partnerId,
+        'approved',
+      );
+      expect(result['status']).toBe('approved');
+      const fallbackInsertCall = pgMock.query.mock.calls[3];
+      expect(fallbackInsertCall[0]).toMatch(/insert into partner_users/);
+      expect(fallbackInsertCall[0]).not.toMatch(/phone,/);
+    });
+
+    it('throws 404 when partner organization does not exist', async () => {
+      pgMock.query.mockResolvedValueOnce([]); // no rows found
+      await expect(
+        service.partnerDecision(actor, 'nonexistent-id', 'approved'),
+      ).rejects.toMatchObject({
+        response: { code: 'PARTNER_NOT_ACTIVE' },
+      });
+    });
   });
 
   it('updates support status and appends an admin support message', async () => {

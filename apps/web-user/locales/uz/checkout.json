@@ -59,13 +59,13 @@
       ]
     },
     "cash": {
-      "title": "Joyida to'lash (Naqd / Terminal)",
+      "title": "Joyida to'lash",
       "desc": "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
       "badges": []
     },
     "local_card": {
-      "title": "Milliy kartalar",
-      "desc": "Uzcard, Humo, Visa, Mastercard orqali xavfsiz to'lov",
+      "title": "Karta orqali to'lash",
+      "desc": "Uzcard, Humo, Visa va Mastercard orqali xavfsiz to'lov",
       "badges": []
     },
     "intl_card": {

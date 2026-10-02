@@ -72,7 +72,7 @@ export class HotelsService {
       params.push(accommodationType);
     } else {
       conditions.push(
-        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed')",
+        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
       );
     }
 

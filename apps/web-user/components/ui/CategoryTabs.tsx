@@ -24,9 +24,9 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
   return (
     <div className="relative mb-6 w-full">
       {/* Fade gradient left */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-white to-transparent  md:hidden" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-6 bg-gradient-to-r from-white to-transparent md:hidden" />
 
-      <div className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden relative z-0 flex w-full gap-3 overflow-x-auto pb-2 pt-1 px-4 sm:px-6 lg:px-10">
+      <div className="flex w-full gap-3 overflow-x-auto pb-2 pt-1 px-4 sm:px-6 lg:px-10 scrollbar-hide snap-x">
         {tabs.map((tab) => {
           const isTabActive =
             tab.isActive !== undefined
@@ -38,20 +38,23 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
           const Icon = tab.icon;
 
           const className = cn(
-            "group relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full px-4 h-9 text-sm font-medium transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100",
+            "group relative inline-flex shrink-0 snap-start cursor-pointer items-center justify-center gap-2 rounded-full px-5 h-10 text-sm font-medium transition-all duration-200 active:scale-[0.97] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2",
             isTabActive
-              ? "bg-slate-900 text-white hover:bg-slate-900/90   :bg-white/90"
-              : "bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08] [0.08]  :bg-white/[0.12]"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-sm"
           );
 
-          const iconColor = tab.color ?? (isTabActive ? "text-white " : "text-slate-900/70  group-hover:text-slate-900 :text-white");
+          const iconColor = isTabActive 
+            ? "text-white" 
+            : (tab.color ?? "text-slate-500 group-hover:text-slate-700");
 
           const content = (
             <>
               {Icon && (
                 <Icon
                   className={cn(
-                    "size-5 shrink-0 transition-transform duration-200",
+                    "size-4 shrink-0 transition-transform duration-200",
+                    isTabActive ? "scale-110" : "group-hover:scale-110",
                     iconColor
                   )}
                   aria-hidden="true"
@@ -74,7 +77,7 @@ export function CategoryTabs({ tabs }: CategoryTabsProps) {
       </div>
 
       {/* Fade gradient right */}
-      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-white to-transparent  md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-8 bg-gradient-to-l from-white to-transparent md:hidden" />
     </div>
   );
 }

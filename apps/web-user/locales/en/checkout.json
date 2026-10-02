@@ -60,13 +60,13 @@
       ]
     },
     "cash": {
-      "title": "Pay at Property (Cash / Terminal)",
+      "title": "Pay on site",
       "desc": "No prepayment required. Pay at the front desk upon arrival",
       "badges": []
     },
     "local_card": {
-      "title": "National cards",
-      "desc": "Secure payment via Uzcard, Humo, Visa, Mastercard",
+      "title": "Pay with Card",
+      "desc": "Secure payment via Uzcard, Humo, Visa and Mastercard",
       "badges": [
         "3D-Secure safe"
       ]

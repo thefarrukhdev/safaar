@@ -110,7 +110,7 @@ export function SearchDatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 sm:-left-4 top-full z-50 mt-2 w-max max-w-[calc(100vw-2rem)] sm:max-w-none rounded-2xl border border-slate-200 bg-white p-4 animate-in fade-in zoom-in-95">
+        <div className="absolute left-0 sm:-left-4 top-full z-[100] mt-2 w-max max-w-[calc(100vw-2rem)] sm:max-w-none rounded-2xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in zoom-in-95">
           <div className="flex justify-between items-center mb-2 md:hidden">
              <span className="font-bold text-sm">{dict?.selectDate}</span>
              <button onClick={() => {

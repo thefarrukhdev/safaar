@@ -93,7 +93,7 @@ export function Select({
 
  {open && (
  <div className={cn(
- "absolute left-0 top-full mt-2 z-50 w-full min-w-[11rem] max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 ",
+ "absolute left-0 top-full mt-2 z-50 w-full min-w-[11rem] max-h-64 overflow-y-auto overscroll-contain touch-pan-y rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 ",
  menuClassName
  )}>
  {options.length === 0 && (

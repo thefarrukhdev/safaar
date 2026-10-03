@@ -89,7 +89,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  />
  <nav
  aria-label="Mobil navigatsiya"
- className="fixed inset-y-0 right-0 z-[110] flex h-[100dvh] w-full max-w-[320px] flex-col overflow-y-auto bg-white animate-in slide-in-from-right duration-300 "
+ className="fixed inset-y-0 right-0 z-[110] flex h-[100dvh] w-full max-w-[320px] flex-col overflow-y-auto overscroll-contain touch-pan-y bg-white animate-in slide-in-from-right duration-300 "
  >
  {/* Header */}
  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 ">

@@ -124,7 +124,7 @@ export function FilterSidebar({
             </div>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-4">
               <div className="flex flex-col gap-4">{children}</div>
             </div>
 

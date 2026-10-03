@@ -101,16 +101,11 @@ jobs:
 
   deploy:
     needs: [checks, secret-scan, docker-build]
-    # PHASE 14T: production deploy FAQAT `develop`dan. `temp/save-all-work`
-    # push'lari yuqoridagi 3 ta job'dan (checks/secret-scan/docker-build)
-    # o'tadi, lekin bu yerga umuman yetib kelmaydi.
-    if: github.ref_name == 'develop'
-    runs-on: [self-hosted, safaar-backend]
-    # PHASE 14T: GitHub repo Settings → Environments → "production" —
-    # required reviewers shu yerda QO'LDA sozlanishi kerak (bu workflow
-    # buni o'zi sozlay olmaydi). Reviewer sozlanmaguncha bu gate hech
-    # narsani to'xtatmaydi — final reportdagi "Manual GitHub Configuration
-    # Still Required" bo'limiga qarang.
+    # Production deploy FAQAT `develop` yoki `main` push'larida ishga tushadi.
+    if: github.ref_name == 'develop' || github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    # GitHub repo Settings → Environments → "production" —
+    # required reviewers shu yerda sozlanishi mumkin.
     environment: production
     steps:
       - name: Aynan shu commitni checkout qilish
@@ -122,13 +117,15 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
       - name: Server host key'ini tanish
-        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Aynan shu commit manbasini production hostga uzatish (git archive, fetch/pull YO'Q)
         run: |
           set -euo pipefail
           SHA="${{ github.sha }}"
-          SRC_DIR="/home/scarygun/safaar-src-${SHA}"
+          SRC_DIR="/home/${{ secrets.DEPLOY_USER }}/safaar-src-${SHA}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$TARGET" "rm -rf '${SRC_DIR}' && mkdir -p '${SRC_DIR}'"
           git archive "$SHA" | ssh "$TARGET" "tar -x -C '${SRC_DIR}'"
@@ -154,6 +151,6 @@ jobs:
         run: |
           set -euo pipefail
           SHA="${{ github.sha }}"
-          SRC_DIR="/home/scarygun/safaar-src-${SHA}"
+          SRC_DIR="/home/${{ secrets.DEPLOY_USER }}/safaar-src-${SHA}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$TARGET" "rm -f '/tmp/deploy-production-${SHA}.sh' && rm -rf '${SRC_DIR}'"

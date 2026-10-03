@@ -41,19 +41,21 @@ if [[ ! "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 readonly TARGET_SHA
-readonly EXPECTED_TAILSCALE_IP="100.109.46.108"
+readonly EXPECTED_HOST_IP="${EXPECTED_HOST_IP:-172.31.18.23}"
 readonly CONTAINER_NAME="safaar-backend"
 readonly IMAGE_REPO="safaar-backend"
 readonly NEW_IMAGE="${IMAGE_REPO}:${TARGET_SHA}"
 readonly NETWORK_NAME="safaar-network"
-readonly HOST_PORT="4100"
+readonly BIND_IP="${BIND_IP:-127.0.0.1}"
+readonly HOST_PORT="${HOST_PORT:-4000}"
 readonly CONTAINER_PORT="4000"
-readonly COMPOSE_DIR="/home/scarygun/safaar-stack"
+readonly COMPOSE_DIR="${COMPOSE_DIR:-/home/ubuntu/safaar-stack}"
 readonly ENV_FILE="${COMPOSE_DIR}/backend.env"
-readonly SRC_DIR="/home/scarygun/safaar-src-${TARGET_SHA}"
+readonly SRC_DIR="${SRC_DIR:-/home/ubuntu/safaar-src-${TARGET_SHA}}"
 readonly DOCKERFILE_REL="apps/backend/Dockerfile"
 readonly HEALTH_TIMEOUT_SECONDS=240   # bounded; compose's own start_period is 180s
 readonly HEALTH_POLL_INTERVAL=5
+readonly SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:${HOST_PORT}}"
 
 log() { echo "[deploy-production] $*"; }
 fail() { echo "[deploy-production] FATAL: $*" >&2; exit 1; }
@@ -66,14 +68,18 @@ guardrails() {
   log "Running pre-flight guardrails..."
 
   # Host identity: refuse to run anywhere except the known production host.
-  local tailscale_ip
-  tailscale_ip="$(ip -4 addr show 2>/dev/null | grep -oE '100\.109\.46\.108' | head -n1 || true)"
-  if [[ "$tailscale_ip" != "$EXPECTED_TAILSCALE_IP" ]]; then
-    fail "This host does not have the expected production Tailscale IP ${EXPECTED_TAILSCALE_IP}. Refusing to deploy."
+  local host_match
+  host_match="$(ip -4 addr show 2>/dev/null | grep -oE '172\.31\.18\.23|100\.87\.30\.62|63\.183\.165\.78' | head -n1 || true)"
+  if [[ -z "$host_match" && -n "${EXPECTED_HOST_IP:-}" ]]; then
+    host_match="$(ip -4 addr show 2>/dev/null | grep -oE "${EXPECTED_HOST_IP}" | head -n1 || true)"
+  fi
+  if [[ -z "$host_match" ]]; then
+    fail "This host does not match expected production host IP (expected ${EXPECTED_HOST_IP} or AWS IPs). Refusing to deploy."
   fi
 
   # Compose file / env file must exist (we only ever read them).
-  [[ -f "${COMPOSE_DIR}/docker-compose.safaar.yml" ]] || fail "Expected compose file not found at ${COMPOSE_DIR}/docker-compose.safaar.yml."
+  [[ -f "${COMPOSE_DIR}/docker-compose.yml" || -f "${COMPOSE_DIR}/docker-compose.safaar.yml" ]] \
+    || fail "Expected compose file not found at ${COMPOSE_DIR}/docker-compose.yml."
   [[ -r "$ENV_FILE" ]] || fail "Production env file ${ENV_FILE} is missing or not readable."
 
   # backend.env DATABASE_URL sanity — value NEVER printed, only grep -q booleans.
@@ -263,7 +269,7 @@ deploy_new_container() {
   docker run -d \
     --name "$CONTAINER_NAME" \
     --network "$NETWORK_NAME" \
-    -p "${EXPECTED_TAILSCALE_IP}:${HOST_PORT}:${CONTAINER_PORT}" \
+    -p "${BIND_IP}:${HOST_PORT}:${CONTAINER_PORT}" \
     --env-file "$ENV_FILE" \
     -e HOST=0.0.0.0 \
     -e NODE_OPTIONS="--max-old-space-size=1024" \
@@ -319,16 +325,16 @@ verify_container_stable() {
 }
 
 # ---------------------------------------------------------------------------
-# STEP 14 — PUBLIC SMOKE TEST (read-only GETs only)
+# STEP 14 — SMOKE TEST (read-only GETs only)
 # ---------------------------------------------------------------------------
 
 smoke_test() {
-  log "Running public smoke test..."
+  log "Running smoke test against ${SMOKE_BASE_URL}..."
   local url
   for url in \
-    "https://api.safaar.uz/v1/health" \
-    "https://api.safaar.uz/v1/auth/providers" \
-    "https://api.safaar.uz/v1/hotels"
+    "${SMOKE_BASE_URL}/v1/health" \
+    "${SMOKE_BASE_URL}/v1/auth/providers" \
+    "${SMOKE_BASE_URL}/v1/hotels"
   do
     if ! curl -fsS --max-time 10 "$url" >/dev/null; then
       log "Smoke test FAILED for ${url}"
@@ -336,6 +342,15 @@ smoke_test() {
     fi
     log "Smoke test OK: ${url}"
   done
+
+  # If public domain is already pointing to this host and TLS is valid, also verify it
+  if curl -fsS --max-time 5 "https://api.safaar.uz/v1/health" >/dev/null 2>&1; then
+    log "Public domain api.safaar.uz is reachable over HTTPS, verifying..."
+    curl -fsS --max-time 10 "https://api.safaar.uz/v1/health" >/dev/null && log "Smoke test OK: https://api.safaar.uz/v1/health"
+  else
+    log "Public domain api.safaar.uz not yet resolved to this host (pre-cutover phase). Local smoke test passed."
+  fi
+
   return 0
 }
 
@@ -360,7 +375,7 @@ rollback() {
   docker run -d \
     --name "$CONTAINER_NAME" \
     --network "$NETWORK_NAME" \
-    -p "${EXPECTED_TAILSCALE_IP}:${HOST_PORT}:${CONTAINER_PORT}" \
+    -p "${BIND_IP}:${HOST_PORT}:${CONTAINER_PORT}" \
     --env-file "$ENV_FILE" \
     -e HOST=0.0.0.0 \
     -e NODE_OPTIONS="--max-old-space-size=1024" \

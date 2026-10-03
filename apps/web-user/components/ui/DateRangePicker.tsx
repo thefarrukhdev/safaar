@@ -89,15 +89,17 @@ export function DateRangePicker({
   // Active step o'zgarganda viewni ham o'zgartirish
   useEffect(() => {
     if (open) {
-      if (step === "checkIn" && selectedCheckIn) {
-        setView(new Date(selectedCheckIn));
-      } else if (step === "checkOut" && selectedCheckOut) {
-        setView(new Date(selectedCheckOut));
-      } else if (step === "checkOut" && selectedCheckIn) {
-        setView(new Date(selectedCheckIn));
+      const parsedCheckIn = parseISO(checkIn);
+      const parsedCheckOut = parseISO(checkOut);
+      if (step === "checkIn" && parsedCheckIn) {
+        setView(new Date(parsedCheckIn));
+      } else if (step === "checkOut" && parsedCheckOut) {
+        setView(new Date(parsedCheckOut));
+      } else if (step === "checkOut" && parsedCheckIn) {
+        setView(new Date(parsedCheckIn));
       }
     }
-  }, [step, open, selectedCheckIn, selectedCheckOut]);
+  }, [step, open, checkIn, checkOut]);
 
   useEffect(() => {
     if (!open) return;

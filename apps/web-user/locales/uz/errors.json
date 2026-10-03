@@ -1,18 +1,26 @@
 {
   "notFound": {
     "code": "404",
-    "title": "Kechirasiz, sahifa topilmadi 😕",
+    "title": "Kechirasiz, sahifa topilmadi",
     "text": "Siz qidirayotgan sahifa o'chirilgan, nomi o'zgargan yoki manzili xato yozilgan bo'lishi mumkin. Iltimos, manzilni tekshiring yoki Bosh sahifaga qayting.",
     "home": "Bosh sahifaga qaytish"
   },
   "error": {
-    "title": "Texnik xatolik yuz berdi 🛠",
+    "title": "Texnik xatolik yuz berdi",
     "text": "Kutilmagan xatolik yuz berdi. Bizning muhandislar jamoamiz bundan xabardor va uni bartaraf etish ustida ishlamoqda. Iltimos, birozdan so'ng qayta urinib ko'ring.",
     "retry": "Qayta urinish",
-    "home": "Bosh sahifaga qaytish"
+    "home": "Bosh sahifaga qaytish",
+    "showDetails": "Xatolik tafsilotlari",
+    "hideDetails": "Tafsilotlarni yashirish",
+    "reasons": {
+      "fetch_failed": "Internet tarmog'iga ulanishda muammo yoki server javob bermayapti.",
+      "auth_error": "Sessiyangiz tugagan. Iltimos, qayta tizimga kiring.",
+      "timeout": "Server bilan ulanish kutilganidan uzoq davom etdi.",
+      "unknown": "Noma'lum xatolik"
+    }
   },
   "offline": {
-    "title": "Internet aloqasi yo'q 🌐",
+    "title": "Internet aloqasi yo'q",
     "text": "Tarmoqqa ulanmagansiz. Iltimos, internet aloqasini tekshirib, sahifani yangilang."
   }
 }

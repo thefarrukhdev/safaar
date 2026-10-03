@@ -18,6 +18,11 @@ export function corsOriginsFromEnv(value: string | undefined) {
         .filter(Boolean),
       'https://partner.safaar.uz',
       'https://safaar-partner-ten.vercel.app',
+      'https://safaar.uz',
+      'https://admin.safaar.uz',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
     ]),
   );
 

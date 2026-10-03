@@ -1,18 +1,26 @@
 {
   "notFound": {
     "code": "404",
-    "title": "Sorry, page not found 😕",
-    "text": "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable. Please check the URL or go back to the homepage.",
-    "home": "Back to Homepage"
+    "title": "Sorry, page not found",
+    "text": "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable. Please check the URL or go back to home.",
+    "home": "Return to Home"
   },
   "error": {
-    "title": "A technical error occurred 🛠",
-    "text": "An unexpected error has occurred. Our engineering team has been notified and is working to fix it. Please try again later.",
-    "retry": "Try Again",
-    "home": "Back to Homepage"
+    "title": "Technical Error Occurred",
+    "text": "An unexpected error occurred. Our engineering team has been notified and is working to fix it. Please try again later.",
+    "retry": "Try again",
+    "home": "Return to Home",
+    "showDetails": "Error details",
+    "hideDetails": "Hide details",
+    "reasons": {
+      "fetch_failed": "Network connection issue or server is unresponsive.",
+      "auth_error": "Your session has expired. Please log in again.",
+      "timeout": "Connection to the server timed out.",
+      "unknown": "Unknown error"
+    }
   },
   "offline": {
-    "title": "No Internet Connection 🌐",
-    "text": "You are not connected to a network. Please check your internet connection and refresh the page."
+    "title": "No internet connection",
+    "text": "You are not connected to the network. Please check your internet connection and refresh the page."
   }
 }

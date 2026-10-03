@@ -112,6 +112,14 @@ guardrails() {
     log "No existing '${CONTAINER_NAME}' container found — this will be a first-time start, not a replacement."
   fi
 
+  # Check free disk space on root filesystem (must have at least 2GB free, auto-prune if low)
+  local free_kb
+  free_kb="$(df -k / | awk 'NR==2 {print $4}')"
+  if [[ -n "$free_kb" && "$free_kb" -lt 2097152 ]]; then
+    log "Low disk space (<2GB free: ${free_kb}KB), auto-pruning docker builder cache..."
+    docker builder prune -f --filter until=24h >/dev/null 2>&1 || true
+  fi
+
   log "Guardrails passed."
 }
 
@@ -411,6 +419,8 @@ main() {
   if wait_for_health && verify_container_stable && smoke_test; then
     log "=== DEPLOY SUCCESSFUL: ${NEW_IMAGE} is live and healthy. ==="
     log "Previous image ${OLD_IMAGE:-<none>} was left in place (not deleted) for manual rollback if ever needed."
+    log "Pruning docker build cache older than 48h to prevent disk exhaustion..."
+    docker builder prune -f --filter until=48h >/dev/null 2>&1 || true
     exit 0
   fi
 

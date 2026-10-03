@@ -2,7 +2,7 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
 # pnpm'ni corepack orqali faollashtirish
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.12.2 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/types/package.json packages/types/package.json
@@ -12,7 +12,7 @@ RUN pnpm install --frozen-lockfile --filter @safaar/backend...
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 # pnpm'ni bu bosqichda ham faollashtirish
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.12.2 --activate
 # `node:*-bookworm-slim` OpenSSL'ni o'z ichiga olmaydi, lekin Prisma'ning
 # schema/query-engine binarylari uni talab qiladi (aks holda platformani
 # aniqlay olmay, noto'g'ri/mos kelmaydigan engine yuklab olishga urinadi) —
@@ -39,19 +39,21 @@ RUN pnpm --filter @safaar/backend run build
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-# pnpm'ni runner bosqichida ham faollashtirish (CMD uchun kerak)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV COREPACK_HOME=/usr/local/share/corepack
 
 # Runtime'da ham query engine binarysi ishlashi uchun OpenSSL kerak (qarang
 # yuqoridagi "build" bosqichidagi izoh).
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
 
+# pnpm'ni runner bosqichida ham faollashtirish (CMD uchun kerak)
 RUN groupadd --system --gid 1001 safaar \
   && useradd --system --uid 1001 --gid safaar --home-dir /app safaar \
-  && mkdir -p /app/uploads \
-  && chown -R safaar:safaar /app/uploads
+  && mkdir -p /app/uploads /app/.cache /usr/local/share/corepack \
+  && corepack enable \
+  && corepack prepare pnpm@10.12.2 --activate \
+  && chown -R safaar:safaar /app/uploads /app/.cache /usr/local/share/corepack \
+  && chown safaar:safaar /app
 
 COPY --chown=safaar:safaar --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
 COPY --chown=safaar:safaar --from=build /app/node_modules ./node_modules

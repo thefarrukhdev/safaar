@@ -33,6 +33,8 @@ describe('corsOriginsFromEnv', () => {
       'https://c.example',
       'https://partner.safaar.uz',
       'https://safaar-partner-ten.vercel.app',
+      'https://safaar.uz',
+      'https://admin.safaar.uz',
     ]);
   });
 
@@ -49,6 +51,7 @@ describe('corsOriginsFromEnv', () => {
       'https://safaar.uz',
       'https://partner.safaar.uz',
       'https://safaar-partner-ten.vercel.app',
+      'https://admin.safaar.uz',
     ]);
     // The exact origin values a real browser request from the custom domain
     // would send (no trailing slash) must be present verbatim.
@@ -57,5 +60,21 @@ describe('corsOriginsFromEnv', () => {
     // my.safaar.uz was verified NOT live in the Uzum onboarding investigation
     // and must never be silently trusted just because it shares the apex.
     expect(result).not.toContain('https://my.safaar.uz');
+  });
+
+  it('production: does not include localhost origins', () => {
+    process.env.NODE_ENV = 'production';
+    const result = corsOriginsFromEnv('https://a.example');
+    expect(result).not.toContain('http://localhost:3000');
+    expect(result).not.toContain('http://localhost:3001');
+    expect(result).not.toContain('http://localhost:3002');
+  });
+
+  it('non-production: includes localhost origins when origins are configured', () => {
+    process.env.NODE_ENV = 'development';
+    const result = corsOriginsFromEnv('https://a.example');
+    expect(result).toContain('http://localhost:3000');
+    expect(result).toContain('http://localhost:3001');
+    expect(result).toContain('http://localhost:3002');
   });
 });

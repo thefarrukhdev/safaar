@@ -46,12 +46,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:types
-      - run: pnpm --filter @safaar/backend run prisma:validate || true
-      - run: pnpm --filter @safaar/backend run typecheck || true
-      - run: pnpm --filter @safaar/backend run format:check || true
-      - run: pnpm --filter @safaar/backend run lint || true
-      - run: pnpm audit --filter @safaar/backend || true
-      - run: pnpm run test:backend || true
+      - run: pnpm --filter @safaar/backend run prisma:validate
+      - run: pnpm --filter @safaar/backend run typecheck
+      - run: pnpm --filter @safaar/backend run format:check
+      - run: pnpm --filter @safaar/backend run lint
+      - run: pnpm audit --prod --audit-level critical || true
+      - run: pnpm run test:backend
       - run: pnpm run build:backend
 
   secret-scan:
@@ -119,6 +119,12 @@ jobs:
       - name: Server host key'ini tanish
         run: |
           mkdir -p ~/.ssh
+          cat << 'EOF' >> ~/.ssh/config
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 60
+            TCPKeepAlive yes
+          EOF
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Aynan shu commit manbasini production hostga uzatish (git archive, fetch/pull YO'Q)
@@ -127,9 +133,9 @@ jobs:
           SHA="${{ github.sha }}"
           SRC_DIR="/home/${{ secrets.DEPLOY_USER }}/safaar-src-${SHA}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
-          ssh "$TARGET" "rm -rf '${SRC_DIR}' && mkdir -p '${SRC_DIR}'"
-          git archive "$SHA" | ssh "$TARGET" "tar -x -C '${SRC_DIR}'"
-          ssh "$TARGET" "printf '%s' '${SHA}' > '${SRC_DIR}/.deploy-source-sha'"
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=60 "$TARGET" "rm -rf '${SRC_DIR}' && mkdir -p '${SRC_DIR}'"
+          git archive "$SHA" | ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=60 "$TARGET" "tar -x -C '${SRC_DIR}'"
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=60 "$TARGET" "printf '%s' '${SHA}' > '${SRC_DIR}/.deploy-source-sha'"
 
       - name: Deploy skriptini uzatish (aynan shu test qilingan versiya, eski nusxaga tayanmaydi)
         run: |
@@ -137,14 +143,14 @@ jobs:
           SHA="${{ github.sha }}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           scp scripts/deploy-production.sh "${TARGET}:/tmp/deploy-production-${SHA}.sh"
-          ssh "$TARGET" "chmod +x '/tmp/deploy-production-${SHA}.sh'"
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=60 "$TARGET" "chmod +x '/tmp/deploy-production-${SHA}.sh'"
 
       - name: "Production'ga controlled deploy: build → guardrail → verify → swap → healthcheck → smoke-test (xatoda avtomatik rollback)"
         run: |
           set -euo pipefail
           SHA="${{ github.sha }}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
-          ssh "$TARGET" "/tmp/deploy-production-${SHA}.sh '${SHA}'"
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=60 "$TARGET" "/tmp/deploy-production-${SHA}.sh '${SHA}'"
 
       - name: Vaqtinchalik fayllarni tozalash (faqat muvaffaqiyatli deploydan keyin — muvaffaqiyatsiz bo'lsa tekshiruv uchun qoldiriladi)
         if: success()

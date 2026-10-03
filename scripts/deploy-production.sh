@@ -275,7 +275,7 @@ deploy_new_container() {
     -e NODE_OPTIONS="--max-old-space-size=1024" \
     --restart unless-stopped \
     --memory=1536m --memory-reservation=768m --cpus=1.5 --cpu-shares=1024 \
-    --health-cmd="node -e \"require('http').get('http://127.0.0.1:${CONTAINER_PORT}/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\"" \
+    --health-cmd="node -e \"fetch('http://127.0.0.1:${CONTAINER_PORT}/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"" \
     --health-interval=15s --health-timeout=5s --health-retries=5 --health-start-period=180s \
     "$NEW_IMAGE" >/dev/null
 

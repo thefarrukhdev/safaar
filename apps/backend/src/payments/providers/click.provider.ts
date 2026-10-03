@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'node:crypto';
+import { timingSafeEqualString } from '../../auth/security';
 
 /**
  * Click.uz "Checkout URL" integratsiyasi — https://docs.click.uz
@@ -77,7 +78,7 @@ export class ClickProvider {
   }
 
   verifyPrepareSignature(body: ClickPrepareBody): boolean {
-    if (!this.secretKey) return false;
+    if (!this.secretKey || !body?.sign_string) return false;
     const expected = this.md5(
       String(body.click_trans_id) +
         String(body.service_id) +
@@ -87,11 +88,14 @@ export class ClickProvider {
         String(body.action) +
         String(body.sign_time),
     );
-    return expected === String(body.sign_string).toLowerCase();
+    return timingSafeEqualString(
+      expected,
+      String(body.sign_string).toLowerCase(),
+    );
   }
 
   verifyCompleteSignature(body: ClickCompleteBody): boolean {
-    if (!this.secretKey) return false;
+    if (!this.secretKey || !body?.sign_string) return false;
     const expected = this.md5(
       String(body.click_trans_id) +
         String(body.service_id) +
@@ -102,7 +106,10 @@ export class ClickProvider {
         String(body.action) +
         String(body.sign_time),
     );
-    return expected === String(body.sign_string).toLowerCase();
+    return timingSafeEqualString(
+      expected,
+      String(body.sign_string).toLowerCase(),
+    );
   }
 
   private md5(value: string): string {

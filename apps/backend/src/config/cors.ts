@@ -20,9 +20,13 @@ export function corsOriginsFromEnv(value: string | undefined) {
       'https://safaar-partner-ten.vercel.app',
       'https://safaar.uz',
       'https://admin.safaar.uz',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
+      ...(!production
+        ? [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+          ]
+        : []),
     ]),
   );
 

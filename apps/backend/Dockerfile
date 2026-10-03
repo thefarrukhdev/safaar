@@ -48,15 +48,15 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages/types ./packages/types
-COPY --from=build /app/apps/backend ./apps/backend
-
 RUN groupadd --system --gid 1001 safaar \
   && useradd --system --uid 1001 --gid safaar --home-dir /app safaar \
   && mkdir -p /app/uploads \
-  && chown -R safaar:safaar /app
+  && chown -R safaar:safaar /app/uploads
+
+COPY --chown=safaar:safaar --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
+COPY --chown=safaar:safaar --from=build /app/node_modules ./node_modules
+COPY --chown=safaar:safaar --from=build /app/packages/types ./packages/types
+COPY --chown=safaar:safaar --from=build /app/apps/backend ./apps/backend
 
 USER safaar
 

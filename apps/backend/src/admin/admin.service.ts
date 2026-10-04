@@ -1181,36 +1181,252 @@ export class AdminService {
   }
 
   async users(query: QueryLike = {}) {
-    return this.rows(`
-      select
-        u.id::text,
-        u.phone,
-        u.first_name,
-        u.last_name,
-        u.email,
-        u.status::text,
-        u.preferred_language::text,
-        u.blocked_reason,
-        u.phone_verified_at,
-        u.last_login_at,
-        coalesce(count(b.id), 0)::int as bookings_count,
-        coalesce(sum(b.total_amount), 0)::float8 as total_spent,
-        0::float8 as bonus_balance,
-        u.created_at,
-        u.updated_at
-      from users u
-      left join bookings b on b.user_id = u.id
-      where u.deleted_at is null
-      group by u.id
-      order by u.created_at desc
-      ${this.limitClause(query)}
-    `);
+    const rawStatus = (
+      this.optionalQueryString(query, 'status') ??
+      this.optionalQueryString(query, 'filter') ??
+      this.optionalQueryString(query, 'state') ??
+      ''
+    )
+      .trim()
+      .toLowerCase();
+
+    const isBlockedParam =
+      this.optionalQueryString(query, 'is_blocked') ??
+      this.optionalQueryString(query, 'isBlocked') ??
+      this.optionalQueryString(query, 'blocked');
+
+    const search = (
+      this.optionalQueryString(query, 'search') ??
+      this.optionalQueryString(query, 'q') ??
+      this.optionalQueryString(query, 'query') ??
+      ''
+    ).trim();
+
+    const typeFilter = (
+      this.optionalQueryString(query, 'type') ??
+      this.optionalQueryString(query, 'user_type') ??
+      ''
+    ).toLowerCase();
+
+    const where: string[] = [];
+    const params: unknown[] = [];
+
+    if (rawStatus === 'deleted') {
+      where.push(`(u.status::text = 'deleted' or u.deleted_at is not null)`);
+    } else {
+      where.push(`u.deleted_at is null`);
+    }
+
+    const blockedCondition = `(
+      u.status::text = 'blocked'
+      or (u.booking_blocked_until is not null and u.booking_blocked_until > now())
+      or (bp.blocked_until is not null and bp.blocked_until > now())
+    )`;
+    const notBlockedCondition = `(
+      u.status::text != 'blocked'
+      and (u.booking_blocked_until is null or u.booking_blocked_until <= now())
+      and (bp.blocked_until is null or bp.blocked_until <= now())
+    )`;
+
+    if (
+      isBlockedParam === 'true' ||
+      isBlockedParam === '1' ||
+      rawStatus === 'blocked'
+    ) {
+      where.push(blockedCondition);
+    } else if (isBlockedParam === 'false' || isBlockedParam === '0') {
+      where.push(notBlockedCondition);
+    } else if (rawStatus === 'active') {
+      where.push(
+        `(u.status::text = 'active' and (u.booking_blocked_until is null or u.booking_blocked_until <= now()) and (bp.blocked_until is null or bp.blocked_until <= now()))`,
+      );
+    } else if (rawStatus === 'unverified') {
+      where.push(
+        `(u.status::text = 'unverified' and (u.booking_blocked_until is null or u.booking_blocked_until <= now()) and (bp.blocked_until is null or bp.blocked_until <= now()))`,
+      );
+    } else if (rawStatus && rawStatus !== 'all') {
+      params.push(rawStatus);
+      where.push(`u.status::text = $${params.length}`);
+    }
+
+    if (typeFilter === 'guest') {
+      where.push('1=0');
+    }
+
+    let searchIdx: number | null = null;
+    if (search) {
+      params.push(`%${search}%`);
+      searchIdx = params.length;
+      where.push(
+        `(u.first_name ilike $${searchIdx} or u.last_name ilike $${searchIdx} or concat_ws(' ', u.first_name, u.last_name) ilike $${searchIdx} or u.email ilike $${searchIdx} or u.phone ilike $${searchIdx})`,
+      );
+    }
+
+    const whereSql = where.length ? `where ${where.join(' and ')}` : '';
+    const hasPagination = query.limit !== undefined || query.page !== undefined;
+    const limitSql = hasPagination ? this.limitClause(query) : '';
+
+    const includeGuests =
+      typeFilter !== 'registered' &&
+      rawStatus !== 'deleted' &&
+      rawStatus !== 'unverified';
+
+    let guestUnionSql = '';
+    if (includeGuests) {
+      const guestWhere: string[] = [];
+      if (
+        isBlockedParam === 'true' ||
+        isBlockedParam === '1' ||
+        rawStatus === 'blocked'
+      ) {
+        guestWhere.push('p.blocked_until > now()');
+      } else if (
+        isBlockedParam === 'false' ||
+        isBlockedParam === '0' ||
+        rawStatus === 'active'
+      ) {
+        guestWhere.push('p.blocked_until <= now()');
+      }
+
+      if (search && searchIdx !== null) {
+        guestWhere.push(
+          `(p.phone ilike $${searchIdx} or coalesce(gb.guest_name, '') ilike $${searchIdx} or coalesce(gb.guest_email, '') ilike $${searchIdx})`,
+        );
+      }
+
+      const guestWhereSql = guestWhere.length
+        ? `and ${guestWhere.join(' and ')}`
+        : '';
+
+      guestUnionSql = `
+        union all
+        select
+          p.id::text,
+          p.phone,
+          coalesce(nullif(trim(split_part(gb.guest_name, ' ', 1)), ''), 'Mehmon') as first_name,
+          nullif(trim(substring(gb.guest_name from strpos(gb.guest_name, ' ') + 1)), '') as last_name,
+          coalesce(nullif(trim(gb.guest_name), ''), 'Mehmon mijoz') as full_name,
+          coalesce(nullif(trim(gb.guest_name), ''), 'Mehmon mijoz') as "fullName",
+          gb.guest_email as email,
+          case
+            when p.blocked_until > now() then 'blocked'
+            else 'active'
+          end as status,
+          (p.blocked_until > now())::boolean as is_blocked,
+          (p.blocked_until > now())::boolean as "isBlocked",
+          'uz'::text as preferred_language,
+          null::text as blocked_reason,
+          p.blocked_until as booking_blocked_until,
+          p.reason as booking_blocked_reason,
+          null::timestamptz as phone_verified_at,
+          null::timestamptz as email_verified_at,
+          null::timestamptz as last_login_at,
+          coalesce(gb.b_count, 0)::int as bookings_count,
+          coalesce(gb.b_spent, 0)::float8 as total_spent,
+          0::float8 as bonus_balance,
+          p.created_at,
+          p.created_at as updated_at,
+          'guest'::text as user_type,
+          'guest'::text as "userType"
+        from (
+          select distinct on (phone)
+            id, phone, reason, blocked_until, created_at, booking_id
+          from booking_penalties
+          where user_id is null
+          order by phone, blocked_until desc, created_at desc
+        ) p
+        left join lateral (
+          select
+            (
+              select b1.guest_name
+              from bookings b1
+              where b1.id = p.booking_id or (nullif(p.phone, '') is not null and b1.guest_phone = p.phone)
+              order by b1.created_at desc
+              limit 1
+            ) as guest_name,
+            (
+              select b1.guest_email
+              from bookings b1
+              where b1.id = p.booking_id or (nullif(p.phone, '') is not null and b1.guest_phone = p.phone)
+              order by b1.created_at desc
+              limit 1
+            ) as guest_email,
+            coalesce(count(b.id), 0)::int as b_count,
+            coalesce(sum(b.total_amount), 0)::float8 as b_spent
+          from bookings b
+          where b.id = p.booking_id or (nullif(p.phone, '') is not null and b.guest_phone = p.phone)
+        ) gb on true
+        where not exists (select 1 from users u2 where u2.phone = p.phone)
+        ${guestWhereSql}
+      `;
+    }
+
+    return this.rows(
+      `
+        select
+          u.id::text,
+          u.phone,
+          u.first_name,
+          u.last_name,
+          concat_ws(' ', u.first_name, u.last_name) as full_name,
+          concat_ws(' ', u.first_name, u.last_name) as "fullName",
+          u.email,
+          case
+            when u.status::text = 'blocked' then 'blocked'
+            when u.booking_blocked_until is not null and u.booking_blocked_until > now() then 'blocked'
+            when bp.blocked_until is not null and bp.blocked_until > now() then 'blocked'
+            when u.status::text = 'deleted' or u.deleted_at is not null then 'deleted'
+            when u.status::text = 'unverified' then 'unverified'
+            else 'active'
+          end as status,
+          (
+            u.status::text = 'blocked'
+            or (u.booking_blocked_until is not null and u.booking_blocked_until > now())
+            or (bp.blocked_until is not null and bp.blocked_until > now())
+          )::boolean as is_blocked,
+          (
+            u.status::text = 'blocked'
+            or (u.booking_blocked_until is not null and u.booking_blocked_until > now())
+            or (bp.blocked_until is not null and bp.blocked_until > now())
+          )::boolean as "isBlocked",
+          u.preferred_language::text,
+          u.blocked_reason,
+          coalesce(u.booking_blocked_until, bp.blocked_until) as booking_blocked_until,
+          coalesce(u.booking_blocked_reason, bp.reason) as booking_blocked_reason,
+          u.phone_verified_at,
+          u.email_verified_at,
+          u.last_login_at,
+          coalesce(count(b.id), 0)::int as bookings_count,
+          coalesce(sum(b.total_amount), 0)::float8 as total_spent,
+          coalesce(u.bonus_balance, 0)::float8 as bonus_balance,
+          u.created_at,
+          u.updated_at,
+          'registered'::text as user_type,
+          'registered'::text as "userType"
+        from users u
+        left join bookings b on b.user_id = u.id
+        left join lateral (
+          select blocked_until, reason
+          from booking_penalties p
+          where (p.user_id = u.id or p.phone = u.phone)
+            and p.blocked_until > now()
+          order by p.blocked_until desc
+          limit 1
+        ) bp on true
+        ${whereSql}
+        group by u.id, bp.blocked_until, bp.reason
+        ${guestUnionSql}
+        order by created_at desc
+        ${limitSql}
+      `,
+      params,
+    );
   }
 
   async user(id: string) {
     if (!isUuid(id)) {
       throw new NotFoundException({
-        code: 'USER_BLOCKED',
+        code: 'USER_NOT_FOUND',
         message: 'User topilmadi',
       });
     }
@@ -1222,43 +1438,170 @@ export class AdminService {
           u.phone,
           u.first_name,
           u.last_name,
+          concat_ws(' ', u.first_name, u.last_name) as full_name,
+          concat_ws(' ', u.first_name, u.last_name) as "fullName",
           u.email,
-          u.status::text,
+          case
+            when u.status::text = 'blocked' then 'blocked'
+            when u.booking_blocked_until is not null and u.booking_blocked_until > now() then 'blocked'
+            when bp.blocked_until is not null and bp.blocked_until > now() then 'blocked'
+            when u.status::text = 'deleted' or u.deleted_at is not null then 'deleted'
+            when u.status::text = 'unverified' then 'unverified'
+            else 'active'
+          end as status,
+          (
+            u.status::text = 'blocked'
+            or (u.booking_blocked_until is not null and u.booking_blocked_until > now())
+            or (bp.blocked_until is not null and bp.blocked_until > now())
+          )::boolean as is_blocked,
+          (
+            u.status::text = 'blocked'
+            or (u.booking_blocked_until is not null and u.booking_blocked_until > now())
+            or (bp.blocked_until is not null and bp.blocked_until > now())
+          )::boolean as "isBlocked",
           u.preferred_language::text,
           u.blocked_reason,
+          coalesce(u.booking_blocked_until, bp.blocked_until) as booking_blocked_until,
+          coalesce(u.booking_blocked_reason, bp.reason) as booking_blocked_reason,
           u.phone_verified_at,
+          u.email_verified_at,
           u.last_login_at,
           coalesce(count(b.id), 0)::int as bookings_count,
           coalesce(sum(b.total_amount), 0)::float8 as total_spent,
-          0::float8 as bonus_balance,
+          coalesce(u.bonus_balance, 0)::float8 as bonus_balance,
           u.created_at,
-          u.updated_at
+          u.updated_at,
+          'registered'::text as user_type,
+          'registered'::text as "userType"
         from users u
         left join bookings b on b.user_id = u.id
+        left join lateral (
+          select blocked_until, reason
+          from booking_penalties p
+          where (p.user_id = u.id or p.phone = u.phone)
+            and p.blocked_until > now()
+          order by p.blocked_until desc
+          limit 1
+        ) bp on true
         where u.id = $1::uuid and u.deleted_at is null
-        group by u.id
+        group by u.id, bp.blocked_until, bp.reason
       `,
       [id],
     );
 
-    if (!rows[0]) {
+    if (rows[0]) {
+      return rows[0];
+    }
+
+    // Agar users jadvalida topilmasa, booking_penalties jadvalidan (mehmon mijoz) qidirish
+    const guestRows = await this.rows(
+      `
+        select
+          p.id::text,
+          p.phone,
+          coalesce(nullif(trim(split_part(gb.guest_name, ' ', 1)), ''), 'Mehmon') as first_name,
+          nullif(trim(substring(gb.guest_name from strpos(gb.guest_name, ' ') + 1)), '') as last_name,
+          coalesce(nullif(trim(gb.guest_name), ''), 'Mehmon mijoz') as full_name,
+          coalesce(nullif(trim(gb.guest_name), ''), 'Mehmon mijoz') as "fullName",
+          gb.guest_email as email,
+          case
+            when p.blocked_until > now() then 'blocked'
+            else 'active'
+          end as status,
+          (p.blocked_until > now())::boolean as is_blocked,
+          (p.blocked_until > now())::boolean as "isBlocked",
+          'uz'::text as preferred_language,
+          null::text as blocked_reason,
+          p.blocked_until as booking_blocked_until,
+          p.reason as booking_blocked_reason,
+          null::timestamptz as phone_verified_at,
+          null::timestamptz as email_verified_at,
+          null::timestamptz as last_login_at,
+          coalesce(gb.b_count, 0)::int as bookings_count,
+          coalesce(gb.b_spent, 0)::float8 as total_spent,
+          0::float8 as bonus_balance,
+          p.created_at,
+          p.created_at as updated_at,
+          'guest'::text as user_type,
+          'guest'::text as "userType"
+        from booking_penalties p
+        left join lateral (
+          select
+            (
+              select b1.guest_name
+              from bookings b1
+              where b1.id = p.booking_id or (nullif(p.phone, '') is not null and b1.guest_phone = p.phone)
+              order by b1.created_at desc
+              limit 1
+            ) as guest_name,
+            (
+              select b1.guest_email
+              from bookings b1
+              where b1.id = p.booking_id or (nullif(p.phone, '') is not null and b1.guest_phone = p.phone)
+              order by b1.created_at desc
+              limit 1
+            ) as guest_email,
+            coalesce(count(b.id), 0)::int as b_count,
+            coalesce(sum(b.total_amount), 0)::float8 as b_spent
+          from bookings b
+          where b.id = p.booking_id or (nullif(p.phone, '') is not null and b.guest_phone = p.phone)
+        ) gb on true
+        where p.id = $1::uuid
+      `,
+      [id],
+    );
+
+    if (!guestRows[0]) {
       throw new NotFoundException({
-        code: 'USER_BLOCKED',
+        code: 'USER_NOT_FOUND',
         message: 'User topilmadi',
       });
     }
-    return rows[0];
+    return guestRows[0];
   }
 
   async userStatus(id: string, body: Record<string, unknown>) {
-    const status = normalizeUserStatus(body.status);
+    if (!isUuid(id)) {
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: 'User topilmadi',
+      });
+    }
+
+    let status: 'active' | 'blocked' | 'deleted' | 'unverified';
+    if (
+      body.is_blocked === true ||
+      body.isBlocked === true ||
+      body.blocked === true ||
+      String(body.status).toLowerCase() === 'blocked'
+    ) {
+      status = 'blocked';
+    } else if (
+      body.is_blocked === false ||
+      body.isBlocked === false ||
+      body.blocked === false
+    ) {
+      status = 'active';
+    } else {
+      status = normalizeUserStatus(body.status);
+    }
+
     const rows = await this.rows(
       `
         update users
         set status = $2::"UserStatus",
             blocked_reason = case
               when $2 = 'blocked' then nullif($3, '')
+              when $2 = 'active' then null
               else blocked_reason
+            end,
+            booking_blocked_until = case
+              when $2 = 'active' then null
+              else booking_blocked_until
+            end,
+            booking_blocked_reason = case
+              when $2 = 'active' then null
+              else booking_blocked_reason
             end,
             deleted_at = case
               when $2 = 'deleted' then coalesce(deleted_at, now())
@@ -1273,27 +1616,104 @@ export class AdminService {
           first_name,
           last_name,
           concat_ws(' ', first_name, last_name) as full_name,
-          status::text,
+          concat_ws(' ', first_name, last_name) as "fullName",
+          case
+            when status::text = 'blocked' then 'blocked'
+            when booking_blocked_until is not null and booking_blocked_until > now() then 'blocked'
+            when status::text = 'deleted' or deleted_at is not null then 'deleted'
+            when status::text = 'unverified' then 'unverified'
+            else 'active'
+          end as status,
+          (
+            status::text = 'blocked'
+            or (booking_blocked_until is not null and booking_blocked_until > now())
+          )::boolean as is_blocked,
+          (
+            status::text = 'blocked'
+            or (booking_blocked_until is not null and booking_blocked_until > now())
+          )::boolean as "isBlocked",
           preferred_language,
           blocked_reason,
+          booking_blocked_until,
+          booking_blocked_reason,
+          phone_verified_at,
+          email_verified_at,
           last_login_at,
+          coalesce(bonus_balance, 0)::float8 as bonus_balance,
+          (select coalesce(count(b.id), 0)::int from bookings b where b.user_id = users.id) as bookings_count,
+          (select coalesce(sum(b.total_amount), 0)::float8 from bookings b where b.user_id = users.id) as total_spent,
           created_at,
           updated_at
       `,
       [id, status, String(body.reason ?? '')],
     );
 
-    if (!rows[0]) {
+    if (rows[0]) {
+      if (status === 'active') {
+        try {
+          await this.postgres.query(
+            `UPDATE booking_penalties
+             SET blocked_until = NOW()
+             WHERE (user_id = $1::uuid OR phone = $2) AND blocked_until > NOW()`,
+            [id, rows[0].phone],
+          );
+        } catch {
+          // ignore error if booking_penalties table doesn't exist
+        }
+      }
+      this.invalidateAdminCache();
+      return rows[0];
+    }
+
+    // Agar users jadvalida topilmasa, booking_penalties jadvalini (mehmon mijoz) tekshirish
+    const penaltyExists = await this.rows(
+      `SELECT id::text, phone FROM booking_penalties WHERE id = $1::uuid`,
+      [id],
+    );
+
+    if (!penaltyExists[0]) {
       throw new NotFoundException({
-        code: 'USER_BLOCKED',
+        code: 'USER_NOT_FOUND',
         message: 'User topilmadi',
       });
     }
+
+    const penaltyPhone = penaltyExists[0].phone;
+    if (status === 'active') {
+      await this.postgres.query(
+        `UPDATE booking_penalties SET blocked_until = NOW() WHERE id = $1::uuid OR phone = $2`,
+        [id, penaltyPhone],
+      );
+    } else if (status === 'blocked') {
+      const blockedUntil =
+        body.blocked_until || body.blockedUntil
+          ? new Date(
+              String(body.blocked_until || body.blockedUntil),
+            ).toISOString()
+          : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+      await this.postgres.query(
+        `UPDATE booking_penalties SET blocked_until = $1, reason = $2 WHERE id = $3::uuid OR phone = $4`,
+        [
+          blockedUntil,
+          String(body.reason ?? 'blocked_by_admin'),
+          id,
+          penaltyPhone,
+        ],
+      );
+    }
+
     this.invalidateAdminCache();
-    return rows[0];
+    return this.user(id);
   }
 
   async userDelete(actor: RequestActor | undefined, id: string) {
+    if (!isUuid(id)) {
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: 'User topilmadi',
+      });
+    }
+
     const rows = await this.rows(
       `
         update users
@@ -1308,10 +1728,20 @@ export class AdminService {
           first_name,
           last_name,
           concat_ws(' ', first_name, last_name) as full_name,
-          status::text,
+          concat_ws(' ', first_name, last_name) as "fullName",
+          'deleted'::text as status,
+          false as is_blocked,
+          false as "isBlocked",
           preferred_language,
           blocked_reason,
+          booking_blocked_until,
+          booking_blocked_reason,
+          phone_verified_at,
+          email_verified_at,
           last_login_at,
+          coalesce(bonus_balance, 0)::float8 as bonus_balance,
+          (select coalesce(count(b.id), 0)::int from bookings b where b.user_id = users.id) as bookings_count,
+          (select coalesce(sum(b.total_amount), 0)::float8 from bookings b where b.user_id = users.id) as total_spent,
           created_at,
           updated_at,
           deleted_at
@@ -1320,10 +1750,57 @@ export class AdminService {
     );
 
     if (!rows[0]) {
-      throw new NotFoundException({
-        code: 'USER_BLOCKED',
-        message: 'User topilmadi',
+      const penaltyExists = await this.rows(
+        `SELECT id::text, phone FROM booking_penalties WHERE id = $1::uuid`,
+        [id],
+      );
+
+      if (!penaltyExists[0]) {
+        throw new NotFoundException({
+          code: 'USER_NOT_FOUND',
+          message: 'User topilmadi',
+        });
+      }
+
+      const penaltyPhone = penaltyExists[0].phone;
+      await this.postgres.query(
+        `UPDATE booking_penalties SET blocked_until = NOW(), reason = 'deleted_by_admin' WHERE id = $1::uuid OR phone = $2`,
+        [id, penaltyPhone],
+      );
+
+      await this.audit('user.admin_delete_guest', actor, {
+        penalty_id: id,
+        phone: penaltyPhone,
       });
+      this.invalidateAdminCache();
+
+      return {
+        id,
+        phone: penaltyPhone,
+        email: null,
+        first_name: 'Mehmon',
+        last_name: null,
+        full_name: 'Mehmon mijoz',
+        fullName: 'Mehmon mijoz',
+        status: 'deleted',
+        is_blocked: false,
+        isBlocked: false,
+        preferred_language: 'uz',
+        blocked_reason: 'deleted_by_admin',
+        booking_blocked_until: null,
+        booking_blocked_reason: null,
+        phone_verified_at: null,
+        email_verified_at: null,
+        last_login_at: null,
+        bonus_balance: 0,
+        bookings_count: 0,
+        total_spent: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: new Date().toISOString(),
+        user_type: 'guest',
+        userType: 'guest',
+      };
     }
 
     await this.audit('user.admin_delete', actor, { user_id: id });
@@ -1398,7 +1875,27 @@ export class AdminService {
     }
 
     return this.rows(
-      `${this.dbBookingsSql('where b.user_id = $1::uuid')} ${this.limitClause(query)}`,
+      `${this.dbBookingsSql(
+        `where (
+          b.user_id = $1::uuid
+          or (
+            exists (
+              select 1 from users u
+              where u.id = $1::uuid
+                and nullif(u.phone, '') is not null
+                and b.guest_phone = u.phone
+                and b.user_id is null
+            )
+          )
+          or (
+            exists (
+              select 1 from booking_penalties p
+              where p.id = $1::uuid
+                and (b.id = p.booking_id or (nullif(p.phone, '') is not null and b.guest_phone = p.phone))
+            )
+          )
+        )`,
+      )} ${this.limitClause(query)}`,
       [id],
     );
   }

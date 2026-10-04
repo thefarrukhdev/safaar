@@ -10,10 +10,14 @@ export interface User {
   first_name?: string | null;
   last_name?: string | null;
   fullName?: string;
+  full_name?: string;
   status?: UserStatus;
   preferred_language?: Language;
   role?: Role;
   isBlocked?: boolean;
+  is_blocked?: boolean;
+  user_type?: 'registered' | 'guest';
+  userType?: 'registered' | 'guest';
   blocked_reason?: string | null;
   booking_blocked_until?: string | null;
   booking_blocked_reason?: string | null;
@@ -21,6 +25,8 @@ export interface User {
   email_verified_at?: string | null;
   last_login_at?: string | null;
   bonus_balance?: number;
+  bookings_count?: number;
+  total_spent?: number;
   createdAt?: string;
   created_at?: string;
   updated_at?: string;

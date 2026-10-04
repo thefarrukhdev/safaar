@@ -3182,4 +3182,394 @@ describe('AdminService catalog is_active (regions + amenities)', () => {
     const [, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
     expect(params).toEqual([true, 'amenity-1']);
   });
+
+  describe('users list and blocked user filtering (admin panel /users)', () => {
+    const mockUserRow = {
+      id: '00000000-0000-2001-0000-000000000004',
+      phone: '+998901001004',
+      first_name: 'Nodira',
+      last_name: 'Xasanova',
+      full_name: 'Nodira Xasanova',
+      fullName: 'Nodira Xasanova',
+      email: 'nodira.xasanova@demo.uz',
+      status: 'blocked',
+      is_blocked: true,
+      isBlocked: true,
+      preferred_language: 'uz',
+      blocked_reason: 'Demo: fraud signal',
+      booking_blocked_until: null,
+      booking_blocked_reason: null,
+      phone_verified_at: '2026-07-26T00:00:00.000Z',
+      email_verified_at: null,
+      last_login_at: '2026-09-22T00:00:00.000Z',
+      bookings_count: 2,
+      total_spent: 1200000,
+      bonus_balance: 50000,
+      created_at: '2026-06-26T00:00:00.000Z',
+      updated_at: '2026-10-04T00:00:00.000Z',
+    };
+
+    it('returns all active/blocked users with is_blocked and full_name by default', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.users();
+
+      expect(result).toEqual([mockUserRow]);
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('u.deleted_at is null');
+      expect(sql).toContain("u.status::text = 'blocked'");
+      expect(sql).toContain('u.booking_blocked_until > now()');
+      expect(sql).toContain('as is_blocked');
+      expect(sql).toContain('as "isBlocked"');
+      expect(sql).toContain(
+        "concat_ws(' ', u.first_name, u.last_name) as full_name",
+      );
+      expect(sql).toContain(
+        'concat_ws(\' \', u.first_name, u.last_name) as "fullName"',
+      );
+      expect(sql).toContain(
+        'coalesce(u.bonus_balance, 0)::float8 as bonus_balance',
+      );
+    });
+
+    it('filters by status=blocked when requested', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.users({ status: 'blocked' });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.['is_blocked']).toBe(true);
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("u.status::text = 'blocked'");
+      expect(sql).toContain('u.booking_blocked_until > now()');
+    });
+
+    it('filters by is_blocked=true query parameter', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.users({ is_blocked: 'true' });
+
+      expect(result).toHaveLength(1);
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("u.status::text = 'blocked'");
+      expect(sql).toContain('u.booking_blocked_until > now()');
+    });
+
+    it('filters by status=active when requested', async () => {
+      pgMock.query.mockResolvedValueOnce([
+        {
+          ...mockUserRow,
+          status: 'active',
+          is_blocked: false,
+          isBlocked: false,
+        },
+      ]);
+
+      await service.users({ status: 'active' });
+
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("u.status::text = 'active'");
+      expect(sql).toContain('u.booking_blocked_until is null');
+    });
+
+    it('does not filter status when status=all', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      await service.users({ status: 'all' });
+
+      const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).not.toContain('and u.status');
+      expect(sql).toContain('where u.deleted_at is null');
+    });
+
+    it('filters by search keyword across name, email and phone', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      await service.users({ search: 'Nodira' });
+
+      const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('u.first_name ilike $1 or u.last_name ilike $1');
+      expect(params).toEqual(['%Nodira%']);
+    });
+
+    it('user(id) returns detailed user with is_blocked and full_name', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.user('00000000-2001-0000-0000-000000000004');
+
+      expect(result).toEqual(mockUserRow);
+      const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("u.status::text = 'blocked'");
+      expect(sql).toContain('u.booking_blocked_until > now()');
+      expect(sql).toContain('as is_blocked');
+      expect(params).toEqual(['00000000-2001-0000-0000-000000000004']);
+    });
+
+    it('userStatus updates status to blocked and returns is_blocked=true', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.userStatus(
+        '00000000-2001-0000-0000-000000000004',
+        {
+          status: 'blocked',
+          reason: 'Violation of terms',
+        },
+      );
+
+      expect(result).toEqual(mockUserRow);
+      const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('update users');
+      expect(sql).toContain("status::text = 'blocked'");
+      expect(sql).toContain('as is_blocked');
+      expect(params).toEqual([
+        '00000000-2001-0000-0000-000000000004',
+        'blocked',
+        'Violation of terms',
+      ]);
+    });
+
+    it('userStatus with is_blocked=true in body sets status to blocked', async () => {
+      pgMock.query.mockResolvedValueOnce([mockUserRow]);
+
+      const result = await service.userStatus(
+        '00000000-2001-0000-0000-000000000004',
+        {
+          is_blocked: true,
+          reason: 'Fraud detection',
+        },
+      );
+
+      expect(result).toEqual(mockUserRow);
+      const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('update users');
+      expect(params).toEqual([
+        '00000000-2001-0000-0000-000000000004',
+        'blocked',
+        'Fraud detection',
+      ]);
+    });
+
+    it('userStatus clears blocked_reason and booking_blocked when status changed to active', async () => {
+      const activeUser = {
+        ...mockUserRow,
+        status: 'active',
+        is_blocked: false,
+        isBlocked: false,
+        blocked_reason: null,
+      };
+      pgMock.query.mockResolvedValueOnce([activeUser]);
+
+      const result = await service.userStatus(
+        '00000000-2001-0000-0000-000000000004',
+        {
+          status: 'active',
+        },
+      );
+
+      expect(result.status).toBe('active');
+      expect(result.is_blocked).toBe(false);
+      const [sql, params] = pgMock.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("when $2 = 'active' then null");
+      expect(params).toEqual([
+        '00000000-2001-0000-0000-000000000004',
+        'active',
+        '',
+      ]);
+    });
+
+    describe('guest bookings and penalties (roʻyxatdan oʻtmagan mehmon mijozlar)', () => {
+      const mockGuestPenaltyUser = {
+        id: '00000000-6001-0000-0000-000000000001',
+        phone: '+998901234567',
+        first_name: 'Anvar',
+        last_name: 'Qodirov',
+        full_name: 'Anvar Qodirov',
+        fullName: 'Anvar Qodirov',
+        email: 'anvar@example.com',
+        status: 'blocked',
+        is_blocked: true,
+        isBlocked: true,
+        preferred_language: 'uz',
+        blocked_reason: null,
+        booking_blocked_until: '2026-12-04T00:00:00.000Z',
+        booking_blocked_reason: 'no_show',
+        phone_verified_at: null,
+        email_verified_at: null,
+        last_login_at: null,
+        bookings_count: 1,
+        total_spent: 650000,
+        bonus_balance: 0,
+        created_at: '2026-10-04T00:00:00.000Z',
+        updated_at: '2026-10-04T00:00:00.000Z',
+        user_type: 'guest',
+        userType: 'guest',
+      };
+
+      it('includes booking_penalties guest query in users() by default', async () => {
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]);
+
+        const result = await service.users();
+
+        expect(result).toEqual([mockGuestPenaltyUser]);
+        const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+        expect(sql).toContain('from booking_penalties');
+        expect(sql).toContain('user_id is null');
+        expect(sql).toContain('union all');
+        expect(sql).toContain("'guest'::text as user_type");
+      });
+
+      it('filters for guest users only when type=guest', async () => {
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]);
+
+        await service.users({ type: 'guest' });
+
+        const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+        expect(sql).toContain('1=0');
+        expect(sql).toContain('from booking_penalties');
+      });
+
+      it('user(id) retrieves guest user from booking_penalties if not found in users', async () => {
+        // Birinchi so'rov users jadvalidan bo'sh qaytadi
+        pgMock.query.mockResolvedValueOnce([]);
+        // Ikkinchi so'rov booking_penalties jadvalidan topadi
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]);
+
+        const result = await service.user(
+          '00000000-6001-0000-0000-000000000001',
+        );
+
+        expect(result).toEqual(mockGuestPenaltyUser);
+        expect(pgMock.query).toHaveBeenCalledTimes(2);
+        const [sql2] = pgMock.query.mock.calls[1] as [string, unknown[]];
+        expect(sql2).toContain('from booking_penalties p');
+        expect(sql2).toContain('where p.id = $1::uuid');
+      });
+
+      it('userStatus with active status unblocks guest penalty in booking_penalties', async () => {
+        // users UPDATE hech narsa qaytarmaydi (chunki user users jadvalida yo'q)
+        pgMock.query.mockResolvedValueOnce([]);
+        // booking_penalties tekshiruvi: topildi
+        pgMock.query.mockResolvedValueOnce([
+          {
+            id: '00000000-6001-0000-0000-000000000001',
+            phone: '+998901234567',
+          },
+        ]);
+        // UPDATE booking_penalties
+        pgMock.query.mockResolvedValueOnce([]);
+        // this.user(id) ichida users qidiruvi: bo'sh
+        pgMock.query.mockResolvedValueOnce([]);
+        // this.user(id) ichida booking_penalties qidiruvi: unblocked guest qaytadi
+        const unblockedGuest = {
+          ...mockGuestPenaltyUser,
+          status: 'active',
+          is_blocked: false,
+          isBlocked: false,
+        };
+        pgMock.query.mockResolvedValueOnce([unblockedGuest]);
+
+        const result = await service.userStatus(
+          '00000000-6001-0000-0000-000000000001',
+          { status: 'active' },
+        );
+
+        expect(result.status).toBe('active');
+        expect(result.is_blocked).toBe(false);
+        const updateCall = pgMock.query.mock.calls.find((call) =>
+          String(call[0]).includes(
+            'UPDATE booking_penalties SET blocked_until = NOW()',
+          ),
+        );
+        expect(updateCall).toBeDefined();
+      });
+
+      it('userBookings(id) queries bookings by guest_phone or booking_id for penalties', async () => {
+        pgMock.query.mockResolvedValueOnce([]);
+
+        await service.userBookings('00000000-6001-0000-0000-000000000001');
+
+        const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+        expect(sql).toContain('select 1 from booking_penalties p');
+        expect(sql).toContain('b.guest_phone = p.phone');
+        expect(sql).toContain('b.id = p.booking_id');
+      });
+
+      it('userDelete deletes guest penalty when not found in users', async () => {
+        // users UPDATE returns empty (not in users table)
+        pgMock.query.mockResolvedValueOnce([]);
+        // booking_penalties search: found
+        pgMock.query.mockResolvedValueOnce([
+          {
+            id: '00000000-6001-0000-0000-000000000001',
+            phone: '+998901234567',
+          },
+        ]);
+        // UPDATE booking_penalties
+        pgMock.query.mockResolvedValueOnce([]);
+
+        const result = await service.userDelete(
+          undefined,
+          '00000000-6001-0000-0000-000000000001',
+        );
+
+        expect(result.status).toBe('deleted');
+        expect(result.phone).toBe('+998901234567');
+        expect(result['user_type']).toBe('guest');
+        const updateCall = pgMock.query.mock.calls.find((call) =>
+          String(call[0]).includes(
+            "UPDATE booking_penalties SET blocked_until = NOW(), reason = 'deleted_by_admin'",
+          ),
+        );
+        expect(updateCall).toBeDefined();
+      });
+
+      it('users({ status: "blocked" }) includes bp.blocked_until check in where clause', async () => {
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]);
+
+        await service.users({ status: 'blocked' });
+
+        const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+        expect(sql).toContain(
+          'bp.blocked_until is not null and bp.blocked_until > now()',
+        );
+      });
+
+      it('users({ status: "active" }) checks bp.blocked_until <= now() in where clause', async () => {
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]);
+
+        await service.users({ status: 'active' });
+
+        const [sql] = pgMock.query.mock.calls[0] as [string, unknown[]];
+        expect(sql).toContain(
+          'bp.blocked_until is null or bp.blocked_until <= now()',
+        );
+      });
+
+      it('userStatus with blocked status re-blocks guest penalty across all matching phone records', async () => {
+        pgMock.query.mockResolvedValueOnce([]); // users update empty
+        pgMock.query.mockResolvedValueOnce([
+          {
+            id: '00000000-6001-0000-0000-000000000001',
+            phone: '+998901234567',
+          },
+        ]);
+        pgMock.query.mockResolvedValueOnce([]); // update booking_penalties
+        pgMock.query.mockResolvedValueOnce([]); // user(id) -> users empty
+        pgMock.query.mockResolvedValueOnce([mockGuestPenaltyUser]); // user(id) -> guest found
+
+        const result = await service.userStatus(
+          '00000000-6001-0000-0000-000000000001',
+          { status: 'blocked', reason: 'Repeated no-show' },
+        );
+
+        expect(result.status).toBe('blocked');
+        const updateCall = pgMock.query.mock.calls.find((call) =>
+          String(call[0]).includes(
+            'UPDATE booking_penalties SET blocked_until = $1, reason = $2 WHERE id = $3::uuid OR phone = $4',
+          ),
+        );
+        expect(updateCall).toBeDefined();
+      });
+    });
+  });
 });

@@ -100,6 +100,14 @@ export class CreateHotelBookingDto {
   payment_method?: string;
 
   @ApiPropertyOptional({
+    default: 'click',
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
+  })
+  @IsOptional()
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({
     default: 'instant_confirmation',
     enum: ['instant_confirmation', 'request_confirmation'],
   })
@@ -214,6 +222,19 @@ export class CreateHotelBookingDto {
   @IsOptional()
   @IsString()
   challengeId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'SMS OTP tasdiqlanganlik tokeni (agar avval verify-otp chaqirilgan bo‘lsa)',
+  })
+  @IsOptional()
+  @IsString()
+  verification_token?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
 }
 
 export class CreateBusBookingDto {
@@ -234,6 +255,14 @@ export class CreateBusBookingDto {
   @IsOptional()
   @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
   payment_method?: string;
+
+  @ApiPropertyOptional({
+    default: 'click',
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
+  })
+  @IsOptional()
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
+  paymentMethod?: string;
 
   @ApiPropertyOptional({
     default: 'instant_confirmation',
@@ -330,6 +359,19 @@ export class CreateBusBookingDto {
   @IsOptional()
   @IsString()
   challengeId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'SMS OTP tasdiqlanganlik tokeni (agar avval verify-otp chaqirilgan bo‘lsa)',
+  })
+  @IsOptional()
+  @IsString()
+  verification_token?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
 }
 
 export class CreateVehicleRentalDto {
@@ -372,6 +414,14 @@ export class CreateVehicleRentalDto {
   payment_method?: string;
 
   @ApiPropertyOptional({
+    default: 'click',
+    enum: ['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'],
+  })
+  @IsOptional()
+  @IsIn(['click', 'payme', 'uzcard', 'humo', 'visa', 'mastercard', 'cash'])
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({
     default: 'instant_confirmation',
     enum: ['instant_confirmation', 'request_confirmation'],
   })
@@ -466,6 +516,19 @@ export class CreateVehicleRentalDto {
   @IsOptional()
   @IsString()
   challengeId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'SMS OTP tasdiqlanganlik tokeni (agar avval verify-otp chaqirilgan bo‘lsa)',
+  })
+  @IsOptional()
+  @IsString()
+  verification_token?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
 }
 
 export class SendCashOtpDto {
@@ -476,6 +539,14 @@ export class SendCashOtpDto {
 }
 
 export class ConfirmCashOtpDto {
+  @ApiPropertyOptional({
+    example: '+998901234567',
+    description: 'Telefon raqam',
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
   @ApiPropertyOptional({ example: '123456', description: 'SMS OTP kodi' })
   @IsOptional()
   @IsString()
@@ -495,6 +566,45 @@ export class ConfirmCashOtpDto {
   @IsOptional()
   @IsString()
   challengeId?: string;
+}
+
+export class VerifyCashOtpDto {
+  @ApiProperty({ example: '+998901234567', description: 'Telefon raqam' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+
+  @ApiPropertyOptional({ example: '123456', description: 'SMS OTP kodi' })
+  @IsOptional()
+  @IsString()
+  otp_code?: string;
+
+  @ApiPropertyOptional({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  otpCode?: string;
+
+  @ApiPropertyOptional({ description: 'OTP challenge ID' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  challengeId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Bron ID (agar mavjud bron tasdiqlanayotgan bo‘lsa)',
+  })
+  @IsOptional()
+  @IsString()
+  booking_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  bookingId?: string;
 }
 
 export class UnblockBookingPenaltyDto {

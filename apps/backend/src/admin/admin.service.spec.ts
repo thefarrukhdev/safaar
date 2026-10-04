@@ -3573,3 +3573,172 @@ describe('AdminService catalog is_active (regions + amenities)', () => {
     });
   });
 });
+
+describe('AdminService audit activity and logs formatting', () => {
+  let service: AdminService;
+  let pgMock: jest.Mocked<Pick<PostgresService, 'query' | 'transaction'>>;
+
+  beforeEach(() => {
+    pgMock = {
+      query: jest.fn(),
+      transaction: jest.fn(),
+    };
+    service = new AdminService(
+      {} as any,
+      {} as any,
+      pgMock as unknown as PostgresService,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
+  });
+
+  it('activity() fetches audit_logs and formats unhandled actions like booking.terms_accepted and admin_user.create into human-readable Uzbek', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: '00000000-0000-7006-0000-000000000001',
+        actor_type: 'user',
+        actor_id: '00000000-0000-2001-0000-000000000001',
+        action: 'booking.terms_accepted',
+        entity_type: 'bookings',
+        entity_id: '00000000-0000-6001-0000-000000000001',
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '00000000-0000-7006-0000-000000000002',
+        actor_type: 'admin',
+        actor_id: '00000000-0000-1006-0000-000000000001',
+        action: 'admin_user.create',
+        entity_type: 'admin_user',
+        entity_id: '00000000-0000-1006-0000-000000000002',
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '00000000-0000-7006-0000-000000000003',
+        actor_type: 'admin',
+        actor_id: '00000000-0000-1006-0000-000000000001',
+        action: 'partner.moderation',
+        metadata: { status: 'approved' },
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    const result = await service.activity();
+    expect(result).toHaveLength(3);
+
+    // 1. booking.terms_accepted
+    expect(result[0].action).toBe('Foydalanuvchi bron shartlarini qabul qildi');
+    expect(result[0].action_label).toBe(
+      'Foydalanuvchi bron shartlarini qabul qildi',
+    );
+    expect(result[0].raw_action).toBe('booking.terms_accepted');
+    expect(String(result[0].action).includes('bron')).toBe(true);
+
+    // 2. admin_user.create
+    expect(result[1].action).toBe('Admin foydalanuvchisi yaratildi');
+    expect(result[1].action_label).toBe('Admin foydalanuvchisi yaratildi');
+    expect(result[1].raw_action).toBe('admin_user.create');
+
+    // 3. partner.moderation (preserved in action for frontend compatibility, action_label translated)
+    expect(result[2].action).toBe('partner.moderation');
+    expect(result[2].action_label).toBe('Hamkor arizasi tasdiqlandi');
+    expect(result[2].raw_action).toBe('partner.moderation');
+  });
+
+  it('activity() formats screenshot actions USER_REACTIVATED and OUTBOX_EVENT_DEAD into natural Uzbek', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: '00000000-0000-7006-0000-000000000004',
+        actor_type: 'worker',
+        actor_id: null,
+        actor_name: 'outbox-worker',
+        action: 'OUTBOX_EVENT_DEAD',
+        entity_type: 'outbox_events',
+        entity_id: '01a0fcab-1111-2222-3333-444455556666',
+        metadata: { target: 'outbox_events:01a0fcab' },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '00000000-0000-7006-0000-000000000005',
+        actor_type: 'admin',
+        actor_id: '00000000-0000-1006-0000-000000000001',
+        actor_name: 'Laziz Shakarov',
+        action: 'USER_REACTIVATED',
+        entity_type: 'users',
+        entity_id: '01a0ec88-1111-2222-3333-444455556666',
+        metadata: { target: 'users:01a0ec88' },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '00000000-0000-7006-0000-000000000006',
+        actor_type: 'admin',
+        actor_id: '00000000-0000-1006-0000-000000000001',
+        actor_name: 'Laziz Shakarov',
+        action: 'USER_SUSPENDED',
+        entity_type: 'users',
+        entity_id: '01a0ec88-1111-2222-3333-444455556666',
+        metadata: { target: 'users:01a0ec88' },
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    const result = await service.activity();
+    expect(result).toHaveLength(3);
+
+    expect(result[0].action).toBe("Xabarnoma yetkazib bo'lmadi (DLQ xatosi)");
+    expect(result[0].action_label).toBe(
+      "Xabarnoma yetkazib bo'lmadi (DLQ xatosi)",
+    );
+    expect(result[0].raw_action).toBe('OUTBOX_EVENT_DEAD');
+
+    expect(result[1].action).toBe('Foydalanuvchi hisobi faollashtirildi');
+    expect(result[1].action_label).toBe('Foydalanuvchi hisobi faollashtirildi');
+    expect(result[1].raw_action).toBe('USER_REACTIVATED');
+
+    expect(result[2].action).toBe('Foydalanuvchi hisobi bloklandi');
+    expect(result[2].action_label).toBe('Foydalanuvchi hisobi bloklandi');
+    expect(result[2].raw_action).toBe('USER_SUSPENDED');
+  });
+
+  it('auditLogs() queries audit_logs and formats rows', async () => {
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: '00000000-0000-7006-0000-000000000010',
+        actor_type: 'admin',
+        actor_name: 'Super Admin',
+        action: 'availability.block',
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    const result = await service.auditLogs({});
+    expect(result).toHaveLength(1);
+    expect(result[0].action).toBe('Xona inventari bron qilish uchun yopildi');
+    expect(result[0].action_label).toBe(
+      'Xona inventari bron qilish uchun yopildi',
+    );
+    expect(result[0].raw_action).toBe('availability.block');
+  });
+
+  it('userAudit() formats user audit rows', async () => {
+    const userId = '00000000-0000-2001-0000-000000000001';
+    pgMock.query.mockResolvedValueOnce([
+      {
+        id: '00000000-0000-7006-0000-000000000020',
+        actor_type: 'user',
+        actor_id: userId,
+        action: 'user.terms_accepted',
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    const result = (await service.userAudit(userId)) as any[];
+    expect(result).toHaveLength(1);
+    expect(result[0].action).toBe(
+      'Foydalanuvchi xizmat shartlarini qabul qildi',
+    );
+    expect(result[0].action_label).toBe(
+      'Foydalanuvchi xizmat shartlarini qabul qildi',
+    );
+  });
+});

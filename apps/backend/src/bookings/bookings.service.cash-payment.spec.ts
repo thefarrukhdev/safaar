@@ -6,6 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Role } from '@safaar/types';
+import { hashSecret } from '../auth/security';
 import { otpStore } from '../auth/otp-store';
 import type { RequestActor } from '../common/actor';
 import type { AppCacheService } from '../infrastructure/cache.service';
@@ -65,6 +66,7 @@ function makeBookingsService(opts?: { smsService?: SmsService }) {
   const cache = {
     get: jest.fn().mockResolvedValue(undefined),
     set: jest.fn().mockResolvedValue(undefined),
+    del: jest.fn().mockResolvedValue(undefined),
     getOrSet: jest.fn((_k: string, _ttl: number, producer: () => unknown) =>
       producer(),
     ),
@@ -80,7 +82,7 @@ function makeBookingsService(opts?: { smsService?: SmsService }) {
     opts?.smsService,
   );
 
-  return { service, pg, events, emailService };
+  return { service, pg, events, emailService, cache };
 }
 
 describe('Naqd to‘lov (Cash payment) va No-Show 60 kunlik jarima tizimi', () => {
@@ -468,6 +470,399 @@ describe('Naqd to‘lov (Cash payment) va No-Show 60 kunlik jarima tizimi', () =
       expect(result.booking.status).toBe('awaiting_partner_confirmation');
       expect(result.payment.status).toBe('awaiting_cash');
     });
+
+    it('sendCashBookingOtp: OTP ma‘lumotlarini 180 soniyalik (3 daqiqa) TTL bilan keshga saqlaydi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg, cache } = makeBookingsService();
+      pg.query.mockResolvedValue([]);
+
+      const sent = await service.sendCashBookingOtp(testActor, '+998901234567');
+      expect(sent.challenge_id).toBeDefined();
+
+      expect(cache.set).toHaveBeenCalledWith(
+        'booking:cash-otp:phone:+998901234567',
+        expect.objectContaining({
+          phone: '+998901234567',
+          challengeId: sent.challenge_id,
+        }),
+        180,
+      );
+      expect(cache.set).toHaveBeenCalledWith(
+        `booking:cash-otp:challenge:${sent.challenge_id}`,
+        expect.objectContaining({
+          phone: '+998901234567',
+          challengeId: sent.challenge_id,
+        }),
+        180,
+      );
+    });
+
+    it('verifyAndConsumeCashBookingOtp: otpStore bo‘sh bo‘lsa (boshqa worker/process), Redis/keshdan tekshiradi va o‘chiradi', async () => {
+      const { service, cache } = makeBookingsService();
+      // otpStore'da challenge yo'q (boshqa process)
+      const testPhone = '+998901234567';
+      const testCode = '654321';
+      // Pepper va xeshni hisoblaymiz
+      const pepper = `${process.env.OTP_PEPPER ?? 'safaar-dev-otp-pepper'}:booking_cash_confirm:${testPhone}`;
+      const codeHash = hashSecret(testCode, pepper);
+
+      cache.get.mockResolvedValueOnce({
+        challengeId: 'challenge-redis-1',
+        phone: testPhone,
+        codeHash,
+        attempts: 0,
+        expiresAt: Date.now() + 120_000,
+      });
+
+      await expect(
+        service.verifyAndConsumeCashBookingOtp(
+          testPhone,
+          testCode,
+          'challenge-redis-1',
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(cache.del).toHaveBeenCalledWith(
+        'booking:cash-otp:phone:+998901234567',
+      );
+      expect(cache.del).toHaveBeenCalledWith(
+        'booking:cash-otp:challenge:challenge-redis-1',
+      );
+    });
+
+    it('verifyAndConsumeCashBookingOtp: keshdagi kod eskirgan bo‘lsa OTP_EXPIRED beradi', async () => {
+      const { service, cache } = makeBookingsService();
+      const testPhone = '+998901234567';
+
+      cache.get.mockResolvedValueOnce({
+        challengeId: 'challenge-expired',
+        phone: testPhone,
+        codeHash: 'hash',
+        attempts: 0,
+        expiresAt: Date.now() - 1000, // muddati o'tgan
+      });
+
+      await expect(
+        service.verifyAndConsumeCashBookingOtp(
+          testPhone,
+          '111111',
+          'challenge-expired',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('4b. verifyCashOtp endpointi', () => {
+    const guestBookingRow = {
+      id: 'b0000000-0000-0000-0000-000000000099',
+      user_id: null,
+      guest_phone: '+998901234567',
+      status: 'pending',
+      partner_organization_id: 'partner-org-1',
+      total_amount: 300000,
+      currency: 'UZS',
+      payment_method: 'cash',
+      confirmation_mode: 'instant',
+    };
+
+    it('booking_id ko‘rsatilmaganda: telefonni tasdiqlab verification_token qaytaradi (10 daqiqalik TTL)', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg, cache } = makeBookingsService();
+      pg.query.mockResolvedValue([]);
+
+      const sent = await service.sendCashBookingOtp(undefined, '+998901234567');
+
+      const result = await service.verifyCashOtp(undefined, {
+        phone: '+998901234567',
+        otp_code: sent.dev_code!,
+        challenge_id: sent.challenge_id,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.verified).toBe(true);
+      expect(result.verification_token).toBeDefined();
+      expect(cache.set).toHaveBeenCalledWith(
+        `booking:cash-verified:${result.verification_token}`,
+        expect.objectContaining({ phone: '+998901234567' }),
+        600,
+      );
+    });
+
+    it('booking_id ko‘rsatilganda: bronni tasdiqlaydi, paymentni awaiting_cash qiladi va guestAccessToken qaytaradi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg, events } = makeBookingsService();
+
+      // 1. Send OTP
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      const sent = await service.sendCashBookingOtp(undefined, '+998901234567');
+
+      // 2. verifyCashOtp with booking_id
+      // assertUserNotBlockedFromBooking:
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      // SELECT * FROM bookings WHERE id = ...
+      pg.query.mockResolvedValueOnce([guestBookingRow]);
+      // UPDATE bookings ... RETURNING *
+      const confirmedBooking = {
+        ...guestBookingRow,
+        status: 'confirmed',
+        confirmed_at: new Date().toISOString(),
+      };
+      pg.query.mockResolvedValueOnce([confirmedBooking]);
+      // SELECT id FROM payments ...
+      pg.query.mockResolvedValueOnce([]); // no existing payment
+      // INSERT INTO payments ... RETURNING *
+      pg.query.mockResolvedValueOnce([
+        { id: 'p-new', status: 'awaiting_cash' },
+      ]);
+      // addStatusHistory
+      pg.query.mockResolvedValueOnce([]);
+
+      const result = await service.verifyCashOtp(undefined, {
+        phone: '+998901234567',
+        otp_code: sent.dev_code!,
+        challenge_id: sent.challenge_id,
+        booking_id: guestBookingRow.id,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.status).toBe('confirmed');
+      expect(result.booking.status).toBe('confirmed');
+      expect(result.guestAccessToken).toBeDefined();
+      expect(events.bookingStatusChanged).toHaveBeenCalled();
+    });
+
+    it('booking_id bilan tasdiqlashda telefon raqami mos kelmasa 403 PHONE_MISMATCH beradi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValue([]);
+
+      const sent = await service.sendCashBookingOtp(undefined, '+998901111111');
+
+      // assertUserNotBlockedFromBooking:
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      // SELECT booking returns booking with a DIFFERENT phone
+      pg.query.mockResolvedValueOnce([
+        {
+          ...guestBookingRow,
+          guest_phone: '+998909999999', // boshqa telefon
+        },
+      ]);
+
+      await expect(
+        service.verifyCashOtp(undefined, {
+          phone: '+998901111111',
+          otp_code: sent.dev_code!,
+          challenge_id: sent.challenge_id,
+          booking_id: guestBookingRow.id,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('4c. Guest checkout va Naqd to‘lov OTP majburiyligi (createHotel)', () => {
+    const hotelRow = {
+      id: 'hotel-1',
+      partner_organization_id: 'partner-org-1',
+      commission_rate: 15,
+      check_in_time: '14:00',
+      check_out_time: '12:00',
+      stars: 4,
+      city_slug: 'samarkand',
+      partner_type: 'hotel',
+    };
+
+    const roomRow = {
+      id: 'room-1',
+      hotel_id: 'hotel-1',
+      base_price: 200000,
+      total_inventory: 5,
+      promotion_id: null,
+      promotion_old_price: null,
+      promotion_new_price: null,
+      promotion_discount_percent: null,
+      promotion_start_date: null,
+      promotion_end_date: null,
+    };
+
+    it('login qilmagan mehmon telefon raqami bilan naqd to‘lovni tanlaganda OTP kiritilmasa 400 OTP_REQUIRED tashlaydi', async () => {
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValueOnce([hotelRow]);
+      pg.query.mockResolvedValueOnce([roomRow]);
+
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-10-10',
+          check_out: '2026-10-12',
+          payment_method: 'cash',
+          phone: '+998907435006',
+          guest_name: 'Laziz Shakarov',
+          agree_terms: true,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      try {
+        await service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-10-10',
+          check_out: '2026-10-12',
+          payment_method: 'cash',
+          phone: '+998907435006',
+          guest_name: 'Laziz Shakarov',
+          agree_terms: true,
+        });
+      } catch (err) {
+        const error = err as BadRequestException;
+        const res = error.getResponse() as Record<string, unknown>;
+        expect(res.code).toBe('OTP_REQUIRED');
+      }
+    });
+
+    it('login qilmagan mehmon to‘g‘ri otp_code yuborganda bron yaratiladi va darhol confirmed bo‘ladi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg } = makeBookingsService();
+      // 1. Send OTP
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      const sent = await service.sendCashBookingOtp(undefined, '+998907435006');
+
+      // 2. createHotel
+      // SELECT hotels
+      pg.query.mockResolvedValueOnce([hotelRow]);
+      // tx:
+      // SELECT rooms FOR UPDATE
+      pg.query.mockResolvedValueOnce([roomRow]);
+      // SELECT booked_count
+      pg.query.mockResolvedValueOnce([{ booked_count: 0 }]);
+      // SELECT closed dates
+      pg.query.mockResolvedValueOnce([{ blocked_count: 0 }]);
+      // INSERT bookings RETURNING *
+      const createdBooking = {
+        id: 'booking-cash-1',
+        user_id: null,
+        status: 'pending',
+        partner_organization_id: 'partner-org-1',
+        total_amount: 400000,
+        currency: 'UZS',
+        payment_method: 'cash',
+        confirmation_mode: 'instant',
+      };
+      pg.query.mockResolvedValueOnce([createdBooking]);
+      // addStatusHistory (created)
+      pg.query.mockResolvedValueOnce([]);
+      // createPayment: SELECT existing payment (none)
+      pg.query.mockResolvedValueOnce([]);
+      // createPayment: INSERT payments
+      pg.query.mockResolvedValueOnce([
+        { id: 'pay-1', status: 'awaiting_cash' },
+      ]);
+      // confirmCashBookingIfNeeded: UPDATE bookings
+      pg.query.mockResolvedValueOnce([
+        { ...createdBooking, status: 'confirmed' },
+      ]);
+      // confirmCashBookingIfNeeded: addStatusHistory (cash_booking_confirmed)
+      pg.query.mockResolvedValueOnce([]);
+
+      const result = await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-10',
+        check_out: '2026-10-12',
+        payment_method: 'cash',
+        phone: '+998907435006',
+        guest_name: 'Laziz Shakarov',
+        agree_terms: true,
+        otp_code: sent.dev_code!,
+        challenge_id: sent.challenge_id,
+      });
+
+      expect(result.booking.status).toBe('confirmed');
+      expect(result.payment?.status).toBe('awaiting_cash');
+      expect(result.guestAccessToken).toBeDefined();
+    });
+
+    it('login qilmagan mehmon avval verify-otp orqali olgan verification_token bilan muvaffaqiyatli bron qiladi', async () => {
+      const { service, pg, cache } = makeBookingsService();
+
+      cache.get.mockImplementation((key: string) => {
+        if (key === 'booking:cash-verified:valid-token-123') {
+          return Promise.resolve({
+            phone: '+998907435006',
+            verified_at: new Date().toISOString(),
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      pg.query.mockResolvedValueOnce([hotelRow]);
+      pg.query.mockResolvedValueOnce([roomRow]);
+      pg.query.mockResolvedValueOnce([{ booked_count: 0 }]);
+      pg.query.mockResolvedValueOnce([{ blocked_count: 0 }]);
+      const createdBooking = {
+        id: 'booking-cash-2',
+        user_id: null,
+        status: 'pending',
+        partner_organization_id: 'partner-org-1',
+        total_amount: 400000,
+        currency: 'UZS',
+        payment_method: 'cash',
+        confirmation_mode: 'instant',
+      };
+      pg.query.mockResolvedValueOnce([createdBooking]);
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([
+        { id: 'pay-2', status: 'awaiting_cash' },
+      ]);
+      pg.query.mockResolvedValueOnce([
+        { ...createdBooking, status: 'confirmed' },
+      ]);
+      pg.query.mockResolvedValueOnce([]);
+
+      const result = await service.createHotel(undefined, {
+        hotel_id: 'hotel-1',
+        room_id: 'room-1',
+        check_in: '2026-10-10',
+        check_out: '2026-10-12',
+        payment_method: 'cash',
+        phone: '+998907435006',
+        guest_name: 'Laziz Shakarov',
+        agree_terms: true,
+        verification_token: 'valid-token-123',
+      });
+
+      expect(result.booking.status).toBe('confirmed');
+      expect(cache.del).toHaveBeenCalledWith(
+        'booking:cash-verified:valid-token-123',
+      );
+    });
+
+    it('yaroqsiz verification_token berilganda 400 OTP_TOKEN_INVALID tashlaydi', async () => {
+      const { service, pg, cache } = makeBookingsService();
+      cache.get.mockResolvedValue(undefined); // token topilmadi
+
+      pg.query.mockResolvedValueOnce([hotelRow]);
+      pg.query.mockResolvedValueOnce([roomRow]);
+
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          room_id: 'room-1',
+          check_in: '2026-10-10',
+          check_out: '2026-10-12',
+          payment_method: 'cash',
+          phone: '+998907435006',
+          guest_name: 'Laziz Shakarov',
+          agree_terms: true,
+          verification_token: 'invalid-or-expired-token',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('5. applyNoShowPenalty', () => {
@@ -771,6 +1166,303 @@ describe('Naqd to‘lov (Cash payment) va No-Show 60 kunlik jarima tizimi', () =
       await expect(
         partnersService.markNoShow(partnerActor, 'b-2'),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('7. Kengaytirilgan xavfsizlik va chekka holatlar (Reviewer regressions & edge cases)', () => {
+    const hotelRow = {
+      id: 'hotel-1',
+      partner_organization_id: 'partner-1',
+      partner_type: 'hotel',
+      commission_rate: 12,
+      check_in_time: null,
+      check_out_time: null,
+      city_slug: 'tashkent',
+      stars: 4,
+    };
+
+    it('mehmon login qilmagan holda telefon raqamisiz (faqat email bilan) naqd to‘lov qilsa PHONE_REQUIRED xatosi qaytaradi', async () => {
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValueOnce([hotelRow]); // hotel
+
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: true,
+          guest_name: 'Test Guest',
+          guest_email: 'guest@example.com',
+          // telefon kiritilmagan
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+          payment_method: 'cash',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'PHONE_REQUIRED' },
+      });
+    });
+
+    it('camelCase paymentMethod = cash yuborilganda ham OTP talab qilinadi', async () => {
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValueOnce([hotelRow]); // hotel
+
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: true,
+          guest_name: 'Test Guest',
+          guest_phone: '+998901234567',
+          guest_email: 'guest@example.com',
+          room_id: 'room-1',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+          paymentMethod: 'cash', // camelCase
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'OTP_REQUIRED' },
+      });
+    });
+
+    it('verifyCashOtp: booking_id topilmasa OTP kodi bekorga sarflanmaydi va to‘g‘ri booking_id bilan keyin ishlatiladi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValue([]);
+
+      const sent = await service.sendCashBookingOtp(undefined, '+998901234567');
+
+      // 1. Noto'g'ri booking_id berilganda
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      pg.query.mockResolvedValueOnce([]); // bookings query returns empty
+
+      await expect(
+        service.verifyCashOtp(undefined, {
+          phone: '+998901234567',
+          otp_code: sent.dev_code!,
+          challenge_id: sent.challenge_id,
+          booking_id: 'b0000000-0000-0000-0000-000000000404',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'BOOKING_NOT_FOUND' },
+      });
+
+      // 2. To'g'ri booking_id bilan chaqirilganda OTP hali ham yaroqli bo'lishi kerak
+      const validBooking = {
+        id: 'b0000000-0000-0000-0000-000000000200',
+        user_id: null,
+        guest_phone: '+998901234567',
+        status: 'pending',
+        partner_organization_id: 'partner-org-1',
+        total_amount: 500000,
+        currency: 'UZS',
+        payment_method: 'cash',
+        confirmation_mode: 'instant',
+      };
+      pg.query.mockResolvedValueOnce([]); // users
+      pg.query.mockResolvedValueOnce([]); // penalties
+      pg.query.mockResolvedValueOnce([validBooking]); // SELECT bookings
+      pg.query.mockResolvedValueOnce([
+        { ...validBooking, status: 'confirmed' },
+      ]); // UPDATE
+      pg.query.mockResolvedValueOnce([]); // SELECT payments
+      pg.query.mockResolvedValueOnce([
+        { id: 'p-new', status: 'awaiting_cash' },
+      ]); // INSERT payments
+      pg.query.mockResolvedValueOnce([]); // addStatusHistory
+
+      const retryResult = await service.verifyCashOtp(undefined, {
+        phone: '+998901234567',
+        otp_code: sent.dev_code!,
+        challenge_id: sent.challenge_id,
+        booking_id: validBooking.id,
+      });
+
+      expect(retryResult.success).toBe(true);
+      expect(retryResult.status).toBe('confirmed');
+    });
+
+    it('verifyCashOtp: bekor qilingan yoki muddati o‘tgan bronni tasdiqlab bo‘lmaydi', async () => {
+      process.env.ENABLE_DEMO_AUTH = 'true';
+      const { service, pg } = makeBookingsService();
+      pg.query.mockResolvedValue([]);
+
+      const sent = await service.sendCashBookingOtp(undefined, '+998901234567');
+
+      // Cancelled booking
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([
+        {
+          id: 'b-cancelled',
+          user_id: null,
+          guest_phone: '+998901234567',
+          status: 'cancelled',
+        },
+      ]);
+
+      await expect(
+        service.verifyCashOtp(undefined, {
+          phone: '+998901234567',
+          otp_code: sent.dev_code!,
+          challenge_id: sent.challenge_id,
+          booking_id: 'b-cancelled',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'BOOKING_CANCELLED' },
+      });
+
+      // Expired booking
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([]);
+      pg.query.mockResolvedValueOnce([
+        {
+          id: 'b-expired',
+          user_id: null,
+          guest_phone: '+998901234567',
+          status: 'expired',
+        },
+      ]);
+
+      await expect(
+        service.verifyCashOtp(undefined, {
+          phone: '+998901234567',
+          otp_code: sent.dev_code!,
+          challenge_id: sent.challenge_id,
+          booking_id: 'b-expired',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'BOOKING_EXPIRED' },
+      });
+    });
+
+    it('confirmCashBooking: bekor qilingan yoki muddati o‘tgan bronni tasdiqlashda rad etadi', async () => {
+      const { service, pg } = makeBookingsService();
+
+      pg.query.mockResolvedValueOnce([
+        {
+          id: 'b-cancelled',
+          user_id: testActor.id,
+          status: 'cancelled',
+        },
+      ]);
+
+      await expect(
+        service.confirmCashBooking(testActor, 'b-cancelled', {
+          otp_code: '123456',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'BOOKING_CANCELLED' },
+      });
+    });
+
+    it('sendCashOtpForBooking: bekor qilingan yoki muddati o‘tgan bron uchun OTP yuborishni rad etadi', async () => {
+      const { service, pg } = makeBookingsService();
+
+      pg.query.mockResolvedValueOnce([
+        {
+          id: 'b-expired',
+          user_id: testActor.id,
+          status: 'expired',
+        },
+      ]);
+
+      await expect(
+        service.sendCashOtpForBooking(testActor, 'b-expired'),
+      ).rejects.toMatchObject({
+        response: { code: 'BOOKING_EXPIRED' },
+      });
+    });
+
+    it('clearCashOtpFromCache: faqat telefon orqali tasdiqlanganda ham bog‘liq challengeId keshdan o‘chiriladi', async () => {
+      const { service, cache } = makeBookingsService();
+      const phone = '+998901234567';
+      const challengeId = 'c-123';
+      const code = '654321';
+      const pepper = `${process.env.OTP_PEPPER ?? 'safaar-dev-otp-pepper'}:booking_cash_confirm:${phone}`;
+      const codeHash = hashSecret(code, pepper);
+
+      cache.get.mockImplementation((key: string) => {
+        if (key === `booking:cash-otp:phone:${phone}`) {
+          return Promise.resolve({
+            challengeId,
+            phone,
+            codeHash,
+            attempts: 0,
+            expiresAt: Date.now() + 100000,
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      await service.verifyAndConsumeCashBookingOtp(phone, code);
+
+      expect(cache.del).toHaveBeenCalledWith(`booking:cash-otp:phone:${phone}`);
+      expect(cache.del).toHaveBeenCalledWith(
+        `booking:cash-otp:challenge:${challengeId}`,
+      );
+    });
+
+    it('sendCashBookingOtp: SMS provayder rad etsa (accepted=false), OTP challenge va kesh tozalanadi', async () => {
+      const failingSmsService = {
+        send: jest.fn().mockResolvedValue({ accepted: false }),
+      } as unknown as SmsService;
+
+      const { service, pg, cache } = makeBookingsService({
+        smsService: failingSmsService,
+      });
+      pg.query.mockResolvedValue([]);
+
+      await expect(
+        service.sendCashBookingOtp(undefined, '+998901234567'),
+      ).rejects.toMatchObject({
+        response: { code: 'SMS_DELIVERY_FAILED' },
+      });
+
+      expect(cache.del).toHaveBeenCalledWith(
+        'booking:cash-otp:phone:+998901234567',
+      );
+      // resendGuard tozalanganini tekshirish uchun qayta so'rov OTP_RESEND_TOO_SOON tashlamasligi kerak
+      await expect(
+        service.sendCashBookingOtp(undefined, '+998901234567'),
+      ).rejects.toMatchObject({
+        response: { code: 'SMS_DELIVERY_FAILED' },
+      });
+    });
+
+    it('verification_token bilan bron qilishda inventar xatosi yuz bersa, token o‘chirilmaydi va qayta ishlatiladi', async () => {
+      const { service, pg, cache } = makeBookingsService();
+      const phone = '+998901234567';
+      const token = 'v-token-xyz';
+
+      cache.get.mockResolvedValue({
+        phone,
+        verified_at: new Date().toISOString(),
+      });
+
+      // 1-urinish: room topilmadi (ROOM_NOT_AVAILABLE)
+      pg.query.mockResolvedValueOnce([hotelRow]); // hotel
+      pg.query.mockResolvedValueOnce([]); // no room
+
+      await expect(
+        service.createHotel(undefined, {
+          hotel_id: 'hotel-1',
+          agree_terms: true,
+          guest_name: 'Test Guest',
+          guest_phone: phone,
+          verification_token: token,
+          room_id: 'room-missing',
+          check_in: '2026-08-10',
+          check_out: '2026-08-12',
+          payment_method: 'cash',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'ROOM_NOT_AVAILABLE' },
+      });
+
+      // Token hali del qilinmagan bo'lishi kerak!
+      expect(cache.del).not.toHaveBeenCalledWith(
+        `booking:cash-verified:${token}`,
+      );
     });
   });
 });

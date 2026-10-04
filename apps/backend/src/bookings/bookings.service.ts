@@ -10,7 +10,13 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { createHash, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
+import { hashSecret } from '../auth/security';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
@@ -57,6 +63,19 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+function constantTimeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
+
+function cashOtpPepper(phone: string): string {
+  return `${process.env.OTP_PEPPER ?? 'safaar-dev-otp-pepper'}:booking_cash_confirm:${phone}`;
 }
 
 /**
@@ -502,6 +521,61 @@ export class BookingsService {
     return allowed.includes(phone);
   }
 
+  private async saveCashOtpToCache(phone: string, challenge: OtpChallenge) {
+    const payload = {
+      challengeId: challenge.id,
+      phone,
+      codeHash: challenge.codeHash,
+      attempts: 0,
+      expiresAt: Date.now() + 180_000, // 3 minutes
+      createdAt: challenge.createdAt,
+    };
+    try {
+      await this.cache.set(`booking:cash-otp:phone:${phone}`, payload, 180);
+      await this.cache.set(
+        `booking:cash-otp:challenge:${challenge.id}`,
+        payload,
+        180,
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to save cash OTP to cache: ${err}`);
+    }
+  }
+
+  private async clearCashOtpFromCache(phone?: string, challengeId?: string) {
+    try {
+      let resolvedPhone = phone;
+      let resolvedChallengeId = challengeId;
+
+      if (!resolvedChallengeId && resolvedPhone) {
+        const entry = await this.cache.get<{ challengeId?: string }>(
+          `booking:cash-otp:phone:${resolvedPhone}`,
+        );
+        if (entry?.challengeId) {
+          resolvedChallengeId = entry.challengeId;
+        }
+      } else if (!resolvedPhone && resolvedChallengeId) {
+        const entry = await this.cache.get<{ phone?: string }>(
+          `booking:cash-otp:challenge:${resolvedChallengeId}`,
+        );
+        if (entry?.phone) {
+          resolvedPhone = entry.phone;
+        }
+      }
+
+      if (resolvedPhone) {
+        await this.cache.del(`booking:cash-otp:phone:${resolvedPhone}`);
+      }
+      if (resolvedChallengeId) {
+        await this.cache.del(
+          `booking:cash-otp:challenge:${resolvedChallengeId}`,
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   async sendCashBookingOtp(
     actor: RequestActor | undefined,
     rawPhone: string,
@@ -545,6 +619,9 @@ export class BookingsService {
 
     const code = otpStore.getDeliveryCode(challenge.id);
 
+    // Redis/kesh orqali 2-3 daqiqa (180s) saqlaymiz
+    await this.saveCashOtpToCache(phone, challenge);
+
     if (
       this.isDemoAuthEnabled() ||
       this.isPhoneAllowedForDemoAuth(phone) ||
@@ -559,17 +636,24 @@ export class BookingsService {
     }
 
     try {
+      const smsText = process.env.TEXTUP_TEMPLATE_ID
+        ? `Safaar ilovasiga uchun tasdiqlash kodi: ${code ?? '******'}`
+        : `Safaar: Naqd to'lovli bronni tasdiqlash kodi: ${code ?? '******'}`;
       const delivery = await this.smsService.send({
         phone,
-        text: `Safaar: Naqd to'lovli bronni tasdiqlash kodi: ${code ?? '******'}`,
+        text: smsText,
       });
       if (!delivery.accepted) {
+        otpStore.cancel(challenge.id, phone, 'booking_cash_confirm');
+        await this.clearCashOtpFromCache(phone, challenge.id);
         throw new ServiceUnavailableException({
           code: 'SMS_DELIVERY_FAILED',
           message: 'Tasdiqlash kodini SMS orqali yuborib bo‘lmadi',
         });
       }
     } catch (error) {
+      otpStore.cancel(challenge.id, phone, 'booking_cash_confirm');
+      await this.clearCashOtpFromCache(phone, challenge.id);
       if (
         error instanceof BadRequestException ||
         error instanceof ServiceUnavailableException
@@ -635,14 +719,154 @@ export class BookingsService {
     }
   }
 
-  private validateCashBookingOtpIfNeeded(
+  async verifyAndConsumeCashBookingOtp(
+    phone: string,
+    code: string,
+    challengeId?: string,
+  ): Promise<void> {
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message: 'SMS tasdiqlash kodini kiriting',
+      });
+    }
+    const normalizedPhone = normalizePhone(phone);
+    if (!isValidUzbekPhone(normalizedPhone)) {
+      throw new BadRequestException({
+        code: 'INVALID_PHONE',
+        message:
+          "Noto'g'ri telefon raqami. Format: +998XXXXXXXXX bo'lishi kerak",
+      });
+    }
+
+    let consumedInStore = false;
+    let storeError: BadRequestException | undefined;
+    try {
+      this.verifyCashBookingOtp(normalizedPhone, code, challengeId);
+      consumedInStore = true;
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        const resp = err.getResponse() as Record<string, unknown>;
+        if (resp.code === 'OTP_REQUIRED' || resp.code === 'INVALID_PHONE') {
+          throw err;
+        }
+        storeError = err;
+      } else {
+        throw err;
+      }
+    }
+
+    if (!consumedInStore) {
+      const cacheKey = challengeId
+        ? `booking:cash-otp:challenge:${challengeId}`
+        : `booking:cash-otp:phone:${normalizedPhone}`;
+      const entry = await this.cache.get<{
+        challengeId: string;
+        phone: string;
+        codeHash: string;
+        attempts: number;
+        expiresAt: number;
+      }>(cacheKey);
+
+      if (!entry || Date.now() >= entry.expiresAt) {
+        await this.clearCashOtpFromCache(normalizedPhone, challengeId);
+        if (storeError) {
+          const resp = storeError.getResponse() as Record<string, unknown>;
+          if (resp.code === 'OTP_INVALID') {
+            throw storeError;
+          }
+        }
+        throw new BadRequestException({
+          code: 'OTP_EXPIRED',
+          message: 'Tasdiqlash kodi muddati o‘tgan, yangi kod so‘rang',
+        });
+      }
+
+      entry.attempts = (entry.attempts || 0) + 1;
+      const expectedHash = hashSecret(
+        code.trim(),
+        cashOtpPepper(normalizedPhone),
+      );
+
+      const resolvedChallengeId = entry.challengeId || challengeId;
+
+      if (
+        entry.attempts > 5 ||
+        !constantTimeEqual(entry.codeHash, expectedHash)
+      ) {
+        if (entry.attempts > 5) {
+          await this.clearCashOtpFromCache(
+            normalizedPhone,
+            resolvedChallengeId,
+          );
+        } else {
+          await this.cache.set(
+            `booking:cash-otp:phone:${normalizedPhone}`,
+            entry,
+            180,
+          );
+          if (resolvedChallengeId) {
+            await this.cache.set(
+              `booking:cash-otp:challenge:${resolvedChallengeId}`,
+              entry,
+              180,
+            );
+          }
+        }
+        throw new BadRequestException({
+          code: 'OTP_INVALID',
+          message: 'Tasdiqlash kodi noto‘g‘ri',
+        });
+      }
+
+      await this.clearCashOtpFromCache(normalizedPhone, resolvedChallengeId);
+      return;
+    }
+
+    await this.clearCashOtpFromCache(normalizedPhone, challengeId);
+  }
+
+  private async validateCashBookingOtpIfNeeded(
     dto: Record<string, unknown>,
     phone: string,
-  ): void {
-    const paymentMethod = this.paymentMethod(dto.payment_method);
+    actor?: RequestActor,
+  ): Promise<(() => Promise<void>) | void> {
+    const paymentMethod = this.paymentMethod(
+      dto.payment_method ?? dto.paymentMethod,
+    );
     if (paymentMethod !== 'cash') {
       return;
     }
+
+    if (!actor && (!phone || !phone.trim())) {
+      throw new BadRequestException({
+        code: 'PHONE_REQUIRED',
+        message:
+          'Naqd to‘lov bilan bron qilish uchun telefon raqami kiritilishi shart',
+      });
+    }
+
+    const verificationToken = String(
+      dto.verification_token ?? dto.verificationToken ?? '',
+    ).trim();
+
+    if (verificationToken) {
+      const cached = await this.cache.get<{
+        phone: string;
+        verified_at: string;
+      }>(`booking:cash-verified:${verificationToken}`);
+
+      if (cached && normalizePhone(cached.phone) === normalizePhone(phone)) {
+        return async () => {
+          await this.cache.del(`booking:cash-verified:${verificationToken}`);
+        };
+      }
+      throw new BadRequestException({
+        code: 'OTP_TOKEN_INVALID',
+        message: 'Tasdiqlash tokeni eskirgan yoki noto‘g‘ri',
+      });
+    }
+
     const otpCode = String(dto.otp_code ?? dto.otpCode ?? '').trim();
     const challengeId =
       (dto.challenge_id ?? dto.challengeId)
@@ -650,10 +874,15 @@ export class BookingsService {
         : undefined;
 
     if (otpCode) {
-      this.verifyCashBookingOtp(phone, otpCode, challengeId);
-    } else if (
-      String(process.env.ENFORCE_CASH_OTP ?? '').toLowerCase() === 'true'
-    ) {
+      await this.verifyAndConsumeCashBookingOtp(phone, otpCode, challengeId);
+      return;
+    }
+
+    const isGuestBookingWithPhone = !actor && Boolean(phone);
+    const isEnforced =
+      String(process.env.ENFORCE_CASH_OTP ?? '').toLowerCase() === 'true';
+
+    if (isGuestBookingWithPhone || isEnforced) {
       throw new BadRequestException({
         code: 'OTP_REQUIRED',
         message:
@@ -674,6 +903,18 @@ export class BookingsService {
         message: 'Bron allaqachon tasdiqlangan',
       });
     }
+    if (booking.status === BS.CANCELLED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_CANCELLED',
+        message: 'Bekor qilingan bron uchun OTP kod yuborib bo‘lmaydi',
+      });
+    }
+    if (booking.status === BS.EXPIRED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_EXPIRED',
+        message: 'Muddati o‘tgan bron uchun OTP kod yuborib bo‘lmaydi',
+      });
+    }
 
     const rawPhone =
       (typeof booking.guest_phone === 'string' && booking.guest_phone) ||
@@ -688,51 +929,16 @@ export class BookingsService {
     return this.sendCashBookingOtp(actor, String(rawPhone));
   }
 
-  async confirmCashBooking(
-    actor: RequestActor | undefined,
-    bookingId: string,
-    dto: {
-      otp_code?: string;
-      otpCode?: string;
-      challenge_id?: string;
-      challengeId?: string;
-    },
-    guestToken?: string,
-  ) {
-    const booking = await this.assertBooking(bookingId, actor, guestToken);
-    if (booking.status === BS.CONFIRMED || booking.status === BS.COMPLETED) {
-      throw new UnprocessableEntityException({
-        code: 'BOOKING_ALREADY_CONFIRMED',
-        message: 'Bron allaqachon tasdiqlangan',
-      });
-    }
-
-    const rawPhone =
-      (typeof booking.guest_phone === 'string' && booking.guest_phone) ||
-      (actor ? await this.getUserPhone(actor.id) : null);
-    if (!rawPhone) {
-      throw new BadRequestException({
-        code: 'PHONE_REQUIRED',
-        message: 'Naqd to‘lov uchun telefon raqami ko‘rsatilmagan',
-      });
-    }
-
-    const phone = String(rawPhone);
-    await this.assertUserNotBlockedFromBooking(actor, phone);
-
-    const code = String(dto.otp_code ?? dto.otpCode ?? '').trim();
-    if (!code) {
-      throw new BadRequestException({
-        code: 'OTP_REQUIRED',
-        message: 'SMS tasdiqlash kodini kiriting',
-      });
-    }
-
-    const challengeId = dto.challenge_id ?? dto.challengeId;
-    this.verifyCashBookingOtp(phone, code, challengeId);
-
+  private async executeCashBookingConfirmation(
+    booking: BookingRow,
+    actor?: RequestActor,
+  ): Promise<{
+    booking: BookingRow;
+    payment?: Record<string, unknown>;
+    guestAccessToken?: string;
+  }> {
     const now = new Date().toISOString();
-    return this.pg.transaction(async (tx) => {
+    const result = await this.pg.transaction(async (tx) => {
       const nextStatus =
         booking.confirmation_mode === 'request_confirmation'
           ? BS.AWAITING_PARTNER_CONFIRMATION
@@ -778,6 +984,7 @@ export class BookingsService {
         tx,
         { id: booking.id, status: nextStatus },
         'cash_booking_confirmed',
+        actor,
       );
 
       return {
@@ -785,6 +992,232 @@ export class BookingsService {
         payment,
       };
     });
+
+    this.events.bookingStatusChanged(result.booking);
+    this.events.partnerDashboardUpdated(result.booking.partner_organization_id);
+    this.events.adminDashboardUpdated();
+    void this.sendBookingConfirmationEmail(result.booking);
+
+    const guestAccessToken = result.booking.user_id
+      ? undefined
+      : await this.issueGuestBookingAccessToken(result.booking.id);
+
+    return {
+      ...result,
+      guestAccessToken,
+    };
+  }
+
+  async confirmCashBooking(
+    actor: RequestActor | undefined,
+    bookingId: string,
+    dto: {
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      phone?: string;
+    },
+    guestToken?: string,
+  ) {
+    const booking = await this.assertBooking(bookingId, actor, guestToken);
+    if (booking.status === BS.CONFIRMED || booking.status === BS.COMPLETED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_ALREADY_CONFIRMED',
+        message: 'Bron allaqachon tasdiqlangan',
+      });
+    }
+    if (booking.status === BS.CANCELLED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_CANCELLED',
+        message: 'Bekor qilingan bronni tasdiqlab bo‘lmaydi',
+      });
+    }
+    if (booking.status === BS.EXPIRED) {
+      throw new UnprocessableEntityException({
+        code: 'BOOKING_EXPIRED',
+        message: 'Muddati o‘tgan bronni tasdiqlab bo‘lmaydi',
+      });
+    }
+
+    const rawPhone =
+      dto.phone ||
+      (typeof booking.guest_phone === 'string' && booking.guest_phone) ||
+      (actor ? await this.getUserPhone(actor.id) : null);
+    if (!rawPhone) {
+      throw new BadRequestException({
+        code: 'PHONE_REQUIRED',
+        message: 'Naqd to‘lov uchun telefon raqami ko‘rsatilmagan',
+      });
+    }
+
+    const phone = normalizePhone(String(rawPhone));
+    if (
+      booking.guest_phone &&
+      normalizePhone(String(booking.guest_phone)) !== phone
+    ) {
+      throw new ForbiddenException({
+        code: 'PHONE_MISMATCH',
+        message: 'Kiritilgan telefon raqami bron ma‘lumotlariga mos kelmadi',
+      });
+    }
+
+    await this.assertUserNotBlockedFromBooking(actor, phone);
+
+    const code = String(dto.otp_code ?? dto.otpCode ?? '').trim();
+    if (!code) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message: 'SMS tasdiqlash kodini kiriting',
+      });
+    }
+
+    const challengeId = dto.challenge_id ?? dto.challengeId;
+    await this.verifyAndConsumeCashBookingOtp(phone, code, challengeId);
+
+    return this.executeCashBookingConfirmation(booking, actor);
+  }
+
+  async verifyCashOtp(
+    actor: RequestActor | undefined,
+    dto: {
+      phone: string;
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      booking_id?: string;
+      bookingId?: string;
+    },
+    guestToken?: string,
+  ) {
+    const rawPhone = dto.phone;
+    if (!rawPhone || typeof rawPhone !== 'string' || !rawPhone.trim()) {
+      throw new BadRequestException({
+        code: 'PHONE_REQUIRED',
+        message: 'Telefon raqamini kiriting',
+      });
+    }
+
+    const phone = normalizePhone(rawPhone);
+    if (!isValidUzbekPhone(phone)) {
+      throw new BadRequestException({
+        code: 'INVALID_PHONE',
+        message:
+          "Noto'g'ri telefon raqami. Format: +998XXXXXXXXX bo'lishi kerak",
+      });
+    }
+
+    const code = String(dto.otp_code ?? dto.otpCode ?? '').trim();
+    if (!code) {
+      throw new BadRequestException({
+        code: 'OTP_REQUIRED',
+        message: 'SMS tasdiqlash kodini kiriting',
+      });
+    }
+
+    const challengeId = dto.challenge_id ?? dto.challengeId;
+    const bookingId = dto.booking_id ?? dto.bookingId;
+
+    await this.assertUserNotBlockedFromBooking(actor, phone);
+
+    if (bookingId) {
+      const [booking] = await this.pg.query<BookingRow>(
+        'SELECT * FROM bookings WHERE id = $1',
+        [bookingId],
+      );
+      if (!booking) {
+        throw new NotFoundException({
+          code: 'BOOKING_NOT_FOUND',
+          message: 'Bron topilmadi',
+        });
+      }
+
+      if (booking.status === BS.CONFIRMED || booking.status === BS.COMPLETED) {
+        throw new UnprocessableEntityException({
+          code: 'BOOKING_ALREADY_CONFIRMED',
+          message: 'Bron allaqachon tasdiqlangan',
+        });
+      }
+      if (booking.status === BS.CANCELLED) {
+        throw new UnprocessableEntityException({
+          code: 'BOOKING_CANCELLED',
+          message: 'Bekor qilingan bronni tasdiqlab bo‘lmaydi',
+        });
+      }
+      if (booking.status === BS.EXPIRED) {
+        throw new UnprocessableEntityException({
+          code: 'BOOKING_EXPIRED',
+          message: 'Muddati o‘tgan bronni tasdiqlab bo‘lmaydi',
+        });
+      }
+
+      if (actor) {
+        if (
+          actor.role !== Role.SUPER_ADMIN &&
+          actor.actorType !== 'admin' &&
+          booking.user_id !== actor.id
+        ) {
+          throw new ForbiddenException({
+            code: 'FORBIDDEN',
+            message: 'Bu bronni tasdiqlash uchun ruxsat yo‘q',
+          });
+        }
+      } else {
+        if (booking.user_id) {
+          throw new UnauthorizedException({
+            code: 'AUTH_TOKEN_REQUIRED',
+            message: 'Foydalanuvchi hisobiga kirish talab etiladi',
+          });
+        }
+        const bookingPhone = booking.guest_phone
+          ? normalizePhone(String(booking.guest_phone))
+          : '';
+        let guestTokenValid = false;
+        if (guestToken) {
+          const grantedBookingId =
+            await this.resolveGuestBookingAccessTokenBookingId(guestToken);
+          guestTokenValid = grantedBookingId === booking.id;
+        }
+        if (!guestTokenValid && bookingPhone !== phone) {
+          throw new ForbiddenException({
+            code: 'PHONE_MISMATCH',
+            message:
+              'Kiritilgan telefon raqami bron ma‘lumotlariga mos kelmadi',
+          });
+        }
+      }
+
+      // ONLY consume OTP AFTER all validations pass!
+      await this.verifyAndConsumeCashBookingOtp(phone, code, challengeId);
+
+      const result = await this.executeCashBookingConfirmation(booking, actor);
+
+      return {
+        success: true,
+        message: 'Broningiz muvaffaqiyatli tasdiqlandi',
+        status: result.booking.status,
+        ...result,
+      };
+    }
+
+    // Pre-validation oqimi (bookingId yo'q bo'lganda)
+    await this.verifyAndConsumeCashBookingOtp(phone, code, challengeId);
+
+    const verificationToken = randomBytes(24).toString('base64url');
+    await this.cache.set(
+      `booking:cash-verified:${verificationToken}`,
+      { phone, verified_at: new Date().toISOString() },
+      600, // 10 minutes
+    );
+
+    return {
+      success: true,
+      message: 'Telefon raqami muvaffaqiyatli tasdiqlandi',
+      verified: true,
+      phone,
+      verification_token: verificationToken,
+    };
   }
 
   private async getUserPhone(userId: string): Promise<string | null> {
@@ -1198,7 +1631,11 @@ export class BookingsService {
     const rooms = isRestaurant ? 1 : Number(dto.rooms ?? 1);
     const guest = this.guestContact(actor, dto);
 
-    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
+    const consumeOtp = await this.validateCashBookingOtpIfNeeded(
+      dto,
+      guest.phone,
+      actor,
+    );
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
@@ -1402,7 +1839,9 @@ export class BookingsService {
       const booking = await this.createBooking(tx, userId, {
         type: bookingType,
         partner_organization_id: hotel.partner_organization_id,
-        payment_method: this.paymentMethod(dto.payment_method),
+        payment_method: this.paymentMethod(
+          dto.payment_method ?? dto.paymentMethod,
+        ),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
         subtotal: baseSubtotal,
         discount_amount: discountAmount,
@@ -1455,6 +1894,7 @@ export class BookingsService {
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
     void this.sendBookingConfirmationEmail(booking);
+    await consumeOtp?.();
 
     // Guest (login qilmagan) checkout — tasdiqlash sahifasi keyinroq
     // `GET /bookings/:id`ni bu token bilan chaqirishi uchun, faqat bron
@@ -1534,7 +1974,11 @@ export class BookingsService {
 
     const guest = this.guestContact(actor, dto);
 
-    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
+    const consumeOtp = await this.validateCashBookingOtpIfNeeded(
+      dto,
+      guest.phone,
+      actor,
+    );
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);
@@ -1674,7 +2118,9 @@ export class BookingsService {
       const booking = await this.createBooking(tx, userId, {
         type: 'bus',
         partner_organization_id: vehicle.partner_organization_id,
-        payment_method: this.paymentMethod(dto.payment_method),
+        payment_method: this.paymentMethod(
+          dto.payment_method ?? dto.paymentMethod,
+        ),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
         subtotal: baseSubtotal,
         discount_amount: discountAmount,
@@ -1720,6 +2166,7 @@ export class BookingsService {
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
     void this.sendBookingConfirmationEmail(booking);
+    await consumeOtp?.();
 
     // Guest (login qilmagan) checkout — hotel bilan bir xil sabab/naqsh.
     const guestAccessToken = booking.user_id
@@ -1772,7 +2219,11 @@ export class BookingsService {
     const userId = actor?.id ?? null;
     const guest = this.guestContact(actor, dto);
 
-    this.validateCashBookingOtpIfNeeded(dto, guest.phone);
+    const consumeOtp = await this.validateCashBookingOtpIfNeeded(
+      dto,
+      guest.phone,
+      actor,
+    );
 
     const tripId = String(dto.trip_id ?? dto.tripId ?? '');
 
@@ -1871,7 +2322,9 @@ export class BookingsService {
       const booking = await this.createBooking(tx, userId, {
         type: 'bus',
         partner_organization_id: partnerOrganizationId,
-        payment_method: this.paymentMethod(dto.payment_method),
+        payment_method: this.paymentMethod(
+          dto.payment_method ?? dto.paymentMethod,
+        ),
         confirmation_mode: this.confirmationMode(dto.confirmation_mode),
         subtotal,
         discount_amount: discountAmount,
@@ -1913,6 +2366,7 @@ export class BookingsService {
     this.events.partnerDashboardUpdated(booking.partner_organization_id);
     this.events.adminDashboardUpdated();
     void this.sendBookingConfirmationEmail(booking);
+    await consumeOtp?.();
 
     const guestAccessToken = booking.user_id
       ? undefined
@@ -2765,7 +3219,7 @@ export class BookingsService {
 
   private async sendBookingConfirmationEmail(booking: {
     id: string;
-    booking_number: string;
+    booking_number?: string | null;
     guest_name?: string | null;
     guest_email?: string | null;
     total_amount: number | string;
@@ -2777,7 +3231,7 @@ export class BookingsService {
     }
 
     const vars = {
-      bookingNumber: booking.booking_number,
+      bookingNumber: booking.booking_number ?? booking.id,
       guestName: booking.guest_name ?? '',
       totalAmount: String(booking.total_amount),
       currency: booking.currency,

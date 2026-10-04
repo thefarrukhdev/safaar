@@ -1,4 +1,5 @@
 import { Role } from '@safaar/types';
+import { otpStore } from '../auth/otp-store';
 import type { RequestActor } from '../common/actor';
 import { CURRENT_TERMS_VERSION } from '../common/legal';
 import type { AppCacheService } from '../infrastructure/cache.service';
@@ -62,6 +63,7 @@ describe('BookingsService.createHotel guest checkout', () => {
   };
 
   beforeEach(() => {
+    otpStore.resetForTests();
     pg = {
       query: jest.fn(),
       transaction: jest.fn((operation: (tx: unknown) => unknown) =>
@@ -332,11 +334,18 @@ describe('BookingsService.createHotel guest checkout', () => {
       .mockResolvedValueOnce([]) // UPDATE bookings SET status = confirmed (cash)
       .mockResolvedValueOnce([]); // INSERT booking_status_history (cash_booking_confirmed)
 
+    const guestPhone = '+998901234567';
+    const challenge = otpStore.create(guestPhone, 'booking_cash_confirm');
+    const otpCode = otpStore.getDeliveryCode(challenge.id)!;
+
     const result = await service.createHotel(undefined, {
       hotel_id: 'hotel-1',
       agree_terms: true,
       guest_name: 'Test Guest',
       guest_email: 'guest@example.com',
+      guest_phone: guestPhone,
+      otp_code: otpCode,
+      challenge_id: challenge.id,
       room_id: 'room-1',
       check_in: '2026-08-10',
       check_out: '2026-08-12',
@@ -348,6 +357,7 @@ describe('BookingsService.createHotel guest checkout', () => {
     expect(result.booking.user_id).toBeNull();
     expect(result.booking.guest_name).toBe('Test Guest');
     expect(result.booking.guest_email).toBe('guest@example.com');
+    expect(result.booking.guest_phone).toBe(guestPhone);
     // `payment` endi `null` bo'lishi ham mumkin (0 UZS bron), lekin bu
     // testda summa 0 EMAS — qator yaratilishi SHART.
     expect(result.payment).not.toBeNull();

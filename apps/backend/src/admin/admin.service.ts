@@ -41,6 +41,7 @@ import {
   computeBookingReport,
   computeBookingReportByPartner,
 } from '../reports/booking-reports.query';
+import { formatAuditRow } from './audit-formatter';
 
 type DbRow = Record<string, unknown>;
 
@@ -1171,13 +1172,30 @@ export class AdminService {
   }
 
   async activity() {
-    return this.rows(`
-      select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
-             old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
-      from audit_logs
-      order by created_at desc
+    const rows = await this.rows(`
+      select
+        al.id::text,
+        al.actor_type,
+        al.actor_id::text,
+        coalesce(au.full_name, au.email) as actor_name,
+        al.action,
+        al.entity_type,
+        al.entity_id::text,
+        al.old_value,
+        al.new_value,
+        coalesce(al.metadata, '{}'::jsonb) ||
+          jsonb_build_object('target', concat_ws(':', al.entity_type, al.entity_id::text)) as metadata,
+        al.ip_address,
+        al.user_agent,
+        al.request_id,
+        al.created_at
+      from audit_logs al
+      left join admin_users au
+        on al.actor_type = 'admin' and au.id = al.actor_id
+      order by al.created_at desc
       limit 20
     `);
+    return rows.map((row) => formatAuditRow(row));
   }
 
   async users(query: QueryLike = {}) {
@@ -1905,17 +1923,34 @@ export class AdminService {
       return this.paginateAdmin([], query);
     }
 
-    return this.rows(
+    const rows = await this.rows(
       `
-        select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
-               old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
-        from audit_logs
-        where actor_id = $1::uuid
-        order by created_at desc
+        select
+          al.id::text,
+          al.actor_type,
+          al.actor_id::text,
+          coalesce(au.full_name, au.email) as actor_name,
+          al.action,
+          al.entity_type,
+          al.entity_id::text,
+          al.old_value,
+          al.new_value,
+          coalesce(al.metadata, '{}'::jsonb) ||
+            jsonb_build_object('target', concat_ws(':', al.entity_type, al.entity_id::text)) as metadata,
+          al.ip_address,
+          al.user_agent,
+          al.request_id,
+          al.created_at
+        from audit_logs al
+        left join admin_users au
+          on al.actor_type = 'admin' and au.id = al.actor_id
+        where al.actor_id = $1::uuid
+        order by al.created_at desc
         ${this.limitClause(query)}
       `,
       [id],
     );
+    return rows.map((row) => formatAuditRow(row));
   }
 
   async userMessage(
@@ -6294,7 +6329,7 @@ export class AdminService {
   }
 
   async auditLogs(query: QueryLike = {}) {
-    return this.rows(`
+    const rows = await this.rows(`
       select
         al.id::text,
         al.actor_type,
@@ -6317,6 +6352,7 @@ export class AdminService {
       order by al.created_at desc
       ${this.limitClause(query)}
     `);
+    return rows.map((row) => formatAuditRow(row));
   }
 
   async settings() {

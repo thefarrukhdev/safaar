@@ -47,7 +47,8 @@ class OtpStore {
       purpose,
       codeHash: hashSecret(code, this.otpPepper(phone, purpose)),
       attempts: 0,
-      expiresAt: now + otpTtlMs,
+      expiresAt:
+        now + (purpose === 'booking_cash_confirm' ? 180_000 : otpTtlMs),
       resendAfter: now + resendMs,
       createdAt: new Date(now).toISOString(),
     };
@@ -88,6 +89,12 @@ class OtpStore {
 
   getDeliveryCode(challengeId: string): string | undefined {
     return this.deliveryCodes.get(challengeId);
+  }
+
+  cancel(challengeId: string, phone: string, purpose: OtpPurpose): void {
+    this.challenges.delete(challengeId);
+    this.deliveryCodes.delete(challengeId);
+    this.resendGuard.delete(this.resendKey(phone, purpose));
   }
 
   /** Faqat testlar uchun — modul darajasidagi singleton holatini tozalaydi. */

@@ -26,6 +26,7 @@ import {
   SendBookingMessageDto,
   SendCashOtpDto,
   UnblockBookingPenaltyDto,
+  VerifyCashOtpDto,
 } from './dto/booking.dto';
 
 @ApiTags('bookings')
@@ -117,6 +118,17 @@ export class BookingsController {
     @Body() dto: SendCashOtpDto,
   ) {
     return this.bookingsService.sendCashBookingOtp(actor, dto.phone);
+  }
+
+  // Naqd to'lov SMS OTP kodini tekshirish va bronni tasdiqlash
+  @Post('cash/verify-otp')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  verifyCashOtp(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() dto: VerifyCashOtpDto,
+    @Query('guestToken') guestToken?: string,
+  ) {
+    return this.bookingsService.verifyCashOtp(actor, dto, guestToken);
   }
 
   // Mavjud bron uchun naqd to'lov SMS OTP kodini yuborish

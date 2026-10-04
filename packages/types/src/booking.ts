@@ -101,8 +101,58 @@ export interface CreateBookingDto {
   guestEmail?: string;
   guestPhone?: string;
   paymentMethod?: ApiPaymentMethod;
+  payment_method?: ApiPaymentMethod | string;
   otp_code?: string;
   otpCode?: string;
   challenge_id?: string;
   challengeId?: string;
+  verification_token?: string;
+  verificationToken?: string;
+}
+
+export interface SendCashOtpDto {
+  phone: string;
+}
+
+export interface SendCashOtpResponse {
+  challenge_id: string;
+  phone: string;
+  resend_after: number;
+  dev_code?: string;
+}
+
+export interface VerifyCashOtpDto {
+  phone: string;
+  otp_code?: string;
+  otpCode?: string;
+  challenge_id?: string;
+  challengeId?: string;
+  booking_id?: string;
+  bookingId?: string;
+}
+
+export interface VerifyCashOtpResponse {
+  success: boolean;
+  message: string;
+  verified?: boolean;
+  phone?: string;
+  verification_token?: string;
+  status?: string;
+  booking?: Booking;
+  payment?: unknown;
+  guestAccessToken?: string;
+}
+
+export interface ConfirmCashOtpDto {
+  otp_code?: string;
+  otpCode?: string;
+  challenge_id?: string;
+  challengeId?: string;
+  phone?: string;
+}
+
+export interface ConfirmCashBookingResponse {
+  booking: Booking;
+  payment?: unknown;
+  guestAccessToken?: string;
 }

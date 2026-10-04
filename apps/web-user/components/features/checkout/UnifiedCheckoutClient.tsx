@@ -9,9 +9,11 @@ import {
   createRestaurantBookingAction, 
   createVehicleBookingAction,
   createBookingAction,
-  createBusBookingAction
+  createBusBookingAction,
+  createHotelBookingDirectAction
 } from "@/lib/services/booking/actions";
 import { PaymentSelector, type PaymentMethodId } from "./PaymentSelector";
+import { CashOtpModal } from "./CashOtpModal";
 import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
 import { previewPayment } from "@/lib/services/payments/actions";
 import type { CheckoutDict } from "@/i18n/dictionaries";
@@ -46,6 +48,13 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
   const [guestToken, setGuestToken] = useState<string | undefined>(undefined);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
+  const [cashOtpState, setCashOtpState] = useState<{
+    isOpen: boolean;
+    bookingId: string;
+    maskedPhone: string;
+    expiresIn: number;
+  } | null>(null);
 
   useEffect(() => {
     if (type === "restaurant") {
@@ -83,6 +92,16 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
           agreeTerms,
         });
         if (!res.ok) throw new Error(res.error || dict.error);
+        if (res.requiresOtp) {
+          setCashOtpState({
+            isOpen: true,
+            bookingId: res.bookingId!,
+            maskedPhone: res.maskedPhone || guestPhone,
+            expiresIn: res.expiresIn || 180,
+          });
+          setLoading(false);
+          return;
+        }
         bookingId = res.bookingId!;
         guestAccessToken = res.guestAccessToken || "";
       } else if (type === "transport") {
@@ -99,28 +118,34 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
         bookingId = res.bookingId!;
         guestAccessToken = res.guestAccessToken || "";
       } else if (type === "hotel") {
-        const formData = new FormData();
-        formData.append("hotelId", entityId);
-        formData.append("roomId", subEntityId);
-        formData.append("checkIn", checkIn);
-        formData.append("checkOut", checkOut);
-        formData.append("guests", guests.toString());
-        formData.append("paymentMethod", paymentMethod);
-        formData.append("firstName", guestFirstName);
-        formData.append("lastName", guestLastName);
-        formData.append("phone", guestPhone);
-        if (guestEmail) formData.append("email", guestEmail);
-        if (specialRequests) formData.append("specialRequests", specialRequests);
-        formData.append("agreeTerms", "on");
-        formData.append("locale", locale);
-        
-        const res = await createBookingAction({}, formData);
-        if (res.error) throw new Error(res.error);
-        
-        // As createBookingAction redirects, we shouldn't hit this normally unless it errors,
-        // but if it doesn't redirect we can just redirect manually:
-        router.push(`/${locale}/booking`);
-        return;
+        const res = await createHotelBookingDirectAction({
+          hotelId: entityId,
+          roomId: subEntityId,
+          checkIn,
+          checkOut,
+          guests,
+          paymentMethod,
+          firstName: guestFirstName,
+          lastName: guestLastName,
+          phone: guestPhone,
+          email: guestEmail,
+          specialRequests,
+          agreeTerms,
+          locale,
+        });
+        if (!res.ok) throw new Error(res.error || dict.error);
+        if (res.requiresOtp) {
+          setCashOtpState({
+            isOpen: true,
+            bookingId: res.bookingId!,
+            maskedPhone: res.maskedPhone || guestPhone,
+            expiresIn: res.expiresIn || 180,
+          });
+          setLoading(false);
+          return;
+        }
+        bookingId = res.bookingId!;
+        guestAccessToken = res.guestAccessToken || "";
       } else {
         throw new Error("Tizimda noma'lum buyurtma turi.");
       }
@@ -175,12 +200,17 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
       <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
         {/* Left Column - Form */}
         <div className="flex-1 lg:w-2/3">
-          {errorMsg && (
+          {errorMsg === 'CUSTOMER_BLOCKED_FROM_CASH_BOOKING' ? (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800 shadow-sm">
+              <AlertCircle className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+              <span>{dict.errors.CUSTOMER_BLOCKED_FROM_CASH_BOOKING || errorMsg}</span>
+            </div>
+          ) : errorMsg ? (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800 shadow-sm">
               <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
-          )}
+          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-8 lg:space-y-10">
             {/* Guest Info Section */}
@@ -389,6 +419,21 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
             router.refresh();
           }}
           onClose={() => setPaymentUrl(null)}
+        />
+      )}
+      
+      {cashOtpState && dict.otp && (
+        <CashOtpModal
+          isOpen={cashOtpState.isOpen}
+          bookingId={cashOtpState.bookingId}
+          maskedPhone={cashOtpState.maskedPhone}
+          initialExpiresIn={cashOtpState.expiresIn}
+          dict={dict.otp}
+          onSuccess={(id) => {
+            setCashOtpState(null);
+            router.push(`/${locale}/booking/${id}?status=confirmed&payment=cash`);
+          }}
+          onClose={() => setCashOtpState(null)}
         />
       )}
     </div>

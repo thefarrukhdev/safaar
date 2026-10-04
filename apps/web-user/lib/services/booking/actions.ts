@@ -194,15 +194,15 @@ export async function createRestaurantBookingAction(input: {
   bookingId?: string;
   bookingNumber?: string;
   guestAccessToken?: string;
+  requiresOtp?: boolean;
+  maskedPhone?: string;
+  expiresIn?: number;
   error?: string;
 }> {
   if (!input.agreeTerms) {
     return { ok: false, error: "TERMS_NOT_ACCEPTED" };
   }
 
-  // `session`dan olingan `accessToken` bronni HAQIQIY foydalanuvchi
-  // hisobiga bog'laydi ("Mening bronlarim"da ko'rinishi uchun) — bo'lmasa
-  // (mehmon/login qilmagan) backend guest checkout sifatida ishlaydi.
   const session = await getSession();
 
   try {
@@ -230,11 +230,83 @@ export async function createRestaurantBookingAction(input: {
       bookingId: booking.id,
       bookingNumber: booking.bookingNumber,
       guestAccessToken: booking.guestAccessToken,
+      requiresOtp: (booking as { requires_otp?: boolean }).requires_otp,
+      maskedPhone: (booking as { masked_phone?: string }).masked_phone,
+      expiresIn: (booking as { expires_in?: number }).expires_in,
     };
   } catch (err: unknown) {
     return {
       ok: false,
-      error: err instanceof ApiRequestError ? err.message : "Xatolik yuz berdi",
+      error: err instanceof ApiRequestError ? (err.code || err.message) : "Xatolik yuz berdi",
+    };
+  }
+}
+
+export async function createHotelBookingDirectAction(input: {
+  hotelId: string;
+  roomId: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  paymentMethod: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email?: string;
+  specialRequests?: string;
+  promoCode?: string;
+  agreeTerms: boolean;
+  locale: string;
+}): Promise<{
+  ok: boolean;
+  bookingId?: string;
+  guestAccessToken?: string;
+  requiresOtp?: boolean;
+  maskedPhone?: string;
+  expiresIn?: number;
+  error?: string;
+}> {
+  if (!input.agreeTerms) {
+    return { ok: false, error: "TERMS_NOT_ACCEPTED" };
+  }
+
+  const session = await getSession();
+
+  try {
+    const requestData = {
+      hotelId: input.hotelId,
+      roomId: input.roomId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      guests: input.guests,
+      paymentMethod: input.paymentMethod,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
+      email: input.email,
+      specialRequests: input.specialRequests,
+      promoCode: input.promoCode,
+      agreeTerms: input.agreeTerms,
+      source: "web-user",
+    };
+
+    const booking = await api.bookings.createHotelBooking(
+      requestData,
+      session ? { token: session.accessToken } : undefined
+    );
+
+    return {
+      ok: true,
+      bookingId: booking.id,
+      guestAccessToken: booking.guestAccessToken,
+      requiresOtp: (booking as { requires_otp?: boolean }).requires_otp,
+      maskedPhone: (booking as { masked_phone?: string }).masked_phone,
+      expiresIn: (booking as { expires_in?: number }).expires_in,
+    };
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      error: err instanceof ApiRequestError ? (err.code || err.message) : "Xatolik yuz berdi",
     };
   }
 }
@@ -269,6 +341,34 @@ export async function createVehicleBookingAction(input: {
     return { 
       ok: false, 
       error: err instanceof Error ? err.message : "Xatolik yuz berdi" 
+    };
+  }
+}
+
+export async function cashOtpVerifyAction(input: { booking_id: string; otp_code: string }): Promise<{ ok: true; bookingId: string; status: string } | { ok: false; error: string }> {
+  try {
+    const session = await getSession();
+    const options = session ? { token: session.accessToken } : undefined;
+    const res = await api.bookings.verifyCashOtp(input.booking_id, input.otp_code, options);
+    return { ok: true, bookingId: res.bookingId, status: res.status };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof ApiRequestError ? (error.code || error.message) : "UNKNOWN_ERROR"
+    };
+  }
+}
+
+export async function cashOtpResendAction(input: { booking_id: string }): Promise<{ ok: true; expiresIn: number; resendAvailableIn: number } | { ok: false; error: string }> {
+  try {
+    const session = await getSession();
+    const options = session ? { token: session.accessToken } : undefined;
+    const res = await api.bookings.resendCashOtp(input.booking_id, options);
+    return { ok: true, expiresIn: res.expiresIn, resendAvailableIn: res.resendAvailableIn };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof ApiRequestError ? (error.code || error.message) : "UNKNOWN_ERROR"
     };
   }
 }

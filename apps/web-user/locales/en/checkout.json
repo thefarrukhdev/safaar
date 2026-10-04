@@ -86,7 +86,29 @@
     "GUEST_DETAILS_REQUIRED": "Guest details are required.",
     "PROMO_INVALID": "Promo code is invalid or expired.",
     "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
-    "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue."
+    "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue.",
+    "PHONE_REQUIRED": "A phone number is required for cash payment.",
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Sorry, this phone number is temporarily restricted from cash payment due to a previous no-show. Please pay online with a card."
+  },
+  "otp": {
+    "title": "SMS Verification",
+    "description": "Enter the 6-digit code sent to {phone}",
+    "inputPlaceholder": "------",
+    "timerLabel": "Valid for:",
+    "resendButton": "Resend code",
+    "verifyButton": "Verify",
+    "cancelButton": "Cancel",
+    "verifying": "Verifying...",
+    "resending": "Sending...",
+    "errors": {
+      "INVALID_OTP": "Incorrect code. Please try again.",
+      "OTP_EXPIRED": "The code has expired. Please request a new one.",
+      "TOO_MANY_ATTEMPTS": "Too many attempts. Please request a new code.",
+      "RESEND_COOLDOWN": "Please wait before requesting a new code.",
+      "BOOKING_CANCELLED": "This booking has been cancelled.",
+      "INCOMPLETE_CODE": "Please enter the full 6-digit SMS code.",
+      "UNKNOWN": "An error occurred. Please try again."
+    }
   },
   "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number."
 }

@@ -81,7 +81,29 @@
     "GUEST_DETAILS_REQUIRED": "Mehmon ma'lumotlari kiritilishi shart.",
     "PROMO_INVALID": "Promokod noto'g'ri yoki muddati o'tgan.",
     "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
-    "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering."
+    "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering.",
+    "PHONE_REQUIRED": "Naqd pul bilan to'lash uchun telefon raqamingizni kiritishingiz shart.",
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Kechirasiz, ushbu telefon raqami avvalgi kelmaganlik tufayli naqd to'lovdan vaqtincha cheklangan. Iltimos, onlayn karta orqali to'lang."
+  },
+  "otp": {
+    "title": "SMS orqali tasdiqlash",
+    "description": "{phone} raqamiga yuborilgan 6 xonali kodni kiriting",
+    "inputPlaceholder": "------",
+    "timerLabel": "Amal qilish vaqti:",
+    "resendButton": "Kodni qayta yuborish",
+    "verifyButton": "Tasdiqlash",
+    "cancelButton": "Bekor qilish",
+    "verifying": "Tekshirilmoqda...",
+    "resending": "Yuborilmoqda...",
+    "errors": {
+      "INVALID_OTP": "SMS kod noto'g'ri kiritildi. Qaytadan urinib ko'ring.",
+      "OTP_EXPIRED": "SMS kodning amal qilish muddati tugadi. Iltimos, yangi kod so'rang.",
+      "TOO_MANY_ATTEMPTS": "Urinishlar soni oshib ketdi. Iltimos, yangi kod so'rang.",
+      "RESEND_COOLDOWN": "Yangi kod so'rash uchun biroz kuting.",
+      "BOOKING_CANCELLED": "Ushbu bron bekor qilingan.",
+      "INCOMPLETE_CODE": "Iltimos, 6 xonali SMS kodni to'liq kiriting.",
+      "UNKNOWN": "Xatolik yuz berdi. Qayta urinib ko'ring."
+    }
   },
   "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi."
 }

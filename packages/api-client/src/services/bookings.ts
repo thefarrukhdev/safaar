@@ -230,4 +230,37 @@ export const bookingsService = {
       options,
     );
   },
+
+  /** `POST /bookings/cash/verify-otp` — Verify Cash OTP */
+  async verifyCashOtp(
+    bookingId: string,
+    otpCode: string,
+    options?: { token?: string; guestToken?: string }
+  ): Promise<{ bookingId: string; status: string }> {
+    const raw = await rawApi.post<{ booking_id: string; status: string }>(
+      '/bookings/cash/verify-otp',
+      { booking_id: bookingId, otp_code: otpCode },
+      {
+        token: options?.token,
+        query: options?.guestToken ? { guestToken: options.guestToken } : undefined,
+      }
+    );
+    return { bookingId: raw.booking_id, status: raw.status };
+  },
+
+  /** `POST /bookings/cash/send-otp` — Resend Cash OTP */
+  async resendCashOtp(
+    bookingId: string,
+    options?: { token?: string; guestToken?: string }
+  ): Promise<{ expiresIn: number; resendAvailableIn: number }> {
+    const raw = await rawApi.post<{ expires_in: number; resend_available_in: number }>(
+      '/bookings/cash/send-otp',
+      { booking_id: bookingId },
+      {
+        token: options?.token,
+        query: options?.guestToken ? { guestToken: options.guestToken } : undefined,
+      }
+    );
+    return { expiresIn: raw.expires_in, resendAvailableIn: raw.resend_available_in };
+  },
 };

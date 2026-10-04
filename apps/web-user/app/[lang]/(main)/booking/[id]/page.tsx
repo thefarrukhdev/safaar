@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
  AlertTriangle,
@@ -17,6 +18,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { RetryPaymentForm } from "./_components/RetryPaymentForm";
 import { BookingActions } from "./_components/BookingActions";
 import { BookingChat } from "./_components/BookingChat";
+import { AutoRefresh } from "./_components/AutoRefresh";
 import type { BookingView } from "@/types/view";
 import type { PaymentProvider } from "@/lib/services/payments/payments";
 
@@ -86,11 +88,21 @@ export default async function BookingDetailPage({
 
  if (!booking) {
  return (
- <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
- <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 ">
- {dict.error}
- </p>
- </main>
+ <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 mb-4">
+        <AlertTriangle className="h-8 w-8 text-amber-600" />
+      </div>
+      <h1 className="mb-2 text-2xl font-bold text-slate-900">Topilmadi</h1>
+      <p className="mb-8 text-slate-500">
+        {dict.error}
+      </p>
+      <Link
+        href={`/${locale}`}
+        className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+      >
+        Bosh sahifaga qaytish
+      </Link>
+    </main>
  );
  }
 
@@ -99,11 +111,7 @@ export default async function BookingDetailPage({
  const statusLabel = statuses[booking.status] ?? booking.status;
  const payment = booking.payment;
 
- const isConfirmed =
- statusQuery === "confirmed" ||
- paymentQuery === "success" ||
- booking.status === "CONFIRMED" ||
- payment?.status === "paid";
+ const isConfirmed = booking.status === "CONFIRMED" || payment?.status === "paid" || booking.status === "COMPLETED";
 
  const isFailed = paymentQuery === "failed" || payment?.status === "failed";
  const isAwaitingCash =
@@ -121,6 +129,7 @@ export default async function BookingDetailPage({
 
  return (
  <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
+ <AutoRefresh isProcessing={isProcessing} />
  {/* Desktop Side Button */}
  <div className="absolute -left-12 top-12 hidden lg:block">
  <BackButton />

@@ -69,5 +69,31 @@
     "JamiTolanadigan": "Jami to'lanadigan summa",
     "SizAvvalBoshlagan": "Siz avval boshlagan",
     "OrqaliTolovHali": "orqali to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan so'ng qayta urinib ko'ring."
+  },
+  "refundedTitle": "To'lov qaytarildi",
+  "refundedSubtitle": "So'ralgan qaytarish amalga oshirildi. Mablag' bank kartangizga qaytariladi.",
+  "refundedReversedSubtitle": "To'lov bank tomonidan bekor qilindi va mablag' qaytarildi.",
+  "processingTitle": "To'lov tekshirilmoqda",
+  "processingSubtitle": "To'lovingiz provayder tomonidan tasdiqlanishi kutilmoqda. Bu bir necha daqiqa vaqt olishi mumkin — sahifani yangilab holatni qayta tekshiring.",
+  "cancelledTitle": "Bron bekor qilingan",
+  "cancelledSubtitle": "Ushbu bron bekor qilingan va inventar ozod etilgan.",
+  "reselectPaymentMethod": "To'lovni qayta tanlang",
+  "selectPaymentMethod": "To'lov usulini tanlang",
+  "refreshStatus": "Holatni yangilash",
+  "paymentInstructions": "Click, Payme, Uzcard, Humo, Visa yoki Mastercard orqali to'lovni amalga oshiring. Karta to'lovlari uchun komissiya (fee) avtomatik hisoblanadi va quyida ko'rsatiladi.",
+  "retryForm": {
+    "payNow": "Davom etish",
+    "toBePaid": "To'lanishi kerak",
+    "cardFee": "Karta komissiyasi (fee):",
+    "totalDeducted": "Jami yechib olinadi:"
+  },
+  "paymentErrors": {
+    "AUTH_TOKEN_INVALID": "Sessiyangiz tugagan. Iltimos, qayta kiring.",
+    "AUTH_SESSION_REVOKED": "Sessiya bekor qilingan. Iltimos, qayta kiring.",
+    "BOOKING_FORBIDDEN": "Bu bron sizga tegishli emas.",
+    "BOOKING_EXPIRED": "Bron topilmadi yoki muddati tugagan.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "To'lov usuli hozircha mavjud emas. Boshqa usulni tanlang.",
+    "INVALID_BOOKING": "Bron topilmadi.",
+    "ERROR": "To'lovda xatolik yuz berdi. Qayta urinib ko'ring."
   }
 }

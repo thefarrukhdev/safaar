@@ -130,7 +130,7 @@ export default async function BookingDetailPage({
  <BackButton />
  </div>
 
- <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white border border-slate-200 ">
+ <div className="flex flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white ">
  {isConfirmed ? (
  <div className="flex flex-col gap-2 bg-emerald-50/80 p-6 sm:p-8 ">
  <div className="flex items-center gap-3">
@@ -172,13 +172,13 @@ export default async function BookingDetailPage({
  <div className="flex items-center gap-3">
  <RotateCcw className="h-7 w-7 shrink-0 text-slate-600 " />
  <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
- To'lov qaytarildi
+ {dict.refundedTitle}
  </h1>
  </div>
  <p className="text-sm font-medium text-slate-600 ">
  {payment?.status === "reversed"
- ? "To'lov bank tomonidan bekor qilindi va mablag' qaytarildi."
- : "So'ralgan qaytarish amalga oshirildi. Mablag' bank kartangizga qaytariladi."}
+ ? "{dict.refundedReversedSubtitle}"
+ : "{dict.refundedSubtitle}"}
  </p>
  </div>
  ) : isProcessing ? (
@@ -186,24 +186,21 @@ export default async function BookingDetailPage({
  <div className="flex items-center gap-3">
  <Clock className="h-7 w-7 shrink-0 animate-pulse text-blue-600 " />
  <h1 className="text-xl font-extrabold tracking-tight text-blue-950 sm:text-2xl">
- To'lov tekshirilmoqda
+ {dict.processingTitle}
  </h1>
  </div>
  <p className="text-sm font-medium text-blue-800 ">
- To'lovingiz provayder tomonidan tasdiqlanishi kutilmoqda. Bu bir necha
- daqiqa vaqt olishi mumkin — sahifani yangilab holatni qayta tekshiring.
+ {dict.processingSubtitle}
  </p>
  </div>
  ) : isCancelled ? (
  <div className="flex flex-col gap-2 bg-slate-100 p-6 sm:p-8 ">
  <div className="flex items-center gap-3">
  <XCircle className="h-7 w-7 shrink-0 text-slate-600 " />
- <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
- Bron bekor qilingan
- </h1>
+ <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{dict.cancelledTitle}</h1>
  </div>
  <p className="text-sm font-medium text-slate-600 ">
- Ushbu bron bekor qilingan va inventar ozod etilgan.
+ {dict.cancelledSubtitle}
  </p>
  </div>
  ) : (
@@ -218,9 +215,7 @@ export default async function BookingDetailPage({
  aria-label={dict.receiptSummary}
  className="relative flex flex-col gap-5 p-6 sm:p-8 bg-white "
  >
- <div className="absolute left-0 right-0 top-0 h-px border-t-2 border-dashed border-slate-200 " />
- <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-white " />
- <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-white " />
+ 
  <div className="flex items-center justify-between border-b border-slate-100 pb-4 ">
  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 ">
  {dict.receiptSummary}
@@ -261,22 +256,18 @@ export default async function BookingDetailPage({
  <div className="flex items-center gap-2">
  <CreditCard className="h-5 w-5 text-blue-600 " />
  <h2 className="text-lg font-bold text-slate-900 ">
- {isFailed || isProcessing ? "To'lovni qayta tanlang" : "To'lov usulini tanlang"}
+ {isFailed || isProcessing ? dict.reselectPaymentMethod : dict.selectPaymentMethod}
  </h2>
  </div>
  {isProcessing && (
  <a
  href={`/${locale}/booking/${booking.id}${guestTokenQuery ? `?guestToken=${encodeURIComponent(guestTokenQuery)}` : ""}`}
  className="text-xs font-semibold text-blue-600 hover:underline "
- >
- Holatni yangilash
- </a>
+ >{dict.refreshStatus}</a>
  )}
  </div>
  <p className="text-xs text-slate-500 ">
- Click, Payme, Uzcard, Humo, Visa yoki Mastercard orqali to'lovni amalga
- oshiring. Karta to'lovlari uchun to'lov haqi (fee) tanlangan usulga
- qarab avtomatik hisoblanadi va pastda ko'rsatiladi.
+ {dict.paymentInstructions}
  </p>
 
  <RetryPaymentForm
@@ -295,7 +286,7 @@ export default async function BookingDetailPage({
  }
  : undefined
  }
- />
+  dict={dict} />
  </section>
  ) : null}
 

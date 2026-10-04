@@ -69,5 +69,31 @@
     "JamiTolanadigan": "Total amount payable",
     "SizAvvalBoshlagan": "Payment via",
     "OrqaliTolovHali": "you started earlier is still pending. Complete it first (via the button below) or try again in a few minutes."
+  },
+  "refundedTitle": "Payment refunded",
+  "refundedSubtitle": "The requested refund was processed. Funds will be returned to your card.",
+  "refundedReversedSubtitle": "The payment was reversed by the bank and funds were returned.",
+  "processingTitle": "Payment processing",
+  "processingSubtitle": "Waiting for payment confirmation from the provider. This may take a few minutes — please refresh the page to check the status.",
+  "cancelledTitle": "Booking cancelled",
+  "cancelledSubtitle": "This booking has been cancelled and the inventory is released.",
+  "reselectPaymentMethod": "Reselect payment method",
+  "selectPaymentMethod": "Select payment method",
+  "refreshStatus": "Refresh status",
+  "paymentInstructions": "Pay via Click, Payme, Uzcard, Humo, Visa or Mastercard. The card payment fee is automatically calculated and shown below.",
+  "retryForm": {
+    "payNow": "Continue",
+    "toBePaid": "To be paid",
+    "cardFee": "Card fee:",
+    "totalDeducted": "Total deducted:"
+  },
+  "paymentErrors": {
+    "AUTH_TOKEN_INVALID": "Session expired. Please log in again.",
+    "AUTH_SESSION_REVOKED": "Session revoked. Please log in again.",
+    "BOOKING_FORBIDDEN": "This booking does not belong to you.",
+    "BOOKING_EXPIRED": "Booking not found or expired.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "Payment method unavailable. Please choose another.",
+    "INVALID_BOOKING": "Booking not found.",
+    "ERROR": "Payment error. Please try again."
   }
 }

@@ -50,21 +50,6 @@ function calculateFee(base: number, method: PaymentMethodId) {
  };
 }
 
-const ERROR_MESSAGES: Record<string, string> = {
- AUTH_TOKEN_INVALID: "Sessiyangiz tugagan yoki token yaroqsiz. Iltimos, qayta kiring.",
- AUTH_SESSION_REVOKED: "Sessiyangiz bekor qilingan. Iltimos, qayta kiring.",
- BOOKING_FORBIDDEN: "Bu bron sizga tegishli emas.",
- BOOKING_EXPIRED: "Bron topilmadi yoki muddati tugagan.",
- PAYMENT_PROVIDER_NOT_CONFIGURED: "Bu to'lov usuli hozircha mavjud emas. Boshqa usulni tanlab ko'ring.",
- INVALID_BOOKING: "Bron topilmadi.",
- ERROR: "To'lovni amalga oshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
-};
-
-function errorMessage(code?: string): string {
- if (!code) return ERROR_MESSAGES.ERROR;
- return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.ERROR;
-}
-
 export interface ExistingPaymentInfo {
  provider: PaymentMethodId;
  status: string;
@@ -79,6 +64,7 @@ export function RetryPaymentForm({
  guestToken,
  bookingAmount,
  existingPayment,
+  dict,
 }: {
  bookingId: string;
  locale: string;
@@ -86,6 +72,7 @@ export function RetryPaymentForm({
  guestToken?: string;
  bookingAmount: number;
  existingPayment?: ExistingPaymentInfo;
+ dict?: any;
 }) {
  const [selected, setSelected] = useState<PaymentMethodId>(
  ONLINE_METHODS.includes(initialProvider) ? initialProvider : "uzcard",
@@ -188,7 +175,7 @@ export function RetryPaymentForm({
 
  {state.error && (
  <p className="text-sm font-medium text-red-600">
- {errorMessage(state.error)}
+ {dict?.paymentErrors?.[state.error as string] || dict?.paymentErrors?.ERROR || "Error"}
  </p>
  )}
 

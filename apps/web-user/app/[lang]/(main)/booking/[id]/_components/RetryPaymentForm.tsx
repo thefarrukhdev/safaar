@@ -65,6 +65,7 @@ export function RetryPaymentForm({
  bookingAmount,
  existingPayment,
   dict,
+  paymentMethodsDict,
 }: {
  bookingId: string;
  locale: string;
@@ -73,6 +74,7 @@ export function RetryPaymentForm({
  bookingAmount: number;
  existingPayment?: ExistingPaymentInfo;
  dict?: any;
+  paymentMethodsDict?: any;
 }) {
  const [selected, setSelected] = useState<PaymentMethodId>(
  ONLINE_METHODS.includes(initialProvider) ? initialProvider : "uzcard",
@@ -134,6 +136,7 @@ export function RetryPaymentForm({
  defaultValue={selected}
  name="paymentMethodSelector"
  allow={ONLINE_METHODS}
+ dict={paymentMethodsDict}
  onChange={handleSelect}
  disabled={isConfirming}
  />
@@ -141,7 +144,7 @@ export function RetryPaymentForm({
  {/* Fee / yakuniy summa paneli */}
  <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
  <div className="flex items-center justify-between">
- <span className="text-slate-500">Bron summasi</span>
+ <span className="text-slate-500">{dict?.missing?.BronSummasi || "Bron summasi"}</span>
  <span className="font-semibold text-slate-900">
  {formatSum(bookingAmount)}
  </span>
@@ -149,7 +152,7 @@ export function RetryPaymentForm({
  {hasFee && (
  <div className="flex items-center justify-between">
  <span className="text-slate-500">
- {METHOD_LABELS[selected] ?? selected} to&apos;lov haqi ({(fee.feeRate * 100).toFixed(1)}%)
+ {METHOD_LABELS[selected] ?? selected} {dict?.missing?.TolovHaqi || "to'lov haqi ("}{(fee.feeRate * 100).toFixed(1)}%)
  </span>
  <span className="font-semibold text-amber-700">
  + {formatSum(fee.feeAmount)}
@@ -157,7 +160,7 @@ export function RetryPaymentForm({
  </div>
  )}
  <div className="mt-1 flex items-center justify-between border-t border-slate-200 pt-1.5">
- <span className="font-bold text-slate-900">Jami to&apos;lanadigan summa</span>
+ <span className="font-bold text-slate-900">{dict?.missing?.JamiTolanadigan || "Jami to'lanadigan summa"}</span>
  <span className="flex items-center gap-1.5 font-extrabold text-blue-700">
  {formatSum(providerMismatch && existingPayment?.amount ? existingPayment.amount : fee.totalAmount)}
  </span>
@@ -167,9 +170,7 @@ export function RetryPaymentForm({
  {providerMismatch && (
  <p className="flex items-start gap-2 text-xs font-medium text-amber-700">
  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
- Siz avval boshlagan <strong>{METHOD_LABELS[mismatchProvider] ?? mismatchProvider}</strong> orqali
- to&apos;lov hali kutilmoqda. Avval o&apos;shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan
- so&apos;ng qayta urinib ko&apos;ring.
+ {dict?.missing?.SizAvvalBoshlagan || "Siz avval boshlagan"} <strong>{METHOD_LABELS[mismatchProvider] ?? mismatchProvider}</strong> {dict?.missing?.OrqaliTolovHali || "orqali to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan so'ng qayta urinib ko'ring."}
  </p>
  )}
 
@@ -189,8 +190,8 @@ export function RetryPaymentForm({
  className="w-full font-bold shadow-md"
  >
  {providerMismatch
- ? `Oldingi to'lovni yakunlash (${METHOD_LABELS[mismatchProvider] ?? ""})`
- : `To'lash — ${formatSum(fee.totalAmount)}`}
+ ? `${dict?.retryForm?.payNow || "Oldingi to'lovni yakunlash"} (${METHOD_LABELS[mismatchProvider] ?? ""})`
+ : `${dict?.retryForm?.payNow || "To'lash"} — ${formatSum(fee.totalAmount)}`}
  </Button>
 
  {iframeUrl && (

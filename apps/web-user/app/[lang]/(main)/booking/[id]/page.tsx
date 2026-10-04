@@ -286,7 +286,7 @@ export default async function BookingDetailPage({
  }
  : undefined
  }
-  dict={dict} />
+  dict={dict} paymentMethodsDict={checkoutDict.paymentMethods} />
  </section>
  ) : null}
 

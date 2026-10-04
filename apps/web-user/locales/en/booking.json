@@ -66,9 +66,9 @@
   "missing": {
     "BronSummasi": "Booking amount",
     "TolovHaqi": "payment fee (",
-    "JamiTolanadigan": "Total amount payable",
-    "SizAvvalBoshlagan": "Payment via",
-    "OrqaliTolovHali": "you started earlier is still pending. Complete it first (via the button below) or try again in a few minutes."
+    "JamiTolanadigan": "Total to pay",
+    "SizAvvalBoshlagan": "The payment via",
+    "OrqaliTolovHali": "is still pending. Please complete it first (using the button below) or try again in a few minutes."
   },
   "refundedTitle": "Payment refunded",
   "refundedSubtitle": "The requested refund was processed. Funds will be returned to your card.",

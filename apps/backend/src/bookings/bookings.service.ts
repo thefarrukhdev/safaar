@@ -152,6 +152,27 @@ export interface BookingRow {
   [key: string]: unknown;
 }
 
+export interface VerifyCashOtpConfirmationResult {
+  success: boolean;
+  message: string;
+  status: string;
+  booking: BookingRow;
+  payment?: Record<string, unknown>;
+  guestAccessToken?: string;
+}
+
+export interface VerifyCashOtpPreValidationResult {
+  success: boolean;
+  message: string;
+  verified: boolean;
+  phone: string;
+  verification_token: string;
+}
+
+export type VerifyCashOtpResult =
+  | VerifyCashOtpConfirmationResult
+  | VerifyCashOtpPreValidationResult;
+
 interface GuestContact {
   firstName: string | null;
   lastName: string | null;
@@ -1078,6 +1099,58 @@ export class BookingsService {
     return this.executeCashBookingConfirmation(booking, actor);
   }
 
+  verifyCashOtp(
+    actor: RequestActor | undefined,
+    dto: {
+      phone: string;
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      booking_id: string;
+      bookingId?: string;
+    },
+    guestToken?: string,
+  ): Promise<VerifyCashOtpConfirmationResult>;
+  verifyCashOtp(
+    actor: RequestActor | undefined,
+    dto: {
+      phone: string;
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      booking_id?: string;
+      bookingId: string;
+    },
+    guestToken?: string,
+  ): Promise<VerifyCashOtpConfirmationResult>;
+  verifyCashOtp(
+    actor: RequestActor | undefined,
+    dto: {
+      phone: string;
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      booking_id?: undefined;
+      bookingId?: undefined;
+    },
+    guestToken?: string,
+  ): Promise<VerifyCashOtpPreValidationResult>;
+  verifyCashOtp(
+    actor: RequestActor | undefined,
+    dto: {
+      phone: string;
+      otp_code?: string;
+      otpCode?: string;
+      challenge_id?: string;
+      challengeId?: string;
+      booking_id?: string;
+      bookingId?: string;
+    },
+    guestToken?: string,
+  ): Promise<VerifyCashOtpResult>;
   async verifyCashOtp(
     actor: RequestActor | undefined,
     dto: {
@@ -1090,7 +1163,7 @@ export class BookingsService {
       bookingId?: string;
     },
     guestToken?: string,
-  ) {
+  ): Promise<VerifyCashOtpResult> {
     const rawPhone = dto.phone;
     if (!rawPhone || typeof rawPhone !== 'string' || !rawPhone.trim()) {
       throw new BadRequestException({

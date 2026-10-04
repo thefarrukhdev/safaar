@@ -402,7 +402,7 @@ describe('Naqd to‘lov (Cash payment) va No-Show 60 kunlik jarima tizimi', () =
       );
 
       expect(result.booking.status).toBe('confirmed');
-      expect(result.payment.status).toBe('awaiting_cash');
+      expect(result.payment?.status).toBe('awaiting_cash');
     });
 
     it('confirmCashBooking: bloklangan foydalanuvchi tasdiqlamoqchi bo‘lsa 403 beradi', async () => {
@@ -468,7 +468,7 @@ describe('Naqd to‘lov (Cash payment) va No-Show 60 kunlik jarima tizimi', () =
       );
 
       expect(result.booking.status).toBe('awaiting_partner_confirmation');
-      expect(result.payment.status).toBe('awaiting_cash');
+      expect(result.payment?.status).toBe('awaiting_cash');
     });
 
     it('sendCashBookingOtp: OTP ma‘lumotlarini 180 soniyalik (3 daqiqa) TTL bilan keshga saqlaydi', async () => {

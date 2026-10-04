@@ -234,7 +234,7 @@ describe('audit-formatter', () => {
         expect(formatted.raw_action).toBe(actionKey);
         // But action_label is always in Uzbek!
         expect(typeof formatted.action_label).toBe('string');
-        expect(formatted.action_label.length).toBeGreaterThan(0);
+        expect((formatted.action_label as string).length).toBeGreaterThan(0);
       }
     });
 

@@ -112,12 +112,13 @@ guardrails() {
     log "No existing '${CONTAINER_NAME}' container found — this will be a first-time start, not a replacement."
   fi
 
-  # Check free disk space on root filesystem (must have at least 2GB free, auto-prune if low)
+  # Check free disk space on root filesystem (must have at least 8GB free for build + unpack, auto-prune if low)
   local free_kb
   free_kb="$(df -k / | awk 'NR==2 {print $4}')"
-  if [[ -n "$free_kb" && "$free_kb" -lt 2097152 ]]; then
-    log "Low disk space (<2GB free: ${free_kb}KB), auto-pruning docker builder cache..."
-    docker builder prune -f --filter until=24h >/dev/null 2>&1 || true
+  if [[ -n "$free_kb" && "$free_kb" -lt 8388608 ]]; then
+    log "Low disk space (<8GB free: ${free_kb}KB), auto-pruning docker cache and old images..."
+    docker builder prune -a -f >/dev/null 2>&1 || true
+    docker image prune -a --filter "until=24h" -f >/dev/null 2>&1 || true
   fi
 
   log "Guardrails passed."

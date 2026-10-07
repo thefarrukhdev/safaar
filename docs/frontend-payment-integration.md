@@ -282,10 +282,10 @@ tasdiqlangan, `payments.service.card-scheme.spec.ts`):
 
 | Karta turi | Fee | Yakuniy (backend Uzum'ga yuboradigan) summa |
 |---|---|---|
-| HUMO | 7,500 so'm (1.5%) | **507,500 so'm** |
-| UZCARD | 7,500 so'm (1.5%) | **507,500 so'm** |
-| VISA | 17,500 so'm (3.5%) | **517,500 so'm** |
-| MASTERCARD | 17,500 so'm (3.5%) | **517,500 so'm** |
+| HUMO | 7,614.21 so'm (1.5%) | **507,614.21 so'm** |
+| UZCARD | 7,614.21 so'm (1.5%) | **507,614.21 so'm** |
+| VISA | 18,134.72 so'm (3.5%) | **518,134.72 so'm** |
+| MASTERCARD | 18,134.72 so'm (3.5%) | **518,134.72 so'm** |
 
 **Muhim, real amaliyot cheklovi (Uzum Checkout kontraktidan kelib
 chiqadi):** Uzum Checkout'ning rasmiy `/payment/register` so'rovi karta
@@ -314,10 +314,10 @@ javob endi to'liq fee taqsimotini o'z ichiga oladi:
   "provider": "visa",
   "status": "processing",
   "payment_url": "https://checkout.uzum.uz/pay/...",
-  "amount": 517500,
+  "amount": 518134.72,
   "base_amount": 500000,
   "fee_rate": 0.035,
-  "fee_amount": 17500,
+  "fee_amount": 18134.72,
   "currency": "UZS",
   "created_at": "...",
   "updated_at": "..."

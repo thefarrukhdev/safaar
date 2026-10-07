@@ -10,12 +10,16 @@ export enum PaymentStatus {
 export interface Payment {
   id: string;
   bookingId: string;
-  provider: "click" | "payme" | "uzcard" | "humo" | "cash";
+  provider: "click" | "payme" | "uzcard" | "humo" | "cash" | "visa" | "mastercard";
   status: PaymentStatus;
   amount: number;
   currency: "UZS";
   paymentUrl?: string;
   providerReference?: string;
+  cardScheme?: "humo" | "uzcard" | "visa" | "mastercard";
+  baseAmount?: number;
+  feeRate?: number;
+  feeAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

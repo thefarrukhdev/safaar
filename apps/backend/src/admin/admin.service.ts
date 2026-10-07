@@ -4268,6 +4268,7 @@ export class AdminService {
     return this.rows(`
       select id::text, booking_id::text, provider::text, status::text,
              amount::float8, currency, payment_url, provider_reference,
+             card_scheme::text, base_amount::float8, fee_rate::float8, fee_amount::float8,
              idempotency_key, created_at, updated_at
       from payments
       order by created_at desc
@@ -4280,6 +4281,7 @@ export class AdminService {
       `
         select id::text, booking_id::text, provider::text, status::text,
                amount::float8, currency, payment_url, provider_reference,
+               card_scheme::text, base_amount::float8, fee_rate::float8, fee_amount::float8,
                idempotency_key, created_at, updated_at
         from payments
         where id = $1::uuid

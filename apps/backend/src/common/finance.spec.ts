@@ -295,8 +295,8 @@ describe("Excel'ning HAQIQIY binary fayli bilan to'liq end-to-end tekshiruv (202
       expect(breakdown.partnerNetAmountSom).toBe(GROSS - expectedSafaar);
       // Uzum fee HAR DOIM bir xil (12 ta kategoriyaning barchasida) — u
       // SAFAAR stavkasidan MUSTAQIL, USER_PAYS.
-      expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
-      expect(breakdown.customerTotalAmountSom).toBe(GROSS + 15_000);
+      expect(breakdown.uzumUserFeeAmountSom).toBe(15_228.43);
+      expect(breakdown.customerTotalAmountSom).toBe(1_015_228.43);
     },
   );
 });
@@ -308,7 +308,19 @@ describe('UZUM_CHECKOUT_FEE_BEARER — USER_PAYS biznes qoidasi (2026-09-13 tasd
 });
 
 describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor net (USER_PAYS, 2026-09-13 biznes tomonidan tasdiqlangan)', () => {
-  it('1,000,000 so‘m, Samarqand 4-5 yulduz (12%) — vazifada berilgan aniq misol: SAFAAR=120000, hamkor=880000, Uzum fee (mijoz to‘laydi, alohida)=15000', () => {
+  it('1000 so‘m uchun — vazifadagi talab: Uzum fee=15.23, customerTotal=1015.23', () => {
+    const breakdown = calculatePaymentBreakdown({
+      grossAmountSom: 1000,
+      safaarCommissionRatePercent: 10,
+    });
+    expect(breakdown.grossAmountSom).toBe(1000);
+    expect(breakdown.safaarCommissionAmountSom).toBe(100);
+    expect(breakdown.partnerNetAmountSom).toBe(900);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(15.23);
+    expect(breakdown.customerTotalAmountSom).toBe(1015.23);
+  });
+
+  it('1,000,000 so‘m, Samarqand 4-5 yulduz (12%) — SAFAAR=120000, hamkor=880000, Uzum fee (mijoz to‘laydi, alohida)=15228.43', () => {
     const rate = resolveAccommodationCommissionRate({
       citySlug: 'samarqand',
       partnerOrganizationType: 'hotel',
@@ -329,12 +341,12 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
       breakdown.safaarCommissionAmountSom + breakdown.partnerNetAmountSom,
     ).toBe(1_000_000);
     // Uzum fee — FAQAT informativ (mijoz Uzum checkout'da alohida to'laydi).
-    expect(breakdown.uzumUserFeeAmountSom).toBe(15_000);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(15_228.43);
     // customerTotal = gross + Uzum fee — mijoz KONSEPTUAL jami shuncha to'laydi.
-    expect(breakdown.customerTotalAmountSom).toBe(1_015_000);
+    expect(breakdown.customerTotalAmountSom).toBe(1_015_228.43);
   });
 
-  it('400,000 so‘m, Samarqand 4-5 yulduz (12%, resolveAccommodationCommissionRate orqali) — 2026-09-13 vazifada berilgan aniq misol: SAFAAR=48000, hamkor=352000, Uzum fee=6000, customerTotal=406000', () => {
+  it('400,000 so‘m, Samarqand 4-5 yulduz (12%, resolveAccommodationCommissionRate orqali) — SAFAAR=48000, hamkor=352000, Uzum fee=6091.37, customerTotal=406091.37', () => {
     const rate = resolveAccommodationCommissionRate({
       citySlug: 'samarqand',
       partnerOrganizationType: 'hotel',
@@ -349,11 +361,11 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
 
     expect(breakdown.safaarCommissionAmountSom).toBe(48_000);
     expect(breakdown.partnerNetAmountSom).toBe(352_000);
-    expect(breakdown.uzumUserFeeAmountSom).toBe(6_000);
-    expect(breakdown.customerTotalAmountSom).toBe(406_000);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(6_091.37);
+    expect(breakdown.customerTotalAmountSom).toBe(406_091.37);
   });
 
-  it('400,000 so‘m, SAFAAR 10% — vazifada berilgan ikkinchi aniq misol: SAFAAR=40000, hamkor=360000, Uzum fee=6000, customerTotal=406000', () => {
+  it('400,000 so‘m, SAFAAR 10% — SAFAAR=40000, hamkor=360000, Uzum fee=6091.37, customerTotal=406091.37', () => {
     const breakdown = calculatePaymentBreakdown({
       grossAmountSom: 400_000,
       safaarCommissionRatePercent: 10,
@@ -362,28 +374,28 @@ describe('calculatePaymentBreakdown — gross → SAFAAR komissiya → hamkor ne
     expect(breakdown.grossAmountSom).toBe(400_000);
     expect(breakdown.safaarCommissionAmountSom).toBe(40_000);
     expect(breakdown.partnerNetAmountSom).toBe(360_000);
-    expect(breakdown.uzumUserFeeAmountSom).toBe(6_000);
-    expect(breakdown.customerTotalAmountSom).toBe(406_000);
+    expect(breakdown.uzumUserFeeAmountSom).toBe(6_091.37);
+    expect(breakdown.customerTotalAmountSom).toBe(406_091.37);
     // Booking/payment gross'ning o'zi customerTotal bilan ARALASHTIRILMAYDI.
     expect(breakdown.grossAmountSom).not.toBe(breakdown.customerTotalAmountSom);
   });
 
-  it('Uzum fee: 1,000,000 → 15,000 (vazifada berilgan aniq test-case, informativ maydon)', () => {
+  it('Uzum fee: 1,000,000 → 15,228.43 (vazifada berilgan aniq test-case, informativ maydon)', () => {
     expect(
       calculatePaymentBreakdown({
         grossAmountSom: 1_000_000,
         safaarCommissionRatePercent: 0,
       }).uzumUserFeeAmountSom,
-    ).toBe(15_000);
+    ).toBe(15_228.43);
   });
 
-  it('Uzum fee: 500,000 → 7,500 (vazifada berilgan aniq test-case, informativ maydon)', () => {
+  it('Uzum fee: 500,000 → 7,614.21 (vazifada berilgan aniq test-case, informativ maydon)', () => {
     expect(
       calculatePaymentBreakdown({
         grossAmountSom: 500_000,
         safaarCommissionRatePercent: 0,
       }).uzumUserFeeAmountSom,
-    ).toBe(7_500);
+    ).toBe(7_614.21);
   });
 
   it('uzumUserFeeRatePercent doim 1.5 (UZUM_CHECKOUT_COMMISSION_RATE bilan izchil)', () => {

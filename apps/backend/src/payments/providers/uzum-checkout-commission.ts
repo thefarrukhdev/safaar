@@ -115,10 +115,10 @@ export interface UzumCheckoutCommissionBreakdown {
   grossAmountSom: number;
   /** Qo'llanilgan stavka (masalan 0.015 = 1.5%). */
   commissionRate: number;
-  /** gross × rate, tiyin darajasida yaxlitlangan (so'm). USER to'laydi (`UZUM_CHECKOUT_FEE_BEARER`). */
+  /** customerTotalAmountSom - grossAmountSom, tiyin darajasida yaxlitlangan (so'm). USER to'laydi (`UZUM_CHECKOUT_FEE_BEARER`). */
   commissionAmountSom: number;
   /**
-   * gross − commission (so'm). MUHIM: bu Uzum bilan SAFAAR o'rtasidagi bank
+   * customerTotal − commission = gross (so'm). MUHIM: bu Uzum bilan SAFAAR o'rtasidagi bank
    * SETTLEMENT haqidagi ICHKI/REFERENCE hisob-kitob — `UZUM_CHECKOUT_FEE_BEARER`
    * ("kim to'laydi") bilan ARALASHTIRILMASIN. Bu summa `partner_payable`ga
    * HECH QACHON YOZILMAYDI (hamkor ledgeri faqat SAFAAR komissiyasini biladi);
@@ -127,9 +127,9 @@ export interface UzumCheckoutCommissionBreakdown {
    */
   netSettlementAmountSom: number;
   /**
-   * gross + commission (so'm) — "mijoz KONSEPTUAL jihatdan jami qancha
-   * to'laydi" degan BIZNES/hisobot tushunchasi (2026-09-13 tasdiqlangan
-   * misol: 400,000 gross + 6,000 fee = 406,000). BUTUN TIYIN arifmetikasida
+   * customerTotal (gross / (1 - rate)) (so'm) — "mijoz KONSEPTUAL jihatdan jami qancha
+   * to'laydi" degan BIZNES/hisobot tushunchasi (masalan: 1000 gross => 1015.23 customerTotal;
+   * 400,000 gross => 406,091.37 customerTotal). BUTUN TIYIN arifmetikasida
    * hisoblanadi (suzuvchi nuqta xatosisiz).
    *
    * ⚠️ MUHIM — bu Uzum'ning `/payment/register` so'roviga yuboriladigan
@@ -168,19 +168,25 @@ export function calculateUzumCheckoutCommission(
   }
 
   const grossTiyin = Math.round(gross * 100);
-  // Stavkani ham butun sonlarda ushlaymiz (150 = 1.5% bazis nuqtasi/10000)
-  // — `gross * rate` to'g'ridan-to'g'ri ko'paytirilsa, keyinroq qo'shiladigan
-  // stavkalar uchun suzuvchi nuqta xatosi yig'ilib qolishi mumkin edi.
-  const rateBasisPoints = Math.round(UZUM_CHECKOUT_COMMISSION_RATE * 10_000);
-  const commissionTiyin = Math.round((grossTiyin * rateBasisPoints) / 10_000);
-  const netTiyin = grossTiyin - commissionTiyin;
-  const customerTotalTiyin = grossTiyin + commissionTiyin;
+  const rate = UZUM_CHECKOUT_COMMISSION_RATE;
+  // Formulaning mohiyati:
+  // Agar Uzum Checkout 1.5% komissiya ushlasa va SAFAAR'ga aynan `gross`
+  // (masalan 1000 so'm) tushishi kerak bo'lsa:
+  //   customerTotal × (1 - rate) = gross
+  //   customerTotal = gross / (1 - rate)
+  // Masalan: 1000 ÷ 0.985 = 1015.228426... so'm => 1015 so'm 23 tiyin (101523 tiyin).
+  // Komissiya (user fee): 1015.23 - 1000 = 15.23 so'm (1523 tiyin).
+  // Uzum 1.5% ushlagandan keyin tushadigan sof summa (netSettlement):
+  //   customerTotal - commission = gross = 1000.00 so'm.
+  const customerTotalTiyin = Math.round(grossTiyin / (1 - rate));
+  const commissionTiyin = customerTotalTiyin - grossTiyin;
+  const netSettlementTiyin = grossTiyin;
 
   return {
     grossAmountSom: grossTiyin / 100,
     commissionRate: UZUM_CHECKOUT_COMMISSION_RATE,
     commissionAmountSom: commissionTiyin / 100,
-    netSettlementAmountSom: netTiyin / 100,
+    netSettlementAmountSom: netSettlementTiyin / 100,
     customerTotalAmountSom: customerTotalTiyin / 100,
   };
 }

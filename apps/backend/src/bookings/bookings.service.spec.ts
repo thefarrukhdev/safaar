@@ -2946,8 +2946,8 @@ describe('BookingsService — Unpaid booking handling & guest self-service cance
     await service.createVehicleRental(undefined, {
       vehicle_id: 'v-1',
       agree_terms: true,
-      check_in: '2026-10-05',
-      check_out: '2026-10-07',
+      check_in: '2027-10-05',
+      check_out: '2027-10-07',
       firstName: 'Laziz',
       lastName: 'Shakarov',
       email: 'laziz@example.com',

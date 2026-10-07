@@ -49,10 +49,10 @@ function makeService() {
 }
 
 describe.each([
-  ['humo', 0.015, 7_500, 507_500],
-  ['uzcard', 0.015, 7_500, 507_500],
-  ['visa', 0.035, 17_500, 517_500],
-  ['mastercard', 0.035, 17_500, 517_500],
+  ['humo', 0.015, 7_614.21, 507_614.21],
+  ['uzcard', 0.015, 7_614.21, 507_614.21],
+  ['visa', 0.035, 18_134.72, 518_134.72],
+  ['mastercard', 0.035, 18_134.72, 518_134.72],
 ] as const)(
   'PaymentsService.createPayment — karta turi %s (mahsulot misoli: 500 000 so‘m)',
   (scheme, expectedRate, expectedFee, expectedTotal) => {
@@ -143,9 +143,9 @@ describe('PaymentsService.createPayment — provider almashtirish (regression: e
     expect(deleteCall).toBeDefined();
     expect(deleteCall?.[1]).toEqual(['payment-stale']);
     expect(checkout.register).toHaveBeenCalledWith(
-      expect.objectContaining({ amountSom: 507_500 }),
+      expect.objectContaining({ amountSom: 507_614.21 }),
     );
-    expect(result).toMatchObject({ provider: 'humo', amount: 507_500 });
+    expect(result).toMatchObject({ provider: 'humo', amount: 507_614.21 });
   });
 
   it('bir xil usul qayta so‘ralsa (idempotentlik) — mavjud qator o‘zgarishsiz qaytariladi, register QAYTA chaqirilmaydi', async () => {
@@ -233,9 +233,9 @@ describe('PaymentsService.createPayment — amount/fee tampering himoyasi', () =
     });
 
     expect(checkout.register).toHaveBeenCalledWith(
-      expect.objectContaining({ amountSom: 507_500 }),
+      expect.objectContaining({ amountSom: 507_614.21 }),
     );
-    expect(result.amount).toBe(507_500);
+    expect(result.amount).toBe(507_614.21);
   });
 
   it("noto'g'ri/qonuniy bo'lmagan `provider` qiymati 'click'ga xavfsiz tushadi (DTO validatsiyasi bilan bir qatorda, ikkinchi himoya qatlami)", async () => {

@@ -170,7 +170,7 @@ export interface PaymentBreakdown {
   partnerNetAmountSom: number;
   /**
    * gross + Uzum user fee (so'm) — "mijoz KONSEPTUAL jihatdan jami qancha
-   * to'laydi" (2026-09-13 tasdiqlangan misol: 400,000 + 6,000 = 406,000).
+   * to'laydi" (masalan: 1,000 gross => 1,015.23 customerTotal; 400,000 gross => 406,091.37).
    *
    * ⚠️ MUHIM: bu Uzum'ning `/payment/register` so'roviga yuboriladigan
    * `amount` EMAS (u hamon FAQAT `grossAmountSom` — `payments.service.ts`
@@ -200,7 +200,7 @@ export interface PaymentBreakdown {
  *     "mijoz Uzum checkout'da yana shuncha to'laydi" degan REFERENCE raqam.
  *   - `customerTotalAmountSom = gross + uzumUserFeeAmountSom` — "mijoz
  *     KONSEPTUAL jami qancha to'laydi" degan ALOHIDA biznes tushuncha
- *     (2026-09-13 tasdiqlangan). Bu Uzum'ning register so'roviga
+ *     (masalan: 400,000 gross + 6,091.37 fee = 406,091.37). Bu Uzum'ning register so'roviga
  *     yuboriladigan `amount` EMAS — o'sha hamon FAQAT gross
  *     (`payments.service.ts::createUzumCheckoutPayment`, o'zgartirilmagan).
  * Bu — KIM TO'LAYDI (biznes) savoliga javob; Uzum bilan SAFAAR o'rtasidagi

@@ -57,7 +57,7 @@ export interface CardSchemeFeeBreakdown {
   baseAmountSom: number;
   /** Qo'llanilgan stavka (masalan 0.015 = 1.5%). */
   feeRate: number;
-  /** base × rate, tiyin darajasida yaxlitlangan (so'm). Foydalanuvchi to'laydi. */
+  /** totalPayableAmountSom - baseAmountSom, tiyin darajasida yaxlitlangan (so'm). Foydalanuvchi to'laydi. */
   feeAmountSom: number;
   /** base + fee (so'm) — foydalanuvchi HAQIQATDA to'laydigan, Uzum Checkout
    *  `/payment/register`ga yuboriladigan yakuniy summa. */
@@ -72,12 +72,19 @@ export interface CardSchemeFeeBreakdown {
  * — "round half away from zero") — ICHKI izchillik uchun, suzuvchi nuqta
  * xatosiga (`0.1 + 0.2 !== 0.3`) yo'l qo'ymaslik uchun.
  *
+ * @throws {TypeError} `scheme` haqiqiy CardScheme bo'lmasa.
  * @throws {RangeError} `baseAmountSom` chekli musbat son bo'lmasa.
  */
 export function calculateCardSchemeFee(
   baseAmountSom: number | string,
   scheme: CardScheme,
 ): CardSchemeFeeBreakdown {
+  if (!isCardScheme(scheme)) {
+    throw new TypeError(
+      `calculateCardSchemeFee: noma'lum karta turi: ${JSON.stringify(scheme)}`,
+    );
+  }
+
   const base = Number(baseAmountSom);
   if (!Number.isFinite(base) || base <= 0) {
     throw new RangeError(
@@ -88,12 +95,17 @@ export function calculateCardSchemeFee(
 
   const rate = CARD_SCHEME_FEE_RATES[scheme];
   const baseTiyin = Math.round(base * 100);
-  // Stavkani ham butun sonlarda ushlaymiz (150 = 1.5% bazis nuqtasi/10000,
-  // 350 = 3.5%) — `base * rate` to'g'ridan-to'g'ri ko'paytirilsa suzuvchi
-  // nuqta xatosi yig'ilib qolishi mumkin edi.
-  const rateBasisPoints = Math.round(rate * 10_000);
-  const feeTiyin = Math.round((baseTiyin * rateBasisPoints) / 10_000);
-  const totalTiyin = baseTiyin + feeTiyin;
+  // Formulaning mohiyati:
+  // Agar to'lov provayderi (Uzum Checkout / ekvayring) tranzaksiyadan `rate`
+  // (masalan 1.5%) komissiya ushlasa va bizga aynan `base` (masalan 1000 so'm)
+  // tushishi kerak bo'lsa:
+  //   total × (1 - rate) = base
+  //   total = base / (1 - rate)
+  // Masalan: 1000 ÷ 0.985 = 1015.228426... so'm => 1015 so'm 23 tiyin (101523 tiyin).
+  // Provayder komissiyasi: 1015.23 × 1.5% ≈ 15 so'm 23 tiyin (1523 tiyin).
+  // Bizga qoladigan sof summa: 1015.23 - 15.23 = 1000.00 so'm (100000 tiyin).
+  const totalTiyin = Math.round(baseTiyin / (1 - rate));
+  const feeTiyin = totalTiyin - baseTiyin;
 
   return {
     scheme,

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { buttonVariants } from "@/components/ui/button-variants";
 import type { ProfileView } from "@/types/view";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 export function AvatarForm({
   profile,
@@ -70,7 +70,7 @@ export function AvatarForm({
         <label
           className={buttonVariants({ variant: "secondary", size: "sm", className: "cursor-pointer" }) + (loading ? " opacity-50 pointer-events-none" : "")}
         >
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {loading && <ThinkingOrb size={16} state="base" />}
           <span>{dict?.upload || "Upload"}</span>
           <input
             type="file"

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
@@ -50,7 +51,7 @@ export function CheckoutForm({
 
  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
  const [isSmsLoading, setIsSmsLoading] = useState(false);
- const [showSmsModal, setShowSmsModal] = useState(false);
+ const [, setShowSmsModal] = useState(false);
  const [agreeTerms, setAgreeTerms] = useState(false);
  
  const formRef = useRef<HTMLFormElement>(null);

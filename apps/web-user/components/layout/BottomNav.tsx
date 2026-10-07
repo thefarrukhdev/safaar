@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Search, Heart, CalendarCheck, UserRound } from "lucide-react";
-import { cn } from "@/lib/cn";
+import Link from"next/link";
+import { usePathname } from"next/navigation";
+import { Search, Heart, CalendarCheck, UserRound } from"lucide-react";
+import { cn } from"@/lib/cn";
 
 export interface BottomNavProps {
  locale: string;
@@ -72,10 +72,10 @@ export function BottomNav({ locale, dict }: BottomNavProps) {
  <Link
  key={tab.href}
  href={tab.href}
- aria-current={isActive ? "page" : undefined}
+ aria-current={isActive ?"page": undefined}
  className={cn(
- "flex h-full flex-col items-center justify-center gap-1 transition-colors",
- isActive ? "text-blue-600" : "text-slate-400"
+"flex h-full flex-col items-center justify-center gap-1 transition-colors",
+ isActive ?"text-blue-600":"text-slate-400"
  )}
  >
  <div className="relative flex items-center justify-center">
@@ -85,7 +85,7 @@ export function BottomNav({ locale, dict }: BottomNavProps) {
  className="absolute -top-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-600"
  />
  )}
- <Icon className="h-5 w-5" />
+ <Icon className="h-5 w-5"/>
  </div>
  <span className="text-[10px] font-semibold leading-none">{tab.name}</span>
  </Link>

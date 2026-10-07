@@ -1,7 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { Check } from"lucide-react";
+import { cn } from"@/lib/cn";
 
 export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
  label?: string;
@@ -15,16 +15,16 @@ export function Checkbox({ className, label, description, ...props }: CheckboxPr
  <input
  type="checkbox"
  className={cn(
- "peer h-5 w-5 cursor-pointer appearance-none rounded-[4px] border border-slate-900/50 bg-white",
- "transition-[background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
- "hover:border-slate-900/70",
- "checked:border-blue-600 checked:bg-blue-600",
- "focus-visible:border-blue-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600",
- "disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+"peer h-5 w-5 cursor-pointer appearance-none rounded-[4px] border border-slate-900/50 bg-white",
+"transition-[background-color,border-color,box-] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
+"hover:border-slate-900/70",
+"checked:border-blue-600 checked:bg-blue-600",
+"focus-visible:border-blue-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600",
+"disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
  )}
  {...props}
  />
- <Check className="pointer-events-none absolute h-3.5 w-3.5 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
+ <Check className="pointer-events-none absolute h-3.5 w-3.5 text-white opacity-0 transition-opacity peer-checked:opacity-100"/>
  </div>
  {(label || description) && (
  <div className="flex flex-col">

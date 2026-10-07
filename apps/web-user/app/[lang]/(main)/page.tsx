@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -13,7 +13,7 @@ import { FeaturedHotelsCarousel } from "@/components/features/home/FeaturedHotel
 import { DealsSection, type DealItem } from "@/components/features/home/DealsSection";
 import { BannerStrip } from "@/components/features/home/BannerStrip";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { buttonVariants } from "@/components/ui/button-variants";
+
 import { CityPills } from "@/components/features/home/CityPills";
 import { config } from "@/lib/config";
 
@@ -39,13 +39,13 @@ export default async function HomePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [common, dict, cities, featuredResult, rawDeals, publicStats, banners, destinations, heroMap] = await Promise.all([
+  const [common, dict, cities, featuredResult, rawDeals, banners, destinations, heroMap] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "home"),
     api.catalog.getCities(locale),
     api.hotels.getFeaturedHotels(locale, { limit: 10 }),
     api.cms.getDeals(locale),
-    api.cms.getPublicStats().catch(() => null),
+    
     api.cms.getBanners(locale).catch(() => []),
     api.catalog.getDestinations(locale).catch(() => []),
     api.heroBackgrounds.getHeroMap(),

@@ -1,7 +1,7 @@
 "use client";
 
-import { Toaster as Sonner } from "sonner";
-import { CheckCircle2, AlertCircle, Info, XCircle } from "lucide-react";
+import { Toaster as Sonner } from"sonner";
+import { CheckCircle2, AlertCircle, Info, XCircle } from"lucide-react";
 
 export function Toaster() {
  return (
@@ -10,25 +10,25 @@ export function Toaster() {
  toastOptions={{
  classNames: {
  toast:
- "group flex items-start gap-3 w-full rounded-xl border border-slate-200 bg-white p-4 transition-all sm:max-w-[420px]",
- title: "text-sm font-semibold",
- description: "mt-1 text-sm opacity-90",
- actionButton: "mt-3 bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 rounded-md",
- cancelButton: "mt-3 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-200 rounded-md ",
+"group flex items-start gap-3 w-full rounded-xl border border-slate-200 bg-white p-4 transition-all sm:max-w-[420px]",
+ title:"text-sm font-semibold",
+ description:"mt-1 text-sm opacity-90",
+ actionButton:"mt-3 bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 rounded-md",
+ cancelButton:"mt-3 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-200 rounded-md",
  
  // Custom Variants
- success: "border-emerald-500/20 bg-emerald-50/90 text-emerald-900 ",
- error: "border-red-500/20 bg-red-50/90 text-red-900 ",
- info: "border-blue-500/20 bg-blue-50/90 text-blue-900 ",
- warning: "border-amber-500/20 bg-amber-50/90 text-amber-900 ",
- default: "border-slate-200 bg-white text-slate-900 ",
+ success:"border-emerald-500/20 bg-emerald-50/90 text-emerald-900",
+ error:"border-red-500/20 bg-red-50/90 text-red-900",
+ info:"border-blue-500/20 bg-blue-50/90 text-blue-900",
+ warning:"border-amber-500/20 bg-amber-50/90 text-amber-900",
+ default:"border-slate-200 bg-white text-slate-900",
  },
  }}
  icons={{
- success: <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />,
- error: <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />,
- info: <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />,
- warning: <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />,
+ success: <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5"/>,
+ error: <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5"/>,
+ info: <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5"/>,
+ warning: <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5"/>,
  }}
  />
  );

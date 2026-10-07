@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 function PaymentReturnContent() {
   const searchParams = useSearchParams();
@@ -66,7 +66,7 @@ function PaymentReturnContent() {
   return (
     <div className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <ThinkingOrb size={16} state="base" />
         <h2 className="text-base font-semibold text-slate-900">
           To&apos;lov tasdiqlanmoqda...
         </h2>
@@ -90,7 +90,7 @@ export default function PaymentReturnPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[300px] items-center justify-center p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <ThinkingOrb size={16} state="base" />
         </div>
       }
     >

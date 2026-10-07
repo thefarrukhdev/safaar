@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -5,8 +6,8 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { api, ApiRequestError } from "@/lib/api";
 import { BackButton } from "@/components/ui/BackButton";
 import { Badge } from "@/components/ui/Badge";
-import { MapPin, Phone, Star, Users, Fuel, Luggage, Car, Building2 } from "lucide-react";
-import Image from "next/image";
+import { MapPin, Phone, Star, Users, Fuel, Luggage, Building2 } from "lucide-react";
+
 import { TransportBookingSection } from "@/components/features/transport/TransportBookingSection";
 import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
@@ -93,7 +94,7 @@ export default async function TransportDetailPage({
  <FavoriteButton
  targetType="transport"
  targetId={transport.id}
- initialFavoriteId={(transport as any).favoriteId ?? null}
+ initialFavoriteId={(transport as unknown as { favoriteId?: string }).favoriteId ?? null}
  authed={!!session}
  loginHref={`/${locale}/login?next=/${locale}/transport/${transport.id}`}
  dict={favDict}

@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PT_TYPES, PT_ICONS } from "./constants";
-import type { PropertyType } from "./types";
+import { ChevronLeft, ChevronRight } from"lucide-react";
+import { PT_TYPES, PT_ICONS } from"./constants";
+import type { PropertyType } from"./types";
 
 interface Props {
  activeType: PropertyType;
@@ -34,8 +34,8 @@ export function PropertyTypeTabs({ activeType, onChange, labels }: Props) {
  onClick={() => onChange(type)}
  className={`inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
  activeType === type
- ? "bg-blue-600 text-white shadow-sm"
- : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+ ?"bg-blue-600 text-white"
+ :"text-slate-600 hover:bg-slate-100 hover:text-slate-900"
  }`}
  >
  <span className="text-sm">{PT_ICONS[type]}</span>
@@ -52,10 +52,10 @@ export function PropertyTypeTabs({ activeType, onChange, labels }: Props) {
  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 active:scale-90"
  aria-label="Oldingi"
  >
- <ChevronLeft className="h-5 w-5" />
+ <ChevronLeft className="h-5 w-5"/>
  </button>
 
- <div className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm">
+ <div className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white">
  <span>{PT_ICONS[activeType]}</span>
  <span>{labels[activeType]}</span>
  </div>
@@ -66,7 +66,7 @@ export function PropertyTypeTabs({ activeType, onChange, labels }: Props) {
  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 active:scale-90"
  aria-label="Keyingi"
  >
- <ChevronRight className="h-5 w-5" />
+ <ChevronRight className="h-5 w-5"/>
  </button>
  </div>
  </>

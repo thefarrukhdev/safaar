@@ -1,11 +1,11 @@
-import { Loader2 } from "lucide-react";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 export default function GlobalLoading() {
  return (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
- <div className="flex flex-col items-center gap-4">
- <Loader2 className="h-10 w-10 animate-spin text-blue-600 " />
- <p className="text-sm font-semibold text-slate-600 animate-pulse">
+ <div className="flex flex-col items-center gap-6">
+ <ThinkingOrb size={160} state="base" className="text-blue-600" style={{ color: "#2563eb" }} />
+ <p className="text-sm font-medium text-slate-500 animate-pulse tracking-wide">
  Yuklanmoqda...
  </p>
  </div>

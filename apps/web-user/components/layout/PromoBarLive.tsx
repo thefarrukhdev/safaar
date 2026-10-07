@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { PromoBar } from "./PromoBar";
-import { useRealtimeEvent } from "@/lib/services/realtime/socket-provider";
-import { getPromoBarConfig, type PromoBarConfig } from "@/lib/promo";
+import { useCallback, useState } from"react";
+import { PromoBar } from"./PromoBar";
+import { useRealtimeEvent } from"@/lib/services/realtime/socket-provider";
+import { getPromoBarConfig, type PromoBarConfig } from"@/lib/promo";
 
 /**
  * `PromoBar`ning real-time o'rami: admin panelda promo-kod
@@ -11,21 +11,21 @@ import { getPromoBarConfig, type PromoBarConfig } from "@/lib/promo";
  * yangilanadi (`promos.updated` WebSocket hodisasi orqali).
  */
 export function PromoBarLive({
-  initialConfigs,
-  locale,
+ initialConfigs,
+ locale,
 }: {
-  initialConfigs: PromoBarConfig[];
-  locale: string;
+ initialConfigs: PromoBarConfig[];
+ locale: string;
 }) {
-  const [configs, setConfigs] = useState<PromoBarConfig[]>(initialConfigs);
+ const [configs, setConfigs] = useState<PromoBarConfig[]>(initialConfigs);
 
-  const refresh = useCallback(() => {
-    getPromoBarConfig(locale)
-      .then(setConfigs)
-      .catch(() => {});
-  }, [locale]);
+ const refresh = useCallback(() => {
+ getPromoBarConfig(locale)
+ .then(setConfigs)
+ .catch(() => {});
+ }, [locale]);
 
-  useRealtimeEvent("promos.updated", refresh, [refresh]);
+ useRealtimeEvent("promos.updated", refresh, [refresh]);
 
-  return <PromoBar configs={configs} locale={locale} />;
+ return <PromoBar configs={configs} locale={locale} />;
 }

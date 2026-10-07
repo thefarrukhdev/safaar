@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Sparkles, X, ArrowRight, Copy, Check } from "lucide-react";
-import { type PromoBarConfig, getLocalizedText } from "@/lib/promo";
-import { PromoShinyText } from "@/components/ui/PromoShinyText";
+import { useState, useSyncExternalStore, useEffect, useRef } from"react";
+import Link from"next/link";
+import { Sparkles, X, ArrowRight, Copy, Check } from"lucide-react";
+import { type PromoBarConfig, getLocalizedText } from"@/lib/promo";
+import { PromoShinyText } from"@/components/ui/PromoShinyText";
 
 interface PromoBarProps {
  configs: PromoBarConfig[];
@@ -13,7 +13,7 @@ interface PromoBarProps {
 
 const emptySubscribe = () => () => {};
 
-export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
+export function PromoBar({ configs, locale ="uz"}: PromoBarProps) {
  const [now, setNow] = useState(0);
  const [copied, setCopied] = useState(false);
 
@@ -34,7 +34,7 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  if (!isMounted) return;
  const dismissed = new Set<string>();
  for (const cfg of configs) {
- if (cfg.id && sessionStorage.getItem(`safaar_promo_dismissed_${cfg.id}`) === "1") {
+ if (cfg.id && sessionStorage.getItem(`safaar_promo_dismissed_${cfg.id}`) ==="1") {
  dismissed.add(cfg.id);
  }
  }
@@ -83,7 +83,7 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  const handleDismiss = () => {
  if (!config.id) return;
  const id = config.id;
- sessionStorage.setItem(`safaar_promo_dismissed_${id}`, "1");
+ sessionStorage.setItem(`safaar_promo_dismissed_${id}`,"1");
  setDismissedIds((prev) => new Set(prev).add(id));
  // Move to the next promo if possible
  setCurrentIndex((prev) => {
@@ -111,7 +111,7 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  <div
  role="region"
  aria-label="Promo banner"
- className="relative flex min-h-[36px] flex-col items-center justify-center bg-blue-950/95 px-8 py-1.5 text-center text-xs font-semibold text-white shadow-md backdrop-blur-md transition-all duration-300 sm:text-sm"
+ className="relative flex min-h-[36px] flex-col items-center justify-center bg-blue-950/95 px-8 py-1.5 text-center text-xs font-semibold text-white transition-all duration-300 sm:text-sm"
  >
  {/* Animated slide content */}
  <div
@@ -119,15 +119,15 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  className="flex flex-wrap items-center justify-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-500 sm:gap-2"
  >
  {badgeText ? (
- <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-400 shadow-xs backdrop-blur-md sm:text-xs">
- <Sparkles className="h-3 w-3 text-amber-400" aria-hidden />
+ <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-400 sm:text-xs">
+ <Sparkles className="h-3 w-3 text-amber-400"aria-hidden />
  {badgeText}
  </span>
  ) : (
- <Sparkles className="hidden h-3.5 w-3.5 animate-pulse text-amber-400 sm:inline" aria-hidden />
+ <Sparkles className="hidden h-3.5 w-3.5 animate-pulse text-amber-400 sm:inline"aria-hidden />
  )}
 
- <PromoShinyText className="line-clamp-1 drop-shadow-xs">{text}</PromoShinyText>
+ <PromoShinyText className="line-clamp-1">{text}</PromoShinyText>
 
  {config.promoCode && (
  <button
@@ -138,12 +138,12 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  >
  {copied ? (
  <>
- <Check className="h-3 w-3 text-green-400" aria-hidden />
+ <Check className="h-3 w-3 text-green-400"aria-hidden />
  <span className="text-green-400">Nusxalandi!</span>
  </>
  ) : (
  <>
- <Copy className="h-3 w-3" aria-hidden />
+ <Copy className="h-3 w-3"aria-hidden />
  {config.promoCode}
  </>
  )}
@@ -155,26 +155,26 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  href={config.link}
  className="ml-1 inline-flex items-center gap-0.5 rounded-sm font-bold text-amber-400 underline underline-offset-2 hover:text-amber-300 focus:outline-hidden focus:ring-1 focus:ring-amber-400"
  >
- <span>{linkText || "Batafsil"}</span>
- <ArrowRight className="h-3 w-3" aria-hidden />
+ <span>{linkText ||"Batafsil"}</span>
+ <ArrowRight className="h-3 w-3"aria-hidden />
  </Link>
  )}
  </div>
 
  {/* Dot indicators — only shown when there are multiple visible promos */}
  {visibleConfigs.length > 1 && (
- <div className="mt-1 flex items-center gap-1" aria-hidden>
+ <div className="mt-1 flex items-center gap-1"aria-hidden>
  {visibleConfigs.map((_, i) => (
  <button
  key={i}
  type="button"
  onClick={() => setCurrentIndex(i)}
  className={[
- "rounded-full transition-all duration-300 focus:outline-none",
+"rounded-full transition-all duration-300 focus:outline-none",
  i === safeIndex
- ? "h-1.5 w-3 bg-white opacity-100"
- : "h-1 w-1 bg-white/50 opacity-60 hover:opacity-80",
- ].join(" ")}
+ ?"h-1.5 w-3 bg-white opacity-100"
+ :"h-1 w-1 bg-white/50 opacity-60 hover:opacity-80",
+ ].join("")}
  aria-label={`Promo ${i + 1}`}
  />
  ))}
@@ -189,7 +189,7 @@ export function PromoBar({ configs, locale = "uz" }: PromoBarProps) {
  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white focus:outline-hidden focus:ring-1 focus:ring-white"
  aria-label="E'lonni yopish"
  >
- <X className="h-3.5 w-3.5" aria-hidden />
+ <X className="h-3.5 w-3.5"aria-hidden />
  </button>
  )}
  </div>

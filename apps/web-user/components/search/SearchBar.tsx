@@ -1,248 +1,248 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, Calendar, Users, MapPin } from "lucide-react";
-import { CityPicker } from "./CityPicker";
-import { SearchDatePicker } from "./SearchDatePicker";
-import { Clock, X } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { GuestPicker } from "./GuestPicker";
-import { useQueryStates } from "nuqs";
-import { searchParamsParsers } from "@/lib/search-params";
-import type { PropertyType, SearchDefaults } from "./types";
-import type { Locale } from "@/i18n/config";
-import type { CommonDict } from "@/i18n/dictionaries";
-import type { CityOption } from "@/types/view";
-import { trackSearchPerformed } from "@/lib/services/analytics/tracker";
-import { Button } from "@/components/ui/Button";
+import { useState, type FormEvent } from"react";
+import { usePathname, useRouter, useSearchParams } from"next/navigation";
+import { Search, Calendar, Users, MapPin } from"lucide-react";
+import { CityPicker } from"./CityPicker";
+import { SearchDatePicker } from"./SearchDatePicker";
+import { Clock, X } from"lucide-react";
+import { useEffect, useRef } from"react";
+import { GuestPicker } from"./GuestPicker";
+import { useQueryStates } from"nuqs";
+import { searchParamsParsers } from"@/lib/search-params";
+import type { PropertyType, SearchDefaults } from"./types";
+import type { Locale } from"@/i18n/config";
+import type { CommonDict } from"@/i18n/dictionaries";
+import type { CityOption } from"@/types/view";
+import { trackSearchPerformed } from"@/lib/services/analytics/tracker";
+import { Button } from"@/components/ui/Button";
 
 export type { PropertyType, SearchDefaults };
 
-const fieldWrapperClass = "group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-3 py-2.5 transition-colors duration-200 hover:bg-slate-50 md:px-5 md:py-3 md:rounded-full cursor-pointer";
+const fieldWrapperClass ="group relative flex min-w-0 flex-1 items-center gap-3 bg-transparent px-3 py-2.5 transition-colors duration-200 hover:bg-slate-50 md:px-5 md:py-3 md:rounded-full cursor-pointer";
 
 export function SearchBar({
-  locale,
-  dict,
-  cities,
-  defaults,
+ locale,
+ dict,
+ cities,
+ defaults,
 }: {
-  locale: Locale;
-  dict: CommonDict["search"];
-  cities: CityOption[];
-  defaults?: SearchDefaults;
+ locale: Locale;
+ dict: CommonDict["search"];
+ cities: CityOption[];
+ defaults?: SearchDefaults;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+ const router = useRouter();
+ const pathname = usePathname();
+ const searchParams = useSearchParams();
 
-  const [cityId, setCityId] = useState(defaults?.cityId ?? "");
-  const [recentSearches, setRecentSearches] = useState<any[]>([]);
-  const [showRecent, setShowRecent] = useState(false);
-  const destRef = useRef<HTMLDivElement>(null);
+ const [cityId, setCityId] = useState(defaults?.cityId ??"");
+ const [recentSearches, setRecentSearches] = useState<any[]>([]);
+ const [showRecent, setShowRecent] = useState(false);
+ const destRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("safaar_recent_searches");
-      if (stored) setRecentSearches(JSON.parse(stored));
-    } catch (e) {}
-  }, []);
+ useEffect(() => {
+ try {
+ const stored = localStorage.getItem("safaar_recent_searches");
+ if (stored) setRecentSearches(JSON.parse(stored));
+ } catch (e) {}
+ }, []);
 
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (destRef.current && !destRef.current.contains(e.target as Node)) {
-        setShowRecent(false);
-      }
-    }
-    if (showRecent) document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [showRecent]);
+ useEffect(() => {
+ function onClick(e: MouseEvent) {
+ if (destRef.current && !destRef.current.contains(e.target as Node)) {
+ setShowRecent(false);
+ }
+ }
+ if (showRecent) document.addEventListener("mousedown", onClick);
+ return () => document.removeEventListener("mousedown", onClick);
+ }, [showRecent]);
 
-  // Sync CheckIn/CheckOut from URL params since SearchDatePicker uses nuqs
-  const [dates, setDates] = useQueryStates({
-    checkIn: searchParamsParsers.checkIn,
-    checkOut: searchParamsParsers.checkOut,
-  }, { shallow: false });
-  const checkIn = dates.checkIn || "";
-  const checkOut = dates.checkOut || "";
+ // Sync CheckIn/CheckOut from URL params since SearchDatePicker uses nuqs
+ const [dates, setDates] = useQueryStates({
+ checkIn: searchParamsParsers.checkIn,
+ checkOut: searchParamsParsers.checkOut,
+ }, { shallow: false });
+ const checkIn = dates.checkIn ||"";
+ const checkOut = dates.checkOut ||"";
 
-  const [guests, setGuests] = useState(defaults?.guests ?? 2);
+ const [guests, setGuests] = useState(defaults?.guests ?? 2);
 
-  const typeFromPath = pathname.split("/").pop() as PropertyType;
-  const typePathsReverse: Record<string, PropertyType> = {
-    hotels: "hotel",
-    dachas: "dacha",
-    sanatoriums: "sanatorium",
-    resorts: "resort",
-  };
-  const activeType =
-    typePathsReverse[typeFromPath] ||
-    (searchParams.get("type") as PropertyType) ||
-    "hotel";
+ const typeFromPath = pathname.split("/").pop() as PropertyType;
+ const typePathsReverse: Record<string, PropertyType> = {
+ hotels:"hotel",
+ dachas:"dacha",
+ sanatoriums:"sanatorium",
+ resorts:"resort",
+ };
+ const activeType =
+ typePathsReverse[typeFromPath] ||
+ (searchParams.get("type") as PropertyType) ||
+"hotel";
 
-  const today = new Date().toISOString().split("T")[0];
+ const today = new Date().toISOString().split("T")[0];
 
-  const typePaths: Record<PropertyType, string> = {
-    hotel: `/${locale}/hotels`,
-    dacha: `/${locale}/dachas`,
-    sanatorium: `/${locale}/sanatoriums`,
-    resort: `/${locale}/resorts`,
-  };
+ const typePaths: Record<PropertyType, string> = {
+ hotel: `/${locale}/hotels`,
+ dacha: `/${locale}/dachas`,
+ sanatorium: `/${locale}/sanatoriums`,
+ resort: `/${locale}/resorts`,
+ };
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const params = new URLSearchParams();
-    if (cityId) params.set("city_id", cityId);
-        if (guests) params.set("guests", String(guests));
-
-
-    const selectedCity = cities.find((c) => c.id === cityId)?.name || cityId;
-    
-    if (cityId) {
-      const newSearch = {
-        cityId,
-        cityName: selectedCity,
-        checkIn,
-        checkOut,
-        guests,
-        timestamp: Date.now(),
-      };
-      setRecentSearches(prev => {
-        const filtered = prev.filter(s => s.cityId !== cityId);
-        const updated = [newSearch, ...filtered].slice(0, 5);
-        localStorage.setItem("safaar_recent_searches", JSON.stringify(updated));
-        return updated;
-      });
-    }
-
-    trackSearchPerformed({
-      city: selectedCity,
-      checkIn,
-      checkOut,
-      guests,
-    });
-
-    if (checkIn) params.set("checkIn", checkIn);
-    if (checkOut) params.set("checkOut", checkOut);
+ function handleSubmit(event: FormEvent<HTMLFormElement>) {
+ event.preventDefault();
+ const params = new URLSearchParams();
+ if (cityId) params.set("city_id", cityId);
+ if (guests) params.set("guests", String(guests));
 
 
-    const base = typePaths[activeType] ?? `/${locale}/hotels`;
-    const query = params.toString();
-    router.push(`${base}${query ? `?${query}` : ""}`);
-  }
+ const selectedCity = cities.find((c) => c.id === cityId)?.name || cityId;
+ 
+ if (cityId) {
+ const newSearch = {
+ cityId,
+ cityName: selectedCity,
+ checkIn,
+ checkOut,
+ guests,
+ timestamp: Date.now(),
+ };
+ setRecentSearches(prev => {
+ const filtered = prev.filter(s => s.cityId !== cityId);
+ const updated = [newSearch, ...filtered].slice(0, 5);
+ localStorage.setItem("safaar_recent_searches", JSON.stringify(updated));
+ return updated;
+ });
+ }
 
-  return (
-    <div className="mx-auto w-full relative z-50">
-      <form
-        onSubmit={handleSubmit}
-        className="relative flex flex-col rounded-2xl md:rounded-full border border-slate-200 bg-white transition-all duration-200 ease-out focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center p-0 md:p-2 divide-y divide-slate-200 md:divide-y-0"
-      >
-        {/* 1. Shahar / Destinatsiya */}
-        <div 
-          className={fieldWrapperClass}
-          ref={destRef}
-          onClickCapture={() => {
-            if (!cityId && recentSearches.length > 0 && !showRecent) {
-               setShowRecent(true);
-            }
-          }}
-        >
-          <MapPin className="h-5 w-5 shrink-0 text-blue-600 transition-colors" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <CityPicker
-              cities={cities}
-              value={cityId}
-              onChange={(id) => {
-                setCityId(id);
-                setShowRecent(false); // inputga yozilsa/tanlansa yopilsin
-              }}
-              placeholder={dict.cityPlaceholder}
-              label={dict.city}
-            />
-          </div>
-          
-          {showRecent && recentSearches.length > 0 && !cityId && (
-            <div className="absolute top-full left-0 z-[100] mt-2 w-full max-h-[40vh] overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-              {recentSearches.map((search) => (
-                <div
-                  key={search.timestamp}
-                  className="group flex cursor-pointer items-center justify-between rounded-full px-3 py-2.5 bg-transparent border border-transparent hover:bg-slate-50 transition-colors"
-                  onClick={() => {
-                    setCityId(search.cityId);
-                    setGuests(search.guests);
-                    const params = new URLSearchParams(window.location.search);
-                    if (search.checkIn) params.set("checkIn", search.checkIn);
-                    else params.delete("checkIn");
-                    if (search.checkOut) params.set("checkOut", search.checkOut);
-                    else params.delete("checkOut");
-                    window.history.pushState(null, "", `?${params.toString()}`);
-                    
-                    setShowRecent(false);
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-slate-400 shrink-0" />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-sm text-slate-900">{search.cityName}</span>
-                      {(search.checkIn || search.checkOut) && (
-                         <span className="text-xs text-slate-500">
-                          {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="p-1 rounded-full text-slate-400 bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRecentSearches(prev => {
-                        const updated = prev.filter(s => s.timestamp !== search.timestamp);
-                        localStorage.setItem("safaar_recent_searches", JSON.stringify(updated));
-                        if (updated.length === 0) setShowRecent(false);
-                        return updated;
-                      });
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+ trackSearchPerformed({
+ city: selectedCity,
+ checkIn,
+ checkOut,
+ guests,
+ });
 
-        <span className="hidden h-6 w-px bg-slate-200 md:block" aria-hidden="true"></span>
+ if (checkIn) params.set("checkIn", checkIn);
+ if (checkOut) params.set("checkOut", checkOut);
 
-        {/* 2. Sanalar (Kirish - Chiqish) */}
-        <div className="min-w-0 flex-1">
-          <SearchDatePicker locale={locale} dict={dict} />
-        </div>
 
-        <span className="hidden h-6 w-px bg-slate-200 md:block" aria-hidden="true"></span>
+ const base = typePaths[activeType] ?? `/${locale}/hotels`;
+ const query = params.toString();
+ router.push(`${base}${query ? `?${query}` :""}`);
+ }
 
-        {/* 3. Mehmonlar soni */}
-        <div className={fieldWrapperClass}>
-          <div className="flex w-full items-center gap-3">
-            <Users className="h-5 w-5 shrink-0 text-blue-600 transition-colors" aria-hidden />
-            <div className="flex flex-col flex-1">
-              <span className="text-xs font-bold text-slate-500">{dict.guests}</span>
-              <GuestPicker value={guests} onChange={setGuests} />
-            </div>
-          </div>
-        </div>
+ return (
+ <div className="mx-auto w-full relative z-50">
+ <form
+ onSubmit={handleSubmit}
+ className="relative flex flex-col rounded-2xl md:rounded-full border border-slate-200 bg-white transition-all duration-200 ease-out focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 md:flex-row md:items-center p-0 md:p-2 divide-y divide-slate-200 md:divide-y-0"
+ >
+ {/* 1. Shahar / Destinatsiya */}
+ <div 
+ className={fieldWrapperClass}
+ ref={destRef}
+ onClickCapture={() => {
+ if (!cityId && recentSearches.length > 0 && !showRecent) {
+ setShowRecent(true);
+ }
+ }}
+ >
+ <MapPin className="h-5 w-5 shrink-0 text-blue-600 transition-colors"aria-hidden />
+ <div className="min-w-0 flex-1">
+ <CityPicker
+ cities={cities}
+ value={cityId}
+ onChange={(id) => {
+ setCityId(id);
+ setShowRecent(false); // inputga yozilsa/tanlansa yopilsin
+ }}
+ placeholder={dict.cityPlaceholder}
+ label={dict.city}
+ />
+ </div>
+ 
+ {showRecent && recentSearches.length > 0 && !cityId && (
+ <div className="absolute top-full left-0 z-[100] mt-2 w-full max-h-[40vh] overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-3">
+ {recentSearches.map((search) => (
+ <div
+ key={search.timestamp}
+ className="group flex cursor-pointer items-center justify-between rounded-full px-3 py-2.5 bg-transparent border border-transparent hover:bg-slate-50 transition-colors"
+ onClick={() => {
+ setCityId(search.cityId);
+ setGuests(search.guests);
+ const params = new URLSearchParams(window.location.search);
+ if (search.checkIn) params.set("checkIn", search.checkIn);
+ else params.delete("checkIn");
+ if (search.checkOut) params.set("checkOut", search.checkOut);
+ else params.delete("checkOut");
+ window.history.pushState(null,"", `?${params.toString()}`);
+ 
+ setShowRecent(false);
+ }}
+ >
+ <div className="flex items-center gap-3">
+ <Clock className="h-4 w-4 text-slate-400 shrink-0"/>
+ <div className="flex flex-col">
+ <span className="font-semibold text-sm text-slate-900">{search.cityName}</span>
+ {(search.checkIn || search.checkOut) && (
+ <span className="text-xs text-slate-500">
+ {search.checkIn} {search.checkOut ? ` - ${search.checkOut}` : ''} • {search.guests} {dict.guestsSuffix}
+ </span>
+ )}
+ </div>
+ </div>
+ <button
+ type="button"
+ className="p-1 rounded-full text-slate-400 bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-colors"
+ onClick={(e) => {
+ e.stopPropagation();
+ setRecentSearches(prev => {
+ const updated = prev.filter(s => s.timestamp !== search.timestamp);
+ localStorage.setItem("safaar_recent_searches", JSON.stringify(updated));
+ if (updated.length === 0) setShowRecent(false);
+ return updated;
+ });
+ }}
+ >
+ <X className="h-4 w-4"/>
+ </button>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
 
-        {/* 4. Qidirish tugmasi */}
-        <div className="shrink-0 p-2.5 md:p-0 md:pl-2">
-          <Button
-            type="submit"
-            className="w-full md:w-auto h-11 md:h-12 px-8 uppercase tracking-wide rounded-full bg-blue-600 text-white font-bold transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97]"
-          >
-            <Search className="h-5 w-5 stroke-[2.5]" aria-hidden />
-            <span>{dict.submit}</span>
-          </Button>
-        </div>
-      </form>
-    </div>
-  );
+ <span className="hidden h-6 w-px bg-slate-200 md:block"aria-hidden="true"></span>
+
+ {/* 2. Sanalar (Kirish - Chiqish) */}
+ <div className="min-w-0 flex-1">
+ <SearchDatePicker locale={locale} dict={dict} />
+ </div>
+
+ <span className="hidden h-6 w-px bg-slate-200 md:block"aria-hidden="true"></span>
+
+ {/* 3. Mehmonlar soni */}
+ <div className={fieldWrapperClass}>
+ <div className="flex w-full items-center gap-3">
+ <Users className="h-5 w-5 shrink-0 text-blue-600 transition-colors"aria-hidden />
+ <div className="flex flex-col flex-1">
+ <span className="text-xs font-bold text-slate-500">{dict.guests}</span>
+ <GuestPicker value={guests} onChange={setGuests} />
+ </div>
+ </div>
+ </div>
+
+ {/* 4. Qidirish tugmasi */}
+ <div className="shrink-0 p-2.5 md:p-0 md:pl-2">
+ <Button
+ type="submit"
+ className="w-full md:w-auto h-11 md:h-12 px-8 uppercase tracking-wide rounded-full bg-blue-600 text-white font-bold transition-all duration-200 ease-out hover:bg-blue-700 active:scale-[0.97]"
+ >
+ <Search className="h-5 w-5 stroke-[2.5]"aria-hidden />
+ <span>{dict.submit}</span>
+ </Button>
+ </div>
+ </form>
+ </div>
+ );
 }

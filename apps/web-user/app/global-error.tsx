@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertOctagon, RotateCcw } from "lucide-react";
-import uzErrors from "@/locales/uz/errors.json";
+
 import "./globals.css";
 
 /**
@@ -15,7 +15,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const dict = uzErrors.error;
+  
 
   return (
     <html lang="uz">

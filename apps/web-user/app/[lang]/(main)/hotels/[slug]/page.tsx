@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -121,13 +122,13 @@ export default async function Page({
   const locale = isLocale(lang) ? lang : "uz";
   const sp = await searchParams;
 
-  const [hotel, dict, favDict, reviewsDict, commonDict, session, amenitiesRes] =
+  const [hotel, dict, favDict, reviewsDict, session, amenitiesRes] =
     await Promise.all([
       getCachedHotel(locale, slug),
       getDictionary(locale, 'hotelDetail'),
       getDictionary(locale, 'favorites'),
       getDictionary(locale, 'reviews'),
-      getDictionary(locale, 'common'),
+      
       getSession(),
       api.catalog.getAmenities(locale),
     ]);

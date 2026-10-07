@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale, type Locale } from "@/i18n/config";
-import { api, ApiRequestError } from "@/lib/api";
+import { isLocale } from "@/i18n/config";
+import { api } from "@/lib/api";
 import { BackButton } from "@/components/ui/BackButton";
 import { Badge } from "@/components/ui/Badge";
 import { MapPin, Clock, Star, Compass } from "lucide-react";

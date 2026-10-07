@@ -70,7 +70,7 @@ export default async function BookingDetailPage({
  const sp = await searchParams;
 
  const paymentQuery = one(sp.payment);
- const statusQuery = one(sp.status);
+ 
  const providerQuery = one(sp.provider);
  const guestTokenQuery = one(sp.guestToken);
 

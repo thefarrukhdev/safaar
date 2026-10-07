@@ -35,7 +35,7 @@ export default async function TermsPage({
   try {
     const filePath = path.join(process.cwd(), `data/terms/${lang}.html`);
     htmlContent = fs.readFileSync(filePath, "utf8");
-  } catch (e) {
+  } catch {
     const fallbackPath = path.join(process.cwd(), `data/terms/uz.html`);
     htmlContent = fs.readFileSync(fallbackPath, "utf8");
   }

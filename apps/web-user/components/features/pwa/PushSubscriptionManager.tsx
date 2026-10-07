@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, BellCheck, Loader2 } from "lucide-react";
+import { Bell, BellCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth/session";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -109,7 +110,7 @@ export function PushSubscriptionManager({
           className="gap-2 font-bold shadow-xs"
         >
           {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <ThinkingOrb size={16} state="base" />
           ) : (
             <Bell className="h-3.5 w-3.5" />
           )}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { checkPaymentStatusAction } from "@/lib/payments/actions";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLL_ATTEMPTS = 40; // ~100s postMessage kelgandan keyin
@@ -113,7 +113,7 @@ export function UzumCheckoutFrame({
       <div className="flex h-[70vh] w-full min-w-[320px] flex-col gap-2 sm:h-[600px] bg-white">
         {verifying && (
           <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs font-medium text-blue-600">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <ThinkingOrb size={16} state="base" />
             To&apos;lov tekshirilmoqda...
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useActionState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, Hash, User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
+import { Phone, Hash, User, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import { 
  requestOtpAction, 
  verifyOtpAction, 
@@ -30,6 +30,7 @@ function passwordStrength(pw: string): { label: string; level: number; color: st
 }
 
 import { AuthInput } from "./AuthInput";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 const formVariants = {
  enter: (direction: number) => ({
@@ -170,7 +171,7 @@ export default function ModernRegisterForm({
  disabled={sending}
  className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
  >
- {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{dict.sendCode || "Kodni yuborish"} <ArrowRight className="w-4 h-4" /></>}
+ {sending ? <ThinkingOrb size={16} state="base" /> : <>{dict.sendCode || "Kodni yuborish"} <ArrowRight className="w-4 h-4" /></>}
  </motion.button>
  </motion.form>
  )}
@@ -220,7 +221,7 @@ export default function ModernRegisterForm({
  disabled={verifying}
  className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
  >
- {verifying ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
+ {verifying ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
  </motion.button>
  </motion.form>
  )}
@@ -306,7 +307,7 @@ export default function ModernRegisterForm({
  disabled={completing}
  className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
  >
- {completing ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{dict.verifyAndRegister || "Tugatish"} <ArrowRight className="w-4 h-4" /></>}
+ {completing ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyAndRegister || "Tugatish"} <ArrowRight className="w-4 h-4" /></>}
  </motion.button>
  </motion.form>
  )}

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Globe, Loader2 } from "lucide-react";
-import { locales, localeNames, type Locale } from "@/i18n/config";
-import { cn } from "@/lib/cn";
-import { buttonVariants } from "@/components/ui/button-variants";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
+
+import { useState, useRef, useEffect, useTransition } from"react";
+import { usePathname, useRouter } from"next/navigation";
+import { Globe } from"lucide-react";
+import { locales, localeNames, type Locale } from"@/i18n/config";
+import { cn } from"@/lib/cn";
+import { buttonVariants } from"@/components/ui/button-variants";
 
 export function LocaleSwitcher({
  current,
@@ -22,7 +24,7 @@ export function LocaleSwitcher({
 
  useEffect(() => {
  function handleKeyDown(e: KeyboardEvent) {
- if (e.key === "Escape") setOpen(false);
+ if (e.key ==="Escape") setOpen(false);
  }
  function handleClick(e: MouseEvent) {
  if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -53,7 +55,7 @@ export function LocaleSwitcher({
  const nextPath = `/${segments.join("/")}`;
  setOpen(false);
  
- // UI "oq bo'lib qolmasligi" (loading.tsx ga o'tib ketmasligi) uchun startTransition ishlatamiz.
+ // UI"oq bo'lib qolmasligi"(loading.tsx ga o'tib ketmasligi) uchun startTransition ishlatamiz.
  startTransition(() => {
  router.push(nextPath);
  });
@@ -69,15 +71,15 @@ export function LocaleSwitcher({
  aria-expanded={open}
  aria-label="Tilni tanlash"
  className={buttonVariants({
- variant: "secondary",
+ variant:"secondary",
  
- className: cn("!h-10 min-h-[40px] px-3.5 text-[14px] font-bold gap-1.5 cursor-pointer group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20", isPending && "opacity-70 cursor-not-allowed"),
+ className: cn("!h-10 min-h-[40px] px-3.5 text-[14px] font-bold gap-1.5 cursor-pointer group-data-[transparent=true]/header:bg-white/10 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:border-white/20 group-data-[transparent=true]/header:hover:bg-white/20", isPending &&"opacity-70 cursor-not-allowed"),
  })}
  >
  {isPending ? (
- <Loader2 className="h-[18px] w-[18px] animate-spin text-blue-600" aria-hidden />
+ <ThinkingOrb size={16} state="base" />
  ) : (
- <Globe className="h-[18px] w-[18px] opacity-80" aria-hidden />
+ <Globe className="h-[18px] w-[18px] opacity-80"aria-hidden />
  )}
  <span className="font-bold uppercase tracking-wide">
  {current}
@@ -88,7 +90,7 @@ export function LocaleSwitcher({
  <div
  role="listbox"
  aria-label="Tillar"
- className="absolute right-0 top-full mt-2 w-40 rounded-2xl border border-slate-200 bg-white p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 "
+ className="absolute right-0 top-full mt-2 w-40 rounded-2xl border border-slate-200 bg-white p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
  >
  {locales.map((loc) => {
  const active = loc === current;
@@ -100,14 +102,14 @@ export function LocaleSwitcher({
  aria-selected={active}
  onClick={() => switchLocale(loc)}
  className={cn(
- "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+"flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
  active
- ? "bg-blue-50 text-blue-700 "
- : "text-slate-700 hover:bg-slate-100 hover:text-slate-900 :bg-slate-800 :text-white",
+ ?"bg-blue-50 text-blue-700"
+ :"text-slate-700 hover:bg-slate-100 hover:text-slate-900 :bg-slate-800 :text-white",
  )}
  >
  <span>{localeNames[loc]}</span>
- <span className={cn("uppercase text-[11px] font-bold tracking-wider", active ? "opacity-100" : "opacity-60")}>
+ <span className={cn("uppercase text-[11px] font-bold tracking-wider", active ?"opacity-100":"opacity-60")}>
  {loc}
  </span>
  </button>

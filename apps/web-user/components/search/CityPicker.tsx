@@ -1,87 +1,87 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, MapPin } from "lucide-react";
-import type { CityOption } from "@/types/view";
+import { useEffect, useRef, useState } from"react";
+import { ChevronDown, MapPin } from"lucide-react";
+import type { CityOption } from"@/types/view";
 
 interface Props {
-  cities: CityOption[];
-  value: string;
-  onChange: (id: string) => void;
-  placeholder: string;
-  label?: string;
+ cities: CityOption[];
+ value: string;
+ onChange: (id: string) => void;
+ placeholder: string;
+ label?: string;
 }
 
 export function CityPicker({ cities, value, onChange, placeholder, label }: Props) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const selected = cities.find((c) => c.id === value);
+ const [open, setOpen] = useState(false);
+ const ref = useRef<HTMLDivElement>(null);
+ const selected = cities.find((c) => c.id === value);
 
-  useEffect(() => {
-    if (!open) return;
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+ useEffect(() => {
+ if (!open) return;
+ function onClick(e: MouseEvent) {
+ if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+ }
+ function onKey(e: KeyboardEvent) {
+ if (e.key ==="Escape") setOpen(false);
+ }
+ document.addEventListener("mousedown", onClick);
+ document.addEventListener("keydown", onKey);
+ return () => {
+ document.removeEventListener("mousedown", onClick);
+ document.removeEventListener("keydown", onKey);
+ };
+ }, [open]);
 
-  return (
-    <div ref={ref} className="w-full">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-1 text-left focus:outline-hidden before:absolute before:inset-0 before:z-10"
-      >
-        <span className="flex flex-col">
-          {label && <span className="text-xs font-bold text-slate-500">{label}</span>}
-          <span
-            className={`truncate text-sm font-bold ${
-              selected ? "text-slate-900 " : "text-slate-600 "
-            }`}
-          >
-            {selected ? selected.name : placeholder}
-          </span>
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+ return (
+ <div ref={ref} className="w-full">
+ <button
+ type="button"
+ onClick={() => setOpen((v) => !v)}
+ className="flex w-full items-center justify-between gap-1 text-left focus:outline-hidden before:absolute before:inset-0 before:z-10"
+ >
+ <span className="flex flex-col">
+ {label && <span className="text-xs font-bold text-slate-500">{label}</span>}
+ <span
+ className={`truncate text-sm font-bold ${
+ selected ?"text-slate-900":"text-slate-600"
+ }`}
+ >
+ {selected ? selected.name : placeholder}
+ </span>
+ </span>
+ <ChevronDown
+ className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${
+ open ?"rotate-180":""
+ }`}
+ />
+ </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-[100] mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95">
-          {cities.length === 0 && (
-            <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
-          )}
-          {cities.map((city) => (
-            <button
-              key={city.id}
-              type="button"
-              onClick={() => {
-                onChange(city.id);
-                setOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 rounded-full px-3 py-2.5 text-left text-sm font-bold transition-colors ${
-                city.id === value
-                  ? "bg-slate-50 text-blue-600"
-                  : "text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-              <span>{city.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+ {open && (
+ <div className="absolute left-0 top-full z-[100] mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-2 animate-in fade-in zoom-in-95">
+ {cities.length === 0 && (
+ <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
+ )}
+ {cities.map((city) => (
+ <button
+ key={city.id}
+ type="button"
+ onClick={() => {
+ onChange(city.id);
+ setOpen(false);
+ }}
+ className={`flex w-full items-center gap-2 rounded-full px-3 py-2.5 text-left text-sm font-bold transition-colors ${
+ city.id === value
+ ?"bg-slate-50 text-blue-600"
+ :"text-slate-900 hover:bg-slate-50"
+ }`}
+ >
+ <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-600"/>
+ <span>{city.name}</span>
+ </button>
+ ))}
+ </div>
+ )}
+ </div>
+ );
 }

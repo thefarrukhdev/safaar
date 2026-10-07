@@ -12,7 +12,7 @@ import {
 import { getDictionary } from "@/i18n/dictionaries";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
-import dynamic from "next/dynamic";
+
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/Toaster";
 import { config } from "@/lib/config";

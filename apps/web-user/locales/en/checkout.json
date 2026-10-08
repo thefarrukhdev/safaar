@@ -88,7 +88,8 @@
     "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
     "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue.",
     "PHONE_REQUIRED": "A phone number is required for cash payment.",
-    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Sorry, this phone number is temporarily restricted from cash payment due to a previous no-show. Please pay online with a card."
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Sorry, this phone number is temporarily restricted from cash payment due to a previous no-show. Please pay online with a card.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "This payment method is currently unavailable, please choose another."
   },
   "otp": {
     "title": "SMS Verification",
@@ -110,5 +111,7 @@
       "UNKNOWN": "An error occurred. Please try again."
     }
   },
-  "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number."
+  "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number.",
+  "baseAmount": "Base amount",
+  "paymentFee": "Payment fee"
 }

@@ -83,7 +83,8 @@
     "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
     "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering.",
     "PHONE_REQUIRED": "Naqd pul bilan to'lash uchun telefon raqamingizni kiritishingiz shart.",
-    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Kechirasiz, ushbu telefon raqami avvalgi kelmaganlik tufayli naqd to'lovdan vaqtincha cheklangan. Iltimos, onlayn karta orqali to'lang."
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Kechirasiz, ushbu telefon raqami avvalgi kelmaganlik tufayli naqd to'lovdan vaqtincha cheklangan. Iltimos, onlayn karta orqali to'lang.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "Bu to'lov usuli hozircha mavjud emas, boshqasini tanlang."
   },
   "otp": {
     "title": "SMS orqali tasdiqlash",
@@ -105,5 +106,7 @@
       "UNKNOWN": "Xatolik yuz berdi. Qayta urinib ko'ring."
     }
   },
-  "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi."
+  "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi.",
+  "baseAmount": "Asosiy summa",
+  "paymentFee": "To'lov komissiyasi"
 }

@@ -39,15 +39,16 @@ function calculateFee(base: number, method: PaymentMethodId) {
  if (rate === 0 || !Number.isFinite(base) || base <= 0) {
  return { baseAmount: base, feeRate: 0, feeAmount: 0, totalAmount: base };
  }
- const baseTiyin = Math.round(base * 100);
- const rateBasisPoints = Math.round(rate * 10_000);
- const feeTiyin = Math.round((baseTiyin * rateBasisPoints) / 10_000);
- const feeAmount = feeTiyin / 100;
+ 
+ // Yangi backend mantiqiga ko'ra Gross-up formula (docs/frontend-payment-integration.md)
+ const totalAmount = Math.ceil(base / (1 - rate));
+ const feeAmount = totalAmount - base;
+ 
  return {
  baseAmount: base,
  feeRate: rate,
  feeAmount,
- totalAmount: base + feeAmount,
+ totalAmount,
  };
 }
 

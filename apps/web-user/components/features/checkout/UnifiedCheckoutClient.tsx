@@ -396,13 +396,35 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
 
             {totalPrice > 0 && (
               <div className="mt-8 pt-6 border-t border-slate-200">
-                <div className="flex justify-between items-end">
-                  <span className="text-base font-bold text-slate-900">{dict.total}</span>
-                  <div className="text-right">
-                    <span className="text-2xl font-extrabold text-slate-900">{totalPrice.toLocaleString()}</span>
-                    <span className="text-sm font-semibold text-slate-500 ml-1">UZS</span>
-                  </div>
-                </div>
+                {(() => {
+                  const feeRate = (paymentMethod === 'visa' || paymentMethod === 'mastercard') ? 0.035 : (paymentMethod === 'cash' ? 0 : 0.015);
+                  const finalAmount = Math.ceil(totalPrice / (1 - feeRate));
+                  const feeAmount = finalAmount - totalPrice;
+
+                  return (
+                    <>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-slate-500">{dict.baseAmount}</span>
+                        <span className="text-sm font-semibold text-slate-700">{totalPrice.toLocaleString()} UZS</span>
+                      </div>
+                      {paymentMethod !== "cash" && (
+                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                          <span className="text-sm font-medium text-slate-500">{dict.paymentFee} ({(feeRate * 100).toFixed(1)}%)</span>
+                          <span className="text-sm font-semibold text-slate-700">{feeAmount.toLocaleString()} UZS</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-end">
+                        <span className="text-base font-bold text-slate-900">{dict.total}</span>
+                        <div className="text-right">
+                          <span className="text-2xl font-extrabold text-slate-900">
+                            {finalAmount.toLocaleString()}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-500 ml-1">UZS</span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>

@@ -45,9 +45,30 @@ const CARD_THEME = {
 const PAYMENT_OPTIONS: PaymentMethodConfig[] = [
  {
  id: "uzcard",
- badges: [],
  type: "local_card",
- dictKey: "local_card" as any,
+ name: "Uzcard",
+ subtitle: "Komissiya 1.5%",
+ colorTheme: CARD_THEME,
+ },
+ {
+ id: "humo",
+ type: "local_card",
+ name: "Humo",
+ subtitle: "Komissiya 1.5%",
+ colorTheme: CARD_THEME,
+ },
+ {
+ id: "visa",
+ type: "intl_card",
+ name: "Visa",
+ subtitle: "Komissiya 3.5%",
+ colorTheme: CARD_THEME,
+ },
+ {
+ id: "mastercard",
+ type: "intl_card",
+ name: "Mastercard",
+ subtitle: "Komissiya 3.5%",
  colorTheme: CARD_THEME,
  },
  {
@@ -191,27 +212,23 @@ export function PaymentSelector({
  </div>
  </div>
 
- {/* Extras (Logos) below the text */}
- {option.type === "local_card" && (
- <div className="flex items-center flex-wrap gap-2 ml-[50px]">
- <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
- <img src="/payments/uzcard.jpg" alt="Uzcard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
- </div>
- <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
- <img src="/payments/humo.png" alt="Humo" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
- </div>
- <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
- <img src="/payments/visa.jpeg" alt="Visa" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
- </div>
- <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
- <img src="/payments/mastercard.jpg" alt="Mastercard" className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
- </div>
- </div>
- )}
- </div>
- );
- })}
- </div>
+        {/* Logolar endi kerak emas, chunki har bir karta turi alohida option. O'rniga bitta kichik logo chiqaramiz */}
+        {option.id !== "cash" && (
+          <div className="flex items-center flex-wrap gap-2 ml-[50px]">
+            <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70 ">
+              <img src={`/payments/${option.id}.png`} onError={(e) => {
+                // Agar png bo'lmasa jpg/jpeg qidiradi
+                const target = e.target as HTMLImageElement;
+                if (target.src.endsWith('.png')) target.src = `/payments/${option.id}.jpg`;
+                else if (target.src.endsWith('.jpg')) target.src = `/payments/${option.id}.jpeg`;
+              }} alt={option.name} className="h-full w-full object-contain p-[2px] mix-blend-multiply " />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
  </div>
  );
 }

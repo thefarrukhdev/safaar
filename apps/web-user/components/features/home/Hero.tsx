@@ -17,7 +17,7 @@ export function Hero({
   };
 }) {
   return (
-    <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-[120px] md:-mt-[100px]">
+    <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16">
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
@@ -40,7 +40,7 @@ export function Hero({
       </div>
 
       {/* Hero Text */}
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-28 md:pt-40 pb-12 text-center sm:px-6 lg:pt-56 lg:pb-16 flex-1 justify-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-24 md:pt-32 pb-12 text-center sm:px-6 lg:pt-56 lg:pb-16 flex-1 justify-center">
         {/* H1 — Display scale: Manrope 900, tracking tight */}
         <h1
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-in fade-in zoom-in-95 duration-700 delay-100 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_4px_rgba(0,0,0,0.4)]"

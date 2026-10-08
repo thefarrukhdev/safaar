@@ -36,13 +36,13 @@ export default async function MainLayout({
 
   return (
     <RealtimeProvider accessToken={session?.accessToken ?? null}>
-      <div className="fixed top-0 left-0 right-0 z-50 flex flex-col">
+      <div className="sticky top-0 z-50 flex flex-col w-full">
         <div className="relative z-50">
           <PromoBarLive initialConfigs={promoConfigs} locale={locale} />
         </div>
         <SiteHeader locale={locale} dict={common} authed={!!session} />
       </div>
-      <div className="flex flex-1 flex-col bg-white pt-[120px] md:pt-[100px]">{children}</div>
+      <div className="flex flex-1 flex-col bg-white ">{children}</div>
       <SiteFooter locale={locale} dict={common} />
       <LiveSupportWidget dict={common.chat} />
     </RealtimeProvider>

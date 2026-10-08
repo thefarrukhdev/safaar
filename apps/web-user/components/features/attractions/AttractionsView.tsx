@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Map, X, SlidersHorizontal, Search, Compass, Sparkles, LayoutGrid, MapPin } from "lucide-react";
+import { Map, X, SlidersHorizontal, Search, Compass, LayoutGrid, MapPin } from "lucide-react";
 import { AttractionCard } from "@/components/attractions/AttractionCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -38,7 +38,6 @@ function FilterHeader({
           {dict.title}
         </h1>
         <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
-          <Sparkles className="h-3.5 w-3.5 text-slate-400" />
           {totalCount} {dict.map?.title || "joy"}
         </div>
       </div>

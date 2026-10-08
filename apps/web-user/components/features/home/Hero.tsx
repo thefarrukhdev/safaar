@@ -1,6 +1,8 @@
 import Image from "next/image";
 import type { HomeDict } from "@/i18n/dictionaries";
 
+import { RoughNotation } from "@/components/ui/rough-notation";
+
 export function Hero({
   dict,
   children,
@@ -16,6 +18,11 @@ export function Hero({
     subtitle?: string;
   };
 }) {
+  const rawTitle = heroBg?.title || dict.title || "";
+  const words = rawTitle.split(" ");
+  const lastWord = words.length > 1 ? words.pop() : "";
+  const restTitle = words.join(" ");
+
   return (
     <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16">
       {/* Background image with slow zoom animation for premium feel */}
@@ -46,7 +53,21 @@ export function Hero({
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-in fade-in zoom-in-95 duration-700 delay-100 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_4px_rgba(0,0,0,0.4)]"
           style={{ fontFamily: "var(--font-manrope, sans-serif)" }}
         >
-          {heroBg?.title || dict.title}
+          {restTitle}{" "}
+          {lastWord ? (
+            <RoughNotation
+              type="circle"
+              color="#2563eb"
+              strokeWidth={3}
+              animationDelay={800}
+              animationDuration={800}
+              padding={[0, 10]}
+            >
+              <span className="relative z-10">{lastWord}</span>
+            </RoughNotation>
+          ) : (
+            rawTitle
+          )}
         </h1>
 
         {/* Subtitle — Body LG: Inter 400 */}

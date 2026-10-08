@@ -23,18 +23,21 @@ export function Hero({
   const lastWord = words.length > 1 ? words.pop() : "";
   const restTitle = words.join(" ");
 
-  // Backend still returns old .jpeg/.png paths, so we map them to our new .webp optimized images
+  // Agressiv fallback: agar backend eski format yoki yaroqsiz rasm qaytarsa, mahalliy rasmni ishlatamiz
   let finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
-  if (finalImageUrl.endsWith("registon-blue-sky.jpeg")) {
+  if (
+    finalImageUrl.includes(".jpeg") ||
+    finalImageUrl.includes(".jpg") ||
+    finalImageUrl.includes(".png") ||
+    finalImageUrl.includes("hero-bg-2")
+  ) {
     finalImageUrl = "/registon-blue-sky.webp";
-  } else if (finalImageUrl.endsWith("hero.png")) {
-    finalImageUrl = "/images/heroes/hero.webp";
   }
 
   return (
-    <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16">
+    <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16 bg-slate-900">
       {/* Background image with slow zoom animation for premium feel */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-0 z-0 overflow-hidden bg-slate-900">
         <Image
           src={finalImageUrl}
           alt="Safaar — O'zbekiston"

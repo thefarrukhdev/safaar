@@ -21,6 +21,7 @@ import { PhoneOtpThrottleGuard } from '../common/phone-throttle.guard';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AuthService } from './auth.service';
+import { jwtSecurityConfig } from './security';
 import {
   AdminLoginDto,
   CompleteOAuthRegistrationDto,
@@ -72,8 +73,18 @@ export class AuthController {
 
   @Post('otp/verify')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  verifyOtpAlias(@Body() dto: VerifyOtpRequestDto) {
-    return this.authService.verifyPartnerOtp(dto);
+  async verifyOtpAlias(
+    @Body() dto: VerifyOtpRequestDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.verifyPartnerOtp(dto);
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('user/complete-profile')
@@ -211,16 +222,36 @@ export class AuthController {
 
   @Post('partner/login')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  partnerLogin(@Body() body: LoginDto) {
-    return this.authService.partnerLogin(
+  async partnerLogin(
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.partnerLogin(
       body as unknown as Record<string, unknown>,
     );
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('partner/phone-login')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  partnerPhoneLogin(@Body() body: Record<string, unknown>) {
-    return this.authService.partnerPhoneLogin(body);
+  async partnerPhoneLogin(
+    @Body() body: Record<string, unknown>,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.partnerPhoneLogin(body);
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('partner/forgot-password')
@@ -244,18 +275,38 @@ export class AuthController {
 
   @Post('partner/password-login')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  partnerPasswordLogin(@Body() body: PartnerPasswordLoginDto) {
-    return this.authService.partnerPasswordLogin(
+  async partnerPasswordLogin(
+    @Body() body: PartnerPasswordLoginDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.partnerPasswordLogin(
       body as unknown as Record<string, unknown>,
     );
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('partner/set-password')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  partnerSetPassword(@Body() body: PartnerSetPasswordDto) {
-    return this.authService.partnerSetPassword(
+  async partnerSetPassword(
+    @Body() body: PartnerSetPasswordDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.partnerSetPassword(
       body as unknown as Record<string, unknown>,
     );
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('partner/registration-otp/request')
@@ -280,10 +331,20 @@ export class AuthController {
 
   @Post('partner/email-otp/verify')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  verifyPartnerEmailOtp(@Body() body: PartnerEmailOtpVerifyDto) {
-    return this.authService.partnerEmailOtpVerify(
+  async verifyPartnerEmailOtp(
+    @Body() body: PartnerEmailOtpVerifyDto,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const result = await this.authService.partnerEmailOtpVerify(
       body as unknown as Record<string, unknown>,
     );
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('admin/login')
@@ -330,50 +391,103 @@ export class AuthController {
   }
 
   @Post('refresh')
-  refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refresh(body as unknown as Record<string, unknown>);
+  async refresh(
+    @Body() body?: RefreshTokenDto,
+    @Req() request?: Request,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    const dto = body ?? {};
+    const bodyToken =
+      typeof dto.refreshToken === 'string' && dto.refreshToken.trim().length > 0
+        ? dto.refreshToken.trim()
+        : typeof dto.refresh_token === 'string' &&
+            dto.refresh_token.trim().length > 0
+          ? dto.refresh_token.trim()
+          : undefined;
+    const refreshToken =
+      bodyToken ?? this.extractRefreshTokenFromRequest(request);
+    const result = await this.authService.refresh({
+      ...(dto as unknown as Record<string, unknown>),
+      refreshToken,
+      refresh_token: refreshToken,
+    });
+    if (result && typeof result === 'object' && 'refreshToken' in result) {
+      this.setRefreshTokenCookie(
+        response,
+        String((result as { refreshToken?: unknown }).refreshToken ?? ''),
+      );
+    }
+    return result;
   }
 
   @Post('user/refresh')
-  userRefresh(@Body() body: RefreshTokenDto) {
-    return this.refresh(body);
+  userRefresh(
+    @Body() body?: RefreshTokenDto,
+    @Req() request?: Request,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    return this.refresh(body, request, response);
   }
 
   @Post('partner/refresh')
-  partnerRefresh(@Body() body: RefreshTokenDto) {
-    return this.refresh(body);
+  partnerRefresh(
+    @Body() body?: RefreshTokenDto,
+    @Req() request?: Request,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    return this.refresh(body, request, response);
   }
 
   @Post('admin/refresh')
-  adminRefresh(@Body() body: RefreshTokenDto) {
-    return this.refresh(body);
+  adminRefresh(
+    @Body() body?: RefreshTokenDto,
+    @Req() request?: Request,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    return this.refresh(body, request, response);
   }
 
   @Post('logout')
   @UseGuards(RolesGuard)
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  logout(@CurrentActor() actor: RequestActor | undefined) {
+  async logout(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    this.clearRefreshTokenCookie(response);
     return this.authService.logout(actor);
   }
 
   @Post('user/logout')
   @UseGuards(RolesGuard)
   @Roles(Role.USER)
-  userLogout(@CurrentActor() actor: RequestActor | undefined) {
+  async userLogout(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    this.clearRefreshTokenCookie(response);
     return this.authService.logout(actor);
   }
 
   @Post('partner/logout')
   @UseGuards(RolesGuard)
   @Roles(Role.PARTNER)
-  partnerLogout(@CurrentActor() actor: RequestActor | undefined) {
+  async partnerLogout(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    this.clearRefreshTokenCookie(response);
     return this.authService.logout(actor);
   }
 
   @Post('admin/logout')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  adminLogout(@CurrentActor() actor: RequestActor | undefined) {
+  async adminLogout(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Res({ passthrough: true }) response?: Response,
+  ) {
+    this.clearRefreshTokenCookie(response);
     return this.authService.logout(actor);
   }
 
@@ -552,5 +666,57 @@ export class AuthController {
       }
     }
     return 'OAUTH_FAILED';
+  }
+
+  private setRefreshTokenCookie(
+    response?: Response,
+    refreshToken?: string,
+  ): void {
+    if (!response || !refreshToken || typeof response.cookie !== 'function') {
+      return;
+    }
+    response.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: jwtSecurityConfig().refreshTtlSeconds * 1000,
+    });
+  }
+
+  private clearRefreshTokenCookie(response?: Response): void {
+    if (!response || typeof response.clearCookie !== 'function') {
+      return;
+    }
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+    response.clearCookie('refresh_token', options);
+    response.clearCookie('refreshToken', options);
+  }
+
+  private extractRefreshTokenFromRequest(
+    request?: Request,
+  ): string | undefined {
+    if (!request) return undefined;
+    const reqWithCookies = request as unknown as {
+      cookies?: Record<string, unknown>;
+      signedCookies?: Record<string, unknown>;
+    };
+    const cookieToken =
+      reqWithCookies.cookies?.['refresh_token'] ??
+      reqWithCookies.cookies?.['refreshToken'] ??
+      reqWithCookies.signedCookies?.['refresh_token'] ??
+      reqWithCookies.signedCookies?.['refreshToken'];
+    if (typeof cookieToken === 'string' && cookieToken.trim().length > 0) {
+      return cookieToken.trim();
+    }
+    return (
+      this.cookieValue(request.headers?.cookie, 'refresh_token') ??
+      this.cookieValue(request.headers?.cookie, 'refreshToken')
+    );
   }
 }

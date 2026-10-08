@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { json, static as expressStatic, urlencoded } from 'express';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
@@ -39,6 +40,7 @@ async function bootstrap() {
     }),
   );
   app.use('/uploads', expressStatic(uploadRoot));
+  app.use(cookieParser());
   app.use(json({ limit: '1mb' }));
   app.use(urlencoded({ extended: true, limit: '1mb' }));
   // Uzum webhook: noto'g'ri JSON tanasi body-parser'da (route'gacha yetmasdan)

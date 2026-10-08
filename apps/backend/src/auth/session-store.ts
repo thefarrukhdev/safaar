@@ -36,8 +36,14 @@ export interface CreateSessionInput {
   userAgent?: string;
 }
 
+export const DEFAULT_SESSION_ABSOLUTE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000; // 7 kun
+
 export class AuthSessionStore {
   private pool: Pool | null = null;
+
+  getAbsoluteLifetimeMs(): number {
+    return DEFAULT_SESSION_ABSOLUTE_LIFETIME_MS;
+  }
 
   private getPool(): Pool {
     if (!this.pool) {
@@ -109,8 +115,13 @@ export class AuthSessionStore {
 
   async create(input: CreateSessionInput): Promise<AuthSessionRecord> {
     const now = new Date().toISOString();
+    const absoluteLifetimeMs = this.getAbsoluteLifetimeMs();
     const refreshExpiresAt =
-      Date.now() + jwtSecurityConfig().refreshTtlSeconds * 1000;
+      Date.now() +
+      Math.min(
+        jwtSecurityConfig().refreshTtlSeconds * 1000,
+        absoluteLifetimeMs,
+      );
     const refreshHash = hashSecret(input.refreshToken);
 
     const rows = await this.query(
@@ -181,10 +192,20 @@ export class AuthSessionStore {
     nextRefreshJti: string,
   ): Promise<AuthSessionRecord> {
     const session = await this.get(sessionId);
+    if (!session || session.revokedAt) {
+      throw new Error('AUTH_SESSION_REVOKED');
+    }
+
+    const nowMs = Date.now();
+    const createdAtMs = new Date(session.createdAt).getTime();
+    if (!Number.isFinite(createdAtMs)) {
+      throw new Error('AUTH_SESSION_REVOKED');
+    }
+    const absoluteLifetimeMs = this.getAbsoluteLifetimeMs();
+
     if (
-      !session ||
-      session.revokedAt ||
-      session.refreshExpiresAt <= Date.now()
+      session.refreshExpiresAt <= nowMs ||
+      nowMs - createdAtMs >= absoluteLifetimeMs
     ) {
       throw new Error('AUTH_SESSION_REVOKED');
     }
@@ -198,8 +219,16 @@ export class AuthSessionStore {
     }
 
     const now = new Date().toISOString();
+    const remainingAbsoluteLifetimeMs = Math.max(
+      0,
+      createdAtMs + absoluteLifetimeMs - nowMs,
+    );
     const newRefreshExpiresAt =
-      Date.now() + jwtSecurityConfig().refreshTtlSeconds * 1000;
+      nowMs +
+      Math.min(
+        jwtSecurityConfig().refreshTtlSeconds * 1000,
+        remainingAbsoluteLifetimeMs,
+      );
     const newRefreshHash = hashSecret(nextRefreshToken);
 
     const rows = await this.query(

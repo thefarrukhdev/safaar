@@ -104,6 +104,13 @@ describe('jwtSecurityConfig (regression: CRITICAL — hardcoded fallback secret 
     expect(jwtSecurityConfig().accessSecret).toBe('my-local-dev-secret');
   });
 
+  it('default refreshTtlSeconds is 7 days (604800s) when env is not set', () => {
+    delete process.env.JWT_REFRESH_TTL;
+    delete process.env.JWT_REFRESH_EXPIRES_IN;
+    const config = jwtSecurityConfig();
+    expect(config.refreshTtlSeconds).toBe(7 * 86400);
+  });
+
   it('a signed token can be verified with the same (ephemeral or configured) secret end to end', () => {
     process.env.NODE_ENV = 'development';
 

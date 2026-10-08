@@ -62,6 +62,7 @@
     "bullmq": "^5.79.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
     "exceljs": "^4.4.0",
     "helmet": "^8.2.0",
     "ioredis": "^5.11.1",

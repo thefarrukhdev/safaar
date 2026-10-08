@@ -109,9 +109,7 @@ export function jwtSecurityConfig(): JwtSecurityConfig {
       process.env.JWT_ACCESS_TTL ?? process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
     ),
     refreshTtlSeconds: parseDurationSeconds(
-      process.env.JWT_REFRESH_TTL ??
-        process.env.JWT_REFRESH_EXPIRES_IN ??
-        '30d',
+      process.env.JWT_REFRESH_TTL ?? process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
     ),
   };
 }

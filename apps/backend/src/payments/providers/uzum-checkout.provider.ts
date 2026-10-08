@@ -1103,8 +1103,7 @@ export class UzumCheckoutProvider {
       // "The cart total is incorrect"` qaytaradi (sinovda tasdiqlangan).
       const orderStatus = await this.getOrderStatus(input.orderId);
       const rawResult = orderStatus.raw.result as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const completedAmountTiyin = Number(rawResult?.completedAmount ?? 0);
       if (!Number.isFinite(completedAmountTiyin) || completedAmountTiyin <= 0) {
         throw new UzumCheckoutError(

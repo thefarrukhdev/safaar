@@ -304,7 +304,7 @@ export function validateEnv(
       config.JWT_ACCESS_TTL ?? config.JWT_ACCESS_EXPIRES_IN ?? '15m',
     ),
     JWT_REFRESH_TTL: String(
-      config.JWT_REFRESH_TTL ?? config.JWT_REFRESH_EXPIRES_IN ?? '30d',
+      config.JWT_REFRESH_TTL ?? config.JWT_REFRESH_EXPIRES_IN ?? '7d',
     ),
     JWT_ISSUER: String(config.JWT_ISSUER ?? 'safaar-api'),
     JWT_AUDIENCE: String(config.JWT_AUDIENCE ?? 'safaar-clients'),

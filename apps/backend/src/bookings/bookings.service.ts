@@ -170,8 +170,7 @@ export interface VerifyCashOtpPreValidationResult {
 }
 
 export type VerifyCashOtpResult =
-  | VerifyCashOtpConfirmationResult
-  | VerifyCashOtpPreValidationResult;
+  VerifyCashOtpConfirmationResult | VerifyCashOtpPreValidationResult;
 
 interface GuestContact {
   firstName: string | null;

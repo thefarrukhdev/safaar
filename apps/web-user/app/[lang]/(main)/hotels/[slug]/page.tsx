@@ -173,6 +173,13 @@ export default async function Page({
       ratingValue: hotel.rating,
       reviewCount: hotel.reviewsCount,
     } : undefined,
+    priceRange: hotel.minPriceSum ? `UZS ${hotel.minPriceSum}+` : undefined,
+    amenityFeature: hotel.amenities.map((a: string) => ({
+      "@type": "LocationFeatureSpecification",
+      name: amenityName[a],
+      value: true
+    })),
+
   };
 
   return (

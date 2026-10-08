@@ -66,8 +66,34 @@ export default async function RestaurantDetailPage({
     notFound();
   }
 
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: restaurant.name,
+    description: restaurant.description,
+    image: restaurant.imageUrl || undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: restaurant.cityName,
+      streetAddress: restaurant.address,
+    },
+    ...(restaurant.phone && { telephone: restaurant.phone }),
+    ...(restaurant.workingHours && { openingHours: restaurant.workingHours }),
+    ...(restaurant.rating > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: restaurant.rating,
+        reviewCount: reviews.length > 0 ? reviews.length : 1,
+      },
+    }),
+  };
+
   return (
     <main className="mx-auto flex w-full md:w-[96%] max-w-[1536px] flex-1 flex-col gap-6 px-3 sm:px-4 md:px-8 py-4 sm:py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      />
       <div className="flex items-center justify-between">
         <BackButton />
       </div>

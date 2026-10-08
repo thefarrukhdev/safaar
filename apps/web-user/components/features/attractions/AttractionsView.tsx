@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Map, X, SlidersHorizontal, Search, Compass, Sparkles, LayoutGrid, MapPin } from "lucide-react";
-import { gsap } from "gsap";
 import { AttractionCard } from "@/components/attractions/AttractionCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -119,46 +119,24 @@ function BottomSheet({
   title: string;
   children: React.ReactNode;
 }) {
-  const sheetRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    if (!sheetRef.current) return;
     if (open) {
       document.body.style.overflow = "hidden";
-      gsap.fromTo(
-        sheetRef.current,
-        { y: "100%" },
-        { y: "0%", duration: 0.38, ease: "power3.out" },
-      );
     } else {
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  const handleClose = () => {
-    if (!sheetRef.current) return onClose();
-    gsap.to(sheetRef.current, {
-      y: "100%",
-      duration: 0.28,
-      ease: "power3.in",
-      onComplete: onClose,
-    });
-  };
-
-  if (!open) return null;
-
   return (
-    <>
+    <div className={`fixed inset-0 z-40 lg:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}>
       <div
-        className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+        className={`absolute inset-0 bg-slate-900/40 transition-opacity duration-300 ease-out ${open ? "opacity-100" : "opacity-0"}`}
         aria-hidden
-        onClick={handleClose}
+        onClick={onClose}
       />
       <div
-        ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-slate-200 bg-white lg:hidden"
-        style={{ transform: "translateY(100%)" }}
+        className={`absolute inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-slate-200 bg-white transition-transform duration-300 ease-out ${open ? "translate-y-0" : "translate-y-full"}`}
       >
         <div className="flex justify-center pb-1 pt-3">
           <div className="h-1 w-10 rounded-full bg-slate-200" />
@@ -167,7 +145,7 @@ function BottomSheet({
           <span className="text-sm font-semibold text-slate-900">{title}</span>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 hover:bg-slate-50 active:scale-[0.97] transition-all duration-200 ease-out"
             aria-label="Yopish"
           >
@@ -176,7 +154,7 @@ function BottomSheet({
         </div>
         <div className="max-h-[85vh] overflow-y-auto px-5 py-4">{children}</div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -195,8 +173,33 @@ export function AttractionsView({
   items: AttractionItem[];
   locale: string;
 }) {
-  const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const query = searchParams.get("q") || "";
+  const selectedCategory = searchParams.get("category") || "all";
+
+  const setQuery = (q: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (q) {
+      params.set("q", q);
+    } else {
+      params.delete("q");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const setSelectedCategory = (c: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (c && c !== "all") {
+      params.set("category", c);
+    } else {
+      params.delete("category");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -224,10 +227,10 @@ export function AttractionsView({
   }, [items, query, selectedCategory]);
 
   return (
-    <div className="mx-auto flex h-[calc(100svh-56px)] w-full max-w-[1920px] bg-white md:h-[calc(100svh-72px)]">
+    <div className="mx-auto flex min-h-[calc(100svh-56px)] w-full max-w-[1920px] bg-white md:min-h-[calc(100svh-72px)] lg:h-[calc(100svh-72px)] lg:overflow-hidden">
       
       {/* ── LEFT: Scrollable List Panel ────────────────────────── */}
-      <div className="flex w-full flex-col overflow-hidden lg:w-[55%] xl:w-[60%]">
+      <div className="flex w-full flex-col lg:w-[55%] xl:w-[60%] lg:overflow-hidden">
         <FilterHeader
           query={query}
           onQueryChange={setQuery}
@@ -240,7 +243,7 @@ export function AttractionsView({
         />
 
         {/* Card Grid */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 md:py-6 sm:px-6 lg:px-8">
+        <div className="flex-1 px-4 py-4 md:py-6 sm:px-6 lg:px-8 lg:overflow-y-auto">
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Compass className="h-6 w-6" />}

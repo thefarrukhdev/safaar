@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -6,7 +7,7 @@ import { api } from "@/lib/api";
 import { AttractionsView } from "@/components/features/attractions/AttractionsView";
 import type { AttractionItem } from "@/components/catalog/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -46,7 +47,9 @@ export default async function AttractionsPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <AttractionsView dict={attractionsDict} items={items} locale={locale} />
+      <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
+        <AttractionsView dict={attractionsDict} items={items} locale={locale} />
+      </Suspense>
     </main>
   );
 }

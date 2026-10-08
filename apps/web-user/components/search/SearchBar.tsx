@@ -162,7 +162,7 @@ export function SearchBar({
  </div>
  
  {showRecent && recentSearches.length > 0 && !cityId && (
- <div className="absolute top-full left-0 z-[100] mt-2 w-full max-h-[40vh] overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-3">
+ <div className="absolute top-full left-0 z-[100] mt-2 w-full max-h-[40vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3">
  {recentSearches.map((search) => (
  <div
  key={search.timestamp}

@@ -58,7 +58,7 @@ export function CityPicker({ cities, value, onChange, placeholder, label }: Prop
  </button>
 
  {open && (
- <div className="absolute left-0 top-full z-[100] mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y rounded-2xl border border-slate-200 bg-white p-2 animate-in fade-in zoom-in-95">
+ <div className="absolute left-0 top-full z-[100] mt-2 w-full sm:w-[320px] max-h-[40vh] sm:max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 animate-in fade-in zoom-in-95">
  {cities.length === 0 && (
  <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
  )}

@@ -18,17 +18,25 @@ export function Hero({
     subtitle?: string;
   };
 }) {
-  const rawTitle = heroBg?.title || dict.title || "";
+  const rawTitle = dict.title || heroBg?.title || "";
   const words = rawTitle.split(" ");
   const lastWord = words.length > 1 ? words.pop() : "";
   const restTitle = words.join(" ");
+
+  // Backend still returns old .jpeg/.png paths, so we map them to our new .webp optimized images
+  let finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
+  if (finalImageUrl.endsWith("registon-blue-sky.jpeg")) {
+    finalImageUrl = "/registon-blue-sky.webp";
+  } else if (finalImageUrl.endsWith("hero.png")) {
+    finalImageUrl = "/images/heroes/hero.webp";
+  }
 
   return (
     <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16">
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src={heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp"}
+          src={finalImageUrl}
           alt="Safaar — O'zbekiston"
           fill
           priority

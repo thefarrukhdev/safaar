@@ -227,7 +227,7 @@ export function AttractionsView({
   }, [items, query, selectedCategory]);
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-56px)] w-full max-w-[1920px] bg-white md:min-h-[calc(100svh-72px)] lg:h-[calc(100svh-72px)] lg:overflow-hidden">
+    <div className="mx-auto flex min-h-[calc(100svh-56px)] w-full md:w-[96%] max-w-[1536px] bg-white md:min-h-[calc(100svh-72px-3rem)] lg:h-[calc(100svh-72px-3rem)] md:overflow-hidden md:my-6 md:rounded-2xl md:border md:border-slate-200 md:shadow-sm">
       
       {/* ── LEFT: Scrollable List Panel ────────────────────────── */}
       <div className="flex w-full flex-col lg:w-[55%] xl:w-[60%] lg:overflow-hidden">

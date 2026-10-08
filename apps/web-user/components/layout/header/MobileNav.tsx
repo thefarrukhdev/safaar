@@ -77,7 +77,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  onClick={() => setMenuOpen(true)}
  aria-expanded={menuOpen}
  aria-label={"Menyuni ochish"}
- className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 :bg-slate-800 group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10"
+ className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all duration-200 ease-out hover:bg-slate-100 active:scale-[0.97] group-data-[transparent=true]/header:text-white group-data-[transparent=true]/header:hover:bg-white/10"
  >
  <Menu className="h-6 w-6"/>
  </button>
@@ -102,7 +102,7 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  <button
  type="button"
  onClick={() => setMenuOpen(false)}
- className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700 :bg-slate-700 :text-slate-200"
+ className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-200 ease-out hover:bg-slate-200 hover:text-slate-700 active:scale-[0.97]"
  aria-label="Yopish"
  >
  <X className="h-4 w-4"/>
@@ -121,10 +121,10 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  onClick={() => setMenuOpen(false)}
  aria-current={active ?"page": undefined}
  className={cn(
-"group flex h-14 items-center justify-between w-full rounded-2xl px-4 text-[15px] font-bold transition-all duration-150 active:scale-[0.98]",
+ "group flex h-14 items-center justify-between w-full rounded-2xl px-4 text-[15px] font-bold transition-all duration-200 ease-out active:scale-[0.97]",
  active
- ?"bg-slate-900/[0.05] text-slate-900"
- :"text-slate-700 hover:bg-slate-900/[0.03] hover:text-slate-900 :bg-slate-800/80 :text-white"
+ ?"bg-slate-100 text-slate-900"
+ :"text-slate-700 hover:bg-slate-50 hover:text-slate-900"
  )}
  >
  <div className="flex items-center gap-3.5">
@@ -161,10 +161,10 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  type="button"
  onClick={() => setLangOpen(!langOpen)}
  className={cn(
- "group flex h-14 items-center justify-between w-full rounded-2xl px-4 text-[15px] font-bold transition-all duration-150 active:scale-[0.98]",
+ "group flex h-14 items-center justify-between w-full rounded-2xl px-4 text-[15px] font-bold transition-all duration-200 ease-out active:scale-[0.97]",
  langOpen
- ? "bg-slate-900/[0.05] text-slate-900"
- : "text-slate-700 hover:bg-slate-900/[0.03] hover:text-slate-900"
+ ? "bg-slate-100 text-slate-900"
+ : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
  )}
  >
  <div className="flex items-center gap-3.5">
@@ -201,10 +201,10 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  setLangOpen(false);
  }}
  className={cn(
- "flex h-12 w-full items-center justify-between rounded-xl px-4 text-[14px] font-semibold transition-colors",
+ "flex h-12 w-full items-center justify-between rounded-2xl px-4 text-[14px] font-semibold transition-all duration-200 ease-out active:scale-[0.97]",
  active
- ? "bg-blue-50 text-blue-700"
- : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+ ? "text-blue-600 bg-slate-50"
+ : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
  )}
  >
  <span>{localeNames[loc]}</span>

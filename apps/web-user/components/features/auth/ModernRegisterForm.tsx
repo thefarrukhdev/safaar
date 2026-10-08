@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useActionState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Phone, Hash, User, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import { 
  requestOtpAction, 
@@ -31,23 +30,6 @@ function passwordStrength(pw: string): { label: string; level: number; color: st
 
 import { AuthInput } from "./AuthInput";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
-
-const formVariants = {
- enter: (direction: number) => ({
- x: direction > 0 ? 100 : -100,
- opacity: 0
- }),
- center: {
- zIndex: 1,
- x: 0,
- opacity: 1
- },
- exit: (direction: number) => ({
- zIndex: 0,
- x: direction < 0 ? 100 : -100,
- opacity: 0
- })
-};
 
 export default function ModernRegisterForm({
  dict,
@@ -130,19 +112,19 @@ export default function ModernRegisterForm({
  </div>
 
  <div className="relative min-h-[300px] flex flex-col justify-center overflow-hidden">
- <AnimatePresence custom={direction} mode="wait">
+ 
  
  {/* STEP 1: PHONE */}
  {step === 1 && (
- <motion.form 
+ <form 
  key="step1"
  action={requestAction}
- custom={direction}
- variants={formVariants}
- initial="enter"
- animate="center"
- exit="exit"
- transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+ 
+ 
+ 
+ 
+ 
+ 
  className="space-y-4 w-full"
  >
  <input type="hidden" name="locale" value={locale} />
@@ -164,29 +146,23 @@ export default function ModernRegisterForm({
  required
  />
 
- <motion.button
- whileHover={{ scale: 1.01 }}
- whileTap={{ scale: 0.98 }}
- type="submit"
- disabled={sending}
- className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
- >
+ <button type="submit" disabled={sending} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
  {sending ? <ThinkingOrb size={16} state="base" /> : <>{dict.sendCode || "Kodni yuborish"} <ArrowRight className="w-4 h-4" /></>}
- </motion.button>
- </motion.form>
+ </button>
+ </form>
  )}
 
  {/* STEP 2: OTP */}
  {step === 2 && (
- <motion.form 
+ <form 
  key="step2"
  action={verifyAction}
- custom={direction}
- variants={formVariants}
- initial="enter"
- animate="center"
- exit="exit"
- transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+ 
+ 
+ 
+ 
+ 
+ 
  className="space-y-4 w-full"
  >
  <input type="hidden" name="phone" value={phone} />
@@ -214,29 +190,23 @@ export default function ModernRegisterForm({
  required
  />
 
- <motion.button
- whileHover={{ scale: 1.01 }}
- whileTap={{ scale: 0.98 }}
- type="submit"
- disabled={verifying}
- className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
- >
+ <button type="submit" disabled={verifying} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
  {verifying ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
- </motion.button>
- </motion.form>
+ </button>
+ </form>
  )}
 
  {/* STEP 3: PROFILE */}
  {step === 3 && (
- <motion.form 
+ <form 
  key="step3"
  action={completeAction}
- custom={direction}
- variants={formVariants}
- initial="enter"
- animate="center"
- exit="exit"
- transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+ 
+ 
+ 
+ 
+ 
+ 
  className="space-y-3 w-full"
  >
  <input type="hidden" name="phone" value={phone} />
@@ -300,18 +270,12 @@ export default function ModernRegisterForm({
  </span>
  </label>
 
- <motion.button
- whileHover={{ scale: 1.01 }}
- whileTap={{ scale: 0.98 }}
- type="submit"
- disabled={completing}
- className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed"
- >
+ <button type="submit" disabled={completing} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
  {completing ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyAndRegister || "Tugatish"} <ArrowRight className="w-4 h-4" /></>}
- </motion.button>
- </motion.form>
+ </button>
+ </form>
  )}
- </AnimatePresence>
+ 
  </div>
 
  {step === 1 && (

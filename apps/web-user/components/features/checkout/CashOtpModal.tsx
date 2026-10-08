@@ -172,7 +172,7 @@ export function CashOtpModal({
   const isExpired = timeLeft === 0;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-slate-900 mb-2">{dict.title}</h2>
         <p className="text-sm text-slate-600 mb-6">

@@ -41,7 +41,7 @@ export function PwaInstallBanner({ dict }: { dict?: CommonDict["pwa"] }) {
 
  return (
  <div className="fixed bottom-2 left-2 right-2 z-50 mx-auto max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
- <div className="flex items-center gap-2 rounded-[18px] border border-slate-200/60 bg-white/95 p-2 shadow-xl backdrop-blur-xl ">
+ <div className="flex items-center gap-2 rounded-[18px] border border-slate-200 bg-white p-2 shadow-xl ">
  
  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] overflow-hidden bg-white shadow-sm border border-slate-100">
  <img src="/icon-192x192.png" alt="Safaar" className="h-full w-full object-contain" />

@@ -196,7 +196,7 @@ export function LiveSupportWidget({ dict }: { dict?: CommonDict["chat"] & { gues
  <div
  role="dialog"
  aria-label={dict?.supportAria || "Safaar qo'llab-quvvatlash"}
- className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-5 duration-200 sm:right-6 sm:w-[380px]"
+ className="fixed bottom-24 right-4 z-50 flex h-[520px] max-h-[85vh] w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200 sm:right-6 sm:w-[380px]"
  >
  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3.5 ">
  <div className="flex items-center gap-3">

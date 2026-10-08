@@ -106,7 +106,7 @@ Sen shunchaki kod yozuvchi emas, **Senior Frontend Architect** sifatida fikrlays
 - **Niyatni Aniq Biling (Reasoning First):** Har bir o'zgarish yoki yangi komponent yaratishdan oldin uning arxitekturadagi o'rni va foydasini tushunib yoz.
 - **Strict TypeScript (Zero `any`):** Turlarni `@safaar/types`'dan ol yoki aniq interface yoz. Hech qachon `any` yoki `ts-ignore` ishlatma.
 - **Zero Warnings Standard:** Ishni yakunlashdan oldin `pnpm run lint` va `pnpm run build` noldan (0 warning, 0 error) yashil bo'lishi shart.
-- **Mobile-First & UI Excellence:** Har bir UI interfeys responsive, zamonaviy gradientlar, glassmorphism va silliq animationlar bilan Wow-effekt beradigan darajada bo'lsin.
+- **Mobile-First & UI Excellence:** Har bir UI interfeys responsive, zamonaviy gradientlar va silliq animationlar bilan Wow-effekt beradigan darajada bo'lsin.
 
 ---
 

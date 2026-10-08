@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useActionState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Hash } from "lucide-react";
 import {
   loginAction,
@@ -27,23 +26,6 @@ import { ThinkingOrb } from "@/components/ui/thinking-orb";
 const API_URL = config.apiUrl;
 
 type LoginMode = "login" | "forgot-email" | "forgot-code" | "reset-password";
-
-const formVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 100 : -100,
-    opacity: 0
-  }),
-  center: {
-    zIndex: 1,
-    x: 0,
-    opacity: 1
-  },
-  exit: (direction: number) => ({
-    zIndex: 0,
-    x: direction < 0 ? 100 : -100,
-    opacity: 0
-  })
-};
 
 export default function ModernLoginForm({
   dict,
@@ -146,18 +128,18 @@ export default function ModernLoginForm({
       )}
 
       <div className="relative min-h-[400px] flex flex-col justify-center overflow-hidden">
-        <AnimatePresence custom={direction} mode="wait">
+        
           
           {/* LOGIN MODE */}
           {mode === "login" && (
-            <motion.div
+            <div
               key="login"
-              custom={direction}
-              variants={formVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+              
+              
+              
+              
+              
+              
               className="w-full flex flex-col"
             >
               <div className="mb-8 text-center">
@@ -222,15 +204,9 @@ export default function ModernLoginForm({
                   )}
                 </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={loggingIn}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed"
-                >
+                <button type="submit" disabled={loggingIn} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
                   {loggingIn ? <ThinkingOrb size={16} state="base" /> : <>{dict.login || "Tizimga kirish"} <ArrowRight className="w-4 h-4" /></>}
-                </motion.button>
+                </button>
               </form>
 
               <div className="mt-6 pt-6 border-t border-slate-200 relative z-10">
@@ -257,21 +233,21 @@ export default function ModernLoginForm({
                   {dict.register || "Ro'yxatdan o'tish"}
                 </button>
               </p>
-            </motion.div>
+            </div>
           )}
 
           {/* FORGOT EMAIL MODE */}
           {mode === "forgot-email" && (
-            <motion.form
+            <form
               key="forgot-email"
               ref={forgotEmailFormRef}
               onSubmit={forgotEmailForm.handleSubmit(() => { requestResetFormAction(new FormData(forgotEmailFormRef.current!)); })}
-              custom={direction}
-              variants={formVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+              
+              
+              
+              
+              
+              
               className="w-full flex flex-col space-y-4"
             >
               <div className="mb-4 text-center">
@@ -297,30 +273,24 @@ export default function ModernLoginForm({
                 )}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={requestingReset}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={requestingReset} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
                 {requestingReset ? <ThinkingOrb size={16} state="base" /> : <>{dict.sendCode || "Kodni yuborish"} <ArrowRight className="w-4 h-4" /></>}
-              </motion.button>
-            </motion.form>
+              </button>
+            </form>
           )}
 
           {/* FORGOT CODE MODE */}
           {mode === "forgot-code" && (
-            <motion.form
+            <form
               key="forgot-code"
               ref={forgotCodeFormRef}
               onSubmit={forgotCodeForm.handleSubmit(() => { verifyResetCodeFormAction(new FormData(forgotCodeFormRef.current!)); })}
-              custom={direction}
-              variants={formVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+              
+              
+              
+              
+              
+              
               className="w-full flex flex-col space-y-4"
             >
               <div className="mb-4 text-center">
@@ -350,30 +320,24 @@ export default function ModernLoginForm({
                 )}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={verifyingResetCode}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={verifyingResetCode} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
                 {verifyingResetCode ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
-              </motion.button>
-            </motion.form>
+              </button>
+            </form>
           )}
 
           {/* RESET PASSWORD MODE */}
           {mode === "reset-password" && (
-            <motion.form
+            <form
               key="reset-password"
               ref={resetPasswordFormRef}
               onSubmit={resetPasswordForm.handleSubmit(() => { resetPasswordFormAction(new FormData(resetPasswordFormRef.current!)); })}
-              custom={direction}
-              variants={formVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+              
+              
+              
+              
+              
+              
               className="w-full flex flex-col space-y-4"
             >
               <div className="mb-4 text-center">
@@ -413,19 +377,13 @@ export default function ModernLoginForm({
                 )}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={resettingPassword}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={resettingPassword} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
                 {resettingPassword ? <ThinkingOrb size={16} state="base" /> : <>{dict.saveNewPassword || "Saqlash"} <ArrowRight className="w-4 h-4" /></>}
-              </motion.button>
-            </motion.form>
+              </button>
+            </form>
           )}
 
-        </AnimatePresence>
+        
       </div>
     </AuthLayout>
   );

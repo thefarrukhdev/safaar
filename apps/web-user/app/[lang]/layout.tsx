@@ -109,6 +109,8 @@ import { cookies } from "next/headers";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { DEFAULT_EXCHANGE_RATES, type CurrencyCode } from "@/lib/utils/money";
 import { api } from "@/lib/api";
+import { getSession } from "@/lib/auth/session";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 export default async function LangLayout({
   children,
@@ -124,6 +126,7 @@ export default async function LangLayout({
   const cookieStore = await cookies();
   const currencyCookie = cookieStore.get("safaar_currency")?.value as CurrencyCode | undefined;
   const initialCurrency: CurrencyCode = currencyCookie || "UZS";
+  const session = await getSession();
   const initialRates = await api.currency
     .getRates()
     .then((res) => res.rates)
@@ -139,6 +142,7 @@ export default async function LangLayout({
         <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
           <NuqsAdapter>
 
+            <SessionProvider session={session}>
             <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
               <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
                 {children}
@@ -147,6 +151,7 @@ export default async function LangLayout({
                 <PwaInstallBanner dict={common.pwa} />
               </div>
             </CurrencyProvider>
+            </SessionProvider>
           </NuqsAdapter>
       </body>
     </html>

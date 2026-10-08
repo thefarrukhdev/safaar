@@ -5,6 +5,7 @@ import Image from"next/image";
 import Link from"next/link";
 import { ImageOff, Heart, MapPin, ChevronRight, ChevronLeft } from"lucide-react";
 import { useCurrency } from"@/components/providers/CurrencyProvider";
+import { useSession } from "@/components/providers/SessionProvider";
 
 export interface UniversalCardProps {
  imageSrc?: string | string[] | null;
@@ -42,6 +43,7 @@ export interface UniversalCardProps {
 }
 
 export function UniversalCard({
+
  imageSrc,
  imageAlt ="",
  href,
@@ -65,6 +67,7 @@ export function UniversalCard({
  actionIcon,
  onActionClick,
 }: UniversalCardProps) {
+  const { authed } = useSession();
  const { formatPrice } = useCurrency();
  const [favorite, setFavorite] = useState(initialIsFavorite);
 
@@ -274,7 +277,7 @@ export function UniversalCard({
  {renderImages()}
  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"/>
  {topLeft && <div className="absolute left-3 top-3 z-10">{topLeft}</div>}
- {(topRight || showFavorite) && (
+ {(topRight || (showFavorite && authed)) && (
  <div className="absolute right-3 top-3 z-10">
  {topRight ?? (
  <button
@@ -320,7 +323,7 @@ export function UniversalCard({
 
  {topLeft && <div className="absolute left-3 top-3 z-10">{topLeft}</div>}
 
- {(topRight || showFavorite) && (
+ {(topRight || (showFavorite && authed)) && (
  <div className="absolute right-3 top-3 z-10">
  {topRight ?? (
  <button

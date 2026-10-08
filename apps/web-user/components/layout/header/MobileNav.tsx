@@ -27,8 +27,9 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  const pathname = usePathname();
  const router = useRouter();
  const [menuOpen, setMenuOpen] = useState(false);
+ const [langOpen, setLangOpen] = useState(false);
  const [isPending, startTransition] = useTransition();
- const currentLocale = (locale ??"uz") as Locale;
+ const currentLocale = (locale ?? "uz") as Locale;
 
  // Body Scroll Lock for Mobile Drawer
  useEffect(() => {
@@ -155,18 +156,39 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  <div className="my-6 h-px w-full bg-slate-100"/>
 
  {/* Locale Switcher */}
- <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
- <div className="flex items-center gap-2 mb-3">
- {isPending ? (
- <ThinkingOrb size={16} state="base" />
- ) : (
- <Globe className="h-4 w-4 text-slate-400"/>
+ <div className="flex flex-col gap-1">
+ <button
+ type="button"
+ onClick={() => setLangOpen(!langOpen)}
+ className={cn(
+ "group flex h-14 items-center justify-between w-full rounded-2xl px-4 text-[15px] font-bold transition-all duration-150 active:scale-[0.98]",
+ langOpen
+ ? "bg-slate-900/[0.05] text-slate-900"
+ : "text-slate-700 hover:bg-slate-900/[0.03] hover:text-slate-900"
  )}
- <span className="text-[13px] font-bold uppercase tracking-wider text-slate-500">
- {LANG_LABEL[currentLocale] ??"Til"}
+ >
+ <div className="flex items-center gap-3.5">
+ <span className={cn(
+ "flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-150",
+ langOpen ? "bg-slate-200 text-slate-700" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+ )}>
+ {isPending ? <ThinkingOrb size={18} state="base" /> : <Globe className="h-[18px] w-[18px]"/>}
  </span>
+ <span>{LANG_LABEL[currentLocale] ?? "Til"}</span>
  </div>
- <div className="grid grid-cols-3 gap-2">
+ <div className="flex items-center gap-2 text-slate-500">
+ <span className="text-[13px] font-medium">{localeNames[currentLocale]}</span>
+ <ChevronRight
+ className={cn(
+ "h-4 w-4 transition-transform duration-150",
+ langOpen ? "rotate-90 text-slate-600" : "text-slate-300 group-hover:text-slate-400"
+ )}
+ />
+ </div>
+ </button>
+
+ {langOpen && (
+ <div className="animate-in slide-in-from-top-2 fade-in duration-200 flex flex-col gap-1 px-4 py-2 mb-2">
  {locales.map((loc) => {
  const active = loc === currentLocale;
  return (
@@ -174,24 +196,24 @@ export function MobileNav({ brand, brandHref, items, locale, authActions }: Head
  key={loc}
  type="button"
  disabled={isPending}
- onClick={() => switchLocale(loc)}
+ onClick={() => {
+ switchLocale(loc);
+ setLangOpen(false);
+ }}
  className={cn(
-"flex flex-col items-center justify-center rounded-xl py-2.5 px-1 text-center transition-all duration-150 active:scale-95",
+ "flex h-12 w-full items-center justify-between rounded-xl px-4 text-[14px] font-semibold transition-colors",
  active
- ?"bg-blue-600 text-white ring-1 ring-blue-600 ring-offset-2"
- :"bg-white text-slate-700 border border-slate-200 hover:border-blue-300 hover:text-blue-700"
+ ? "bg-blue-50 text-blue-700"
+ : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
  )}
  >
- <span className="text-[12px] font-black uppercase tracking-wider">
- {loc}
- </span>
- <span className="text-[10px] font-medium opacity-75 mt-0.5 leading-tight">
- {localeNames[loc]}
- </span>
+ <span>{localeNames[loc]}</span>
+ {active && <span className="flex h-1.5 w-1.5 rounded-full bg-blue-600" />}
  </button>
  );
  })}
  </div>
+ )}
  </div>
 
  {/* Auth Actions */}

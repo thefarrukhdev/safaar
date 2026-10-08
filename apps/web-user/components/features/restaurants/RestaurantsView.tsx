@@ -120,7 +120,7 @@ export function RestaurantsView({
  {/* ═══ Header Banner ═══ */}
  <div className="relative mb-6 sm:mb-8 flex h-[200px] sm:h-[260px] md:h-[300px] w-full flex-col justify-center overflow-hidden rounded-2xl border border-slate-200 px-5 sm:px-8 md:px-12">
  <Image
- src={heroBg?.imageUrl || "/images/heroes/hero.png"}
+ src={heroBg?.imageUrl || "/images/heroes/hero.webp"}
  alt="Restaurants hero"
  fill
  priority

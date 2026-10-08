@@ -21,7 +21,7 @@ export function Hero({
       {/* Background image with slow zoom animation for premium feel */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src={heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.jpeg"}
+          src={heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp"}
           alt="Safaar — O'zbekiston"
           fill
           priority

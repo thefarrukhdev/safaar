@@ -19,9 +19,20 @@ export function Hero({
   };
 }) {
   const rawTitle = dict.title || heroBg?.title || "";
-  const words = rawTitle.split(" ");
-  const lastWord = words.length > 1 ? words.pop() : "";
-  const restTitle = words.join(" ");
+  let beforeText = "";
+  let highlightedWord = "";
+  let afterText = "";
+
+  const match = rawTitle.match(/^(.*?)\{(.*?)\}(.*?)$/);
+  if (match) {
+    beforeText = match[1];
+    highlightedWord = match[2];
+    afterText = match[3];
+  } else {
+    const words = rawTitle.split(" ");
+    highlightedWord = words.length > 1 ? words.pop() || "" : "";
+    beforeText = words.join(" ") + (highlightedWord ? " " : "");
+  }
 
   // Agressiv fallback: agar backend eski format yoki yaroqsiz rasm qaytarsa, mahalliy rasmni ishlatamiz
   let finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
@@ -64,8 +75,8 @@ export function Hero({
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-in fade-in zoom-in-95 duration-700 delay-100 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_4px_rgba(0,0,0,0.4)]"
           style={{ fontFamily: "var(--font-manrope, sans-serif)" }}
         >
-          {restTitle}{" "}
-          {lastWord ? (
+          {beforeText}
+          {highlightedWord ? (
             <RoughNotation
               type="circle"
               color="#2563eb"
@@ -74,11 +85,12 @@ export function Hero({
               animationDuration={800}
               padding={[0, 10]}
             >
-              <span className="relative z-10">{lastWord}</span>
+              <span className="relative z-10">{highlightedWord}</span>
             </RoughNotation>
           ) : (
             rawTitle
           )}
+          {afterText}
         </h1>
 
         {/* Subtitle — Body LG: Inter 400 */}

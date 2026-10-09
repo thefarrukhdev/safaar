@@ -84,6 +84,7 @@ export function Hero({
               animationDelay={800}
               animationDuration={800}
               padding={[0, 10]}
+              show={false}
             >
               <span className="relative z-10">{highlightedWord}</span>
             </RoughNotation>

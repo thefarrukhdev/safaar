@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Card, CardBody } from "@/components/ui/Card";
+import { api } from "@/lib/api";
+import { Hero } from "@/components/features/home/Hero";
 
 export async function generateMetadata({
   params,
@@ -27,17 +29,27 @@ export default async function AboutPage({
   const dict = await getDictionary(locale, "static");
   const { about } = dict;
 
+  const heroMap = await api.heroBackgrounds.getHeroMap();
+  const heroData = heroMap['about'];
+
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-6 py-12">
-      {/* Hero */}
-      <section className="flex flex-col gap-3">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl ">
-          {about.title}
-        </h1>
-        <p className="max-w-3xl text-lg text-slate-600 ">
-          {about.intro}
-        </p>
-      </section>
+    <div className="flex flex-col flex-1 w-full">
+      {heroData ? (
+        <Hero dict={{ title: heroData.title || about.title, subtitle: heroData.subtitle || about.intro }} heroBg={heroData} />
+      ) : (
+        <div className="mx-auto flex w-full max-w-5xl flex-col px-6 pt-12">
+          <section className="flex flex-col gap-3">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl ">
+              {about.title}
+            </h1>
+            <p className="max-w-3xl text-lg text-slate-600 ">
+              {about.intro}
+            </p>
+          </section>
+        </div>
+      )}
+
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-6 py-12">
 
       {/* Maqsad */}
       <section className="flex flex-col gap-3">
@@ -64,5 +76,6 @@ export default async function AboutPage({
         </div>
       </section>
     </main>
+    </div>
   );
 }

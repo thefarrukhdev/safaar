@@ -226,14 +226,7 @@ export function AttractionsView({
   }, [items, query, selectedCategory]);
 
   return (
-    <div className="flex flex-col w-full">
-      {heroBg && (
-        <Hero 
-          dict={{ title: heroBg.title || dict.title, subtitle: heroBg.subtitle || dict.subtitle || "" }} 
-          heroBg={heroBg} 
-        />
-      )}
-      <div className="mx-auto flex min-h-[calc(100svh-56px)] w-full md:w-[96%] max-w-[1536px] bg-white md:min-h-[calc(100svh-72px-3rem)] lg:h-[calc(100svh-72px-3rem)] md:overflow-hidden md:my-6 md:rounded-2xl md:border md:border-slate-200 md:shadow-sm">
+    <div className="mx-auto flex min-h-[calc(100svh-56px)] w-full md:w-[96%] max-w-[1536px] bg-white md:min-h-[calc(100svh-72px-3rem)] lg:h-[calc(100svh-72px-3rem)] md:overflow-hidden md:my-6 md:rounded-2xl md:border md:border-slate-200 md:shadow-sm">
       
       {/* ── LEFT: Scrollable List Panel ────────────────────────── */}
       <div className="flex w-full flex-col lg:w-[55%] xl:w-[60%] lg:overflow-hidden">
@@ -311,7 +304,6 @@ export function AttractionsView({
           <AttractionsMap attractions={filtered} hoveredId={hoveredId} locale={locale} />
         </div>
       </BottomSheet>
-    </div>
     </div>
   );
 }

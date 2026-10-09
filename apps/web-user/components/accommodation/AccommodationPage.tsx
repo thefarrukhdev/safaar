@@ -160,8 +160,7 @@ export async function AccommodationPage({
   else if (type === "resort") bannerKey = "resorts";
 
   const dynamicBanner = (dict.banners as any)?.[bannerKey] || {};
-  
-  const heroData = heroMap["hotels"];
+  const heroData = heroMap[bannerKey];
   const heroBg = heroData ? {
     imageUrl: heroData.imageUrl,
     title: typeof heroData.title === "object" ? heroData.title?.[locale] : heroData.titleText,

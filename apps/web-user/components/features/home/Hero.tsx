@@ -18,7 +18,7 @@ export function Hero({
     subtitle?: string;
   };
 }) {
-  const rawTitle = dict.title || heroBg?.title || "";
+  const rawTitle = heroBg?.title || dict.title || "";
   let beforeText = "";
   let highlightedWord = "";
   let afterText = "";
@@ -34,16 +34,7 @@ export function Hero({
     beforeText = words.join(" ") + (highlightedWord ? " " : "");
   }
 
-  // Agressiv fallback: agar backend eski format yoki yaroqsiz rasm qaytarsa, mahalliy rasmni ishlatamiz
-  let finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
-  if (
-    finalImageUrl.includes(".jpeg") ||
-    finalImageUrl.includes(".jpg") ||
-    finalImageUrl.includes(".png") ||
-    finalImageUrl.includes("hero-bg-2")
-  ) {
-    finalImageUrl = "/registon-blue-sky.webp";
-  }
+  const finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
 
   return (
     <section className="relative flex min-h-[60vh] md:min-h-[80vh] w-full flex-col items-center justify-center pb-10 -mt-14 md:-mt-16 bg-slate-900">

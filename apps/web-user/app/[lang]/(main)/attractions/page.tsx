@@ -35,9 +35,10 @@ export default async function AttractionsPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [attractionsDict, attractions] = await Promise.all([
+  const [attractionsDict, attractions, heroMap] = await Promise.all([
     getDictionary(locale, "attractions"),
     api.catalog.getAttractions(locale),
+    api.heroBackgrounds.getHeroMap(),
   ]);
 
   const items: AttractionItem[] = attractions.map((item) => ({

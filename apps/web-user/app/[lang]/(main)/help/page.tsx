@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Card, CardBody } from "@/components/ui/Card";
+import { api } from "@/lib/api";
+import { Hero } from "@/components/features/home/Hero";
 
 export async function generateMetadata({
  params,
@@ -27,17 +29,26 @@ export default async function HelpPage({
  const dict = await getDictionary(locale, "static");
  const { help } = dict;
 
- return (
- <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-12">
- {/* Sarlavha */}
- <section className="flex flex-col gap-2">
- <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl ">
- {help.title}
- </h1>
- <p className="text-lg text-slate-600 ">
- {help.subtitle}
- </p>
- </section>
+  const heroMap = await api.heroBackgrounds.getHeroMap();
+  const heroData = heroMap['help'];
+
+  return (
+    <div className="flex flex-col flex-1 w-full">
+      {heroData ? (
+        <Hero dict={{ title: heroData.title || help.title, subtitle: heroData.subtitle || help.subtitle }} heroBg={heroData} />
+      ) : (
+        <div className="mx-auto flex w-full max-w-3xl flex-col px-6 pt-12">
+          <section className="flex flex-col gap-2">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl ">
+              {help.title}
+            </h1>
+            <p className="text-lg text-slate-600 ">
+              {help.subtitle}
+            </p>
+          </section>
+        </div>
+      )}
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-12">
 
  {/* FAQ — semantik details/summary akkordeon */}
  <section className="flex flex-col gap-3">
@@ -78,5 +89,6 @@ export default async function HelpPage({
  </CardBody>
  </Card>
  </main>
+    </div>
  );
 }

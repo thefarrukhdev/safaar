@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { AccommodationPage } from "@/components/accommodation/AccommodationPage";
+import { api } from "@/lib/api";
 
 export type AccommodationRouteKey =
   | "hotels"
@@ -16,10 +17,31 @@ export async function generateAccommodationMetadata(
 ): Promise<Metadata> {
   if (!isLocale(lang)) return {};
   const common = await getDictionary(lang as Locale, "common");
-  const title = key === "hotels"
+  const defaultTitle = key === "hotels"
     ? (await getDictionary(lang as Locale, "hotels")).title
     : (common.nav as Record<string, string>)[key] ?? key;
-  return { title };
+    
+  const heroMap = await api.heroBackgrounds.getHeroMap().catch(() => ({} as any));
+  const heroData = heroMap[key];
+
+  const backendTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[lang as Locale] : heroData.titleText) : undefined;
+  const backendSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[lang as Locale] : heroData.subtitleText) : undefined;
+  
+  const title = backendTitle || defaultTitle;
+  const description = backendSubtitle || undefined;
+
+  const metadata: Metadata = {
+    title,
+    description,
+  };
+
+  if (heroData?.imageUrl) {
+    metadata.openGraph = {
+      images: [{ url: heroData.imageUrl }],
+    };
+  }
+
+  return metadata;
 }
 
 export async function renderAccommodationRoute(

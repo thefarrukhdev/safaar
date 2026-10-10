@@ -20,10 +20,27 @@ export async function generateMetadata({
     getDictionary(lang as Locale, "common"),
     getDictionary(lang as Locale, "attractions"),
   ]);
-  return {
-    title: commonDict.nav.attractions,
-    description: attractionsDict.subtitle,
+  const heroMap = await api.heroBackgrounds.getHeroMap().catch(() => ({}) as any);
+  const heroData = heroMap["attractions"];
+  
+  const backendTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[lang as Locale] : heroData.titleText) : undefined;
+  const backendSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[lang as Locale] : heroData.subtitleText) : undefined;
+  
+  const title = backendTitle || commonDict.nav.attractions;
+  const description = backendSubtitle || attractionsDict.subtitle;
+
+  const metadata: Metadata = {
+    title,
+    description,
   };
+
+  if (heroData?.imageUrl) {
+    metadata.openGraph = {
+      images: [{ url: heroData.imageUrl }],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function AttractionsPage({
@@ -46,10 +63,14 @@ export default async function AttractionsPage({
     categoryKey: toAttractionCategory(item.categoryKey),
   }));
 
+  const heroData = heroMap?.["attractions"];
+  const heroTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[locale] : heroData.titleText) : undefined;
+  const heroSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[locale] : heroData.subtitleText) : undefined;
+
   return (
     <main className="flex flex-1 flex-col">
       <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
-        <AttractionsView dict={attractionsDict} items={items} locale={locale} />
+        <AttractionsView dict={attractionsDict} items={items} locale={locale} heroBg={heroData ? {...heroData, title: heroTitle, subtitle: heroSubtitle} : undefined} />
       </Suspense>
     </main>
   );

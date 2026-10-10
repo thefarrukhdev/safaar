@@ -2,7 +2,13 @@ import { ArrowRight } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { HomeDict } from "@/i18n/dictionaries";
 import { UniversalCard } from "@/components/ui/UniversalCard";
-import { DealsMobileCarousel } from "./DealsMobileCarousel";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+const DealsMobileCarousel = dynamic(
+  () => import("./DealsMobileCarousel").then((mod) => mod.DealsMobileCarousel),
+  { loading: () => <Skeleton className="h-[400px] w-full" /> }
+);
 import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export interface DealItem {

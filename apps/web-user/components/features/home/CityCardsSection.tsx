@@ -3,8 +3,18 @@ import { MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Locale } from "@/i18n/config";
 import type { HomeDict } from "@/i18n/dictionaries";
-import { AccordionGallery } from "@/components/ui/AccordionGalleryClient";
-import { CityCardsMobileCarousel } from "@/components/features/home/CityCardsMobileCarousel";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+const AccordionGallery = dynamic(
+  () => import("@/components/ui/AccordionGalleryClient").then((mod) => mod.AccordionGallery),
+  { loading: () => <Skeleton className="h-[400px] w-full" /> }
+);
+
+const CityCardsMobileCarousel = dynamic(
+  () => import("@/components/features/home/CityCardsMobileCarousel").then((mod) => mod.CityCardsMobileCarousel),
+  { loading: () => <Skeleton className="h-[400px] w-full" /> }
+);
 import { SectionHeader } from "@/components/ui/SectionHeader";
 
 import { resolveImage } from "@/lib/images";

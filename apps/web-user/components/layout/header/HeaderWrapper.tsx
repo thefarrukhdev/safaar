@@ -39,10 +39,10 @@ export function HeaderWrapper(props: HeaderProps) {
  <header
  data-transparent={isTransparent}
  className={cn(
-"relative z-40 w-full transition-all duration-300 group/header",
+"sticky top-0 z-40 w-full transition-all duration-300 group/header",
  isTransparent
  ?"bg-transparent border-transparent"
- :"bg-white border-b border-slate-200",
+ :"bg-white border-b border-slate-200 shadow-sm",
  hidden ?"-translate-y-full":"translate-y-0"
  )}
  >

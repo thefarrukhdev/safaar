@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { AccommodationCard } from "@/components/features/accommodation/AccommodationCard";
-import { FeaturedHotelsMobileCarousel } from "./FeaturedHotelsMobileCarousel";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+const FeaturedHotelsMobileCarousel = dynamic(
+  () => import("./FeaturedHotelsMobileCarousel").then((mod) => mod.FeaturedHotelsMobileCarousel),
+  { loading: () => <Skeleton className="h-[400px] w-full" /> }
+);
 import type { HotelListItem } from "@/types/view";
 import type { Locale } from "@/i18n/config";
 import type { HomeDict } from "@/i18n/dictionaries";

@@ -19,10 +19,27 @@ export async function generateMetadata({
     getDictionary(lang as Locale, "common"),
     getDictionary(lang as Locale, "restaurants"),
   ]);
-  return {
-    title: commonDict.nav.restaurants,
-    description: restaurantsDict.subtitle,
+  const heroMap = await api.heroBackgrounds.getHeroMap().catch(() => ({} as any));
+  const heroData = heroMap["restaurants"];
+  
+  const backendTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[lang as Locale] : heroData.titleText) : undefined;
+  const backendSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[lang as Locale] : heroData.subtitleText) : undefined;
+  
+  const title = backendTitle || commonDict.nav.restaurants;
+  const description = backendSubtitle || restaurantsDict.subtitle;
+
+  const metadata: Metadata = {
+    title,
+    description,
   };
+
+  if (heroData?.imageUrl) {
+    metadata.openGraph = {
+      images: [{ url: heroData.imageUrl }],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function RestaurantsPage({

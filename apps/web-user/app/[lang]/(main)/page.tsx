@@ -27,7 +27,24 @@ export async function generateMetadata({
   const { lang } = await params;
   if (!isLocale(lang)) return {};
   const dict = await getDictionary(lang, "home");
-  return { title: dict.hero.title, description: dict.hero.subtitle };
+  const heroMap = await api.heroBackgrounds.getHeroMap().catch(() => ({} as any));
+  const heroData = heroMap["home"];
+  
+  const title = heroData ? (typeof heroData.title === "object" ? heroData.title?.[lang as Locale] : heroData.titleText) : undefined;
+  const subtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[lang as Locale] : heroData.subtitleText) : undefined;
+  
+  const metadata: Metadata = {
+    title: title || dict.hero.title,
+    description: subtitle || dict.hero.subtitle,
+  };
+
+  if (heroData?.imageUrl) {
+    metadata.openGraph = {
+      images: [{ url: heroData.imageUrl }],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function HomePage({

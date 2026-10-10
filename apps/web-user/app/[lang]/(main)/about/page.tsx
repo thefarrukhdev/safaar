@@ -32,10 +32,13 @@ export default async function AboutPage({
   const heroMap = await api.heroBackgrounds.getHeroMap();
   const heroData = heroMap['about'];
 
+  const heroTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[locale] : heroData.titleText) : undefined;
+  const heroSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[locale] : heroData.subtitleText) : undefined;
+
   return (
     <div className="flex flex-col flex-1 w-full">
       {heroData ? (
-        <Hero dict={{ title: heroData.title || about.title, subtitle: heroData.subtitle || about.intro }} heroBg={heroData} />
+        <Hero dict={{ title: heroTitle || about.title, subtitle: heroSubtitle || about.intro } as any} heroBg={{...heroData, title: heroTitle, subtitle: heroSubtitle}} />
       ) : (
         <div className="mx-auto flex w-full max-w-5xl flex-col px-6 pt-12">
           <section className="flex flex-col gap-3">

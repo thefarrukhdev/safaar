@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { AttractionItem } from "@/components/catalog/types";
 import type { AttractionsDict } from "@/i18n/dictionaries";
-
+import { Hero } from "@/components/features/home/Hero";
 
 // ─── FILTER HEADER ───────────────────────────────────────────────────────────
 function FilterHeader({
@@ -167,10 +167,16 @@ export function AttractionsView({
   dict,
   items,
   locale,
+  heroBg,
 }: {
   dict: AttractionsDict;
   items: AttractionItem[];
   locale: string;
+  heroBg?: {
+    imageUrl?: string;
+    title?: string;
+    subtitle?: string;
+  };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -229,7 +235,7 @@ export function AttractionsView({
     <div className="flex flex-col w-full">
       {heroBg && (
         <Hero 
-          dict={{ title: heroBg.title || dict.title, subtitle: heroBg.subtitle || dict.subtitle || "" }} 
+          dict={{ title: heroBg.title || dict.title, subtitle: heroBg.subtitle || dict.subtitle || "" } as any} 
           heroBg={heroBg} 
         />
       )}

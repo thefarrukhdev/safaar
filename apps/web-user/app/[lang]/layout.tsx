@@ -136,15 +136,15 @@ export default async function LangLayout({
     <html
       lang={lang}
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${manrope.variable} h-full overflow-x-hidden subpixel-antialiased`}
+      className={`${inter.variable} ${manrope.variable} h-full subpixel-antialiased`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden bg-white text-slate-900 subpixel-antialiased  ">
+      <body className="flex min-h-full flex-col bg-white text-slate-900 subpixel-antialiased">
         <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
           <NuqsAdapter>
 
             <SessionProvider session={session}>
             <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
-              <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+              <div className="relative flex min-h-screen w-full flex-col">
                 {children}
                 <Toaster />
                 <ServiceWorkerRegister />

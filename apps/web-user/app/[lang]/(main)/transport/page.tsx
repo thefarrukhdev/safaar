@@ -19,10 +19,27 @@ export async function generateMetadata({
  getDictionary(lang as Locale, "transport"),
  ]);
  const transportTitle = (commonDict.nav as typeof commonDict.nav & { transport?: string }).transport ?? "Transport";
- return {
- title: transportTitle,
- description: transportDict.subtitle,
- };
+ const heroMap = await api.heroBackgrounds.getHeroMap().catch(() => ({} as any));
+  const heroData = heroMap["transport"];
+  
+  const backendTitle = heroData ? (typeof heroData.title === "object" ? heroData.title?.[lang as Locale] : heroData.titleText) : undefined;
+  const backendSubtitle = heroData ? (typeof heroData.subtitle === "object" ? heroData.subtitle?.[lang as Locale] : heroData.subtitleText) : undefined;
+  
+  const title = backendTitle || transportTitle;
+  const description = backendSubtitle || transportDict.subtitle;
+
+  const metadata: Metadata = {
+    title,
+    description,
+  };
+
+  if (heroData?.imageUrl) {
+    metadata.openGraph = {
+      images: [{ url: heroData.imageUrl }],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function TransportPage({

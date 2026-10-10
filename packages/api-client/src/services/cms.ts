@@ -209,7 +209,7 @@ export const cmsService = {
   /** `GET /cms/banners` — bosh sahifadagi banner/slayder uchun. */
   async getBanners(locale: Locale): Promise<BannerView[]> {
     const raw = await rawApi.get<unknown>('/cms/banners', {
-      next: { revalidate: 60 },
+      next: { revalidate: 3600 },
     });
     const items = camelizeKeys<RawBanner[]>(raw);
     return (items ?? [])
@@ -223,7 +223,7 @@ export const cmsService = {
   /** `GET /cms/offers` — bosh sahifa "Chegirmadagi takliflar" uchun. */
   async getDeals(locale: Locale): Promise<DealView[]> {
     const raw = await rawApi.get<unknown>("/cms/offers", {
-      next: { revalidate: 60 },
+      next: { revalidate: 3600 },
     });
     const items = camelizeKeys<RawDeal[]>(raw);
     return (items ?? [])
@@ -276,7 +276,7 @@ export const heroBackgroundsApi = {
   async getHeroMap(): Promise<Record<string, HeroBackground>> {
     try {
       const raw = await rawApi.get<Record<string, unknown>>("/hero-backgrounds/map", {
-        next: { revalidate: 60, tags: ["cms", "hero-backgrounds"] },
+        next: { revalidate: 3600, tags: ["cms", "hero-backgrounds"] },
       });
       return camelizeKeys<Record<string, HeroBackground>>(raw) ?? {};
     } catch (e) {
@@ -288,7 +288,7 @@ export const heroBackgroundsApi = {
   async getByPage(page: string): Promise<HeroBackground | null> {
     try {
       const raw = await rawApi.get<unknown>(`/hero-backgrounds/${encodeURIComponent(page)}`, {
-        next: { revalidate: 60, tags: ["cms", `hero-${page}`] },
+        next: { revalidate: 3600, tags: ["cms", `hero-${page}`] },
       });
       return camelizeKeys<HeroBackground>(raw) ?? null;
     } catch {

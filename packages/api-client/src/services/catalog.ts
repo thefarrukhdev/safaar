@@ -262,7 +262,7 @@ export const catalogService = {
    */
   async getDestinations(locale: Locale): Promise<DestinationView[]> {
     const raw = await rawApi.get<unknown>("/catalog/destinations", {
-      next: { revalidate: 300 },
+      next: { revalidate: 3600 },
     });
     const items = camelizeKeys<RawDestination[]>(raw);
     return (items ?? []).map((item) => ({

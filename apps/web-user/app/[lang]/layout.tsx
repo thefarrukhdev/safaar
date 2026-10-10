@@ -111,6 +111,7 @@ import { DEFAULT_EXCHANGE_RATES, type CurrencyCode } from "@/lib/utils/money";
 import { api } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { PostHogProvider } from "@/components/providers/PostHogProvider";
 
 export default async function LangLayout({
   children,
@@ -139,21 +140,24 @@ export default async function LangLayout({
       className={`${inter.variable} ${manrope.variable} h-full subpixel-antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-slate-900 subpixel-antialiased">
-        <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
-          <NuqsAdapter>
+        <PostHogProvider>
+          <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
+            <NuqsAdapter>
 
-            <SessionProvider session={session}>
-            <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
-              <div className="relative flex min-h-screen w-full flex-col">
-                {children}
-                <Toaster />
-                <ServiceWorkerRegister />
-                <PwaInstallBanner dict={common.pwa} />
-              </div>
-            </CurrencyProvider>
-            </SessionProvider>
-          </NuqsAdapter>
+              <SessionProvider session={session}>
+              <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
+                <div className="relative flex min-h-screen w-full flex-col">
+                  {children}
+                  <Toaster />
+                  <ServiceWorkerRegister />
+                  <PwaInstallBanner dict={common.pwa} />
+                </div>
+              </CurrencyProvider>
+              </SessionProvider>
+            </NuqsAdapter>
+        </PostHogProvider>
       </body>
     </html>
   );
 }
+

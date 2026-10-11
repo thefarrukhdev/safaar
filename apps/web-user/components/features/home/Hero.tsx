@@ -24,14 +24,20 @@ export function Hero({
   let afterText = "";
 
   const match = rawTitle.match(/^(.*?)\{(.*?)\}(.*?)$/);
-  if (match) {
+  if (match && match[2]) {
     beforeText = match[1];
     highlightedWord = match[2];
     afterText = match[3];
   } else {
-    const words = rawTitle.split(" ");
-    highlightedWord = words.length > 1 ? words.pop() || "" : "";
-    beforeText = words.join(" ") + (highlightedWord ? " " : "");
+    const trimmed = rawTitle.trim();
+    const words = trimmed ? trimmed.split(/\s+/) : [];
+    if (words.length > 1) {
+      highlightedWord = words.pop() || "";
+      beforeText = words.join(" ") + (highlightedWord ? " " : "");
+    } else {
+      beforeText = rawTitle;
+      highlightedWord = "";
+    }
   }
 
   const finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
@@ -54,7 +60,7 @@ export function Hero({
         {/* Qatlam 2: Yon tomonlar — chuqurlik effekti */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         {/* Qatlam 3: Markaziy matn himoyasi — faqat matn bo'lagida (qorong'i EMAS, nozik) */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50" />
+        <div className="absolute inset-x-0 bg-gradient-to-b from-transparent via-black/15 to-black/50" />
         {/* Qatlam 4: Pastki oq gradient — faqat search bar qismida */}
         <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-white from-[25%] via-white/60 to-transparent" />
       </div>
@@ -66,23 +72,25 @@ export function Hero({
           className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-in fade-in zoom-in-95 duration-700 delay-100 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_4px_rgba(0,0,0,0.4)]"
           style={{ fontFamily: "var(--font-manrope, sans-serif)" }}
         >
-          {beforeText}
           {highlightedWord ? (
-            <RoughNotation
-              type="circle"
-              color="#2563eb"
-              strokeWidth={3}
-              animationDelay={800}
-              animationDuration={800}
-              padding={[0, 10]}
-              show={false}
-            >
-              <span className="relative z-10">{highlightedWord}</span>
-            </RoughNotation>
+            <>
+              {beforeText}
+              <RoughNotation
+                type="circle"
+                color="#2563eb"
+                strokeWidth={3}
+                animationDelay={800}
+                animationDuration={800}
+                padding={[0, 10]}
+                show={false}
+              >
+                <span className="relative z-10">{highlightedWord}</span>
+              </RoughNotation>
+              {afterText}
+            </>
           ) : (
             rawTitle
           )}
-          {afterText}
         </h1>
 
         {/* Subtitle — Body LG: Inter 400 */}

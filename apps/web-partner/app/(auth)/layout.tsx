@@ -1,19 +1,25 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ThemeToggle } from "../_components/layout/theme-toggle";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 selection:bg-blue-500 selection:text-white p-4 sm:p-6 md:p-10">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-blue-500 selection:text-white p-4 sm:p-6 md:p-10">
+      {/* Top Right Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Background Orbs & Subtle Grid (web-user style) */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         {/* Soft Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-50" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-50 dark:opacity-30" />
         
         {/* Glowing Gradient Orbs */}
-        <div className="absolute -top-32 -left-32 h-[550px] w-[550px] rounded-full bg-blue-400/20 blur-[130px]" />
-        <div className="absolute -bottom-32 -right-32 h-[550px] w-[550px] rounded-full bg-orange-300/25 blur-[130px]" />
-        <div className="absolute top-1/3 right-1/4 h-[350px] w-[350px] rounded-full bg-indigo-300/20 blur-[100px]" />
+        <div className="absolute -top-32 -left-32 h-[550px] w-[550px] rounded-full bg-blue-400/20 dark:bg-blue-600/15 dark:opacity-20 blur-[130px]" />
+        <div className="absolute -bottom-32 -right-32 h-[550px] w-[550px] rounded-full bg-orange-300/25 dark:bg-orange-600/15 dark:opacity-20 blur-[130px]" />
+        <div className="absolute top-1/3 right-1/4 h-[350px] w-[350px] rounded-full bg-indigo-300/20 dark:bg-indigo-600/15 dark:opacity-20 blur-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-5xl grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -31,43 +37,43 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                   priority
                   className="h-10 w-auto object-contain"
                 />
-                <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200 shadow-sm">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 font-semibold border border-orange-200 dark:border-orange-800/60 shadow-sm">
                   Partner
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">Hamkorlar Boshqaruv Portali</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Hamkorlar Boshqaruv Portali</p>
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
                 Joylashtirish va <br />
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">
                   Ijara Biznesingizni
                 </span> Boshqaring
               </h2>
-              <p className="text-sm text-slate-600 leading-relaxed font-normal">
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Mehmonxona, Hostel, Dacha, Restoran va Transport vositalaringizni Safaar platformasida osongina ro'yxatdan o'tkazing va buyurtmalarni jonli kuzating.
               </p>
 
               {/* Feature Cards */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-sm backdrop-blur-md">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Aqlli Bandlik Kalendari</p>
-                    <p className="text-[11px] text-slate-500">Xona va stollar bandligini bir joyda kuzatib boring</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Aqlli Bandlik Kalendari</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Xona va stollar bandligini bir joyda kuzatib boring</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-sm backdrop-blur-md">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Kafolatlangan To'lovlar</p>
-                    <p className="text-[11px] text-slate-500">Shaffof moliya va har haftalik to'lov tushumlari</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Kafolatlangan To'lovlar</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Shaffof moliya va har haftalik to'lov tushumlari</p>
                   </div>
                 </div>
               </div>
@@ -75,9 +81,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </div>
 
           {/* Bottom Trust Badge */}
-          <div className="pt-8 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between font-medium">
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
             <span>© {new Date().getFullYear()} Safaar.uz</span>
-            <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
               <CheckCircle2 className="h-4 w-4" />
               Tizim ishlamoqda
             </span>
@@ -86,9 +92,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Right Side: Clean White Auth Container */}
         <div className="lg:col-span-7 flex flex-col justify-center">
-          <div className="relative rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 md:p-10 shadow-xl shadow-slate-200/50">
+          <div className="relative rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 md:p-10 shadow-xl dark:shadow-none shadow-slate-200/50">
             {/* Mobile Header */}
-            <div className="lg:hidden flex items-center justify-between gap-3 mb-6 pb-6 border-b border-slate-100">
+            <div className="lg:hidden flex items-center justify-between gap-3 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
                 <Image
                   src="/logo.png"
@@ -98,11 +104,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                   priority
                   className="h-8 w-auto object-contain"
                 />
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 font-semibold border border-orange-200 dark:border-orange-800/60">
                   Partner
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">Hamkor Kabineti</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Hamkor Kabineti</p>
             </div>
 
             {children}

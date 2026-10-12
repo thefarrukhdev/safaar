@@ -1,0 +1,76 @@
+name: SSL Certificate Monitor
+
+# Safaar — SSL Sertifikatlari Muddati Monitoringi
+# Har dushanba soat 05:00 da (Toshkent vaqti) yoki qo'lda (workflow_dispatch)
+# barcha 4 ta asosiy domenlarning SSL sertifikatlarini tekshiradi:
+#   1) safaar.uz
+#   2) staff.safaar.uz
+#   3) partner.safaar.uz
+#   4) api.safaar.uz
+# Agar biror domenda SSL muddati 14 kun yoki 7 kundan kam qolgan bo'lsa,
+# darhol Telegram guruhga va shaxsiy profilga OGOHLANTIRISH yuboradi.
+
+on:
+  schedule:
+    # Har dushanba 00:00 UTC (Toshkent vaqti bilan 05:00)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ssl-monitor
+  cancel-in-progress: false
+
+jobs:
+  check-ssl:
+    name: SSL Sertifikatlarini Tekshirish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: Toshkent vaqtini aniqlash
+        id: time
+        run: |
+          NOW=$(TZ="Asia/Tashkent" date "+%Y-%m-%d %H:%M")
+          echo "now=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: SSL sertifikatlarini tekshirish
+        id: ssl
+        env:
+          NOW_TIME: ${{ steps.time.outputs.now }}
+        run: |
+          python3 scripts/ssl-expiry-check.py
+
+      # 1) Ogohlantirish (Muddati 14 yoki 7 kundan kam qolganda)
+      - name: Telegram Xabarnoma (SSL Alert)
+        if: steps.ssl.outputs.is_alert == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🚨 <b>DIQQAT: Safaar SSL Sertifikati Muddati Tugamoqda!</b>
+
+            <b>Ogohlantirish darajasi:</b> ${{ steps.ssl.outputs.alert_level }}
+            
+            ${{ steps.ssl.outputs.alert_details }}
+
+            ⏱️ <b>Vaqt:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            Iltimos, sertifikatlarni avtomatik yangilanishini tekshiring yoki yangilang!
+
+      # 2) Qo'lda ishga tushirilganda (Manual Status Report)
+      - name: Telegram Xabarnoma (SSL To'liq Hisobot)
+        if: github.event_name == 'workflow_dispatch' && steps.ssl.outputs.is_alert == 'false'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🔒 <b>Safaar SSL Sertifikatlari Holati:</b>
+
+            ${{ steps.ssl.outputs.report_body }}
+
+            ⏱️ <b>Tekshiruv vaqti:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            Barcha SSL sertifikatlari faol va xavfsiz holatda ✅

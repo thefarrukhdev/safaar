@@ -1,0 +1,142 @@
+name: Server Health & Container Watchdog
+
+# Safaar — Production Server Resurslari va Konteynerlar Nazorati
+# Har 30 daqiqada quyidagilarni tekshiradi:
+#   1) Barcha 4 ta asosiy Docker konteynerlar (safaar-backend, safaar-db, safaar-redis, safaar-telegram-relay)
+#   2) Xotira (RAM) bandligi (chegara: 90%)
+#   3) Disk bandligi (chegara: 85%)
+#   4) CPU Load average va Uptime
+# Agar biror konteyner to'xtab qolsa yoki RAM to'lib qolsa — darhol Telegram'ga ALARM beradi.
+# Qo'lda (workflow_dispatch) ishga tushirilganda — to'liq server hisobotini yuboradi.
+
+on:
+  schedule:
+    # Har 30 daqiqada
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: server-health-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check-health:
+    name: Server Resurslari va Konteynerlar Nazorati
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: Toshkent vaqtini aniqlash
+        id: time
+        run: |
+          NOW=$(TZ="Asia/Tashkent" date "+%Y-%m-%d %H:%M")
+          echo "now=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: SSH agent sozlash
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Server host key'ini tanish
+        run: |
+          mkdir -p ~/.ssh
+          cat << 'EOF' >> ~/.ssh/config
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 60
+            TCPKeepAlive yes
+          EOF
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Serverda salomatlik skriptini yurgazish
+        id: monitor
+        run: |
+          set -euo pipefail
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+
+          scp scripts/check-server-health.sh "${TARGET}:/tmp/check-server-health.sh"
+          ssh "${TARGET}" "chmod +x /tmp/check-server-health.sh && /tmp/check-server-health.sh" > health_output.txt
+          cat health_output.txt
+
+          IS_ALERT=$(grep '^IS_ALERT=' health_output.txt | cut -d'=' -f2 || echo "false")
+          RAM_TOTAL_MB=$(grep '^RAM_TOTAL_MB=' health_output.txt | cut -d'=' -f2 || echo "0")
+          RAM_USED_MB=$(grep '^RAM_USED_MB=' health_output.txt | cut -d'=' -f2 || echo "0")
+          RAM_AVAIL_MB=$(grep '^RAM_AVAIL_MB=' health_output.txt | cut -d'=' -f2 || echo "0")
+          RAM_PERCENT=$(grep '^RAM_PERCENT=' health_output.txt | cut -d'=' -f2 || echo "0")
+          SWAP_TOTAL_MB=$(grep '^SWAP_TOTAL_MB=' health_output.txt | cut -d'=' -f2 || echo "0")
+          SWAP_USED_MB=$(grep '^SWAP_USED_MB=' health_output.txt | cut -d'=' -f2 || echo "0")
+          DISK_TOTAL=$(grep '^DISK_TOTAL=' health_output.txt | cut -d'=' -f2 || echo "0G")
+          DISK_USED=$(grep '^DISK_USED=' health_output.txt | cut -d'=' -f2 || echo "0G")
+          DISK_AVAIL=$(grep '^DISK_AVAIL=' health_output.txt | cut -d'=' -f2 || echo "0G")
+          DISK_PERCENT=$(grep '^DISK_PERCENT=' health_output.txt | cut -d'=' -f2 || echo "0")
+          LOAD_AVG=$(grep '^LOAD_AVG=' health_output.txt | cut -d'=' -f2- || echo "0.0")
+          UPTIME_STR=$(grep '^UPTIME_STR=' health_output.txt | cut -d'=' -f2- || echo "unknown")
+          CONTAINERS_STATUS=$(grep '^CONTAINERS_STATUS=' health_output.txt | cut -d'=' -f2- || echo "")
+          ALERT_REASONS=$(grep '^ALERT_REASONS=' health_output.txt | cut -d'=' -f2- || echo "")
+
+          echo "is_alert=${IS_ALERT}" >> $GITHUB_OUTPUT
+          echo "ram_total_mb=${RAM_TOTAL_MB}" >> $GITHUB_OUTPUT
+          echo "ram_used_mb=${RAM_USED_MB}" >> $GITHUB_OUTPUT
+          echo "ram_avail_mb=${RAM_AVAIL_MB}" >> $GITHUB_OUTPUT
+          echo "ram_percent=${RAM_PERCENT}" >> $GITHUB_OUTPUT
+          echo "swap_total_mb=${SWAP_TOTAL_MB}" >> $GITHUB_OUTPUT
+          echo "swap_used_mb=${SWAP_USED_MB}" >> $GITHUB_OUTPUT
+          echo "disk_total=${DISK_TOTAL}" >> $GITHUB_OUTPUT
+          echo "disk_used=${DISK_USED}" >> $GITHUB_OUTPUT
+          echo "disk_avail=${DISK_AVAIL}" >> $GITHUB_OUTPUT
+          echo "disk_percent=${DISK_PERCENT}" >> $GITHUB_OUTPUT
+          echo "load_avg=${LOAD_AVG}" >> $GITHUB_OUTPUT
+          echo "uptime_str=${UPTIME_STR}" >> $GITHUB_OUTPUT
+          echo "containers_status=${CONTAINERS_STATUS}" >> $GITHUB_OUTPUT
+          echo "alert_reasons=${ALERT_REASONS}" >> $GITHUB_OUTPUT
+
+      # 1) Nosozlik yuz berganda (Alert)
+      - name: Telegram Xabarnoma (Kritik Alert)
+        if: steps.monitor.outputs.is_alert == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🚨 <b>DIQQAT: Safaar Serverida Nosozlik Aniqlandi!</b>
+
+            <b>Aniqlangan muammolar:</b>
+            ${{ steps.monitor.outputs.alert_reasons }}
+
+            📦 <b>Konteynerlar holati:</b>
+            ${{ steps.monitor.outputs.containers_status }}
+
+            🧠 <b>RAM:</b> ${{ steps.monitor.outputs.ram_used_mb }}MB / ${{ steps.monitor.outputs.ram_total_mb }}MB (${{ steps.monitor.outputs.ram_percent }}%)
+            💾 <b>Disk:</b> ${{ steps.monitor.outputs.disk_used }} / ${{ steps.monitor.outputs.disk_total }} (${{ steps.monitor.outputs.disk_percent }}%)
+            ⏱️ <b>Vaqt:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Batafsil loglarni ko'rish</a>
+
+      # 2) Qo'lda ishga tushirilganda (Manual Status Report)
+      - name: Telegram Xabarnoma (To'liq Hisobot)
+        if: github.event_name == 'workflow_dispatch' && steps.monitor.outputs.is_alert == 'false'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🛡️ <b>Safaar Production Server Holati (Watchdog):</b>
+
+            📦 <b>Konteynerlar:</b>
+            ${{ steps.monitor.outputs.containers_status }}
+            🧠 <b>RAM bandligi:</b> ${{ steps.monitor.outputs.ram_used_mb }}MB / ${{ steps.monitor.outputs.ram_total_mb }}MB (${{ steps.monitor.outputs.ram_percent }}%)
+            🔄 <b>Swap:</b> ${{ steps.monitor.outputs.swap_used_mb }}MB / ${{ steps.monitor.outputs.swap_total_mb }}MB
+            💾 <b>Disk:</b> ${{ steps.monitor.outputs.disk_used }} / ${{ steps.monitor.outputs.disk_total }} (Bo'sh: ${{ steps.monitor.outputs.disk_avail }}, ${{ steps.monitor.outputs.disk_percent }}%)
+            ⚡ <b>CPU Load:</b> ${{ steps.monitor.outputs.load_avg }}
+            ⏳ <b>Server Uptime:</b> ${{ steps.monitor.outputs.uptime_str }}
+
+            ⏱️ <b>Tekshiruv vaqti:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            Barcha konteynerlar va resurslar barqaror ishlamoqda ✅
+
+      - name: Tekshiruv natijasini tasdiqlash
+        if: steps.monitor.outputs.is_alert == 'true'
+        run: |
+          echo "Serverda nosozlik yoki resurs tanqisligi aniqlandi!"
+          exit 1

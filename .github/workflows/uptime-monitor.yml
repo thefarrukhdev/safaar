@@ -1,0 +1,79 @@
+name: Uptime & Health Monitor
+
+# Safaar — 24/7 Servislar Salomatligi va Uptime Monitoringi
+# Har 15 daqiqada quyidagi xizmatlarni avtomatik tekshirib turadi:
+#   1) Mijozlar sayti: https://www.safaar.uz/uz
+#   2) Admin panel: https://staff.safaar.uz/login
+#   3) Hamkor kabineti: https://partner.safaar.uz/login
+#   4) Backend API, Database va Redis: https://api.safaar.uz/v1/health/ready
+#
+# Agar biron bir servis ishlamay qolsa (502, 500, timeout) — Telegram bot orqali zudlik bilan QIZIL SIGNAL (ALERT) beradi.
+# Qo'lda (workflow_dispatch) ishga tushirilganda esa to'liq monitoring hisobotini yuboradi.
+
+on:
+  schedule:
+    # Har 15 daqiqada
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: uptime-monitor
+  cancel-in-progress: false
+
+jobs:
+  health-check:
+    name: Servislar Holatini Tekshirish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: Toshkent vaqtini aniqlash
+        id: time
+        run: |
+          NOW=$(TZ="Asia/Tashkent" date "+%Y-%m-%d %H:%M")
+          echo "now=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: Xizmatlarni tekshirish (Health Check)
+        id: check
+        continue-on-error: true
+        run: |
+          chmod +x scripts/uptime-check.sh
+          ./scripts/uptime-check.sh
+
+      # 1) Nosozlik yuz berganda (Alert)
+      - name: Telegram Xabarnoma (Nosozlik Alert)
+        if: steps.check.outcome == 'failure'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🚨 <b>DIQQAT: Safaar Servisida Nosozlik Aniqlandi!</b>
+
+            Quyidagi xizmat(lar) javob bermayapti yoki xatolik qaytardi:
+            ${{ steps.check.outputs.error_details }}
+            ⏱️ <b>Vaqt:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Batafsil loglarni ko'rish</a>
+
+      # 2) Qo'lda ishga tushirilganda (Manual Status Report)
+      - name: Telegram Xabarnoma (Manual Status Report)
+        if: github.event_name == 'workflow_dispatch' && steps.check.outcome == 'success'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            📊 <b>Safaar Tizimlar Salomatligi (Uptime Report):</b>
+
+            ${{ steps.check.outputs.report_body }}
+            ⏱️ <b>Tekshiruv vaqti:</b> ${{ steps.time.outputs.now }} (Toshkent vaqti)
+            Barcha xizmatlar barqaror va 100% faol ✅
+
+      - name: Tekshiruv natijasini tasdiqlash
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "Kamida bitta servisda nosozlik aniqlandi!"
+          exit 1

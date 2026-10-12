@@ -1868,9 +1868,9 @@ export const AdminApi = {
     formData.set('file', file);
     
     const token = typeof window !== 'undefined' ? Cookies.get("admin_token") : undefined;
-    const baseURL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL 
-      ? process.env.NEXT_PUBLIC_API_URL 
-      : '/api/backend';
+    const baseURL = typeof window !== 'undefined'
+      ? '/api/backend'
+      : (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL : '/api/backend');
       
     const res = await fetch(`${baseURL}/uploads/images`, {
       method: 'POST',

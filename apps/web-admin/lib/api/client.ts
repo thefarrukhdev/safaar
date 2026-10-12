@@ -1,8 +1,20 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
+/**
+ * Brauzerda har doim same-origin `/api/backend` Next.js rewrite orqali so'rov yuboriladi.
+ * Bu ixtiyoriy subdomenda (masalan `staff.safaar.uz`) CORS muammolarini 100% oldini oladi.
+ * Faqat SSR paytida yoki maxsus holatlarda NEXT_PUBLIC_API_URL ishlatiladi.
+ */
+function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return "/api/backend";
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+}
+
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/backend",
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

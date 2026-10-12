@@ -35,6 +35,7 @@ describe('corsOriginsFromEnv', () => {
       'https://safaar-partner-ten.vercel.app',
       'https://safaar.uz',
       'https://admin.safaar.uz',
+      'https://staff.safaar.uz',
     ]);
   });
 
@@ -52,11 +53,13 @@ describe('corsOriginsFromEnv', () => {
       'https://partner.safaar.uz',
       'https://safaar-partner-ten.vercel.app',
       'https://admin.safaar.uz',
+      'https://staff.safaar.uz',
     ]);
     // The exact origin values a real browser request from the custom domain
     // would send (no trailing slash) must be present verbatim.
     expect(result).toContain('https://www.safaar.uz');
     expect(result).toContain('https://safaar.uz');
+    expect(result).toContain('https://staff.safaar.uz');
     // my.safaar.uz was verified NOT live in the Uzum onboarding investigation
     // and must never be silently trusted just because it shares the apex.
     expect(result).not.toContain('https://my.safaar.uz');

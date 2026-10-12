@@ -62,10 +62,10 @@ else
   echo "[disk-clean] Holat: Normal (${USE_PERCENT}% < ${ALERT_THRESHOLD}%)"
 fi
 
-# GitHub Actions uchun chiqish
-echo "total_size=${TOTAL_SIZE}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
-echo "used_size=${USED_SIZE}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
-echo "avail_size=${AVAIL_SIZE}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
-echo "use_percent=${USE_PERCENT}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
-echo "freed_str=${FREED_STR}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
-echo "is_alert=${IS_ALERT}" >> "${GITHUB_OUTPUT:-/dev/null}" || true
+# Chiquvchi parametrlar
+echo "TOTAL_SIZE=${TOTAL_SIZE}"
+echo "USED_SIZE=${USED_SIZE}"
+echo "AVAIL_SIZE=${AVAIL_SIZE}"
+echo "USE_PERCENT=${USE_PERCENT}"
+echo "FREED_STR=${FREED_STR}"
+echo "IS_ALERT=${IS_ALERT}"

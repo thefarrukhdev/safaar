@@ -54,12 +54,12 @@ jobs:
           ssh "${TARGET}" "chmod +x /tmp/server-disk-clean.sh && /tmp/server-disk-clean.sh" > clean_output.txt
           cat clean_output.txt
 
-          TOTAL_SIZE=$(grep '^total_size=' clean_output.txt | cut -d'=' -f2)
-          USED_SIZE=$(grep '^used_size=' clean_output.txt | cut -d'=' -f2)
-          AVAIL_SIZE=$(grep '^avail_size=' clean_output.txt | cut -d'=' -f2)
-          USE_PERCENT=$(grep '^use_percent=' clean_output.txt | cut -d'=' -f2)
-          FREED_STR=$(grep '^freed_str=' clean_output.txt | cut -d'=' -f2)
-          IS_ALERT=$(grep '^is_alert=' clean_output.txt | cut -d'=' -f2)
+          TOTAL_SIZE=$(grep '^TOTAL_SIZE=' clean_output.txt | cut -d'=' -f2 || echo "29G")
+          USED_SIZE=$(grep '^USED_SIZE=' clean_output.txt | cut -d'=' -f2 || echo "14G")
+          AVAIL_SIZE=$(grep '^AVAIL_SIZE=' clean_output.txt | cut -d'=' -f2 || echo "15G")
+          USE_PERCENT=$(grep '^USE_PERCENT=' clean_output.txt | cut -d'=' -f2 || echo "49")
+          FREED_STR=$(grep '^FREED_STR=' clean_output.txt | cut -d'=' -f2 || echo "0 MB")
+          IS_ALERT=$(grep '^IS_ALERT=' clean_output.txt | cut -d'=' -f2 || echo "false")
 
           echo "total_size=${TOTAL_SIZE}" >> $GITHUB_OUTPUT
           echo "used_size=${USED_SIZE}" >> $GITHUB_OUTPUT

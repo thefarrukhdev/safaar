@@ -1,0 +1,55 @@
+name: Lighthouse & Web Vitals Audit
+
+# Safaar — Frontend Tezligi va Core Web Vitals Auditi
+# Google Lighthouse orqali saytning Performance, Accessibility, Best Practices,
+# va SEO ko'rsatkichlarini o'lchaydi hamda Telegram guruhiga hisobot yuboradi.
+
+on:
+  schedule:
+    # Har yakshanba soat 00:00 UTC (Toshkent vaqti bilan 05:00)
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Audit qilinadigan URL manzil'
+        required: false
+        default: 'https://www.safaar.uz/uz'
+
+concurrency:
+  group: lighthouse-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: Node.js muhitini sozlash
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Toshkent vaqtini aniqlash
+        id: time
+        run: |
+          NOW=$(TZ="Asia/Tashkent" date "+%Y-%m-%d %H:%M")
+          echo "now=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: Lighthouse auditini o'tkazish
+        id: audit
+        env:
+          TARGET_URL: ${{ inputs.target_url || 'https://www.safaar.uz/uz' }}
+          NOW_TIME: ${{ steps.time.outputs.now }}
+        run: |
+          python3 scripts/run-lighthouse.py
+
+      - name: Telegram Xabarnoma (Lighthouse Hisoboti)
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: ${{ steps.audit.outputs.message }}

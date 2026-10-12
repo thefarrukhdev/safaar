@@ -1,0 +1,121 @@
+# Safaar — Dependabot Xavfsizlik va Kutubxonalar Yangilanishi
+# Ushbu fayl GitHub Dependabot orqali zaifliklarni (vulnerabilities)
+# avtomatik aniqlash va xavfsiz yangilanish PR'larini ochish uchun xizmat qiladi.
+
+version: 2
+updates:
+  # 1) Root monorepo paketlari
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:devops"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      root-dependencies:
+        patterns:
+          - "*"
+
+  # 2) Backend API (NestJS + Prisma)
+  - package-ecosystem: "npm"
+    directory: "/apps/backend"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:backend"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(backend-deps)"
+    groups:
+      backend-dependencies:
+        patterns:
+          - "*"
+
+  # 3) Mijozlar sayti (web-user)
+  - package-ecosystem: "npm"
+    directory: "/apps/web-user"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:web-user"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(user-deps)"
+    groups:
+      web-user-dependencies:
+        patterns:
+          - "*"
+
+  # 4) Hamkor kabineti (web-partner)
+  - package-ecosystem: "npm"
+    directory: "/apps/web-partner"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:web-partner"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(partner-deps)"
+    groups:
+      web-partner-dependencies:
+        patterns:
+          - "*"
+
+  # 5) Admin panel (web-admin)
+  - package-ecosystem: "npm"
+    directory: "/apps/web-admin"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:web-admin"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(admin-deps)"
+    groups:
+      web-admin-dependencies:
+        patterns:
+          - "*"
+
+  # 6) GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tashkent"
+    open-pull-requests-limit: 5
+    labels:
+      - "area:devops"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(actions-deps)"

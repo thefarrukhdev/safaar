@@ -1,41 +1,36 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "./input";
-import { Button } from "./button";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
-export const PasswordInput = forwardRef<HTMLInputElement, InputProps>(function PasswordInput(
-  { className, ...props },
-  ref
-) {
-  const [showPassword, setShowPassword] = useState(false);
+export const PasswordInput = forwardRef<HTMLInputElement, InputProps>(
+  function PasswordInput({ className, ...props }, ref) {
+    const [showPassword, setShowPassword] = useState(false);
 
-  return (
-    <div className="relative">
-      <Input
-        ref={ref}
-        type={showPassword ? "text" : "password"}
-        className={className}
-        {...props}
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute right-0 top-0 h-9 w-9 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-        onClick={() => setShowPassword((prev) => !prev)}
-        tabIndex={-1}
-      >
-        {showPassword ? (
-          <EyeOff className="h-4 w-4" />
-        ) : (
-          <Eye className="h-4 w-4" />
-        )}
-        <span className="sr-only">
-          {showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
-        </span>
-      </Button>
-    </div>
-  );
-});
+    return (
+      <div className="relative w-full">
+        <Input
+          ref={ref}
+          type={showPassword ? "text" : "password"}
+          className={`pr-10 ${className || ""}`}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors cursor-pointer"
+          tabIndex={-1}
+          aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+        >
+          {showPassword ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    );
+  }
+);
+

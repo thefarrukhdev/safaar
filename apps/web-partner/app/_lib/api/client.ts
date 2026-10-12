@@ -135,9 +135,11 @@ function buildUrl(
 function storedOrganizationId(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
-    const auth = JSON.parse(
-      localStorage.getItem('uzbron-partner-auth') || '{}',
-    );
+    const raw =
+      localStorage.getItem('safaar-partner-auth') ||
+      localStorage.getItem('uzbron-partner-auth');
+    if (!raw) return undefined;
+    const auth = JSON.parse(raw);
     if (auth?.state?.user?.organizationId) {
       return auth.state.user.organizationId;
     }

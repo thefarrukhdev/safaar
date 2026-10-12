@@ -4,7 +4,20 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AuthTokens, Role } from '@safaar/types';
 
-export const AUTH_STORAGE_KEY = 'uzbron-partner-auth';
+export const AUTH_STORAGE_KEY = 'safaar-partner-auth';
+export const LEGACY_AUTH_STORAGE_KEY = 'uzbron-partner-auth';
+
+// Initial client hydration vaqtida eski kalitdan yangi kalitga ko'chirish
+if (typeof window !== 'undefined') {
+  try {
+    if (!localStorage.getItem(AUTH_STORAGE_KEY)) {
+      const legacy = localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
+      if (legacy) {
+        localStorage.setItem(AUTH_STORAGE_KEY, legacy);
+      }
+    }
+  } catch {}
+}
 
 export interface AuthUser {
   id: string;
@@ -53,7 +66,36 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: AUTH_STORAGE_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          if (typeof localStorage === 'undefined') return null;
+          const value = localStorage.getItem(name);
+          if (value !== null) return value;
+          if (name === AUTH_STORAGE_KEY) {
+            const legacyValue = localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
+            if (legacyValue !== null) {
+              try {
+                localStorage.setItem(AUTH_STORAGE_KEY, legacyValue);
+              } catch {}
+              return legacyValue;
+            }
+          }
+          return null;
+        },
+        setItem: (name, value) => {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(name, value);
+          }
+        },
+        removeItem: (name) => {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(name);
+            if (name === AUTH_STORAGE_KEY) {
+              localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
+            }
+          }
+        },
+      })),
       version: 2,
       migrate: () => ({ user: null, tokens: null }),
     },

@@ -8,6 +8,7 @@ name: Frontend Deploy (Vercel)
 #   - apps/web-user/**    -> web-user (safaar.uz)
 # Agar umumiy paketlar (package.json, pnpm-lock.yaml, packages/types/**) o'zgarsa,
 # barcha 3 ta ilova ham Vercel Production muhitiga avtomatik deploy qilinadi.
+# Deploy yakunlanganda Telegram bot orqali natija yuboriladi.
 
 on:
   push:
@@ -74,6 +75,34 @@ jobs:
       - name: Xulosa
         run: |
           echo "### 🚀 web-admin (staff.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
+      - name: Telegram Bildirishnoma (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>🚀 Safaar Frontend Deploy</b>
+            <b>Ilova:</b> web-admin (Super Admin)
+            <b>Domen:</b> https://staff.safaar.uz
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <b>Holat:</b> Muvaffaqiyatli yakunlandi ✅
+      - name: Telegram Bildirishnoma (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>❌ Safaar Frontend Deploy Xatosi!</b>
+            <b>Ilova:</b> web-admin (Super Admin)
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Loglarni ko'rish</a>
 
   # 3) web-partner (partner.safaar.uz)
   deploy-partner:
@@ -92,6 +121,34 @@ jobs:
       - name: Xulosa
         run: |
           echo "### 🚀 web-partner (partner.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
+      - name: Telegram Bildirishnoma (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>🚀 Safaar Frontend Deploy</b>
+            <b>Ilova:</b> web-partner (Hamkor Kabineti)
+            <b>Domen:</b> https://partner.safaar.uz
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <b>Holat:</b> Muvaffaqiyatli yakunlandi ✅
+      - name: Telegram Bildirishnoma (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>❌ Safaar Frontend Deploy Xatosi!</b>
+            <b>Ilova:</b> web-partner (Hamkor Kabineti)
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Loglarni ko'rish</a>
 
   # 4) web-user (safaar.uz)
   deploy-user:
@@ -110,3 +167,31 @@ jobs:
       - name: Xulosa
         run: |
           echo "### 🚀 web-user (safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
+      - name: Telegram Bildirishnoma (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>🚀 Safaar Frontend Deploy</b>
+            <b>Ilova:</b> web-user (Mijozlar Sayti)
+            <b>Domen:</b> https://safaar.uz
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <b>Holat:</b> Muvaffaqiyatli yakunlandi ✅
+      - name: Telegram Bildirishnoma (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>❌ Safaar Frontend Deploy Xatosi!</b>
+            <b>Ilova:</b> web-user (Mijozlar Sayti)
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Loglarni ko'rish</a>

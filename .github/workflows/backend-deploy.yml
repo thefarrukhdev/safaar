@@ -160,3 +160,32 @@ jobs:
           SRC_DIR="/home/${{ secrets.DEPLOY_USER }}/safaar-src-${SHA}"
           TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$TARGET" "rm -f '/tmp/deploy-production-${SHA}.sh' && rm -rf '${SRC_DIR}'"
+
+      - name: Telegram Bildirishnoma (Backend Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>🚀 Safaar Backend Deploy</b>
+            <b>Xizmat:</b> Docker Backend API (Production)
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <b>Holat:</b> Muvaffaqiyatli yakunlandi ✅
+
+      - name: Telegram Bildirishnoma (Backend Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>❌ Safaar Backend Deploy Xatosi!</b>
+            <b>Xizmat:</b> Docker Backend API (Production)
+            <b>Branch:</b> <code>${{ github.ref_name }}</code>
+            <b>Muallif:</b> ${{ github.actor }}
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Loglarni ko'rish</a>

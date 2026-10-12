@@ -1,0 +1,102 @@
+name: Database Backup (PostgreSQL)
+
+# Safaar — PostgreSQL Avtomatik Backup Workflow
+# Har kecha Toshkent vaqti bilan soat 03:00 da (22:00 UTC) avtomatik ishga tushadi.
+# Shuningdek, GitHub Actions sahifasidan qo'lda ("Run workflow") ham istalgan paytda ishga tushirish mumkin.
+# Jarayon:
+#   1) Serverga xavfsiz SSH orqali ulanadi;
+#   2) safaar-db konteyneridagi bazani dump qilib, .sql.gz formatida siqadi;
+#   3) Fayl yaxlitligini tekshiradi va serverda saqlaydi (14 kunlik retention);
+#   4) Faylni GitHub Artifacts'ga 30 kunga xavfsiz yuklaydi;
+#   5) Natijani Telegram bot orqali Lazizga yuboradi.
+
+on:
+  schedule:
+    # Har kuni 22:00 UTC (Toshkent vaqti bilan 03:00)
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: PostgreSQL Zaxira Nusxasini Olish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: SSH agent sozlash
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Server host key'ini tanish
+        run: |
+          mkdir -p ~/.ssh
+          cat << 'EOF' >> ~/.ssh/config
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 60
+            TCPKeepAlive yes
+          EOF
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Backup skriptini serverda ishga tushirish
+        id: run-backup
+        run: |
+          set -euo pipefail
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          
+          # Skriptni serverga uzatish va ishga tushirish
+          scp scripts/backup-db.sh "${TARGET}:/tmp/backup-db.sh"
+          ssh "${TARGET}" "chmod +x /tmp/backup-db.sh && /tmp/backup-db.sh" > backup_output.txt
+          cat backup_output.txt
+
+          # Chiqish parametrlarini o'qish
+          FILENAME=$(grep '^filename=' backup_output.txt | cut -d'=' -f2)
+          FILEPATH=$(grep '^filepath=' backup_output.txt | cut -d'=' -f2)
+          FILESIZE=$(grep '^filesize=' backup_output.txt | cut -d'=' -f2)
+
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "filepath=${FILEPATH}" >> $GITHUB_OUTPUT
+          echo "filesize=${FILESIZE}" >> $GITHUB_OUTPUT
+
+          # Zaxira faylini GitHub runner'ga yuklab olish (artifact uchun)
+          mkdir -p ./downloads
+          scp "${TARGET}:${FILEPATH}" "./downloads/${FILENAME}"
+
+      - name: Zaxira faylini GitHub Artifacts'ga saqlash (30 kun)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.run-backup.outputs.filename }}
+          path: ./downloads/${{ steps.run-backup.outputs.filename }}
+          retention-days: 30
+
+      - name: Telegram Bildirishnoma (Muvaffaqiyatli)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>💾 Safaar Baza Zaxira Nusxasi (Backup)</b>
+            <b>Fayl:</b> <code>${{ steps.run-backup.outputs.filename }}</code>
+            <b>Hajmi:</b> <code>${{ steps.run-backup.outputs.filesize }}</code>
+            <b>Holat:</b> Muvaffaqiyatli saqlandi ✅
+            <b>Saqlash joyi:</b> Server (14 kun) va GitHub Artifacts (30 kun)
+
+      - name: Telegram Bildirishnoma (Xatolik)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>🚨 DIQQAT: Safaar Baza Backup Xatoligi!</b>
+            <b>Sabab:</b> Bazani zaxiralash jarayonida nosozlik yuz berdi.
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Loglarni ko'rish</a>

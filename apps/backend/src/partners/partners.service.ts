@@ -217,7 +217,34 @@ export class PartnersService {
 
   async profile(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
-    return this.assertOrganization(organizationId);
+    const org = (await this.assertOrganization(organizationId)) as Record<
+      string,
+      unknown
+    >;
+    const hasCompanyName = Boolean(
+      String(org['brand_name'] ?? '').trim() ||
+        String(org['legal_name'] ?? '').trim(),
+    );
+    const hasAccountNumber = Boolean(
+      String(org['account_number'] ?? org['accountNumber'] ?? '').trim(),
+    );
+    const hasMfo = Boolean(String(org['mfo'] ?? '').trim());
+    const requiresCompanyDetails =
+      !hasCompanyName || !hasAccountNumber || !hasMfo;
+
+    const missingDetails: string[] = [];
+    if (!hasCompanyName) missingDetails.push('companyName');
+    if (!hasAccountNumber) missingDetails.push('accountNumber');
+    if (!hasMfo) missingDetails.push('mfo');
+
+    return {
+      ...org,
+      accountNumber: org['account_number'] ?? org['accountNumber'],
+      companyName: org['brand_name'] ?? org['legal_name'],
+      requiresCompanyDetails,
+      hasRequiredCompanyDetails: !requiresCompanyDetails,
+      missingDetails,
+    };
   }
 
   async updateProfile(

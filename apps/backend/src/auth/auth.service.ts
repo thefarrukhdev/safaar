@@ -803,6 +803,16 @@ export class AuthService {
     // frontend has no real way to tell a restaurant/transport/hostel/etc
     // partner apart from a hotel one, and silently defaults to 'hotel'.
     const organizationType = String(organization?.['type'] ?? 'hotel');
+    const hasCompanyName = Boolean(
+      String(organization?.['brand_name'] ?? '').trim() ||
+        String(organization?.['legal_name'] ?? '').trim(),
+    );
+    const hasAccountNumber = Boolean(
+      String(organization?.['account_number'] ?? '').trim(),
+    );
+    const hasMfo = Boolean(String(organization?.['mfo'] ?? '').trim());
+    const requiresCompanyDetails =
+      !hasCompanyName || !hasAccountNumber || !hasMfo;
 
     return {
       ...(await this.issueTokens({
@@ -818,6 +828,8 @@ export class AuthService {
       organization_type: organizationType,
       organizationType,
       partner_role: partnerUser.role,
+      requiresCompanyDetails,
+      hasRequiredCompanyDetails: !requiresCompanyDetails,
     };
   }
 
@@ -1581,6 +1593,8 @@ export class AuthService {
       organization_type: string;
       organizationType: string;
       partner_role: string;
+      requiresCompanyDetails?: boolean;
+      hasRequiredCompanyDetails?: boolean;
     }
   > {
     const rows = await this.pg.query<DbRow>(
@@ -1589,6 +1603,10 @@ export class AuthService {
           po.id::text as organization_id,
           po.status::text as organization_status,
           po.type::text as organization_type,
+          po.brand_name,
+          po.legal_name,
+          po.account_number,
+          po.mfo,
           pu.id::text as user_id,
           pu.status::text as user_status,
           COALESCE(pu.role, 'owner')::text as partner_role
@@ -1619,6 +1637,16 @@ export class AuthService {
     const organizationId = String(row['organization_id']);
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
     const organizationType = String(row['organization_type'] ?? 'hotel');
+    const hasCompanyName = Boolean(
+      String(row['brand_name'] ?? '').trim() ||
+        String(row['legal_name'] ?? '').trim(),
+    );
+    const hasAccountNumber = Boolean(
+      String(row['account_number'] ?? '').trim(),
+    );
+    const hasMfo = Boolean(String(row['mfo'] ?? '').trim());
+    const requiresCompanyDetails =
+      !hasCompanyName || !hasAccountNumber || !hasMfo;
 
     return {
       ...(await this.issueTokens({
@@ -1634,6 +1662,8 @@ export class AuthService {
       organization_type: organizationType,
       organizationType,
       partner_role: String(row['partner_role'] ?? 'owner'),
+      requiresCompanyDetails,
+      hasRequiredCompanyDetails: !requiresCompanyDetails,
     };
   }
 

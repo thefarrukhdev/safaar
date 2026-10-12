@@ -1,0 +1,103 @@
+name: Server Disk Maintenance & Monitor
+
+# Safaar — Production Server Disk Tozalash va Nazorati
+# Har kecha Toshkent vaqti bilan soat 04:00 da (23:00 UTC) avtomatik ishga tushadi.
+# Shuningdek, GitHub Actions sahifasidan qo'lda ("Run workflow") ham istalgan paytda diskni tozalash mumkin.
+# Jarayon:
+#   1) Serverga xavfsiz SSH orqali ulanadi;
+#   2) Docker eskirgan tasvirlar va keshlarini xavfsiz tozalaydi;
+#   3) Disk sig'imini o'lchaydi;
+#   4) Agar disk 85% dan oshsa — Telegram guruhiga OGOHLANTIRISH beradi;
+#   5) Qo'lda ishga tushirilganda — to'liq disk hisobotini Telegramga yuboradi.
+
+on:
+  schedule:
+    # Har kuni 23:00 UTC (Toshkent vaqti bilan 04:00)
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: server-disk-monitor
+  cancel-in-progress: false
+
+jobs:
+  disk-maintenance:
+    name: Server Diskini Tozalash va Tekshirish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: SSH agent sozlash
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Server host key'ini tanish
+        run: |
+          mkdir -p ~/.ssh
+          cat << 'EOF' >> ~/.ssh/config
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 60
+            TCPKeepAlive yes
+          EOF
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Serverda tozalash va monitoring skriptini yurgazish
+        id: clean
+        run: |
+          set -euo pipefail
+          TARGET="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+
+          scp scripts/server-disk-clean.sh "${TARGET}:/tmp/server-disk-clean.sh"
+          ssh "${TARGET}" "chmod +x /tmp/server-disk-clean.sh && /tmp/server-disk-clean.sh" > clean_output.txt
+          cat clean_output.txt
+
+          TOTAL_SIZE=$(grep '^total_size=' clean_output.txt | cut -d'=' -f2)
+          USED_SIZE=$(grep '^used_size=' clean_output.txt | cut -d'=' -f2)
+          AVAIL_SIZE=$(grep '^avail_size=' clean_output.txt | cut -d'=' -f2)
+          USE_PERCENT=$(grep '^use_percent=' clean_output.txt | cut -d'=' -f2)
+          FREED_STR=$(grep '^freed_str=' clean_output.txt | cut -d'=' -f2)
+          IS_ALERT=$(grep '^is_alert=' clean_output.txt | cut -d'=' -f2)
+
+          echo "total_size=${TOTAL_SIZE}" >> $GITHUB_OUTPUT
+          echo "used_size=${USED_SIZE}" >> $GITHUB_OUTPUT
+          echo "avail_size=${AVAIL_SIZE}" >> $GITHUB_OUTPUT
+          echo "use_percent=${USE_PERCENT}" >> $GITHUB_OUTPUT
+          echo "freed_str=${FREED_STR}" >> $GITHUB_OUTPUT
+          echo "is_alert=${IS_ALERT}" >> $GITHUB_OUTPUT
+
+      # 1) Disk to'lib borsa (Alert)
+      - name: Telegram Ogohlantirish (Disk Alert)
+        if: steps.clean.outputs.is_alert == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ⚠️ <b>DIQQAT: Safaar Serverida Disk Bandligi Yuqori!</b>
+
+            • <b>Server:</b> AWS Production (${{ secrets.DEPLOY_HOST }})
+            • <b>Bandlik darajasi:</b> <code>${{ steps.clean.outputs.use_percent }}%</code>
+            • <b>Ishlatilgan:</b> ${{ steps.clean.outputs.used_size }} / ${{ steps.clean.outputs.total_size }}
+            • <b>Qolgan bo'sh joy:</b> <code>${{ steps.clean.outputs.avail_size }}</code>
+            Iltimos, server diskini kengaytirish yoki tekshirishni rejalashtiring!
+
+      # 2) Qo'lda ishga tushirilganda (Status Report)
+      - name: Telegram Bildirishnoma (Manual Report)
+        if: github.event_name == 'workflow_dispatch'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🧹 <b>Safaar Server Disk Tozalash Hisoboti:</b>
+
+            • <b>Jami hajm:</b> ${{ steps.clean.outputs.total_size }}
+            • <b>Ishlatilgan:</b> ${{ steps.clean.outputs.used_size }} (${{ steps.clean.outputs.use_percent }}%)
+            • <b>Bo'sh joy:</b> <b>${{ steps.clean.outputs.avail_size }}</b> ✅
+            • <b>Bo'shatilgan hajm:</b> ${{ steps.clean.outputs.freed_str }}
+            • <b>Holat:</b> Disk xavfsiz va barqaror me'yorda.

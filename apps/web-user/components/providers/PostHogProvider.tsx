@@ -9,6 +9,11 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.posthog.com',
+        autocapture: false,
+        capture_pageview: true,
+        session_recording: {
+          maskAllInputs: true,
+        },
       });
     }
   }, []);

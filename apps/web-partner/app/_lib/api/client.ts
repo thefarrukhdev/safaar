@@ -2,7 +2,21 @@ import type { AuthTokens, ApiError } from '@safaar/types';
 import { isAccessTokenExpired } from '../auth/session';
 import { useAuthStore } from '../../_stores/auth-store';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
+/**
+ * Brauzerda har doim same-origin `/api/backend` Next.js rewrite orqali so'rov yuboriladi.
+ * Bu ixtiyoriy host/portda (masalan `http://localhost:3001` yoki subdomenda) CORS muammolarini 100% oldini oladi.
+ * Server-side (SSR) paytida yoki rewrite bo'lmagan muhitda to'g'ridan-to'g'ri backend URL ishlatiladi.
+ */
+function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '/api/backend';
+  }
+  return (
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'https://api.safaar.uz/v1'
+  );
+}
 
 interface ApiEnvelope<T> {
   success: true;
@@ -112,9 +126,10 @@ function buildUrl(
   path: string,
   searchParams?: RequestOptions['searchParams'],
 ): string {
+  const baseUrl = getApiBaseUrl();
   const rawUrl = path.startsWith('http')
     ? path
-    : `${API_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+    : `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
   const isAbsolute = /^https?:\/\//i.test(rawUrl);
   const base =
     typeof window !== 'undefined' ? window.location.origin : 'http://localhost';

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Shield, Lock, User, KeyRound, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, User, KeyRound, ArrowLeft } from "lucide-react";
 import Cookies from "js-cookie";
 import { AdminApi } from "../../../lib/api/admin-api";
 import { useAuthStore } from "../../../lib/store/auth";
@@ -113,8 +114,15 @@ export default function LoginPage() {
     <div className="animate-fade-in flex flex-col gap-6">
       {/* Brand Header */}
       <div className="text-center flex flex-col items-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30 mb-4">
-          <Shield size={30} />
+        <div className="mb-4 flex items-center justify-center">
+          <Image
+            src="/logo.png"
+            alt="Safaar"
+            width={180}
+            height={56}
+            className="h-11 sm:h-12 w-auto object-contain"
+            priority
+          />
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
           Safaar Admin <span className="text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">Control Center</span>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Building2, Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
+import { Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,16 +21,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between h-full py-4 pr-2">
           <div>
             {/* Brand Logo Header */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
-                <Building2 className="h-6 w-6" aria-hidden />
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-2">
+                <Image
+                  src="/logo.png"
+                  alt="Safaar"
+                  width={140}
+                  height={53}
+                  priority
+                  className="h-10 w-auto object-contain"
+                />
+                <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200 shadow-sm">
+                  Partner
+                </span>
               </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                  Safaar <span className="text-xs px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200">Partner</span>
-                </h1>
-                <p className="text-xs text-slate-500 font-medium">Hamkorlar Boshqaruv Portali</p>
-              </div>
+              <p className="text-xs text-slate-500 font-medium">Hamkorlar Boshqaruv Portali</p>
             </div>
 
             <div className="space-y-6">
@@ -82,14 +88,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="lg:col-span-7 flex flex-col justify-center">
           <div className="relative rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 md:p-10 shadow-xl shadow-slate-200/50">
             {/* Mobile Header */}
-            <div className="lg:hidden flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20">
-                <Building2 className="h-5 w-5" aria-hidden />
+            <div className="lg:hidden flex items-center justify-between gap-3 mb-6 pb-6 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <Image
+                  src="/logo.png"
+                  alt="Safaar"
+                  width={120}
+                  height={45}
+                  priority
+                  className="h-8 w-auto object-contain"
+                />
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200">
+                  Partner
+                </span>
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">Safaar Hamkor Kabineti</h1>
-                <p className="text-xs text-slate-500">Boshqaruv paneliga kirish</p>
-              </div>
+              <p className="text-xs text-slate-500 font-medium">Hamkor Kabineti</p>
             </div>
 
             {children}

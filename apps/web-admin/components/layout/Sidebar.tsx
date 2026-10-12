@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_ITEMS, type NavItem } from "@/lib/constants";
 import { AdminApi, type AdminNotificationSummary } from "@/lib/api/admin-api";
@@ -223,18 +225,47 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center h-16 px-4 border-b border-white/8 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center text-white font-bold text-sm shrink-0">
-            UB
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col animate-fade-in">
-              <span className="text-white font-bold text-base tracking-tight">Safaar</span>
-              <span className="text-[var(--sidebar-text)] text-[10px] uppercase tracking-widest">Admin Panel</span>
+      <div
+        className={cn(
+          "flex items-center h-16 border-b border-white/8 shrink-0 transition-all duration-300",
+          collapsed ? "justify-center px-2" : "px-4"
+        )}
+      >
+        <Link
+          href="/dashboard"
+          className={cn(
+            "flex items-center min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg",
+            collapsed ? "justify-center" : "gap-3"
+          )}
+          title="Safaar Admin Panel"
+        >
+          {collapsed ? (
+            <div className="w-9 h-9 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105">
+              <Image
+                src="/icon.png"
+                alt="Safaar Admin"
+                width={36}
+                height={36}
+                className="w-8 h-8 object-contain"
+                priority
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 animate-fade-in min-w-0">
+              <Image
+                src="/logo.png"
+                alt="Safaar"
+                width={120}
+                height={36}
+                className="h-8 w-auto object-contain transition-opacity duration-200 group-hover:opacity-90"
+                priority
+              />
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/20 shrink-0">
+                Admin Panel
+              </span>
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}

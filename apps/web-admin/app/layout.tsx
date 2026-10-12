@@ -20,6 +20,10 @@ export const metadata: Metadata = {
     template: "%s | Safaar Admin",
   },
   description: "Safaar platformasining super admin boshqaruv paneli. Foydalanuvchilar, hamkorlar, bronlar va moliyani boshqaring.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({

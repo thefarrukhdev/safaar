@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   title: "Safaar — Hamkor Kabineti",
   description:
     "Safaar platformasidagi mehmonxona va mashina ijarasi hamkorlari uchun boshqaruv paneli.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png" },
+    ],
+  },
 };
 
 export default function RootLayout({

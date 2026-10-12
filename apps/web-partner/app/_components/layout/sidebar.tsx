@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Hotel, X, Trees, CarFront, Bed, Home, UtensilsCrossed } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "../../_lib/utils/cn";
 import { useUiStore } from "../../_stores/ui-store";
@@ -64,31 +65,41 @@ export function Sidebar() {
         aria-label="Asosiy navigatsiya"
       >
         {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-3">
+        <div
+          className={cn(
+            "flex h-14 items-center border-b border-[var(--border)] transition-all duration-200",
+            collapsed && !mobileOpen
+              ? "justify-between px-1.5"
+              : "justify-between px-3",
+          )}
+        >
           <Link
             href="/"
-            className="flex items-center gap-2 overflow-hidden"
+            className="flex items-center gap-2 overflow-hidden min-w-0"
             aria-label="Safaar bosh sahifa"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-700 text-white shadow-sm">
-              {partnerType === "dacha" ? (
-                <Trees className="h-4 w-4" aria-hidden />
-              ) : partnerType === "bus" ? (
-                <CarFront className="h-4 w-4" aria-hidden />
-              ) : partnerType === "hostel" ? (
-                <Bed className="h-4 w-4" aria-hidden />
-              ) : partnerType === "guesthouse" ? (
-                <Home className="h-4 w-4" aria-hidden />
-              ) : partnerType === "restaurant" ? (
-                <UtensilsCrossed className="h-4 w-4" aria-hidden />
-              ) : (
-                <Hotel className="h-4 w-4" aria-hidden />
-              )}
-            </span>
-            {(!collapsed || mobileOpen) && (
-              <span className="flex flex-col leading-tight">
-                <span className="text-sm font-bold tracking-tight">Safaar</span>
-                <span className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)]">
+            {collapsed && !mobileOpen ? (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md overflow-hidden">
+                <Image
+                  src="/icon.png"
+                  alt="Safaar"
+                  width={28}
+                  height={28}
+                  priority
+                  className="h-6 w-6 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col justify-center min-w-0 py-0.5">
+                <Image
+                  src="/logo.png"
+                  alt="Safaar"
+                  width={96}
+                  height={36}
+                  priority
+                  className="h-6 w-auto object-contain"
+                />
+                <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--muted-foreground)] truncate mt-0.5">
                   {partnerType === "dacha"
                     ? "Dacha egasi"
                     : partnerType === "bus"
@@ -99,7 +110,7 @@ export function Sidebar() {
                           ? "Restoran egasi"
                           : "Hamkor"}
                 </span>
-              </span>
+              </div>
             )}
           </Link>
 
@@ -109,7 +120,10 @@ export function Sidebar() {
               type="button"
               onClick={toggle}
               aria-label={collapsed ? "Panel ochish" : "Panel yopish"}
-              className="hidden h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] md:inline-flex"
+              className={cn(
+                "hidden shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] md:inline-flex",
+                collapsed && !mobileOpen ? "h-7 w-7" : "h-8 w-8",
+              )}
             >
               <ChevronLeft
                 className={cn(

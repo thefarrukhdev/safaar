@@ -1,0 +1,112 @@
+name: Frontend Deploy (Vercel)
+
+# Safaar Monorepo — Frontend avtomatik deploy workflow
+# Har gal frontend dasturchilar `develop` yoki `main` branchlariga kod push qilganda:
+# paths-filter orqali qaysi frontend ilova(lar) o'zgargani aniqlanadi:
+#   - apps/web-admin/**   -> web-admin (staff.safaar.uz)
+#   - apps/web-partner/** -> web-partner (partner.safaar.uz)
+#   - apps/web-user/**    -> web-user (safaar.uz)
+# Agar umumiy paketlar (package.json, pnpm-lock.yaml, packages/types/**) o'zgarsa,
+# barcha 3 ta ilova ham Vercel Production muhitiga avtomatik deploy qilinadi.
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "apps/web-admin/**"
+      - "apps/web-partner/**"
+      - "apps/web-user/**"
+      - "packages/types/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/frontend-deploy.yml"
+
+concurrency:
+  group: vercel-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # 1) Qaysi ilovalar o'zgarganini tekshirish
+  detect-changes:
+    name: O'zgarishlarni aniqlash
+    runs-on: ubuntu-latest
+    outputs:
+      admin: ${{ steps.filter.outputs.admin }}
+      partner: ${{ steps.filter.outputs.partner }}
+      user: ${{ steps.filter.outputs.user }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'packages/types/**'
+              - '.github/workflows/frontend-deploy.yml'
+            admin:
+              - *shared
+              - 'apps/web-admin/**'
+            partner:
+              - *shared
+              - 'apps/web-partner/**'
+            user:
+              - *shared
+              - 'apps/web-user/**'
+
+  # 2) web-admin (staff.safaar.uz)
+  deploy-admin:
+    name: Deploy web-admin (staff.safaar.uz)
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.admin == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vercel CLI o'rnatish
+        run: npm install --global vercel@latest
+      - name: Vercel loyihasini ulash va Production Deploy
+        run: |
+          vercel link --yes --project=web-admin --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+      - name: Xulosa
+        run: |
+          echo "### 🚀 web-admin (staff.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
+
+  # 3) web-partner (partner.safaar.uz)
+  deploy-partner:
+    name: Deploy web-partner (partner.safaar.uz)
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.partner == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vercel CLI o'rnatish
+        run: npm install --global vercel@latest
+      - name: Vercel loyihasini ulash va Production Deploy
+        run: |
+          vercel link --yes --project=web-partner --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+      - name: Xulosa
+        run: |
+          echo "### 🚀 web-partner (partner.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
+
+  # 4) web-user (safaar.uz)
+  deploy-user:
+    name: Deploy web-user (safaar.uz)
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.user == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vercel CLI o'rnatish
+        run: npm install --global vercel@latest
+      - name: Vercel loyihasini ulash va Production Deploy
+        run: |
+          vercel link --yes --project=web-user --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+      - name: Xulosa
+        run: |
+          echo "### 🚀 web-user (safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY

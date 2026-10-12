@@ -1,0 +1,41 @@
+# Safaar — PR Auto-Labeler Qoidalari
+# PR dagi o'zgargan fayllar yo'liga (path) qarab avtomatik ravishda teglar (labels) biriktiriladi.
+
+area:web-user:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/web-user/**'
+
+area:web-partner:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/web-partner/**'
+
+area:web-admin:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/web-admin/**'
+
+area:backend:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/backend/**'
+
+area:types:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/types/**'
+
+area:devops:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'scripts/**'
+          - 'docker-compose*.yml'
+          - 'Dockerfile*'
+
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+area:e2e:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'e2e/**'

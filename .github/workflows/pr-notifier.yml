@@ -1,0 +1,68 @@
+name: PR Telegram Notifier
+
+# Safaar — Pull Request Telegram Bildirishnomalari
+# Yangi PR ochilganda, qayta ochilganda, review uchun tayyor bo'lganda,
+# yoki merge/close qilinganda Telegram guruhga (-1004482671722)
+# va shaxsiy chatga (6186454238) zudlik bilan xabar yuboradi.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+  workflow_dispatch:
+    inputs:
+      test_pr_number:
+        description: 'Test qilish uchun mavjud PR raqami (masalan: 4)'
+        required: false
+        default: '4'
+
+concurrency:
+  group: pr-telegram-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: Telegram Xabarnoma Yuborish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni yuklash
+        uses: actions/checkout@v4
+
+      - name: Toshkent vaqtini aniqlash
+        id: time
+        run: |
+          NOW=$(TZ="Asia/Tashkent" date "+%Y-%m-%d %H:%M")
+          echo "now=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: PR ma'lumotlarini tayyorlash va formatlash
+        id: prep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          TEST_PR: ${{ inputs.test_pr_number }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+          PR_CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
+          PR_TIME: ${{ steps.time.outputs.now }}
+        run: |
+          python3 scripts/format-pr-telegram.py
+
+      - name: Telegram Xabarnoma Yuborish
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: ${{ steps.prep.outputs.message }}

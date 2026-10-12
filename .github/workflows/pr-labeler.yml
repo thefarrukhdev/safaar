@@ -1,0 +1,25 @@
+name: PR Auto-Labeler
+
+# Safaar — Pull Request Auto-Labeler
+# Yangi PR ochilganda yoki commit qo'shilganda (synchronize), o'zgargan fayllarga
+# qarab tegishli "area:*" teglarni avtomatik tarzda biriktiradi.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Area Teglarini Biriktirish
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR Teglarini biriktirish
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false

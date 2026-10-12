@@ -223,7 +223,7 @@ export class PartnersService {
     >;
     const hasCompanyName = Boolean(
       String(org['brand_name'] ?? '').trim() ||
-        String(org['legal_name'] ?? '').trim(),
+      String(org['legal_name'] ?? '').trim(),
     );
     const hasAccountNumber = Boolean(
       String(org['account_number'] ?? org['accountNumber'] ?? '').trim(),
@@ -254,7 +254,10 @@ export class PartnersService {
     const organization = (await this.profile(actor)) as Record<string, unknown>;
     const now = new Date().toISOString();
     const brandName =
-      body.brand_name ?? body.brandName ?? body.company_name ?? body.companyName
+      (body.brand_name ??
+      body.brandName ??
+      body.company_name ??
+      body.companyName)
         ? String(
             body.brand_name ??
               body.brandName ??
@@ -263,7 +266,7 @@ export class PartnersService {
           ).trim()
         : String(organization['brand_name'] ?? '');
     const legalName =
-      body.legal_name ?? body.legalName
+      (body.legal_name ?? body.legalName)
         ? String(body.legal_name ?? body.legalName).trim()
         : String(organization['legal_name'] ?? brandName);
     const phone = body.phone
@@ -297,9 +300,7 @@ export class PartnersService {
       );
     }
     if (mfo && !/^\d{5}$/.test(String(mfo).replace(/\s/g, ''))) {
-      throw new BadRequestException(
-        "MFO 5 ta raqamdan iborat bo'lishi kerak",
-      );
+      throw new BadRequestException("MFO 5 ta raqamdan iborat bo'lishi kerak");
     }
 
     const result = await this.pg.query(

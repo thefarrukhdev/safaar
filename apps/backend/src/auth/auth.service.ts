@@ -805,7 +805,7 @@ export class AuthService {
     const organizationType = String(organization?.['type'] ?? 'hotel');
     const hasCompanyName = Boolean(
       String(organization?.['brand_name'] ?? '').trim() ||
-        String(organization?.['legal_name'] ?? '').trim(),
+      String(organization?.['legal_name'] ?? '').trim(),
     );
     const hasAccountNumber = Boolean(
       String(organization?.['account_number'] ?? '').trim(),
@@ -1639,7 +1639,7 @@ export class AuthService {
     const organizationType = String(row['organization_type'] ?? 'hotel');
     const hasCompanyName = Boolean(
       String(row['brand_name'] ?? '').trim() ||
-        String(row['legal_name'] ?? '').trim(),
+      String(row['legal_name'] ?? '').trim(),
     );
     const hasAccountNumber = Boolean(
       String(row['account_number'] ?? '').trim(),

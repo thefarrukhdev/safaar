@@ -66,9 +66,9 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-// Reusable styling for consistent input appearance across light and dark modes
+// Reusable styling for consistent input appearance across light mode
 const inputBaseClasses =
-  'w-full py-2.5 px-3.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-2xs';
+  'w-full py-2.5 px-3.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs';
 
 export default function RegisterPage() {
   const [submitted, setSubmitted] = useState<{ id: string } | null>(null);
@@ -224,14 +224,14 @@ export default function RegisterPage() {
   if (submitted) {
     return (
       <div className="flex flex-col gap-6 text-center animate-in fade-in-50 duration-200 py-4">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-200/80 shadow-sm">
           <CheckCircle2 className="h-8 w-8" aria-hidden />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Ariza yuborildi
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
             Arizangiz muvaffaqiyatli qabul qilindi va web-admin paneliga yo'naltirildi. Admin tasdiqlagandan so'ng kiritgan parolingiz bilan tizimga to'liq kira olasiz.
           </p>
         </div>
@@ -255,20 +255,20 @@ export default function RegisterPage() {
       <div className="flex flex-col gap-2">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors w-fit mb-0.5 cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors w-fit mb-0.5 cursor-pointer"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Login sahifasiga qaytish
         </Link>
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100/80 dark:border-blue-900/60">
+          <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100/80">
             <Building2 className="h-4 w-4" aria-hidden />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Hamkorlik arizasi
           </h2>
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400 leading-normal">
+        <p className="text-sm text-slate-500 leading-normal">
           {step === 'form' &&
             "Ma'lumotlarni to'ldiring. Tasdiqlash uchun telefon raqamingizga SMS kod yuboriladi."}
           {step === 'code' &&
@@ -280,26 +280,26 @@ export default function RegisterPage() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 p-3 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in-50 duration-200"
+          className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-in fade-in-50 duration-200"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
           <div className="flex-1 font-medium leading-relaxed">{error}</div>
         </div>
       )}
 
       {/* Step 2: SMS OTP Verification */}
       {step === 'code' && (
-        <div className="flex flex-col gap-4.5 animate-in fade-in-50 duration-200 mt-1 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+        <div className="flex flex-col gap-4.5 animate-in fade-in-50 duration-200 mt-1 bg-slate-50/80 border border-slate-200/80 p-5 rounded-2xl">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Kodni tasdiqlash</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <h3 className="text-sm font-bold text-slate-900">Kodni tasdiqlash</h3>
+              <p className="text-xs text-slate-500">
                 SMS orqali kelgan tasdiqlash kodi
               </p>
             </div>
             {challenge?.phone && (
-              <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                 {maskPhone(challenge.phone)}
               </span>
             )}
@@ -307,11 +307,11 @@ export default function RegisterPage() {
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="reg-code" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <Label htmlFor="reg-code" className="text-xs font-bold text-slate-700">
                 SMS Tasdiqlash kodi
               </Label>
               {countdown > 0 ? (
-                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                <span className="text-[11px] font-mono text-slate-500">
                   Qayta yuborish: {String(Math.floor(countdown / 60)).padStart(2, '0')}:
                   {String(countdown % 60).padStart(2, '0')}
                 </span>
@@ -320,7 +320,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={otpRequest.isPending}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} />
                   Kodni qayta yuborish
@@ -329,7 +329,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10" />
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
               <input
                 id="reg-code"
                 type="text"
@@ -339,22 +339,22 @@ export default function RegisterPage() {
                 placeholder="000000"
                 value={codeValue}
                 onChange={(e) => setCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-2xs"
+                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
               />
             </div>
 
             {/* Dev Mode Banner with one-click fill */}
             {challenge?.devCode && (
-              <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 p-2.5 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+              <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 border border-emerald-200/80 shadow-xs">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
                     <Sparkles className="h-3.5 w-3.5" />
                   </span>
                   <div>
-                    <p className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300">
+                    <p className="text-[11px] font-medium text-emerald-800">
                       Dasturlash rejimi kodi:
                     </p>
-                    <p className="font-mono text-xs font-bold text-emerald-950 dark:text-emerald-200 tracking-wider">
+                    <p className="font-mono text-xs font-bold text-emerald-950 tracking-wider">
                       {challenge.devCode}
                     </p>
                   </div>
@@ -362,16 +362,16 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => handleCopyDevCode(challenge.devCode!)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200 bg-white dark:bg-slate-800 hover:bg-emerald-100/80 dark:hover:bg-slate-700 border border-emerald-300 dark:border-emerald-700 rounded-lg shadow-2xs transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-white hover:bg-emerald-100/80 border border-emerald-300 rounded-lg shadow-2xs transition-all cursor-pointer"
                 >
                   {copiedCode ? (
                     <>
-                      <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                      <Check className="h-3 w-3 text-emerald-600" />
                       Kiritildi
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3 text-emerald-700 dark:text-emerald-400" />
+                      <Copy className="h-3 w-3 text-emerald-700" />
                       To'ldirish
                     </>
                   )}
@@ -386,7 +386,7 @@ export default function RegisterPage() {
               variant="outline"
               size="lg"
               onClick={() => setStep('form')}
-              className="w-1/3 text-xs font-semibold rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all cursor-pointer"
+              className="w-1/3 text-xs font-semibold rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer"
             >
               Orqaga
             </Button>
@@ -413,9 +413,9 @@ export default function RegisterPage() {
           {/* Phone Field */}
           <Field label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
             <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10" />
+              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
               <PhoneInput
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-2xs"
+                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
                 {...form.register('phone')}
               />
             </div>
@@ -427,10 +427,10 @@ export default function RegisterPage() {
             error={form.formState.errors.password?.message}
           >
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10" />
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
               <PasswordInput
                 placeholder="Kamida 6 ta belgi"
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-2xs"
+                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
                 {...form.register('password')}
               />
             </div>
@@ -440,27 +440,27 @@ export default function RegisterPage() {
           <Field label="Obyekt turi" error={form.formState.errors.type?.message}>
             <select
               {...form.register('type')}
-              className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3 text-sm text-slate-900 dark:text-slate-100 shadow-2xs transition-all focus:border-blue-600 dark:focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 cursor-pointer"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white cursor-pointer"
             >
-              <option value="hotel" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="hotel" className="bg-white text-slate-900">
                 Mehmonxona
               </option>
-              <option value="hostel" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="hostel" className="bg-white text-slate-900">
                 Yotoqxona (Hostel)
               </option>
-              <option value="guesthouse" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="guesthouse" className="bg-white text-slate-900">
                 Mehmon uyi
               </option>
-              <option value="motel" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="motel" className="bg-white text-slate-900">
                 Motel
               </option>
-              <option value="dacha" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="dacha" className="bg-white text-slate-900">
                 Dacha
               </option>
-              <option value="restaurant" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="restaurant" className="bg-white text-slate-900">
                 Restoran
               </option>
-              <option value="bus" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="bus" className="bg-white text-slate-900">
                 Transport (Mashina Ijarasi)
               </option>
             </select>
@@ -568,10 +568,10 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">{label}</Label>
+      <Label className="text-xs font-bold text-slate-700">{label}</Label>
       {children}
       {error ? (
-        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
+        <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {error}
         </p>

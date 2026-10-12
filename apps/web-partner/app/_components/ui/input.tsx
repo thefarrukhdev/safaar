@@ -4,10 +4,12 @@ import { forwardRef, useState, type InputHTMLAttributes } from "react";
 import { cn } from "../../_lib/utils/cn";
 import { Eye, EyeOff } from "lucide-react";
 
-type InputProps = InputHTMLAttributes<HTMLInputElement>;
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  hideToggle?: boolean;
+}
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, type, ...props },
+  { className, type, hideToggle, ...props },
   ref,
 ) {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,13 +28,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         "focus:border-brand-600 focus:bg-[var(--surface)] focus:outline-none focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900",
         "aria-[invalid=true]:border-red-500 aria-[invalid=true]:focus:ring-red-200 dark:aria-[invalid=true]:focus:ring-red-900",
         "disabled:cursor-not-allowed disabled:opacity-60",
-        isPassword ? "pr-10" : "",
+        isPassword && !hideToggle ? "pr-10" : "",
         className,
       )}
       type={inputType}
       {...props}
     />
-    {isPassword && (
+    {isPassword && !hideToggle && (
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}

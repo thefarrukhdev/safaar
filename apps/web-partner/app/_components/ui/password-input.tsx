@@ -13,6 +13,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, InputProps>(
         <Input
           ref={ref}
           type={showPassword ? "text" : "password"}
+          hideToggle
           className={`pr-10 ${className || ""}`}
           {...props}
         />

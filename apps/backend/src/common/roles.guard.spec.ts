@@ -12,12 +12,20 @@ jest.mock('../auth/session-store', () => ({
 function contextFor(
   headers: Record<string, string> = {},
   overrides: { requiredRoles?: Role[]; requiredPermissions?: string[] } = {},
+  requestOpts: { method?: string; url?: string; originalUrl?: string } = {},
 ): {
   context: ExecutionContext;
-  request: { user?: unknown; headers: Record<string, string> };
+  request: {
+    user?: unknown;
+    headers: Record<string, string>;
+    method?: string;
+    url?: string;
+    originalUrl?: string;
+  };
 } {
-  const request: { user?: unknown; headers: Record<string, string> } = {
+  const request = {
     headers,
+    ...requestOpts,
   };
   const context = {
     getHandler: () => ({ __roles: overrides.requiredRoles }),
@@ -294,5 +302,107 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
     pg.query.mockResolvedValueOnce([{ status: 'approved' }]);
     const { context } = contextFor({ authorization: `Bearer ${token}` });
     await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  describe('Partner Access Control (read-only until company name, account number and MFO provided)', () => {
+    const partnerToken = () =>
+      signJwt(
+        {
+          sub: '00000000-0000-0000-0000-0000000000bb',
+          role: Role.PARTNER,
+          roles: [Role.PARTNER],
+          actor_type: 'partner',
+          organization_id: '00000000-0000-0000-0000-0000000000cc',
+          session_id: 'session-partner',
+          jti: 'jti-partner',
+        },
+        'access',
+      );
+
+    it('allows GET requests for a newly registered (submitted) partner without bank details (read-only)', async () => {
+      reflector.getAllAndOverride
+        .mockReturnValueOnce([Role.PARTNER])
+        .mockReturnValueOnce(undefined);
+      pg.query.mockResolvedValueOnce([
+        {
+          status: 'submitted',
+          brand_name: 'Test Hotel',
+          legal_name: 'Test LLC',
+          account_number: null,
+          mfo: null,
+        },
+      ]);
+      const { context } = contextFor(
+        { authorization: `Bearer ${partnerToken()}` },
+        {},
+        { method: 'GET', url: '/partner/dashboard' },
+      );
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
+
+    it('denies mutation requests (e.g. POST) if account_number or mfo is missing with PARTNER_COMPANY_DETAILS_REQUIRED', async () => {
+      reflector.getAllAndOverride
+        .mockReturnValueOnce([Role.PARTNER])
+        .mockReturnValueOnce(undefined);
+      pg.query.mockResolvedValueOnce([
+        {
+          status: 'submitted',
+          brand_name: 'Test Hotel',
+          legal_name: 'Test LLC',
+          account_number: null,
+          mfo: null,
+        },
+      ]);
+      const { context } = contextFor(
+        { authorization: `Bearer ${partnerToken()}` },
+        {},
+        { method: 'POST', url: '/partner/rooms' },
+      );
+      await expect(guard.canActivate(context)).rejects.toMatchObject({
+        response: { code: 'PARTNER_COMPANY_DETAILS_REQUIRED' },
+      });
+    });
+
+    it('allows PATCH /partner/profile even if account_number and mfo are missing, so partner can submit them', async () => {
+      reflector.getAllAndOverride
+        .mockReturnValueOnce([Role.PARTNER])
+        .mockReturnValueOnce(undefined);
+      pg.query.mockResolvedValueOnce([
+        {
+          status: 'submitted',
+          brand_name: 'Test Hotel',
+          legal_name: 'Test LLC',
+          account_number: null,
+          mfo: null,
+        },
+      ]);
+      const { context } = contextFor(
+        { authorization: `Bearer ${partnerToken()}` },
+        {},
+        { method: 'PATCH', url: '/partner/profile' },
+      );
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
+
+    it('allows mutation requests once company name, account_number, and mfo are present', async () => {
+      reflector.getAllAndOverride
+        .mockReturnValueOnce([Role.PARTNER])
+        .mockReturnValueOnce(undefined);
+      pg.query.mockResolvedValueOnce([
+        {
+          status: 'submitted',
+          brand_name: 'Test Hotel',
+          legal_name: 'Test LLC',
+          account_number: '20208000900000123456',
+          mfo: '00014',
+        },
+      ]);
+      const { context } = contextFor(
+        { authorization: `Bearer ${partnerToken()}` },
+        {},
+        { method: 'POST', url: '/partner/rooms' },
+      );
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
   });
 });

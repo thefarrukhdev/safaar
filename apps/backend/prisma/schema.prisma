@@ -160,6 +160,8 @@ model PartnerOrganization {
   showcase              Boolean                  @default(false)
   contactPerson         String?                  @map("contact_person") @db.VarChar(255)
   initialPasswordHash   String?                  @map("initial_password_hash") @db.VarChar(255)
+  accountNumber         String?                  @map("account_number") @db.VarChar(64)
+  mfo                   String?                  @map("mfo") @db.VarChar(16)
   bookings              Booking[]
   busCompanies          BusCompany[]
   hotels                Hotel[]

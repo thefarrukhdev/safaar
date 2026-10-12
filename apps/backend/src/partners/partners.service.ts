@@ -226,9 +226,19 @@ export class PartnersService {
   ) {
     const organization = (await this.profile(actor)) as Record<string, unknown>;
     const now = new Date().toISOString();
-    const brandName = body.brand_name
-      ? String(body.brand_name)
-      : String(organization['brand_name'] ?? '');
+    const brandName =
+      body.brand_name ?? body.brandName ?? body.company_name ?? body.companyName
+        ? String(
+            body.brand_name ??
+              body.brandName ??
+              body.company_name ??
+              body.companyName,
+          ).trim()
+        : String(organization['brand_name'] ?? '');
+    const legalName =
+      body.legal_name ?? body.legalName
+        ? String(body.legal_name ?? body.legalName).trim()
+        : String(organization['legal_name'] ?? brandName);
     const phone = body.phone
       ? String(body.phone)
       : String(organization['phone'] ?? '');
@@ -239,12 +249,57 @@ export class PartnersService {
       ? String(body.address)
       : String(organization['address'] ?? '');
     const taxId = body.tax_id ?? body.taxId ?? organization['tax_id'];
+    const accountNumberRaw =
+      body.account_number ?? body.accountNumber ?? body.bank_account;
+    const accountNumber =
+      accountNumberRaw !== undefined && accountNumberRaw !== null
+        ? String(accountNumberRaw).replace(/\s/g, '').trim()
+        : organization['account_number'];
+    const mfoRaw = body.mfo;
+    const mfo =
+      mfoRaw !== undefined && mfoRaw !== null
+        ? String(mfoRaw).replace(/\s/g, '').trim()
+        : organization['mfo'];
+
+    if (
+      accountNumber &&
+      !/^\d{20}$/.test(String(accountNumber).replace(/\s/g, ''))
+    ) {
+      throw new BadRequestException(
+        "Hisob raqami 20 ta raqamdan iborat bo'lishi kerak",
+      );
+    }
+    if (mfo && !/^\d{5}$/.test(String(mfo).replace(/\s/g, ''))) {
+      throw new BadRequestException(
+        "MFO 5 ta raqamdan iborat bo'lishi kerak",
+      );
+    }
 
     const result = await this.pg.query(
-      `UPDATE partner_organizations SET brand_name = $1, phone = $2, email = $3, address = $4, tax_id = $5, updated_at = $6 WHERE id = $7 RETURNING *`,
-      [brandName, phone, email, address, taxId, now, organization['id']],
+      `UPDATE partner_organizations
+       SET brand_name = $1, legal_name = $2, phone = $3, email = $4, address = $5,
+           tax_id = $6, account_number = $7, mfo = $8, updated_at = $9
+       WHERE id = $10
+       RETURNING *`,
+      [
+        brandName,
+        legalName,
+        phone,
+        email,
+        address,
+        taxId,
+        accountNumber,
+        mfo,
+        now,
+        organization['id'],
+      ],
     );
-    return result[0];
+    const row = (result[0] ?? {}) as Record<string, unknown>;
+    return {
+      ...row,
+      accountNumber: row['account_number'] ?? row['accountNumber'],
+      companyName: row['brand_name'] ?? row['legal_name'],
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -472,6 +527,10 @@ export class PartnersService {
       body.contactPerson ?? body.contact_person,
     );
     const taxId = this.normalizeTaxId(body.taxId ?? body.tax_id);
+    const accountNumber = this.optionalString(
+      body.accountNumber ?? body.account_number ?? body.bank_account,
+    );
+    const mfo = this.optionalString(body.mfo);
     const fieldErrors: Record<string, string> = {};
 
     if (!brandName) {
@@ -490,10 +549,15 @@ export class PartnersService {
     } else if (!this.isValidEmail(email)) {
       fieldErrors.email = "Email noto'g'ri formatda";
     }
-    if (!taxId) {
-      fieldErrors.taxId = 'STIR raqamini kiriting';
-    } else if (!/^\d{9}$/.test(taxId)) {
+    if (taxId && !/^\d{9}$/.test(taxId)) {
       fieldErrors.taxId = "STIR 9 ta raqamdan iborat bo'lishi kerak";
+    }
+    if (accountNumber && !/^\d{20}$/.test(accountNumber.replace(/\s/g, ''))) {
+      fieldErrors.accountNumber =
+        "Hisob raqami 20 ta raqamdan iborat bo'lishi kerak";
+    }
+    if (mfo && !/^\d{5}$/.test(mfo.replace(/\s/g, ''))) {
+      fieldErrors.mfo = "MFO 5 ta raqamdan iborat bo'lishi kerak";
     }
 
     const rawPassword =
@@ -538,15 +602,15 @@ export class PartnersService {
         select id::text,
                regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g') as phone_match,
                lower(email) = lower($2) as email_match,
-               tax_id = $3 as tax_id_match
+               ($3::text <> '' and tax_id = $3) as tax_id_match
         from partner_organizations
         where regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
            or lower(email) = lower($2)
-           or tax_id = $3
+           or ($3::text <> '' and tax_id = $3)
         order by created_at desc
         limit 10
       `,
-      [phone, email, taxId],
+      [phone, email, taxId ?? ''],
     );
 
     const duplicateErrors: Record<string, string> = {};
@@ -558,7 +622,7 @@ export class PartnersService {
       if (duplicate['email_match']) {
         duplicateErrors.email = 'Bu email bilan ariza yoki hamkor mavjud';
       }
-      if (duplicate['tax_id_match']) {
+      if (taxId && duplicate['tax_id_match']) {
         duplicateErrors.taxId = 'Bu STIR bilan ariza yoki hamkor mavjud';
       }
     }
@@ -595,11 +659,11 @@ export class PartnersService {
           insert into partner_organizations (
             id, type, legal_name, brand_name, contact_person, tax_id, phone,
             email, city_id, address, status, default_commission_rate,
-            initial_password_hash, created_at, updated_at
+            initial_password_hash, account_number, mfo, created_at, updated_at
           )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $12)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $14, $14)
           returning id::text, type::text, legal_name, brand_name, contact_person,
-                    tax_id, phone, email, city_id::text, address, status::text,
+                    tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
                     rejection_reason, created_at, updated_at
         `,
         [
@@ -614,6 +678,8 @@ export class PartnersService {
           cityId,
           address,
           initialPasswordHash,
+          accountNumber,
+          mfo,
           now,
         ],
       );
@@ -628,11 +694,11 @@ export class PartnersService {
             insert into partner_organizations (
               id, type, legal_name, brand_name, contact_person, tax_id, phone,
               email, city_id, address, status, default_commission_rate,
-              created_at, updated_at
+              account_number, mfo, created_at, updated_at
             )
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $11)
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $13)
             returning id::text, type::text, legal_name, brand_name, contact_person,
-                      tax_id, phone, email, city_id::text, address, status::text,
+                      tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
                       rejection_reason, created_at, updated_at
           `,
           [
@@ -646,11 +712,35 @@ export class PartnersService {
             email,
             cityId,
             address,
+            accountNumber,
+            mfo,
             now,
           ],
         );
       } else {
         throw err;
+      }
+    }
+
+    if (initialPasswordHash) {
+      try {
+        await this.pg.query(
+          `insert into partner_users
+             (id, organization_id, email, phone, password_hash, full_name, role, status, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, 'owner', 'active', $7, $7)
+           on conflict (organization_id, email) do nothing`,
+          [
+            randomUUID(),
+            id,
+            email,
+            phone,
+            initialPasswordHash,
+            contactPerson ?? brandName,
+            now,
+          ],
+        );
+      } catch {
+        // partner_user is optional in fallback
       }
     }
 
@@ -674,7 +764,7 @@ export class PartnersService {
     const rows = await this.pg.query(
       `
         select id::text, type::text, legal_name, brand_name, contact_person,
-               tax_id, phone, email, city_id::text, address, status::text,
+               tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
                rejection_reason, created_at, updated_at
         from partner_organizations
         where ($1::text <> '' and regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g'))
@@ -5943,6 +6033,10 @@ export class PartnersService {
       city: String(row['city'] ?? row['city_id'] ?? ''),
       address: String(row['address'] ?? ''),
       taxId: row['tax_id'] ? String(row['tax_id']) : undefined,
+      accountNumber: row['account_number']
+        ? String(row['account_number'])
+        : undefined,
+      mfo: row['mfo'] ? String(row['mfo']) : undefined,
       type: String(row['type'] ?? 'hotel'),
       status: this.publicStatus(row['status']),
       rejectionReason: row['rejection_reason']

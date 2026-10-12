@@ -67,6 +67,21 @@ export class CreatePartnerRequestDto {
   @IsString()
   tax_id?: string;
 
+  @ApiPropertyOptional({ example: '20208000900000123456' })
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
+
+  @ApiPropertyOptional({ example: '20208000900000123456' })
+  @IsOptional()
+  @IsString()
+  account_number?: string;
+
+  @ApiPropertyOptional({ example: '00444' })
+  @IsOptional()
+  @IsString()
+  mfo?: string;
+
   @ApiPropertyOptional({ example: 'Samarqand' })
   @IsOptional()
   @IsString()

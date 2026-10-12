@@ -2924,6 +2924,78 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
     const fallbackCall = calls[3];
     expect(fallbackCall[0]).not.toMatch(/initial_password_hash/);
   });
+
+  it('accepts registration without taxId (STIR is optional) and with accountNumber and mfo', async () => {
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockResolvedValueOnce([
+        {
+          id: 'org-2',
+          type: 'hotel',
+          legal_name: 'No Tax Hotel',
+          brand_name: 'No Tax Hotel',
+          contact_person: 'Bank Tester',
+          tax_id: null,
+          account_number: '20208000900000123456',
+          mfo: '00014',
+          phone: '+998901234563',
+          email: 'notax@example.com',
+          city_id: 'city-1',
+          address: 'Navoiy 1',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-08-25T00:00:00.000Z',
+          updated_at: '2026-08-25T00:00:00.000Z',
+        },
+      ]) // INSERT ... RETURNING
+      .mockResolvedValueOnce([]); // insert partner_users
+
+    const { token } = registrationVerificationStore.issue('+998901234563');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'No Tax Hotel',
+      contactPerson: 'Bank Tester',
+      phone: '+998901234563',
+      email: 'notax@example.com',
+      city: 'Toshkent',
+      address: 'Navoiy 1',
+      accountNumber: '20208000900000123456',
+      mfo: '00014',
+      password: 'SecurePassword123!',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('No Tax Hotel');
+    expect(result.item.taxId).toBeUndefined();
+    expect(result.item.accountNumber).toBe('20208000900000123456');
+    expect(result.item.mfo).toBe('00014');
+  });
+
+  it('rejects registration with invalid accountNumber or invalid mfo length', async () => {
+    const { token } = registrationVerificationStore.issue('+998901234564');
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'Bad Bank Hotel',
+        phone: '+998901234564',
+        email: 'badbank@example.com',
+        city: 'Toshkent',
+        address: 'Navoiy 1',
+        accountNumber: '123',
+        mfo: '12',
+        phoneVerificationToken: token,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PARTNER_REQUEST_INVALID',
+        fields: {
+          accountNumber: expect.stringContaining('20'),
+          mfo: expect.stringContaining('5'),
+        },
+      },
+    });
+  });
 });
 
 describe('PartnersService.listPromotions (regression: "SAFAAR — COMPLETE PARTNER PROMOTIONS RELOAD PERSISTENCE" — no GET /partners/promotions existed at all, so a page reload could never restore a partner\'s own promotion list)', () => {

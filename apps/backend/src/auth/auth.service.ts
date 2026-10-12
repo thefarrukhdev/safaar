@@ -1545,6 +1545,30 @@ export class AuthService {
       };
     }
 
+    const orgRows = await this.pg.query<DbRow>(
+      `select id::text as organization_id, email, initial_password_hash as password_hash,
+              contact_person as full_name, status, created_at, updated_at
+       from partner_organizations
+       where lower(email) = lower($1) and initial_password_hash is not null
+       order by created_at desc
+       limit 1`,
+      [email],
+    );
+    const org = orgRows?.[0];
+    if (org && org['password_hash']) {
+      return {
+        id: String(org['organization_id']),
+        organization_id: String(org['organization_id']),
+        email: String(org['email']),
+        password_hash: String(org['password_hash']),
+        full_name: org['full_name'] ? String(org['full_name']) : undefined,
+        status: 'active',
+        role: 'owner',
+        created_at: String(org['created_at']),
+        updated_at: String(org['updated_at']),
+      };
+    }
+
     return undefined;
   }
 
@@ -1614,6 +1638,18 @@ export class AuthService {
   }
 
   private isPartnerLoginStatusAllowed(status: unknown): boolean {
+    return [
+      'approved',
+      'submitted',
+      'draft',
+      'under_review',
+      'more_information_required',
+      'blocked',
+      'suspended',
+    ].includes(String(status ?? '').toLowerCase());
+  }
+
+  private isPartnerPasswordResetAllowed(status: unknown): boolean {
     return ['approved', 'blocked', 'suspended'].includes(
       String(status ?? '').toLowerCase(),
     );
@@ -1657,7 +1693,7 @@ export class AuthService {
 
     await this.auditAuthEvent(
       'partner',
-      partnerUser.user_id,
+      partnerUser.user_id ?? partnerUser.organization_id,
       'partner.password_login',
       { organization_id: partnerUser.organization_id },
     );
@@ -1695,7 +1731,7 @@ export class AuthService {
       [phone],
     );
     const org = orgRows[0];
-    if (!org || !this.isPartnerLoginStatusAllowed(org['status'])) {
+    if (!org || !this.isPartnerPasswordResetAllowed(org['status'])) {
       throw new UnauthorizedException({
         code: 'PARTNER_NOT_ACTIVE',
         message: 'Hamkor tashkilot faol emas',
@@ -1881,7 +1917,8 @@ export class AuthService {
   > {
     const rows = await this.pg.query<DbRow>(
       `select po.id::text as organization_id, po.status::text as organization_status,
-              pu.id::text as user_id, pu.status::text as user_status, pu.password_hash
+              pu.id::text as user_id, pu.status::text as user_status,
+              COALESCE(pu.password_hash, po.initial_password_hash) as password_hash
        from partner_organizations po
        left join partner_users pu
          on pu.organization_id = po.id

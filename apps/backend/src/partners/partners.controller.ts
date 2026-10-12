@@ -33,6 +33,7 @@ export class PartnersController {
   }
 
   @Patch('profile')
+  @Put('profile')
   updateProfile(
     @CurrentActor() actor: RequestActor | undefined,
     @Body() body: Record<string, unknown>,

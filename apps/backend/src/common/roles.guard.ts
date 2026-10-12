@@ -192,24 +192,27 @@ export class RolesGuard implements CanActivate {
         });
       }
 
-      const rows = await this.pg.query<{ status: string }>(
-        `SELECT status FROM partner_organizations WHERE id = $1 LIMIT 1`,
+      const rows = await this.pg.query<{
+        status: string;
+        brand_name: string | null;
+        legal_name: string | null;
+        account_number: string | null;
+        mfo: string | null;
+      }>(
+        `SELECT status, brand_name, legal_name, account_number, mfo FROM partner_organizations WHERE id = $1 LIMIT 1`,
         [actor.organizationId],
       );
 
-      const status = rows[0]?.status;
-      if (!status || status === 'approved') {
-        return;
-      }
-
-      if (
-        LIMITED_PARTNER_STATUSES.has(status) &&
-        this.isLimitedPartnerRouteAllowed(request)
-      ) {
+      const org = rows[0];
+      const status = org?.status;
+      if (!status) {
         return;
       }
 
       if (status === 'blocked') {
+        if (this.isLimitedPartnerRouteAllowed(request)) {
+          return;
+        }
         throw new ForbiddenException({
           code: 'PARTNER_BLOCKED',
           message:
@@ -218,6 +221,9 @@ export class RolesGuard implements CanActivate {
       }
 
       if (status === 'suspended') {
+        if (this.isLimitedPartnerRouteAllowed(request)) {
+          return;
+        }
         throw new ForbiddenException({
           code: 'PARTNER_SUSPENDED',
           message:
@@ -225,10 +231,47 @@ export class RolesGuard implements CanActivate {
         });
       }
 
-      throw new ForbiddenException({
-        code: 'PARTNER_NOT_ACTIVE',
-        message: 'Hamkor tashkilot faol emas',
-      });
+      if (status === 'rejected') {
+        if (this.isLimitedPartnerRouteAllowed(request)) {
+          return;
+        }
+        throw new ForbiddenException({
+          code: 'PARTNER_REJECTED',
+          message:
+            'Hamkor arizasi rad etilgan. Faqat profil va yordam chatidan foydalanish mumkin.',
+        });
+      }
+
+      const method = String(request.method ?? 'GET').toUpperCase();
+      const isReadRequest =
+        method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+
+      if (isReadRequest) {
+        return;
+      }
+
+      // Read-only bo'lmagan so'rovlar (POST, PUT, PATCH, DELETE):
+      // Agar profil yoki arizani to'ldirish/yuborish yo'li bo'lsa ruxsat beriladi
+      if (this.isLimitedPartnerRouteAllowed(request)) {
+        return;
+      }
+
+      // Boshqa barcha amallarni bajarish uchun kompaniya nomi, hisob raqami va MFO majburiy
+      const hasCompanyName = Boolean(
+        org.brand_name?.trim() || org.legal_name?.trim(),
+      );
+      const hasAccountNumber = Boolean(org.account_number?.trim());
+      const hasMfo = Boolean(org.mfo?.trim());
+
+      if (!hasCompanyName || !hasAccountNumber || !hasMfo) {
+        throw new ForbiddenException({
+          code: 'PARTNER_COMPANY_DETAILS_REQUIRED',
+          message:
+            'Amallarni bajarish uchun kompaniya nomi, hisob raqami va MFO kiritilishi majburiy.',
+        });
+      }
+
+      return;
     }
   }
 
@@ -237,13 +280,21 @@ export class RolesGuard implements CanActivate {
     const path = rawPath
       .split('?')[0]
       .replace(/^\/api\/backend/i, '')
-      .replace(/^\/v\d+(?=\/)/i, '');
+      .replace(/^\/api/i, '')
+      .replace(/^\/v\d+(?=\/)/i, '')
+      .replace(/\/+$/, '');
 
     return (
       path === '/partners/profile' ||
       path === '/partner/profile' ||
       path === '/partners/application/status' ||
       path === '/partner/application/status' ||
+      path === '/partners/application/submit' ||
+      path === '/partner/application/submit' ||
+      path === '/partners/application/resubmit' ||
+      path === '/partner/application/resubmit' ||
+      path === '/partners/documents' ||
+      path === '/partner/documents' ||
       path.startsWith('/support/tickets') ||
       path === '/auth/logout' ||
       path === '/auth/partner/logout' ||

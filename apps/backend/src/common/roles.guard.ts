@@ -24,8 +24,6 @@ type HttpRequestWithActor = RequestWithActor & {
   url?: string;
 };
 
-const LIMITED_PARTNER_STATUSES = new Set(['blocked', 'suspended']);
-
 /**
  * Ixtisoslashgan admin sub-rollari — har biri `rolePermissions`da faqat
  * o'z tor doirasiga mos ruxsatlarga ega (masalan CONTENT_ADMIN faqat

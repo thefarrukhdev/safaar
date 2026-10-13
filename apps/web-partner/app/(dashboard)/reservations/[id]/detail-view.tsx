@@ -45,7 +45,6 @@ import {
   formatPhone,
 } from "../../../_lib/utils/format";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { useDataStore } from "../../../_stores/data-store";
 import { useVehicles } from "../../../_hooks/use-vehicles";
 import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
 
@@ -55,8 +54,7 @@ export function ReservationDetailView({ id }: { id: string }) {
   const rejectReservation = useRejectReservation();
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
-  useBeds();
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const { data: vehicles } = useVehicles();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);

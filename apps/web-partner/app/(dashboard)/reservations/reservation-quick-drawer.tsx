@@ -24,7 +24,7 @@ import { SourceBadge } from "../../_components/domain/source-badge";
 import type { ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
-import { useDataStore } from "../../_stores/data-store";
+import { useBeds } from "../../_hooks/use-beds";
 import { getPartnerLabels, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
 import { cn } from "../../_lib/utils/cn";
 
@@ -47,7 +47,7 @@ export function ReservationQuickDrawer({
   onCheckIn,
   onCheckOut,
 }: ReservationQuickDrawerProps) {
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);

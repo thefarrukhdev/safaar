@@ -37,6 +37,7 @@ import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { OnboardingWizard } from "../../_components/domain/onboarding-wizard";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useBeds } from "../../_hooks/use-beds";
+import { useRooms } from "../../_hooks/use-rooms";
 import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import {
   useCheckIn,
@@ -98,14 +99,11 @@ export function FrontDeskView() {
   const router = useRouter();
   const reservations = useReservations();
   const frontDeskStats = useFrontDeskStats();
-  const rooms = useDataStore((s) => s.rooms);
-  const beds = useDataStore((s) => s.beds);
+  const { data: rooms = [] } = useRooms();
+  const { data: beds = [] } = useBeds();
   const getStats = useDataStore((s) => s.getStats);
   const localStats = useMemo(() => {
-    void reservations.data;
-    void rooms;
-    void beds;
-    return getStats();
+    return getStats({ reservations: reservations.data, rooms, beds });
   }, [getStats, reservations.data, rooms, beds]);
   const user = useAuthStore((s) => s.user);
   const partnerType = user?.partnerType ?? "hotel";
@@ -115,7 +113,6 @@ export function FrontDeskView() {
   const checkOut = useCheckOut();
   const confirmReservation = useConfirmReservation();
   const rejectReservation = useRejectReservation();
-  useBeds();
 
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const profileQuery = useQuery({
@@ -643,7 +640,7 @@ function TaskCard({
 }) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const meta = TASK_META[kind];
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const bed = reservation.bedId ? beds.find((b) => b.id === reservation.bedId) : undefined;
 
   const kindLabel =
@@ -761,7 +758,7 @@ function TaskCard({
 
 function NextTaskCard({ task, labels, dacha, restaurant }: { task: Task; labels: PartnerLabels; dacha: boolean; restaurant?: boolean }) {
   const meta = TASK_META[task.kind];
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const bed = task.reservation.bedId ? beds.find((b) => b.id === task.reservation.bedId) : undefined;
   const kindLabel =
     task.kind === "pending"

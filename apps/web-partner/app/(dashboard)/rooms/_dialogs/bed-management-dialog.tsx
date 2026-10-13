@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RoomStatusBadge } from "@/components/domain/room-status-badge";
-import { useDataStore } from "@/stores/data-store";
-import { useCreateBed, useDeleteBed, useUpdateBed } from "@/hooks/use-beds";
+import { useCreateBed, useDeleteBed, useUpdateBed, useBeds } from "@/hooks/use-beds";
 import { RoomStatus, type Room } from "@/lib/domain/types";
 
 interface Props {
@@ -18,7 +17,7 @@ interface Props {
 
 /** Dormitory xonasi ichidagi alohida yotoqlarni boshqarish (faqat hostel). */
 export function BedManagementDialog({ open, onClose, room }: Props) {
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const createBed = useCreateBed();
   const updateBed = useUpdateBed();
   const deleteBed = useDeleteBed();

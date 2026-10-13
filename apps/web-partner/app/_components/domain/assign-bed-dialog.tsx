@@ -9,7 +9,6 @@ import { Dialog } from "../ui/dialog";
 import { useBeds } from "../../_hooks/use-beds";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useReservations, useAssignRoom } from "../../_hooks/use-reservations";
-import { useDataStore } from "../../_stores/data-store";
 import { RoomStatus, type Bed, type ReservationView, type Room } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 
@@ -23,9 +22,8 @@ interface Props {
 
 export function AssignBedDialog({ open, onClose, reservation, onAssigned }: Props) {
   const { data: rooms } = useRooms();
-  useBeds();
+  const { data: beds = [] } = useBeds();
   const { data: reservations } = useReservations();
-  const beds = useDataStore((s) => s.beds);
   const assignRoom = useAssignRoom();
   const [selected, setSelected] = useState<{ room: Room; bed: Bed } | null>(null);
 

@@ -51,7 +51,6 @@ import {
 import { useBeds } from '../../_hooks/use-beds';
 import { useRooms, useDeleteRoom, useUpdateRoom } from '../../_hooks/use-rooms';
 import { useRoomTypes, useDeleteRoomType, useUpdateRoomType } from '../../_hooks/use-room-types';
-import { useDataStore } from '../../_stores/data-store';
 import { useAuthStore } from '../../_stores/auth-store';
 import {
   getPartnerLabels,
@@ -98,8 +97,7 @@ export function ListingOverview() {
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
   const { data: allAmenities = [] } = useAmenities();
-  useBeds();
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const updateStatus = useUpdateListingStatus();
   const resetListing = useResetListing();
   const partnerType = useAuthStore((s) => s.user?.partnerType);

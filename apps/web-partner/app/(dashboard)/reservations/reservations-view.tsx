@@ -20,7 +20,8 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
@@ -45,7 +46,6 @@ import { cn } from "../../_lib/utils/cn";
 import type { Bed, ReservationUiStatus, ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
-import { useDataStore } from "../../_stores/data-store";
 import { getPartnerLabels, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
 import { ReservationQuickDrawer } from "./reservation-quick-drawer";
 import { ReservationsTable } from "./reservations-table";
@@ -60,6 +60,16 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: BookingStatus.COMPLETED, label: "Yakunlangan" },
   { key: BookingStatus.CANCELLED, label: "Bekor qilingan" },
 ];
+
+function parseStatusParam(value: string | null): FilterKey {
+  if (!value) return "all";
+  const upper = value.trim().toUpperCase();
+  if (upper === "NEW" || upper === "YANGI") return BookingStatus.PENDING;
+  if (upper === "ALL" || upper === "HAMMASI") return "all";
+  if (upper === "CANCELED") return BookingStatus.CANCELLED;
+  const found = FILTERS.find((f) => f.key.toUpperCase() === upper);
+  return found ? found.key : "all";
+}
 
 function exportToCsv(items: ReservationView[], unitLabel: string, beds: Bed[], restaurant: boolean) {
   const headers = [
@@ -130,13 +140,17 @@ function useIsMobile(): boolean {
 }
 
 export function ReservationsView() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
+
   const { data, isLoading, isError, refetch } = useReservations();
   const confirmReservation = useConfirmReservation();
   const rejectReservation = useRejectReservation();
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
-  useBeds();
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);
@@ -146,11 +160,76 @@ export function ReservationsView() {
   const [userViewMode, setUserViewMode] = useState<"table" | "card" | null>(null);
   const viewMode = userViewMode ?? (isMobile ? "card" : "table");
 
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const [query, setQuery] = useState("");
+  const urlStatus = parseStatusParam(searchParams.get("status") || searchParams.get("tab"));
+  const [prevUrlStatus, setPrevUrlStatus] = useState(urlStatus);
+  const [filter, setFilter] = useState<FilterKey>(urlStatus);
+
+  if (urlStatus !== prevUrlStatus) {
+    setPrevUrlStatus(urlStatus);
+    setFilter(urlStatus);
+  }
+
+  const urlQ = searchParams.get("q") ?? "";
+  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
+  const [query, setQuery] = useState(urlQ);
+
+  if (urlQ !== prevUrlQ) {
+    setPrevUrlQ(urlQ);
+    setQuery(urlQ);
+  }
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+
+  const handleFilterChange = useCallback(
+    (newFilter: FilterKey) => {
+      setFilter(newFilter);
+      const params = new URLSearchParams(searchParams.toString());
+      if (newFilter === "all") {
+        params.delete("status");
+        params.delete("tab");
+      } else {
+        params.set("status", newFilter.toLowerCase());
+        params.delete("tab");
+      }
+      const qs = params.toString();
+      const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", nextUrl);
+      }
+      startTransition(() => {
+        router.replace(nextUrl, { scroll: false });
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  // Debounce search query sync to URL params
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentQ = searchParams.get("q") ?? "";
+      const trimmed = query.trim();
+      if (trimmed === currentQ) return;
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+      const qs = params.toString();
+      const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", nextUrl);
+      }
+      startTransition(() => {
+        router.replace(nextUrl, { scroll: false });
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query, pathname, router, searchParams]);
 
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<ReservationView | null>(null);
@@ -392,7 +471,7 @@ export function ReservationsView() {
                       key={f.key}
                       role="tab"
                       aria-selected={active}
-                      onClick={() => setFilter(f.key)}
+                      onClick={() => handleFilterChange(f.key)}
                       className={cn(
                         "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         active
@@ -556,6 +635,17 @@ export function ReservationsView() {
                     }}
                   >
                     Sana filtrini tozalash
+                  </Button>
+                ) : (query || filter !== "all") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setQuery("");
+                      handleFilterChange("all");
+                    }}
+                  >
+                    Filtrlarni tozalash
                   </Button>
                 ) : undefined
               }
@@ -746,7 +836,7 @@ function ReservationCard({
     !isPastCheckIn;
   const canCheckIn = reservation.status === BookingStatus.CONFIRMED && !isPastCheckOut;
   const canCheckOut = reservation.status === "IN_HOUSE";
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);

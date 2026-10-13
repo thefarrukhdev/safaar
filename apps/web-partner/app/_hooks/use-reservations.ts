@@ -1,19 +1,20 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { toast } from "sonner";
+import { BookingStatus } from "@safaar/types";
 import { pageItems, toReservation } from "../_lib/api/adapters";
 import { partners } from "../_lib/api";
-import { useDataStore, type WalkInDraft } from "../_stores/data-store";
+import { type WalkInDraft } from "../_stores/data-store";
 import { useAuthStore } from "../_stores/auth-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
+import type { ReservationView } from "../_lib/domain/types";
 
 export const reservationsQueryKey = ["partner", "bookings"] as const;
 
+const EMPTY_RESERVATIONS: ReservationView[] = [];
+
 export function useReservations() {
-  const data = useDataStore((s) => s.reservations);
-  const setReservations = useDataStore((s) => s.setReservations);
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const query = useQuery({
     queryKey: reservationsQueryKey,
@@ -21,13 +22,9 @@ export function useReservations() {
     enabled: Boolean(accessToken),
   });
 
-  useEffect(() => {
-    if (query.data) setReservations(query.data);
-  }, [query.data, setReservations]);
-
   return {
-    data,
-    isLoading: query.isLoading && data.length === 0,
+    data: query.data ?? EMPTY_RESERVATIONS,
+    isLoading: query.isLoading && !query.data,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
@@ -63,8 +60,9 @@ export function useCreateWalkInReservation() {
         ),
       );
     },
-    onSuccess: () => {
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
     },
   });
 }
@@ -99,8 +97,9 @@ export function useCreateWalkInVehicleReservation() {
         ),
       );
     },
-    onSuccess: () => {
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
     },
   });
 }
@@ -114,41 +113,74 @@ export function useReservation(id: string) {
 
 export function useConfirmReservation() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const confirmLocal = useDataStore((s) => s.confirmReservation);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       await partners.confirmBooking(id, accessToken);
       return id;
     },
-    onSuccess: (id) => {
-      confirmLocal(id);
-      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: reservationsQueryKey });
+      const previousReservations = queryClient.getQueryData<ReservationView[]>(reservationsQueryKey);
+      if (previousReservations) {
+        queryClient.setQueryData<ReservationView[]>(
+          reservationsQueryKey,
+          previousReservations.map((r) =>
+            r.id === id ? { ...r, status: BookingStatus.CONFIRMED } : r,
+          ),
+        );
+      }
+      return { previousReservations };
     },
-    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
+    onError: (err: any, _id, context) => {
+      if (context?.previousReservations) {
+        queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
+      }
+      toast.error(err?.message || "Xatolik yuz berdi");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+    },
   });
 }
 
 export function useRejectReservation() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const rejectLocal = useDataStore((s) => s.rejectReservation);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       await partners.rejectBooking(id, reason, accessToken);
       return id;
     },
-    onSuccess: (id) => {
-      rejectLocal(id);
-      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: reservationsQueryKey });
+      const previousReservations = queryClient.getQueryData<ReservationView[]>(reservationsQueryKey);
+      if (previousReservations) {
+        queryClient.setQueryData<ReservationView[]>(
+          reservationsQueryKey,
+          previousReservations.map((r) =>
+            r.id === id ? { ...r, status: BookingStatus.CANCELLED } : r,
+          ),
+        );
+      }
+      return { previousReservations };
     },
-    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
+    onError: (err: any, _vars, context) => {
+      if (context?.previousReservations) {
+        queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
+      }
+      toast.error(err?.message || "Xatolik yuz berdi");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+    },
   });
 }
 
 export function useCheckIn() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const checkInLocal = useDataStore((s) => s.checkIn);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -160,17 +192,34 @@ export function useCheckIn() {
       }
       return id;
     },
-    onSuccess: (id) => {
-      checkInLocal(id);
-      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: reservationsQueryKey });
+      const previousReservations = queryClient.getQueryData<ReservationView[]>(reservationsQueryKey);
+      if (previousReservations) {
+        queryClient.setQueryData<ReservationView[]>(
+          reservationsQueryKey,
+          previousReservations.map((r) =>
+            r.id === id ? { ...r, status: "IN_HOUSE" as const } : r,
+          ),
+        );
+      }
+      return { previousReservations };
     },
-    onError: (err: any) => toast.error(err.message || "Xatolik yuz berdi"),
+    onError: (err: any, _id, context) => {
+      if (context?.previousReservations) {
+        queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
+      }
+      toast.error(err?.message || "Xatolik yuz berdi");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+    },
   });
 }
 
 export function useAssignRoom() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const assignRoomLocal = useDataStore((s) => s.assignRoom);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -183,27 +232,64 @@ export function useAssignRoom() {
       bedId?: string;
     }) => {
       await partners.assignRoom(id, roomNumber, accessToken, bedId);
-      return { id, roomNumber };
+      return { id, roomNumber, bedId };
     },
-    onSuccess: ({ id, roomNumber }) => {
-      assignRoomLocal(id, roomNumber);
+    onMutate: async ({ id, roomNumber, bedId }) => {
+      await queryClient.cancelQueries({ queryKey: reservationsQueryKey });
+      const previousReservations = queryClient.getQueryData<ReservationView[]>(reservationsQueryKey);
+      if (previousReservations) {
+        queryClient.setQueryData<ReservationView[]>(
+          reservationsQueryKey,
+          previousReservations.map((r) =>
+            r.id === id ? { ...r, roomNumber, bedId: bedId ?? r.bedId } : r,
+          ),
+        );
+      }
+      return { previousReservations };
+    },
+    onError: (err: any, _vars, context) => {
+      if (context?.previousReservations) {
+        queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
+      }
+      toast.error(err?.message || "Xatolik yuz berdi");
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
     },
   });
 }
 
 export function useCheckOut() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const checkOutLocal = useDataStore((s) => s.checkOut);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       await partners.checkOut(id, accessToken);
       return id;
     },
-    onSuccess: (id) => {
-      checkOutLocal(id);
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: reservationsQueryKey });
+      const previousReservations = queryClient.getQueryData<ReservationView[]>(reservationsQueryKey);
+      if (previousReservations) {
+        queryClient.setQueryData<ReservationView[]>(
+          reservationsQueryKey,
+          previousReservations.map((r) =>
+            r.id === id ? { ...r, status: BookingStatus.COMPLETED } : r,
+          ),
+        );
+      }
+      return { previousReservations };
+    },
+    onError: (err: any, _id, context) => {
+      if (context?.previousReservations) {
+        queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
+      }
+      toast.error(err?.message || "Xatolik yuz berdi");
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
     },
   });
 }

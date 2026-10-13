@@ -25,7 +25,6 @@ import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty
 import { Button } from "../../_components/ui/button";
 import { formatMoney } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
-import { useDataStore } from "../../_stores/data-store";
 import { getPartnerLabels, hasBeds, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
 import { cn } from "../../_lib/utils/cn";
 
@@ -33,8 +32,7 @@ export function RoomsView() {
   const router = useRouter();
   const { data: rooms = [], isLoading, isError, refetch } = useRooms();
   const { data: roomTypes = [] } = useRoomTypes();
-  useBeds();
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const isHostel = hasBeds(partnerType);

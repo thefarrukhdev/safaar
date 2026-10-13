@@ -20,7 +20,7 @@ import {
   type NearbyPlace,
 } from '../_lib/domain/listing';
 
-const emptyListing: Listing = {
+export const emptyListing: Listing = {
   name: '',
   shortDescription: '',
   fullDescription: '',
@@ -155,7 +155,11 @@ interface DataState {
   checkOut: (id: string) => void;
   assignRoom: (reservationId: string, roomNumber: string) => void;
 
-  getStats: () => FrontDeskStats;
+  getStats: (customParams?: {
+    reservations?: ReservationView[];
+    rooms?: Room[];
+    beds?: Bed[];
+  }) => FrontDeskStats;
   isListingComplete: () => {
     complete: boolean;
     missing: string[];
@@ -302,8 +306,11 @@ export const useDataStore = create<DataState>((set, get) => ({
     return { complete: missing.length === 0, missing };
   },
 
-  getStats: () => {
-    const { reservations, rooms, beds } = get();
+  getStats: (customParams) => {
+    const storeState = get();
+    const reservations = customParams?.reservations ?? storeState.reservations;
+    const rooms = customParams?.rooms ?? storeState.rooms;
+    const beds = customParams?.beds ?? storeState.beds;
     const today = todayIso();
     const currentMonth = today.slice(0, 7);
     const occupied =

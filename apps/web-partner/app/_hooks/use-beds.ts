@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toBed } from "../_lib/api/adapters";
 import { partners } from "../_lib/api";
 import { useAuthStore } from "../_stores/auth-store";
-import { useDataStore, type BedDraft } from "../_stores/data-store";
+import { type BedDraft } from "../_stores/data-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
 import { hasBeds } from "../_lib/utils/partner-labels";
 
@@ -16,7 +15,6 @@ const EMPTY_BEDS: ReturnType<typeof toBed>[] = [];
 export function useBeds() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
-  const setBeds = useDataStore((s) => s.setBeds);
   const query = useQuery({
     queryKey: bedsQueryKey,
     queryFn: async () => {
@@ -26,11 +24,13 @@ export function useBeds() {
     enabled: Boolean(accessToken) && hasBeds(partnerType),
   });
 
-  useEffect(() => {
-    if (query.data) setBeds(query.data);
-  }, [query.data, setBeds]);
-
-  return { data: query.data ?? EMPTY_BEDS, isLoading: query.isLoading && !query.data };
+  return {
+    data: query.data ?? EMPTY_BEDS,
+    isLoading: query.isLoading && !query.data,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 export function useCreateBed() {

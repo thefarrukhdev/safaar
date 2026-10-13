@@ -28,6 +28,8 @@ import {
   buildUnitTypeDistribution,
 } from "../../_lib/domain/reports";
 import { useReservations } from "../../_hooks/use-reservations";
+import { useRooms } from "../../_hooks/use-rooms";
+import { useBeds } from "../../_hooks/use-beds";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useDataStore } from "../../_stores/data-store";
 import { useAuthStore } from "../../_stores/auth-store";
@@ -45,6 +47,8 @@ export function ReportsView() {
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
   
   const { data: reservations } = useReservations();
+  const { data: rooms } = useRooms();
+  const { data: beds = [] } = useBeds();
   const { data: roomTypes } = useRoomTypes();
   const getStats = useDataStore((s) => s.getStats);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
@@ -92,7 +96,7 @@ export function ReportsView() {
     () => buildDailyStats(reservations, TODAY_ISO, daysForRange),
     [reservations, daysForRange],
   );
-  const stats = getStats();
+  const stats = getStats({ reservations, rooms, beds });
   const totalUnits = stats.totalRooms;
 
   const revenue = useMemo(

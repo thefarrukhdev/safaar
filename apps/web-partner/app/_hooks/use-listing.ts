@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pageItems, toListing, toBusListing } from '../_lib/api/adapters';
 import { partners } from '../_lib/api';
-import { useDataStore } from '../_stores/data-store';
+import { emptyListing } from '../_stores/data-store';
 import { useAuthStore } from '../_stores/auth-store';
 import type {
   ListingLocationDraft,
@@ -18,8 +17,6 @@ import { getPrimaryHotel, primaryHotelQueryKey } from './use-primary-hotel';
 export const listingQueryKey = ['partner', 'listing'] as const;
 
 export function useListing() {
-  const listing = useDataStore((s) => s.listing);
-  const setListing = useDataStore((s) => s.setListing);
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const type = useAuthStore((s) => s.user?.partnerType);
   const isBus = type === 'bus' || type === 'rent_car';
@@ -29,22 +26,20 @@ export function useListing() {
     queryFn: async () => {
       if (isBus) {
         const bus = await partners.getBusCompany(accessToken);
-        return bus ? toBusListing(bus) : listing;
+        return bus ? toBusListing(bus) : emptyListing;
       }
       const [hotel] = pageItems(await partners.listHotels(accessToken));
-      return hotel ? toListing(hotel) : listing;
+      return hotel ? toListing(hotel) : emptyListing;
     },
     enabled: Boolean(accessToken) && Boolean(type),
   });
 
-  useEffect(() => {
-    if (!query.data) return;
-    setListing(query.data);
-  }, [query.data, setListing]);
-
   return {
-    data: query.data ?? listing,
+    data: query.data ?? emptyListing,
     isLoading: query.isLoading && !query.data,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
 
@@ -88,7 +83,6 @@ function useListingMutation<TVariables>(
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const type = useAuthStore((s) => s.user?.partnerType);
   const isBus = type === 'bus' || type === 'rent_car';
-  const setListing = useDataStore((s) => s.setListing);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -101,7 +95,6 @@ function useListingMutation<TVariables>(
       return mutationFn(hotelId, accessToken, variables, isBus);
     },
     onSuccess: (listing) => {
-      setListing(listing);
       queryClient.setQueryData(listingQueryKey, listing);
       if (!isBus) {
         void queryClient.invalidateQueries({ queryKey: primaryHotelQueryKey });
@@ -147,9 +140,10 @@ export function useUpdateListingGeneral() {
 }
 
 export function useUpdateListingLocation() {
+  const queryClient = useQueryClient();
   return useListingMutation<ListingLocationDraft>((hotelId, token, values, isBus) => {
     if (isBus) {
-      const currentListing = useDataStore.getState().listing;
+      const currentListing = queryClient.getQueryData<Listing>(listingQueryKey) ?? emptyListing;
       return partners.updateBusCompany({
         name: currentListing.name,
         address: values.address,
@@ -178,9 +172,10 @@ export function useUpdateListingLocation() {
 }
 
 export function useUpdateListingRules() {
+  const queryClient = useQueryClient();
   return useListingMutation<ListingRulesDraft>((hotelId, token, values, isBus) => {
     if (isBus) {
-      const currentListing = useDataStore.getState().listing;
+      const currentListing = queryClient.getQueryData<Listing>(listingQueryKey) ?? emptyListing;
       return partners.updateBusCompany({
         name: currentListing.name,
         check_in_time: values.checkInTime,
@@ -216,6 +211,7 @@ export function useResetListing() {
 }
 
 export function useUpdateListingStatus() {
+  const queryClient = useQueryClient();
   return useListingMutation<ListingStatus>((hotelId, token, status, isBus) => {
     const backendStatus =
       status === ListingStatus.UNDER_REVIEW
@@ -223,7 +219,7 @@ export function useUpdateListingStatus() {
         : status.toLowerCase();
         
     if (isBus) {
-      const currentListing = useDataStore.getState().listing;
+      const currentListing = queryClient.getQueryData<Listing>(listingQueryKey) ?? emptyListing;
       return partners.updateBusCompany({
         name: currentListing.name,
         status: backendStatus,
@@ -236,7 +232,7 @@ export function useUpdateListingStatus() {
     return partners
       .updateListingStatus(hotelId!, backendStatus, token)
       .then((hotel) => ({
-        ...useDataStore.getState().listing,
+        ...(queryClient.getQueryData<Listing>(listingQueryKey) ?? emptyListing),
         status: toListing(hotel).status,
       }));
   });
@@ -244,7 +240,6 @@ export function useUpdateListingStatus() {
 
 export function useAddListingPhoto() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const setListing = useDataStore((s) => s.setListing);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ file, draft }: { file: File; draft: PhotoDraft }) => {
@@ -262,7 +257,6 @@ export function useAddListingPhoto() {
       return toListing(await partners.getHotel(hotel.id, accessToken));
     },
     onSuccess: (listing) => {
-      setListing(listing);
       queryClient.setQueryData(listingQueryKey, listing);
       void queryClient.invalidateQueries({ queryKey: listingQueryKey });
     },
@@ -271,7 +265,6 @@ export function useAddListingPhoto() {
 
 export function useDeleteListingPhoto() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const setListing = useDataStore((s) => s.setListing);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (imageId: string) => {
@@ -280,7 +273,6 @@ export function useDeleteListingPhoto() {
       return toListing(await partners.getHotel(hotel.id, accessToken));
     },
     onSuccess: (listing) => {
-      setListing(listing);
       queryClient.setQueryData(listingQueryKey, listing);
       void queryClient.invalidateQueries({ queryKey: listingQueryKey });
     },
@@ -289,7 +281,6 @@ export function useDeleteListingPhoto() {
 
 export function useUpdateListingPhoto() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const setListing = useDataStore((s) => s.setListing);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -304,7 +295,6 @@ export function useUpdateListingPhoto() {
       return toListing(await partners.getHotel(hotel.id, accessToken));
     },
     onSuccess: (listing) => {
-      setListing(listing);
       queryClient.setQueryData(listingQueryKey, listing);
       void queryClient.invalidateQueries({ queryKey: listingQueryKey });
     },

@@ -31,7 +31,6 @@ import {
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
-import { useDataStore } from "../../_stores/data-store";
 import { cn } from "../../_lib/utils/cn";
 import { formatMoney } from "../../_lib/utils/format";
 import { TODAY_ISO } from "../../_lib/utils/date";
@@ -97,8 +96,7 @@ export function CalendarView() {
   const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError, refetch: refetchVehicles } = useVehicles();
   const { data: reservations, isLoading: reservationsLoading, isError: reservationsError, refetch: refetchReservations } = useReservations();
   const { data: roomTypes } = useRoomTypes();
-  useBeds();
-  const beds = useDataStore((s) => s.beds);
+  const { data: beds = [] } = useBeds();
 
   const rooms = useMemo(() => {
     if (isBus) {

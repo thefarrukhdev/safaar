@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Wifi, WifiOff } from "lucide-react";
 import { health } from "../../_lib/api";
 
 export function HealthPill() {
@@ -12,15 +11,23 @@ export function HealthPill() {
     retry: false,
   });
   const online = query.data?.status === "ok";
-  const Icon = online ? Wifi : WifiOff;
 
   return (
     <span
       role="status"
-      className="hidden items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 md:inline-flex dark:bg-brand-900/40 dark:text-brand-200"
+      className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs md:inline-flex dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300"
     >
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-      {online ? "Backend online" : "Backend offline"}
+      <span className="relative flex h-2 w-2">
+        {online && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+        )}
+        <span
+          className={`relative inline-flex h-2 w-2 rounded-full ${
+            online ? "bg-emerald-500" : "bg-rose-500"
+          }`}
+        />
+      </span>
+      <span>{online ? "Jonli sinxron" : "Qayta ulanmoqda..."}</span>
     </span>
   );
 }

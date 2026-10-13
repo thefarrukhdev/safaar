@@ -8,6 +8,8 @@ import { CommandPalette } from './command-palette';
 import { ThemeToggle } from './theme-toggle';
 import { Tooltip } from '../ui/tooltip';
 import { UserMenu } from './user-menu';
+import { HealthPill } from './health-pill';
+import { NotificationsButton } from './notifications-button';
 import { getPartnerLabels } from '../../_lib/utils/partner-labels';
 
 export function Topbar() {
@@ -33,7 +35,7 @@ export function Topbar() {
           </button>
         </Tooltip>
         <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold md:text-base">
+          <h1 className="truncate text-sm font-semibold md:text-base text-slate-900 dark:text-slate-100">
             {orgName}
           </h1>
           <p className="hidden text-xs text-[var(--muted-foreground)] sm:block">
@@ -42,8 +44,10 @@ export function Topbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 md:gap-2">
+      <div className="flex items-center gap-1.5 md:gap-2.5">
+        <HealthPill />
         <CommandPalette />
+        <NotificationsButton />
         <ThemeToggle />
         <UserMenu
           name={user?.fullName ?? 'Hamkor'}

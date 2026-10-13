@@ -27,7 +27,7 @@ export function StatCard({
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
             {label}
           </p>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
           {hint ? (
             <p className="text-xs leading-5 text-[var(--muted-foreground)]">
               {hint}

@@ -113,11 +113,18 @@ const DETAILED_PAYMENT_OPTIONS: PaymentMethodConfig[] = [
   },
 ];
 
+const CARD_IMAGE_MAP: Record<string, string> = {
+  uzcard: "/payments/uzcard.jpg",
+  humo: "/payments/humo.png",
+  visa: "/payments/visa.jpeg",
+  mastercard: "/payments/mastercard.jpg",
+};
+
 const CARD_LOGOS = [
-  { src: "/payments/uzcard.jpg", alt: "Uzcard" },
-  { src: "/payments/humo.png", alt: "Humo" },
-  { src: "/payments/visa.jpeg", alt: "Visa" },
-  { src: "/payments/mastercard.jpg", alt: "Mastercard" },
+  { src: CARD_IMAGE_MAP.uzcard, alt: "Uzcard" },
+  { src: CARD_IMAGE_MAP.humo, alt: "Humo" },
+  { src: CARD_IMAGE_MAP.visa, alt: "Visa" },
+  { src: CARD_IMAGE_MAP.mastercard, alt: "Mastercard" },
 ];
 
 export interface PaymentSelectorProps {
@@ -264,16 +271,11 @@ export function PaymentSelector({
                           </div>
                         ))}
                       </div>
-                    ) : option.id !== "cash" ? (
+                    ) : option.id !== "cash" && CARD_IMAGE_MAP[option.id] ? (
                       <div className="mt-2 flex items-center flex-wrap gap-2">
                         <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70">
                           <img
-                            src={`/payments/${option.id}.png`}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              if (target.src.endsWith(".png")) target.src = `/payments/${option.id}.jpg`;
-                              else if (target.src.endsWith(".jpg")) target.src = `/payments/${option.id}.jpeg`;
-                            }}
+                            src={CARD_IMAGE_MAP[option.id]}
                             alt={option.name}
                             className="h-full w-full object-contain p-[2px] mix-blend-multiply"
                           />

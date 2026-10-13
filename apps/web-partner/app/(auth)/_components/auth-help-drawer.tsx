@@ -18,18 +18,16 @@ export function AuthHelpDrawer() {
 
   return (
     <>
-      {/* Floating Trigger Button (Bottom-Right) */}
+      {/* Floating Trigger Button (Bottom-Right, Compact 32px) */}
       <aside aria-label="Yordam va qo'llab-quvvatlash">
         <button
           type="button"
           onClick={() => setOpen(true)}
+          title="Yordam & Yo'riqnoma"
           aria-label="Hamkorlik bo'yicha yordam va yo'riqnoma"
-          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-md active:scale-95 cursor-pointer dark:border-slate-700 dark:bg-slate-800/95 dark:text-slate-200"
+          className="fixed bottom-4 right-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 text-slate-500 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-blue-600 hover:shadow-xs active:scale-90 cursor-pointer dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400 dark:hover:text-blue-400"
         >
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-            <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
-          </span>
-          <span className="hidden sm:inline font-medium">Yordam & Yo&apos;riqnoma</span>
+          <HelpCircle className="h-4 w-4" aria-hidden="true" />
         </button>
       </aside>
 

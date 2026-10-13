@@ -30,6 +30,7 @@ function passwordStrength(pw: string): { label: string; level: number; color: st
 
 import { AuthInput } from "./AuthInput";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
+import { CodeSlots } from "@/components/reactbits/CodeSlots";
 
 export default function ModernRegisterForm({
  dict,
@@ -46,6 +47,7 @@ export default function ModernRegisterForm({
  const [phone, setPhone] = useState("+998 ");
  const [password, setPassword] = useState("");
  const [showPassword, setShowPassword] = useState(false);
+ const [code, setCode] = useState("");
 
  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
  let val = e.target.value.replace(/[^\d+]/g, "");
@@ -180,17 +182,26 @@ export default function ModernRegisterForm({
  </div>
  )}
 
- <AuthInput
- label={dict.code || "Tasdiqlash kodi"}
- name="code"
- inputMode="numeric"
- icon={Hash}
- placeholder="••••••"
- maxLength={6}
- required
+ <input type="hidden" name="code" value={code} />
+ <div className="flex flex-col items-center gap-2 py-2">
+ <label className="text-sm font-medium text-slate-700 self-start">{dict.code || "Tasdiqlash kodi"}</label>
+ <CodeSlots
+ length={6}
+ value={code}
+ onChange={setCode}
+ status={verifyState.error ? "error" : "idle"}
+ disabled={verifying}
+ autoFocus
+ slotSize={44}
+ gap={8}
+ accentColor="#2563eb"
+ slotColor="#f8fafc"
+ digitColor="#0f172a"
+ dangerColor="#ef4444"
  />
+ </div>
 
- <button type="submit" disabled={verifying} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
+ <button type="submit" disabled={verifying || code.length < 6} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
  {verifying ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
  </button>
  </form>

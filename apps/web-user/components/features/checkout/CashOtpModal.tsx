@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { cashOtpVerifyAction, cashOtpResendAction } from "@/lib/services/booking/actions";
+import { CodeSlots } from "@/components/reactbits/CodeSlots";
 
 export interface CashOtpDict {
   title: string;
@@ -47,21 +48,21 @@ export function CashOtpModal({
   onSuccess,
   onClose,
 }: CashOtpModalProps) {
-  const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
+  const [otp, setOtp] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(initialExpiresIn);
   const [resendCooldown, setResendCooldown] = useState(60);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [errorCode, setErrorCode] = useState<keyof CashOtpDict["errors"] | null>(null);
-
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (!isOpen) {
-      setOtp(Array(6).fill(""));
+      setOtp("");
       setTimeLeft(initialExpiresIn);
       setResendCooldown(60);
       setErrorCode(null);
       setIsLoading(false);
+      setIsSuccess(false);
       return;
     }
 
@@ -73,56 +74,10 @@ export function CashOtpModal({
     return () => clearInterval(timer);
   }, [isOpen, initialExpiresIn]);
 
-  useEffect(() => {
-    if (isOpen) {
-      // Modal ochilganda birinchi inputga focus qaratish
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
-  const handleChange = (index: number, value: string) => {
-    // Faqat raqamlarga ruxsat
-    if (!/^\d*$/.test(value)) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    setErrorCode(null); // Xatoni tozalash
-
-    // Keyingi inputga o'tish
-    if (value !== "" && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && otp[index] === "" && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text/plain").replace(/\D/g, "").slice(0, 6);
-    if (!pastedData) return;
-
-    const newOtp = [...otp];
-    for (let i = 0; i < pastedData.length; i++) {
-      newOtp[i] = pastedData[i];
-    }
-    setOtp(newOtp);
-    setErrorCode(null);
-
-    const focusIndex = Math.min(pastedData.length, 5);
-    inputRefs.current[focusIndex]?.focus();
-  };
-
-  const handleVerify = async () => {
-    const code = otp.join("");
+  const handleVerify = async (codeToVerify?: string) => {
+    const code = (typeof codeToVerify === "string" ? codeToVerify : otp).trim();
     if (code.length < 6) {
       setErrorCode("INCOMPLETE_CODE");
       return;
@@ -139,10 +94,13 @@ export function CashOtpModal({
         challenge_id: challengeId,
       });
       if (result?.ok) {
-        onSuccess({
-          bookingId: result.bookingId || bookingId,
-          verificationToken: result.verificationToken,
-        });
+        setIsSuccess(true);
+        setTimeout(() => {
+          onSuccess({
+            bookingId: result.bookingId || bookingId,
+            verificationToken: result.verificationToken,
+          });
+        }, 600);
       } else {
         setErrorCode((result?.error as keyof CashOtpDict["errors"]) || "UNKNOWN");
       }
@@ -167,8 +125,7 @@ export function CashOtpModal({
       if (result?.ok) {
         setTimeLeft(initialExpiresIn);
         setResendCooldown(result.resendAvailableIn ?? 60);
-        setOtp(Array(6).fill(""));
-        inputRefs.current[0]?.focus();
+        setOtp("");
       } else {
         setErrorCode((result?.error as keyof CashOtpDict["errors"]) || "UNKNOWN");
       }
@@ -204,28 +161,27 @@ export function CashOtpModal({
           <strong className="font-semibold">{displayPhone}</strong>
         </p>
 
-        <div className="flex justify-between gap-2 mb-4" onPaste={handlePaste}>
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => {
-                inputRefs.current[index] = el;
-              }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              disabled={isLoading}
-              placeholder={dict.inputPlaceholder}
-              className={`w-9 sm:w-11 h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono border-2 rounded-xl transition-colors focus:outline-none ${
-                errorCode
-                  ? "border-red-400 focus:border-red-500"
-                  : "border-slate-200 focus:border-blue-500"
-              } disabled:opacity-50 disabled:bg-slate-50`}
-            />
-          ))}
+        <div className="flex justify-center mb-4">
+          <CodeSlots
+            length={6}
+            value={otp}
+            onChange={(val) => {
+              setOtp(val);
+              setErrorCode(null);
+            }}
+            onComplete={(val) => {
+              handleVerify(val);
+            }}
+            status={isSuccess ? "success" : errorCode ? "error" : "idle"}
+            disabled={isLoading || isExpired || isSuccess}
+            autoFocus
+            slotSize={46}
+            gap={8}
+            accentColor="#2563eb"
+            slotColor="#f8fafc"
+            digitColor="#0f172a"
+            dangerColor="#ef4444"
+          />
         </div>
 
         {errorMessage && (
@@ -244,17 +200,17 @@ export function CashOtpModal({
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            onClick={handleVerify}
-            disabled={isLoading || otp.join("").length < 6 || isExpired}
+            onClick={() => handleVerify()}
+            disabled={isLoading || otp.length < 6 || isExpired || isSuccess}
             className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {isLoading ? dict.verifying : dict.verifyButton}
+            {isSuccess ? "Tasdiqlandi!" : isLoading ? dict.verifying : dict.verifyButton}
           </button>
           
           <button
             type="button"
             onClick={handleResend}
-            disabled={isLoading || resendCooldown > 0}
+            disabled={isLoading || resendCooldown > 0 || isSuccess}
             className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             {resendCooldown > 0

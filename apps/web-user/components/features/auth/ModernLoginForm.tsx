@@ -22,6 +22,7 @@ import { AuthInput } from "./AuthInput";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { z } from "zod";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
+import { CodeSlots } from "@/components/reactbits/CodeSlots";
 
 const API_URL = config.apiUrl;
 
@@ -307,20 +308,31 @@ export default function ModernLoginForm({
                 </div>
               )}
 
-              <div className="flex flex-col gap-1.5">
-                <AuthInput
-                  label={dict.code || "Kod"}
-                  inputMode="numeric"
-                  icon={Hash}
-                  maxLength={6}
-                  {...forgotCodeForm.register("code")}
+              <div className="flex flex-col items-center gap-2 py-2">
+                <input type="hidden" {...forgotCodeForm.register("code")} />
+                <label className="text-sm font-medium text-slate-700 self-start">{dict.code || "Kod"}</label>
+                <CodeSlots
+                  length={6}
+                  value={forgotCodeForm.watch("code")}
+                  onChange={(val) => {
+                    forgotCodeForm.setValue("code", val, { shouldValidate: true });
+                  }}
+                  status={resetCodeState.error || forgotCodeForm.formState.errors.code ? "error" : "idle"}
+                  disabled={verifyingResetCode}
+                  autoFocus
+                  slotSize={44}
+                  gap={8}
+                  accentColor="#2563eb"
+                  slotColor="#f8fafc"
+                  digitColor="#0f172a"
+                  dangerColor="#ef4444"
                 />
                 {forgotCodeForm.formState.errors.code && (
-                  <span className="text-xs text-red-600">{forgotCodeForm.formState.errors.code.message as string}</span>
+                  <span className="text-xs text-red-600 self-start">{forgotCodeForm.formState.errors.code.message as string}</span>
                 )}
               </div>
 
-              <button type="submit" disabled={verifyingResetCode} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
+              <button type="submit" disabled={verifyingResetCode || (forgotCodeForm.watch("code")?.length ?? 0) < 6} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.2)] disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.98]">
                 {verifyingResetCode ? <ThinkingOrb size={16} state="base" /> : <>{dict.verifyCode || "Tasdiqlash"} <ArrowRight className="w-4 h-4" /></>}
               </button>
             </form>

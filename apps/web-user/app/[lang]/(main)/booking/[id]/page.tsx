@@ -199,8 +199,8 @@ export default async function BookingDetailPage({
  </div>
  <p className="text-sm font-medium text-slate-600 ">
  {payment?.status === "reversed"
- ? "{dict.refundedReversedSubtitle}"
- : "{dict.refundedSubtitle}"}
+ ? dict.refundedReversedSubtitle
+ : dict.refundedSubtitle}
  </p>
  </div>
  ) : isProcessing ? (

@@ -131,9 +131,10 @@ export function CashOtpModal({
     setIsLoading(true);
     setErrorCode(null);
     try {
+      const cleanPhone = (phone ? phone.replace(/[^\d+]/g, "") : maskedPhone || "").trim();
       const result = await cashOtpVerifyAction({
         booking_id: bookingId,
-        phone: phone || maskedPhone || "",
+        phone: cleanPhone,
         otp_code: code,
         challenge_id: challengeId,
       });
@@ -158,9 +159,10 @@ export function CashOtpModal({
     setIsLoading(true);
     setErrorCode(null);
     try {
+      const cleanPhone = phone ? phone.replace(/[^\d+]/g, "").trim() : maskedPhone;
       const result = await cashOtpResendAction({
         booking_id: bookingId,
-        phone: phone || maskedPhone,
+        phone: cleanPhone,
       });
       if (result?.ok) {
         setTimeLeft(initialExpiresIn);
@@ -185,7 +187,13 @@ export function CashOtpModal({
 
   const errorMessage = errorCode ? dict.errors[errorCode] || dict.errors.UNKNOWN : null;
   const isExpired = timeLeft === 0;
-  const displayPhone = maskedPhone || (phone ? phone.replace(/(\+998\d{2})\d{3}(\d{2})(\d{2})/, "$1 *** ** $3") : "");
+  const rawDigits = phone ? phone.replace(/\D/g, "") : "";
+  const normalizedPhone = rawDigits.startsWith("998") ? `+${rawDigits}` : `+998${rawDigits}`;
+  const displayPhone =
+    maskedPhone ||
+    (rawDigits.length >= 9
+      ? normalizedPhone.replace(/(\+998\d{2})\d{3}(\d{2})(\d{2})/, "$1 *** ** $3")
+      : phone);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 p-4">

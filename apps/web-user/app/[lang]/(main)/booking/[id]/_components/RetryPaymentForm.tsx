@@ -27,30 +27,7 @@ const METHOD_LABELS: Record<string, string> = {
  cash: "Joyida to'lash",
 };
 
-const CARD_SCHEME_FEE_RATES: Record<string, number> = {
- uzcard: 0.015,
- humo: 0.015,
- visa: 0.035,
- mastercard: 0.035,
-};
-
-function calculateFee(base: number, method: PaymentMethodId) {
- const rate = CARD_SCHEME_FEE_RATES[method] ?? 0;
- if (rate === 0 || !Number.isFinite(base) || base <= 0) {
- return { baseAmount: base, feeRate: 0, feeAmount: 0, totalAmount: base };
- }
- 
- // Yangi backend mantiqiga ko'ra Gross-up formula (docs/frontend-payment-integration.md)
- const totalAmount = Math.ceil(base / (1 - rate));
- const feeAmount = totalAmount - base;
- 
- return {
- baseAmount: base,
- feeRate: rate,
- feeAmount,
- totalAmount,
- };
-}
+import { calculatePaymentFee } from "@/lib/payments/fee";
 
 export interface ExistingPaymentInfo {
  provider: PaymentMethodId;
@@ -124,7 +101,7 @@ export function RetryPaymentForm({
  setSelected(id);
  };
 
- const fee = calculateFee(bookingAmount, selected);
+ const fee = calculatePaymentFee(bookingAmount, selected);
  const hasFee = fee.feeAmount > 0 && !providerMismatch;
 
  return (

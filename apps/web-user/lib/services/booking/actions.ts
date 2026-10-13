@@ -25,6 +25,17 @@ async function redirectToLoginIfSessionExpired(
   }
 }
 
+function extractErrorCode(data: any, fallback = "ERROR"): string {
+  if (!data) return fallback;
+  if (data.error && typeof data.error === "object") {
+    if (data.error.code) return String(data.error.code);
+    if (data.error.message) return String(data.error.message);
+  }
+  if (data.code) return String(data.code);
+  if (data.message) return String(data.message);
+  return fallback;
+}
+
 export interface CheckoutState {
   error?: string;
 }
@@ -170,6 +181,7 @@ export async function createRestaurantBookingAction(input: {
   guestEmail: string;
   paymentMethod: "uzcard" | "humo" | "visa" | "mastercard" | "cash";
   agreeTerms: boolean;
+  verificationToken?: string;
 }): Promise<{
   ok: boolean;
   bookingId?: string;
@@ -187,38 +199,57 @@ export async function createRestaurantBookingAction(input: {
   const session = await getSession();
 
   try {
-    const booking = await api.bookings.createHotelBooking(
-      {
-        hotelId: input.restaurantId,
-        roomId: input.tableId || input.restaurantId,
-        checkIn: input.date,
-        checkOut: input.date,
-        slotTime: input.slotTime,
-        guests: input.guests,
-        totalPrice: input.totalPrice,
-        guestName: input.guestName,
-        guestPhone: input.guestPhone,
-        guestEmail: input.guestEmail,
-        source: "web-user",
-        paymentMethod: input.paymentMethod,
-        agreeTerms: input.agreeTerms,
+    const base = config.apiUrl.endsWith("/") ? config.apiUrl : `${config.apiUrl}/`;
+    const res = await fetch(`${base}bookings/hotel`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
       },
-      session ? { token: session.accessToken } : undefined
-    );
+      body: JSON.stringify({
+        hotel_id: input.restaurantId,
+        room_id: input.tableId || input.restaurantId,
+        check_in: input.date,
+        check_out: input.date,
+        slot_time: input.slotTime,
+        guests: input.guests,
+        total_price: input.totalPrice,
+        guest_name: input.guestName,
+        guest_phone: input.guestPhone,
+        guest_email: input.guestEmail,
+        source: "web-user",
+        payment_method: input.paymentMethod,
+        agree_terms: input.agreeTerms,
+        verification_token: input.verificationToken,
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) {
+      return {
+        ok: false,
+        error: extractErrorCode(data, "ERROR"),
+      };
+    }
+
+    const bookingId = data.booking?.id || data.id;
+    const guestAccessToken = data.guestAccessToken || data.guest_access_token;
+    const bookingNumber = data.booking?.booking_number || data.bookingNumber;
 
     return {
       ok: true,
-      bookingId: booking.id,
-      bookingNumber: booking.bookingNumber,
-      guestAccessToken: booking.guestAccessToken,
-      requiresOtp: (booking as { requires_otp?: boolean }).requires_otp,
-      maskedPhone: (booking as { masked_phone?: string }).masked_phone,
-      expiresIn: (booking as { expires_in?: number }).expires_in,
+      bookingId,
+      bookingNumber,
+      guestAccessToken,
+      requiresOtp: Boolean(data.requires_otp || data.requiresOtp),
+      maskedPhone: data.masked_phone || data.maskedPhone,
+      expiresIn: data.expires_in || data.expiresIn,
     };
   } catch (err: unknown) {
     return {
       ok: false,
-      error: err instanceof ApiRequestError ? (err.code || err.message) : "Xatolik yuz berdi",
+      error: err instanceof Error ? err.message : "Xatolik yuz berdi",
     };
   }
 }
@@ -293,7 +324,7 @@ export async function createHotelBookingDirectAction(input: {
     if (!res.ok || !data) {
       return {
         ok: false,
-        error: data?.code || data?.message || "ERROR",
+        error: extractErrorCode(data, "ERROR"),
       };
     }
 
@@ -321,24 +352,53 @@ export async function createVehicleBookingAction(input: {
   guestPhone: string;
   guestEmail: string;
   paymentMethod: string;
-}) {
+  verificationToken?: string;
+}): Promise<{
+  ok: boolean;
+  bookingId?: string;
+  guestAccessToken?: string;
+  error?: string;
+}> {
   const session = await getSession();
 
   try {
-    const options = session ? { token: session.accessToken } : undefined;
-    const booking = await api.bookings.createVehicleBooking(
-      {
-        vehicleId: input.vehicleId,
-        checkIn: input.checkIn,
-        checkOut: input.checkOut,
-        guestName: input.guestName,
-        guestPhone: input.guestPhone,
-        guestEmail: input.guestEmail,
-        paymentMethod: input.paymentMethod,
+    const base = config.apiUrl.endsWith("/") ? config.apiUrl : `${config.apiUrl}/`;
+    const res = await fetch(`${base}bookings/vehicle`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
       },
-      options
-    );
-    return { ok: true, bookingId: booking.bookingNumber || booking.id, guestAccessToken: booking.guestAccessToken };
+      body: JSON.stringify({
+        vehicle_id: input.vehicleId,
+        check_in: input.checkIn,
+        check_out: input.checkOut,
+        guest_name: input.guestName,
+        guest_phone: input.guestPhone,
+        guest_email: input.guestEmail,
+        payment_method: input.paymentMethod,
+        verification_token: input.verificationToken,
+        source: "web-user",
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) {
+      return {
+        ok: false,
+        error: extractErrorCode(data, "ERROR"),
+      };
+    }
+
+    const bookingId = data.booking?.id || data.id || data.booking?.booking_number || data.bookingNumber;
+    const guestAccessToken = data.guestAccessToken || data.guest_access_token;
+
+    return {
+      ok: true,
+      bookingId,
+      guestAccessToken,
+    };
   } catch (err: unknown) {
     return { 
       ok: false, 
@@ -372,7 +432,7 @@ export async function sendCashOtpAction(input: {
     if (!res.ok || !data) {
       return {
         ok: false,
-        error: data?.code || data?.message || "OTP_SEND_FAILED",
+        error: extractErrorCode(data, "OTP_SEND_FAILED"),
       };
     }
 
@@ -425,7 +485,7 @@ export async function cashOtpVerifyAction(input: {
     if (!res.ok || !data) {
       return {
         ok: false,
-        error: data?.code || data?.message || "UNKNOWN_ERROR",
+        error: extractErrorCode(data, "UNKNOWN_ERROR"),
       };
     }
 
@@ -476,7 +536,7 @@ export async function cashOtpResendAction(input: {
     if (!res.ok || !data) {
       return {
         ok: false,
-        error: data?.code || data?.message || "UNKNOWN_ERROR",
+        error: extractErrorCode(data, "UNKNOWN_ERROR"),
       };
     }
 

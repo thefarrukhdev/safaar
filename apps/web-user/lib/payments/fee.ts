@@ -9,6 +9,7 @@ export type CardScheme = "humo" | "uzcard" | "visa" | "mastercard" | "cash";
 export const CARD_SCHEME_FEE_RATES: Readonly<Record<string, number>> = Object.freeze({
   humo: 0.015,
   uzcard: 0.015,
+  card: 0.015,
   visa: 0.035,
   mastercard: 0.035,
   cash: 0,

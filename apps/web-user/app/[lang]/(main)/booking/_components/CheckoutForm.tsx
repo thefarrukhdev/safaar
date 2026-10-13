@@ -220,7 +220,8 @@ export function CheckoutForm({
     if (isGuest && paymentMethod === "cash") {
       setLoading(true);
       setFormError("");
-      const otpRes = await sendCashOtpAction({ phone });
+      const cleanPhone = phone.replace(/[^\d+]/g, "").trim();
+      const otpRes = await sendCashOtpAction({ phone: cleanPhone });
       setLoading(false);
       if (!otpRes.ok) {
         setFormError(getErrorMessage(otpRes.error));
@@ -228,7 +229,7 @@ export function CheckoutForm({
       }
       setCashOtpState({
         isOpen: true,
-        phone,
+        phone: cleanPhone,
         challengeId: otpRes.challengeId,
         expiresIn: 180,
       });
@@ -243,6 +244,8 @@ export function CheckoutForm({
     setCashOtpState(null);
     if (result.verificationToken) {
       await executeBookingCreation(result.verificationToken);
+    } else {
+      setFormError("SMS tasdiqlashda xatolik yuz berdi. Qayta urinib ko'ring.");
     }
   };
 

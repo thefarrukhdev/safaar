@@ -8,18 +8,24 @@ import { ShieldCheck, CheckCircle2, AlertCircle, Info, CalendarClock } from "luc
 import { 
   createRestaurantBookingAction, 
   createVehicleBookingAction,
-  createBookingAction,
-  createBusBookingAction,
-  createHotelBookingDirectAction
+  createHotelBookingDirectAction,
+  sendCashOtpAction,
 } from "@/lib/services/booking/actions";
 import { PaymentSelector, type PaymentMethodId } from "./PaymentSelector";
 import { CashOtpModal } from "./CashOtpModal";
 import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
 import { previewPayment } from "@/lib/services/payments/actions";
 import { calculatePaymentFee } from "@/lib/payments/fee";
+import { formatSum } from "@/lib/money";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
-export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
+export function UnifiedCheckoutClient({
+  dict,
+  isGuest = false,
+}: {
+  dict: CheckoutDict;
+  isGuest?: boolean;
+}) {
   const searchParams = useSearchParams();
   const params = useParams<{ lang?: string }>();
   const router = useRouter();

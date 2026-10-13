@@ -6,18 +6,18 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Button } from "../../../../_components/ui/button";
-import { Dialog } from "../../../../_components/ui/dialog";
-import { Input } from "../../../../_components/ui/input";
-import { MoneyInput } from "../../../../_components/ui/money-input";
-import { Label } from "../../../../_components/ui/label";
-import { useAuthStore } from "../../../../_stores/auth-store";
-import { useCreateRoomType, useUpdateRoomType } from "../../../../_hooks/use-room-types";
-import { useCreateRoom, useUpdateRoom, useRooms } from "../../../../_hooks/use-rooms";
-import { useGenerateBeds } from "../../../../_hooks/use-beds";
-import { partners } from "../../../../_lib/api";
-import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "../../../../_lib/utils/partner-labels";
-import { RoomStatus, type RoomType, type Room } from "../../../../_lib/domain/types";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { Label } from "@/components/ui/label";
+import { useAuthStore } from "@/stores/auth-store";
+import { useCreateRoomType, useUpdateRoomType } from "@/hooks/use-room-types";
+import { useCreateRoom, useUpdateRoom, useRooms } from "@/hooks/use-rooms";
+import { useGenerateBeds } from "@/hooks/use-beds";
+import { partners } from "@/lib/api";
+import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "@/lib/utils/partner-labels";
+import { RoomStatus, type RoomType, type Room } from "@/lib/domain/types";
 
 const ROOM_AMENITY_OPTIONS = [
   { value: "wifi", label: "Wi-Fi" },

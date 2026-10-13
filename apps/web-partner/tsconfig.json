@@ -20,6 +20,11 @@
     ],
     "paths": {
       "@/*": ["./*"],
+      "@/components/*": ["./app/_components/*"],
+      "@/hooks/*": ["./app/_hooks/*"],
+      "@/lib/*": ["./app/_lib/*"],
+      "@/stores/*": ["./app/_stores/*"],
+      "@/providers/*": ["./app/_providers/*"],
       "@safaar/types": ["../../packages/types/src/index.ts"],
       "@safaar/types/*": ["../../packages/types/src/*"]
     }

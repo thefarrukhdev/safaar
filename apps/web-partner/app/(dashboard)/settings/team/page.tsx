@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Users, UserPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { PartnerTeamMember, listTeamMembers, inviteTeamMember, deleteTeamMember, updateTeamMember } from "@/app/_lib/api/endpoints/partners";
+import { PartnerTeamMember, listTeamMembers, inviteTeamMember, deleteTeamMember, updateTeamMember } from "@/lib/api/endpoints/partners";
 
 export default function TeamSettingsPage() {
   const [members, setMembers] = useState<PartnerTeamMember[]>([]);

@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { FileText, Upload, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { PartnerDocument, listDocuments, uploadDocumentFile } from "@/app/_lib/api/endpoints/partners";
-import { formatDate } from "@/app/_lib/utils/format";
+import { PartnerDocument, listDocuments, uploadDocumentFile } from "@/lib/api/endpoints/partners";
+import { formatDate } from "@/lib/utils/format";
 
 export default function DocumentsSettingsPage() {
   const [documents, setDocuments] = useState<PartnerDocument[]>([]);

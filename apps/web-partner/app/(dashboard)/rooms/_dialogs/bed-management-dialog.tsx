@@ -2,13 +2,13 @@
 
 import { BedSingle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "../../../../_components/ui/button";
-import { Drawer } from "../../../../_components/ui/drawer";
-import { EmptyState } from "../../../../_components/ui/empty-state";
-import { RoomStatusBadge } from "../../../../_components/domain/room-status-badge";
-import { useDataStore } from "../../../../_stores/data-store";
-import { useCreateBed, useDeleteBed, useUpdateBed } from "../../../../_hooks/use-beds";
-import { RoomStatus, type Room } from "../../../../_lib/domain/types";
+import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
+import { EmptyState } from "@/components/ui/empty-state";
+import { RoomStatusBadge } from "@/components/domain/room-status-badge";
+import { useDataStore } from "@/stores/data-store";
+import { useCreateBed, useDeleteBed, useUpdateBed } from "@/hooks/use-beds";
+import { RoomStatus, type Room } from "@/lib/domain/types";
 
 interface Props {
   open: boolean;

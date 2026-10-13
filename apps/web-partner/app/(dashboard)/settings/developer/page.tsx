@@ -12,8 +12,8 @@ import {
   listWebhooks, 
   createWebhook, 
   deleteWebhook 
-} from "@/app/_lib/api/endpoints/partners";
-import { formatDate } from "@/app/_lib/utils/format";
+} from "@/lib/api/endpoints/partners";
+import { formatDate } from "@/lib/utils/format";
 
 export default function DeveloperSettingsPage() {
   const [apiKeys, setApiKeys] = useState<PartnerApiKey[]>([]);

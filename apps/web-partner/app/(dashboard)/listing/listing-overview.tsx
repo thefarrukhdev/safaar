@@ -34,7 +34,7 @@ import { PhotosEditor } from './_editors/photos-editor';
 import { AmenitiesEditor } from './_editors/amenities-editor';
 import { LocationEditor } from './_editors/location-editor';
 import { RulesEditor } from './_editors/rules-editor';
-import { UnifiedRoomDialog } from '../settings/rooms/_dialogs/unified-room-dialog';
+import { UnifiedRoomDialog } from '../rooms/_dialogs/unified-room-dialog';
 
 import {
   AMENITY_GROUPS,

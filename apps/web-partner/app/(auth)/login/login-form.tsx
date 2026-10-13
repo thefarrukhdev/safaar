@@ -10,7 +10,6 @@ import {
   Lock,
   RotateCw,
   AlertCircle,
-  Terminal,
   ArrowLeft,
   Copy,
   Check,
@@ -27,6 +26,9 @@ import { Button } from '../../_components/ui/button';
 import { Label } from '../../_components/ui/label';
 import { isValidPhone, normalizePhone, maskPhone } from '../../_lib/utils/phone';
 import { toast } from 'sonner';
+
+const INPUT_CLASS =
+  'h-10 w-full pl-9 pr-3.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:ring-rose-500/15 aria-invalid:border-rose-500 aria-invalid:ring-rose-500/15 transition-all disabled:opacity-60 disabled:bg-slate-50';
 
 const loginSchema = z.object({
   phone: z
@@ -52,6 +54,73 @@ interface PhoneChallenge {
   resendAfterSeconds?: number;
 }
 
+function FormAlert({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-lg bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-in fade-in-50"
+    >
+      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
+      <span className="font-medium leading-relaxed">{message}</span>
+    </div>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p
+      id={id}
+      role="alert"
+      className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-1 animate-in fade-in-50"
+    >
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span>{message}</span>
+    </p>
+  );
+}
+
+function DevCodeBanner({
+  code,
+  onCopy,
+  copied,
+}: {
+  code: string;
+  onCopy: () => void;
+  copied: boolean;
+}) {
+  return (
+    <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 p-2.5 text-xs">
+      <div className="flex items-center gap-2">
+        <KeyRound className="h-4 w-4 text-slate-500" aria-hidden="true" />
+        <div>
+          <span className="text-[11px] text-slate-500 font-normal">Test kodi: </span>
+          <span className="font-mono tabular-nums font-bold text-slate-900 tracking-wider">
+            {code}
+          </span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer"
+      >
+        {copied ? (
+          <>
+            <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+            Nusxalandi
+          </>
+        ) : (
+          <>
+            <Copy className="h-3 w-3 text-slate-500" aria-hidden="true" />
+            To&apos;ldirish
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
 export function LoginForm() {
   const [mode, setMode] = useState<'login' | 'reset_request' | 'reset_verify'>('login');
   const [challenge, setChallenge] = useState<PhoneChallenge | null>(null);
@@ -73,7 +142,6 @@ export function LoginForm() {
     mode: 'onTouched',
   });
 
-  // Countdown timer for SMS resend
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => {
@@ -82,7 +150,6 @@ export function LoginForm() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Focus code input when entering reset_verify mode
   useEffect(() => {
     if (mode === 'reset_verify') {
       const timer = setTimeout(() => {
@@ -93,14 +160,17 @@ export function LoginForm() {
   }, [mode, form]);
 
   const handleCopyDevCode = (code: string) => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopiedCode(true);
-      form.setValue('code', code, { shouldValidate: true });
-      toast.success('Kod nusxalandi va kiritildi');
-      setTimeout(() => setCopiedCode(false), 2000);
-    }).catch(() => {
-      form.setValue('code', code, { shouldValidate: true });
-    });
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        setCopiedCode(true);
+        form.setValue('code', code, { shouldValidate: true });
+        toast.success('Kod nusxalandi va kiritildi');
+        setTimeout(() => setCopiedCode(false), 2000);
+      })
+      .catch(() => {
+        form.setValue('code', code, { shouldValidate: true });
+      });
   };
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -155,7 +225,9 @@ export function LoginForm() {
       const pwd = String(values.password ?? '').trim();
 
       if (code.length !== 6) {
-        form.setError('code', { message: "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak" });
+        form.setError('code', {
+          message: "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak",
+        });
         return;
       }
       if (pwd.length < 8) {
@@ -173,7 +245,7 @@ export function LoginForm() {
           password: pwd,
         });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Xatolik yuz berdi";
+        const msg = err instanceof Error ? err.message : 'Xatolik yuz berdi';
         setServerError(msg);
         form.setError('code', { message: msg });
       }
@@ -214,85 +286,57 @@ export function LoginForm() {
     form.clearErrors();
   };
 
-  const backToResetRequest = () => {
-    setMode('reset_request');
-    setServerError(null);
-    form.setValue('code', '');
-    form.clearErrors();
-  };
-
   const loading =
     otpRequest.isPending || passwordLogin.isPending || setPassword.isPending;
 
   return (
-    <form className="flex flex-col gap-4.5 fade-in" onSubmit={onSubmit} noValidate>
+    <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
       {/* Server error alert banner */}
-      {serverError && (
-        <div
-          id="login-server-error"
-          role="alert"
-          className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-in fade-in-50 duration-200"
-        >
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
-          <div className="flex-1 font-medium leading-relaxed">{serverError}</div>
-        </div>
-      )}
+      {serverError && <FormAlert message={serverError} />}
 
-      {/* Mode Navigation Header for Reset flows */}
-      {mode === 'reset_request' && (
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Parolni tiklash</h3>
-            <p className="text-xs text-slate-500">
-              SMS orqali yangi parol o'rnatish
-            </p>
+      {/* Mode Back Header for Password Reset */}
+      {mode !== 'login' && (
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-slate-900">
+              {mode === 'reset_request' ? 'Parolni tiklash' : 'Kodni tasdiqlash'}
+            </span>
+            <span className="text-xs text-slate-500">
+              {mode === 'reset_request'
+                ? 'SMS orqali yangi parol o‘rnatish'
+                : 'Yangi parol kiriting'}
+            </span>
           </div>
           <button
             type="button"
             onClick={resetToLogin}
-            className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Kirish
+            Kirishga qaytish
           </button>
         </div>
       )}
 
-      {mode === 'reset_verify' && (
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Kodni tasdiqlash</h3>
-            <p className="text-xs text-slate-500">
-              SMS kod va yangi parol
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={backToResetRequest}
-            className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            O'zgartirish
-          </button>
-        </div>
-      )}
-
-      {/* Phone Number Field */}
+      {/* Phone Field */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="phone" className="text-xs font-bold text-slate-700">
+          <Label htmlFor="phone" className="text-xs font-medium text-slate-700">
             Telefon raqam
           </Label>
           {mode === 'reset_verify' && challenge?.phone && (
-            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-emerald-700 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
               {maskPhone(challenge.phone)}
             </span>
           )}
         </div>
 
         <div className="relative">
-          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
+          <Phone
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <Controller
             name="phone"
             control={form.control}
@@ -304,8 +348,8 @@ export function LoginForm() {
                 autoComplete="tel"
                 inputMode="tel"
                 aria-invalid={!!form.formState.errors.phone}
-                aria-describedby={form.formState.errors.phone ? "phone-error" : undefined}
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all disabled:opacity-60 disabled:bg-slate-100"
+                aria-describedby={form.formState.errors.phone ? 'phone-error' : undefined}
+                className={INPUT_CLASS}
                 value={field.value}
                 onChange={(e) => {
                   field.onChange(e);
@@ -318,19 +362,14 @@ export function LoginForm() {
             )}
           />
         </div>
-        {form.formState.errors.phone && (
-          <p id="phone-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {form.formState.errors.phone.message}
-          </p>
-        )}
+        <FieldError id="phone-error" message={form.formState.errors.phone?.message} />
       </div>
 
       {/* Login Mode: Password field */}
       {mode === 'login' && (
-        <div className="flex flex-col gap-1.5 animate-in fade-in-50 duration-150">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-xs font-bold text-slate-700">
+            <Label htmlFor="password" className="text-xs font-medium text-slate-700">
               Parol
             </Label>
             <button
@@ -340,20 +379,25 @@ export function LoginForm() {
                 setServerError(null);
                 form.clearErrors();
               }}
-              className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+              className="text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
             >
               Parolni unutdingizmi?
             </button>
           </div>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
+            <Lock
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <PasswordInput
               id="password"
               placeholder="Parolingizni kiriting"
               autoComplete="current-password"
               aria-invalid={!!form.formState.errors.password}
-              aria-describedby={form.formState.errors.password ? "password-error" : undefined}
-              className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
+              aria-describedby={
+                form.formState.errors.password ? 'password-error' : undefined
+              }
+              className={INPUT_CLASS}
               {...form.register('password', {
                 onChange: () => {
                   if (form.formState.errors.password) form.clearErrors('password');
@@ -362,27 +406,25 @@ export function LoginForm() {
               })}
             />
           </div>
-          {form.formState.errors.password && (
-            <p id="password-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {form.formState.errors.password.message}
-            </p>
-          )}
+          <FieldError
+            id="password-error"
+            message={form.formState.errors.password?.message}
+          />
         </div>
       )}
 
       {/* Reset Verify Mode: Code + New Password */}
       {mode === 'reset_verify' && (
-        <div className="flex flex-col gap-4 animate-in fade-in-50 duration-200">
+        <div className="flex flex-col gap-3.5">
           {/* SMS Code Field */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="code" className="text-xs font-bold text-slate-700">
-                SMS Tasdiqlash kodi
+              <Label htmlFor="code" className="text-xs font-medium text-slate-700">
+                Tasdiqlash kodi
               </Label>
               {countdown > 0 ? (
-                <span className="text-[11px] font-mono text-slate-500">
-                  Qayta yuborish: {String(Math.floor(countdown / 60)).padStart(2, '0')}:
+                <span className="text-xs font-mono tabular-nums text-slate-500">
+                  {String(Math.floor(countdown / 60)).padStart(2, '0')}:
                   {String(countdown % 60).padStart(2, '0')}
                 </span>
               ) : (
@@ -390,16 +432,22 @@ export function LoginForm() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={otpRequest.isPending}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
-                  Kodni qayta yuborish
+                  <RotateCw
+                    className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`}
+                    aria-hidden="true"
+                  />
+                  Qayta yuborish
                 </button>
               )}
             </div>
 
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
+              <KeyRound
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden="true"
+              />
               <input
                 id="code"
                 type="text"
@@ -409,8 +457,8 @@ export function LoginForm() {
                 spellCheck={false}
                 placeholder="000000"
                 aria-invalid={!!form.formState.errors.code}
-                aria-describedby={form.formState.errors.code ? "code-error" : undefined}
-                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
+                aria-describedby={form.formState.errors.code ? 'code-error' : undefined}
+                className="h-10 w-full pl-9 pr-3.5 text-base text-center tracking-[0.25em] font-mono tabular-nums font-semibold rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 transition-all"
                 {...form.register('code', {
                   onChange: (e) => {
                     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -421,68 +469,36 @@ export function LoginForm() {
               />
             </div>
 
-            {form.formState.errors.code && (
-              <p id="code-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                {form.formState.errors.code.message}
-              </p>
-            )}
+            <FieldError id="code-error" message={form.formState.errors.code?.message} />
 
-            {/* Dev Mode Banner with one-click fill */}
             {challenge?.devCode && (
-              <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 border border-emerald-200/80 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                    <Terminal className="h-3.5 w-3.5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-medium text-emerald-800">
-                      Dasturlash rejimi kodi:
-                    </p>
-                    <p className="font-mono text-xs font-bold text-emerald-950 tracking-wider">
-                      {challenge.devCode}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleCopyDevCode(challenge.devCode!)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-white hover:bg-emerald-100/80 border border-emerald-300 rounded-lg shadow-2xs transition-all cursor-pointer"
-                >
-                  {copiedCode ? (
-                    <>
-                      <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
-                      Kiritildi
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3 text-emerald-700" aria-hidden="true" />
-                      To'ldirish
-                    </>
-                  )}
-                </button>
-              </div>
+              <DevCodeBanner
+                code={challenge.devCode}
+                onCopy={() => handleCopyDevCode(challenge.devCode!)}
+                copied={copiedCode}
+              />
             )}
           </div>
 
           {/* New Password Field */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-password" className="text-xs font-bold text-slate-700">
+            <Label htmlFor="new-password" className="text-xs font-medium text-slate-700">
               Yangi parol
             </Label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
+              <Lock
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden="true"
+              />
               <PasswordInput
                 id="new-password"
-                placeholder="Yangi parol (kamida 8 ta belgi)"
+                placeholder="Kamida 8 ta belgi"
                 autoComplete="new-password"
                 aria-invalid={!!form.formState.errors.password}
                 aria-describedby={
-                  form.formState.errors.password
-                    ? 'new-password-error new-password-hint'
-                    : 'new-password-hint'
+                  form.formState.errors.password ? 'new-password-error' : undefined
                 }
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
+                className={INPUT_CLASS}
                 {...form.register('password', {
                   onChange: () => {
                     if (form.formState.errors.password) form.clearErrors('password');
@@ -491,79 +507,29 @@ export function LoginForm() {
                 })}
               />
             </div>
-            <p id="new-password-hint" className="text-[11px] text-slate-500">
-              Parol kamida 8 ta belgi (harf, raqam va maxsus belgi) bo&apos;lishi zarur.
-            </p>
-            {form.formState.errors.password && (
-              <p id="new-password-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                {form.formState.errors.password.message}
-              </p>
-            )}
+            <FieldError
+              id="new-password-error"
+              message={form.formState.errors.password?.message}
+            />
           </div>
         </div>
       )}
 
-      {/* Submit Button & Actions */}
-      <div className="flex flex-col gap-3 mt-1">
+      {/* Submit Button */}
+      <div className="pt-1">
         <Button
           type="submit"
           size="lg"
           loading={loading}
-          className="w-full text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/25 active:scale-[0.99] transition-all cursor-pointer"
+          className="h-10 w-full text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
         >
-          {mode === 'login' ? (
-            'Tizimga kirish'
-          ) : mode === 'reset_request' ? (
-            'Tasdiqlash kodini yuborish'
-          ) : (
-            'Parolni saqlash va kirish'
-          )}
+          {mode === 'login'
+            ? 'Kirish'
+            : mode === 'reset_request'
+            ? 'Tasdiqlash kodini yuborish'
+            : 'Parolni yangilash va kirish'}
         </Button>
-
-        {mode === 'login' && (
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('reset_request');
-                setServerError(null);
-                form.clearErrors();
-              }}
-              className="text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors py-1 cursor-pointer"
-            >
-              Parolni unutdingizmi yoki endi o'rnatmoqchimisiz?
-            </button>
-          </div>
-        )}
-
-        {mode === 'reset_request' && (
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              onClick={resetToLogin}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors py-1 cursor-pointer"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              Kirish oynasiga qaytish
-            </button>
-          </div>
-        )}
-
-        {mode === 'reset_verify' && (
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              onClick={resetToLogin}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors py-1 cursor-pointer"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              Bekor qilish va kirishga qaytish
-            </button>
-          </div>
-        )}
       </div>
     </form>
   );
 }
-

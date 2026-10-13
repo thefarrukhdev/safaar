@@ -539,9 +539,8 @@ export class PartnersService {
 
   async submitPublicPartnerRequest(body: Record<string, unknown>) {
     const phone = this.normalizePhone(body.phone);
-    const email = String(body.email ?? '')
-      .trim()
-      .toLowerCase();
+    const rawEmail = this.optionalString(body.email);
+    const email = rawEmail ? rawEmail.toLowerCase() : null;
     const brandName = String(
       body.companyName ?? body.brandName ?? body.company_name ?? '',
     ).trim();
@@ -569,9 +568,7 @@ export class PartnersService {
     } else if (!this.isValidUzPhone(phone)) {
       fieldErrors.phone = "Telefon noto'g'ri formatda";
     }
-    if (!email) {
-      fieldErrors.email = 'Email kiriting';
-    } else if (!this.isValidEmail(email)) {
+    if (email && !this.isValidEmail(email)) {
       fieldErrors.email = "Email noto'g'ri formatda";
     }
     if (taxId && !/^\d{9}$/.test(taxId)) {
@@ -626,16 +623,16 @@ export class PartnersService {
       `
         select id::text,
                regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g') as phone_match,
-               lower(email) = lower($2) as email_match,
+               ($2::text <> '' and lower(coalesce(email, '')) = lower($2)) as email_match,
                ($3::text <> '' and tax_id = $3) as tax_id_match
         from partner_organizations
         where regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
-           or lower(email) = lower($2)
+           or ($2::text <> '' and lower(coalesce(email, '')) = lower($2))
            or ($3::text <> '' and tax_id = $3)
         order by created_at desc
         limit 10
       `,
-      [phone, email, taxId ?? ''],
+      [phone, email ?? '', taxId ?? ''],
     );
 
     const duplicateErrors: Record<string, string> = {};
@@ -644,7 +641,7 @@ export class PartnersService {
         duplicateErrors.phone =
           'Bu telefon raqam bilan ariza yoki hamkor mavjud';
       }
-      if (duplicate['email_match']) {
+      if (email && duplicate['email_match']) {
         duplicateErrors.email = 'Bu email bilan ariza yoki hamkor mavjud';
       }
       if (taxId && duplicate['tax_id_match']) {
@@ -677,6 +674,7 @@ export class PartnersService {
       : null;
 
     const id = randomUUID();
+    const fallbackEmail = `${phone.replace(/\D/g, '')}@partner.safaar.uz`;
     let inserted: Array<Record<string, unknown>>;
     try {
       inserted = await this.pg.query(
@@ -709,19 +707,20 @@ export class PartnersService {
         ],
       );
     } catch (err: unknown) {
-      if (
-        typeof err === 'object' &&
-        err !== null &&
-        (err as { code?: string }).code === '42703'
-      ) {
+      const errCode =
+        typeof err === 'object' && err !== null
+          ? (err as { code?: string }).code
+          : undefined;
+
+      if (errCode === '23502' && !email) {
         inserted = await this.pg.query(
           `
             insert into partner_organizations (
               id, type, legal_name, brand_name, contact_person, tax_id, phone,
               email, city_id, address, status, default_commission_rate,
-              account_number, mfo, created_at, updated_at
+              initial_password_hash, account_number, mfo, created_at, updated_at
             )
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $13)
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $14, $14)
             returning id::text, type::text, legal_name, brand_name, contact_person,
                       tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
                       rejection_reason, created_at, updated_at
@@ -734,14 +733,83 @@ export class PartnersService {
             contactPerson,
             taxId,
             phone,
-            email,
+            fallbackEmail,
             cityId,
             address,
+            initialPasswordHash,
             accountNumber,
             mfo,
             now,
           ],
         );
+      } else if (errCode === '42703') {
+        try {
+          inserted = await this.pg.query(
+            `
+              insert into partner_organizations (
+                id, type, legal_name, brand_name, contact_person, tax_id, phone,
+                email, city_id, address, status, default_commission_rate,
+                account_number, mfo, created_at, updated_at
+              )
+              values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $13)
+              returning id::text, type::text, legal_name, brand_name, contact_person,
+                        tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
+                        rejection_reason, created_at, updated_at
+            `,
+            [
+              id,
+              partnerType,
+              legalName,
+              brandName,
+              contactPerson,
+              taxId,
+              phone,
+              email,
+              cityId,
+              address,
+              accountNumber,
+              mfo,
+              now,
+            ],
+          );
+        } catch (innerErr: unknown) {
+          const innerCode =
+            typeof innerErr === 'object' && innerErr !== null
+              ? (innerErr as { code?: string }).code
+              : undefined;
+          if (innerCode === '23502' && !email) {
+            inserted = await this.pg.query(
+              `
+                insert into partner_organizations (
+                  id, type, legal_name, brand_name, contact_person, tax_id, phone,
+                  email, city_id, address, status, default_commission_rate,
+                  account_number, mfo, created_at, updated_at
+                )
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid, $10, 'submitted', 12.00, $11, $12, $13, $13)
+                returning id::text, type::text, legal_name, brand_name, contact_person,
+                          tax_id, account_number, mfo, phone, email, city_id::text, address, status::text,
+                          rejection_reason, created_at, updated_at
+              `,
+              [
+                id,
+                partnerType,
+                legalName,
+                brandName,
+                contactPerson,
+                taxId,
+                phone,
+                fallbackEmail,
+                cityId,
+                address,
+                accountNumber,
+                mfo,
+                now,
+              ],
+            );
+          } else {
+            throw innerErr;
+          }
+        }
       } else {
         throw err;
       }
@@ -749,6 +817,7 @@ export class PartnersService {
 
     if (initialPasswordHash) {
       try {
+        const userEmail = email ?? fallbackEmail;
         await this.pg.query(
           `insert into partner_users
              (id, organization_id, email, phone, password_hash, full_name, role, status, created_at, updated_at)
@@ -757,7 +826,7 @@ export class PartnersService {
           [
             randomUUID(),
             id,
-            email,
+            userEmail,
             phone,
             initialPasswordHash,
             contactPerson ?? brandName,

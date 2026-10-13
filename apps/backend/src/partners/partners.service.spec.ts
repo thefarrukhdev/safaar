@@ -2996,6 +2996,163 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
       },
     });
   });
+
+  it('accepts registration without email (email is optional)', async () => {
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockResolvedValueOnce([
+        {
+          id: 'org-no-email',
+          type: 'hotel',
+          legal_name: 'No Email Hotel LLC',
+          brand_name: 'No Email Hotel',
+          contact_person: 'No Email Tester',
+          tax_id: null,
+          account_number: '20208000900000123456',
+          mfo: '00014',
+          phone: '+998901234590',
+          email: null,
+          city_id: 'city-1',
+          address: 'Amir Temur 1',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-10-13T00:00:00.000Z',
+          updated_at: '2026-10-13T00:00:00.000Z',
+        },
+      ]) // INSERT ... RETURNING
+      .mockResolvedValueOnce([]); // insert partner_users
+
+    const { token } = registrationVerificationStore.issue('+998901234590');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'No Email Hotel',
+      contactPerson: 'No Email Tester',
+      phone: '+998901234590',
+      // email intentionally omitted
+      city: 'Toshkent',
+      address: 'Amir Temur 1',
+      accountNumber: '20208000900000123456',
+      mfo: '00014',
+      password: 'SecurePassword123!',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('No Email Hotel');
+    expect(result.item.email).toBe('');
+    const calls = queryCallsOf(pg);
+    // Duplicate check must pass empty string for $2 (email)
+    const duplicateCheckCall = calls[0];
+    expect(duplicateCheckCall[1]?.[1]).toBe('');
+    // Insert call must pass null for email ($8)
+    const insertCall = calls[2];
+    expect(insertCall[1]?.[7]).toBeNull();
+  });
+
+  it('accepts registration with empty string email (treated as omitted)', async () => {
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockResolvedValueOnce([
+        {
+          id: 'org-empty-email',
+          type: 'hotel',
+          legal_name: 'Empty Email Hotel LLC',
+          brand_name: 'Empty Email Hotel',
+          contact_person: 'Empty Email Tester',
+          tax_id: null,
+          phone: '+998901234591',
+          email: null,
+          city_id: 'city-1',
+          address: 'Amir Temur 2',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-10-13T00:00:00.000Z',
+          updated_at: '2026-10-13T00:00:00.000Z',
+        },
+      ]);
+
+    const { token } = registrationVerificationStore.issue('+998901234591');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'Empty Email Hotel',
+      contactPerson: 'Empty Email Tester',
+      phone: '+998901234591',
+      email: '   ',
+      city: 'Toshkent',
+      address: 'Amir Temur 2',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('Empty Email Hotel');
+    expect(result.item.email).toBe('');
+  });
+
+  it('rejects registration when email is provided with invalid format', async () => {
+    const { token } = registrationVerificationStore.issue('+998901234592');
+    await expect(
+      service.submitPublicPartnerRequest({
+        type: 'hotel',
+        companyName: 'Invalid Email Hotel',
+        phone: '+998901234592',
+        email: 'invalid-email-string',
+        city: 'Toshkent',
+        address: 'Amir Temur 3',
+        phoneVerificationToken: token,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PARTNER_REQUEST_INVALID',
+        fields: {
+          email: "Email noto'g'ri formatda",
+        },
+      },
+    });
+  });
+
+  it('gracefully falls back with generated partner email when partner_organizations.email has 23502 (NOT NULL constraint)', async () => {
+    const err23502 = new Error(
+      'null value in column "email" violates not-null constraint',
+    );
+    (err23502 as unknown as { code: string }).code = '23502';
+
+    pg.query
+      .mockResolvedValueOnce([]) // duplicate check
+      .mockResolvedValueOnce([{ id: 'city-1' }]) // resolveCityId
+      .mockRejectedValueOnce(err23502) // INSERT with null email fails
+      .mockResolvedValueOnce([
+        {
+          id: 'org-fallback-email',
+          type: 'hotel',
+          legal_name: 'Fallback Email Hotel',
+          brand_name: 'Fallback Email Hotel',
+          contact_person: 'Tester',
+          phone: '+998901234593',
+          email: '998901234593@partner.safaar.uz',
+          city_id: 'city-1',
+          address: 'Navoiy 10',
+          status: 'submitted',
+          rejection_reason: null,
+          created_at: '2026-10-13T00:00:00.000Z',
+          updated_at: '2026-10-13T00:00:00.000Z',
+        },
+      ]); // fallback INSERT succeeds
+
+    const { token } = registrationVerificationStore.issue('+998901234593');
+    const result = await service.submitPublicPartnerRequest({
+      type: 'hotel',
+      companyName: 'Fallback Email Hotel',
+      phone: '+998901234593',
+      city: 'Toshkent',
+      address: 'Navoiy 10',
+      phoneVerificationToken: token,
+    });
+
+    expect(result.item.companyName).toBe('Fallback Email Hotel');
+    const calls = queryCallsOf(pg);
+    const retryCall = calls[3];
+    expect(retryCall[1]?.[7]).toBe('998901234593@partner.safaar.uz');
+  });
 });
 
 describe('PartnersService.profile and updateProfile — company details and bank account gating without MFO', () => {

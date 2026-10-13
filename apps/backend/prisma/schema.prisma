@@ -146,7 +146,7 @@ model PartnerOrganization {
   brandName             String                   @map("brand_name") @db.VarChar(255)
   taxId                 String?                  @unique @map("tax_id") @db.VarChar(32)
   phone                 String                   @db.VarChar(20)
-  email                 String                   @db.VarChar(255)
+  email                 String?                  @db.VarChar(255)
   cityId                String                   @map("city_id") @db.Uuid
   address               String?
   status                PartnerStatus            @default(draft)
@@ -182,7 +182,7 @@ model PartnerOrganization {
 model PartnerUser {
   id             String              @id @default(uuid()) @db.Uuid
   organizationId String              @map("organization_id") @db.Uuid
-  email          String              @db.VarChar(255)
+  email          String?             @db.VarChar(255)
   phone          String?             @db.VarChar(20)
   passwordHash   String              @map("password_hash") @db.VarChar(255)
   fullName       String?             @map("full_name") @db.VarChar(255)

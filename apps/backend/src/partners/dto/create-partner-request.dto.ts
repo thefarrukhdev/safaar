@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreatePartnerRequestDto {
@@ -53,9 +54,13 @@ export class CreatePartnerRequestDto {
   @IsNotEmpty()
   phone!: string;
 
-  @ApiProperty({ example: 'partner@example.com' })
+  @ApiPropertyOptional({ example: 'partner@example.com' })
+  @IsOptional()
+  @ValidateIf(
+    (_, value) => value !== null && value !== undefined && value !== '',
+  )
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @ApiPropertyOptional({ example: '123456789' })
   @IsOptional()

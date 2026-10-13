@@ -13,6 +13,7 @@ export interface CashOtpDict {
   verifyButton: string;
   cancelButton: string;
   verifying: string;
+  verified?: string;
   errors: {
     INVALID_OTP: string;
     OTP_EXPIRED: string;
@@ -163,6 +164,7 @@ export function CashOtpModal({
 
         <div className="flex justify-center mb-4">
           <CodeSlots
+            ariaLabel={dict.title || "One-time code"}
             length={6}
             value={otp}
             onChange={(val) => {
@@ -204,7 +206,7 @@ export function CashOtpModal({
             disabled={isLoading || otp.length < 6 || isExpired || isSuccess}
             className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {isSuccess ? "Tasdiqlandi!" : isLoading ? dict.verifying : dict.verifyButton}
+            {isSuccess ? (dict.verified || "Tasdiqlandi!") : isLoading ? dict.verifying : dict.verifyButton}
           </button>
           
           <button

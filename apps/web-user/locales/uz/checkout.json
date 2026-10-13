@@ -61,17 +61,17 @@
     "cash": {
       "title": "Joyida to'lash",
       "desc": "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
-      "badges": []
+      "badges": ["0% to'lov haqi", "Oldindan to'lovsiz"]
     },
     "local_card": {
       "title": "Karta orqali to'lash",
       "desc": "Uzcard, Humo, Visa va Mastercard orqali xavfsiz to'lov",
-      "badges": []
+      "badges": ["3D-Secure", "Onlayn to'lov"]
     },
     "intl_card": {
       "title": "Xalqaro kartalar",
       "desc": "Visa, Mastercard orqali xavfsiz to'lov",
-      "badges": []
+      "badges": ["3D-Secure"]
     }
   },
   "errors": {
@@ -95,6 +95,7 @@
     "verifyButton": "Tasdiqlash",
     "cancelButton": "Bekor qilish",
     "verifying": "Tekshirilmoqda...",
+    "verified": "Tasdiqlandi!",
     "resending": "Yuborilmoqda...",
     "errors": {
       "INVALID_OTP": "SMS kod noto'g'ri kiritildi. Qaytadan urinib ko'ring.",
@@ -108,5 +109,9 @@
   },
   "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi.",
   "baseAmount": "Asosiy summa",
-  "paymentFee": "To'lov komissiyasi"
+  "paymentFee": "To'lov komissiyasi",
+  "optional": "(ixtiyoriy)",
+  "bookingSuccess": "Muvaffaqiyatli!",
+  "bookingIdLabel": "Bron ID",
+  "restaurantCashNotice": "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."
 }

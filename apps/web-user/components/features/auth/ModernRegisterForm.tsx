@@ -16,16 +16,23 @@ import { AuthLayout } from "./AuthLayout";
 import type { Locale } from "@/i18n/config";
 import type { AuthDict } from "@/i18n/dictionaries";
 
-function passwordStrength(pw: string): { label: string; level: number; color: string } {
+function passwordStrength(pw: string, locale: string = "uz"): { label: string; level: number; color: string } {
  if (!pw) return { label: "", level: 0, color: "bg-slate-200" };
  let level = 0;
  if (pw.length >= 8) level += 1;
  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) level += 1;
  if (/[^A-Za-z0-9]/.test(pw)) level += 1;
- if (level === 1) return { label: "Zaif", level: 1, color: "bg-red-500" };
- if (level === 2) return { label: "O'rtacha", level: 2, color: "bg-amber-500" };
- if (level === 3) return { label: "Kuchli", level: 3, color: "bg-green-500" };
- return { label: "Juda zaif", level: 0, color: "bg-red-500" };
+
+ const labels: Record<string, [string, string, string, string]> = {
+ uz: ["Juda zaif", "Zaif", "O'rtacha", "Kuchli"],
+ ru: ["Очень слабый", "Слабый", "Средний", "Надёжный"],
+ en: ["Very weak", "Weak", "Medium", "Strong"],
+ };
+ const list = labels[locale] || labels.uz;
+ if (level === 1) return { label: list[1], level: 1, color: "bg-red-500" };
+ if (level === 2) return { label: list[2], level: 2, color: "bg-amber-500" };
+ if (level === 3) return { label: list[3], level: 3, color: "bg-green-500" };
+ return { label: list[0], level: 0, color: "bg-red-500" };
 }
 
 import { AuthInput } from "./AuthInput";
@@ -70,7 +77,7 @@ export default function ModernRegisterForm({
  const [verifyState, verifyAction, verifying] = useActionState<VerifyState, FormData>(verifyOtpAction, {} as VerifyState);
  const [completeState, completeAction, completing] = useActionState<CompleteProfileState, FormData>(completeProfileAction, {} as CompleteProfileState);
 
- const strength = passwordStrength(password);
+ const strength = passwordStrength(password, locale);
 
  useEffect(() => {
  if (otpState.ok) {
@@ -186,6 +193,7 @@ export default function ModernRegisterForm({
  <div className="flex flex-col items-center gap-2 py-2">
  <label className="text-sm font-medium text-slate-700 self-start">{dict.code || "Tasdiqlash kodi"}</label>
  <CodeSlots
+ ariaLabel={dict.code || "One-time code"}
  length={6}
  value={code}
  onChange={setCode}

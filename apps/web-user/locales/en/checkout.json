@@ -62,14 +62,12 @@
     "cash": {
       "title": "Pay on site",
       "desc": "No prepayment required. Pay at the front desk upon arrival",
-      "badges": []
+      "badges": ["0% fee", "No prepayment"]
     },
     "local_card": {
       "title": "Pay with Card",
       "desc": "Secure payment via Uzcard, Humo, Visa and Mastercard",
-      "badges": [
-        "3D-Secure safe"
-      ]
+      "badges": ["3D-Secure", "Online payment"]
     },
     "intl_card": {
       "title": "International cards",
@@ -100,6 +98,7 @@
     "verifyButton": "Verify",
     "cancelButton": "Cancel",
     "verifying": "Verifying...",
+    "verified": "Verified!",
     "resending": "Sending...",
     "errors": {
       "INVALID_OTP": "Incorrect code. Please try again.",
@@ -113,5 +112,9 @@
   },
   "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number.",
   "baseAmount": "Base amount",
-  "paymentFee": "Payment fee"
+  "paymentFee": "Payment fee",
+  "optional": "(optional)",
+  "bookingSuccess": "Success!",
+  "bookingIdLabel": "Booking ID",
+  "restaurantCashNotice": "Table is reserved. Payment will be made upon arrival at the restaurant."
 }

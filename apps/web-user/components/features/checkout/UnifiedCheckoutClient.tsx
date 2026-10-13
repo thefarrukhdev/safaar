@@ -187,13 +187,13 @@ export function UnifiedCheckoutClient({
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 mb-6">
           <CheckCircle2 className="h-10 w-10 text-emerald-600" />
         </div>
-        <h3 className="text-2xl font-extrabold text-emerald-900 mb-2">{dict.summary} - Muvaffaqiyatli!</h3>
+        <h3 className="text-2xl font-extrabold text-emerald-900 mb-2">{dict.summary} - {(dict as any).bookingSuccess || "Muvaffaqiyatli!"}</h3>
         <p className="text-emerald-700 mb-8 text-lg">
-          Bron ID: <span className="font-mono font-bold bg-white px-2 py-1 rounded border border-emerald-200">{successBookingId}</span>
+          {(dict as any).bookingIdLabel || "Bron ID"}: <span className="font-mono font-bold bg-white px-2 py-1 rounded border border-emerald-200">{successBookingId}</span>
         </p>
         <Link href={`/${locale}`}>
           <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm py-6 text-lg rounded-xl">
-            Bosh sahifaga qaytish
+            {(dict as any).backHome || "Bosh sahifaga qaytish"}
           </Button>
         </Link>
       </div>
@@ -264,7 +264,7 @@ export function UnifiedCheckoutClient({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-semibold text-slate-700">{dict.email} (ixtiyoriy)</label>
+                  <label className="block text-sm font-semibold text-slate-700">{dict.email} {(dict as any).optional || "(ixtiyoriy)"}</label>
                   <input
                     type="email"
                     value={guestEmail}
@@ -304,9 +304,9 @@ export function UnifiedCheckoutClient({
                     <ShieldCheck className="h-6 w-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold mb-1">Joyida to'lash</h4>
+                    <h4 className="font-bold mb-1">{dict.paymentMethods?.cash?.title || (dict as any).methods?.cash || "Joyida to'lash"}</h4>
                     <p className="text-sm text-amber-800 leading-relaxed">
-                      Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi.
+                      {(dict as any).restaurantCashNotice || "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."}
                     </p>
                   </div>
                 </div>

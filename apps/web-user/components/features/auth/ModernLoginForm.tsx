@@ -312,6 +312,7 @@ export default function ModernLoginForm({
                 <input type="hidden" {...forgotCodeForm.register("code")} />
                 <label className="text-sm font-medium text-slate-700 self-start">{dict.code || "Kod"}</label>
                 <CodeSlots
+                  ariaLabel={dict.code || "One-time code"}
                   length={6}
                   value={forgotCodeForm.watch("code")}
                   onChange={(val) => {

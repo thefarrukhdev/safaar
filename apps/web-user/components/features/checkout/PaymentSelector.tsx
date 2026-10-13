@@ -193,8 +193,15 @@ export function PaymentSelector({
           } else if (isGranular) {
             if (option.id === "visa" && dict?.intl_card?.title) nameText = dict.intl_card.title;
           }
-
-          const badges = option.badges ?? [];
+          const badges: string[] = (
+            (option.id === "cash" && Array.isArray(dict?.cash?.badges) && dict.cash.badges.length > 0)
+              ? (dict.cash.badges as string[])
+              : (!isGranular && option.id === "uzcard" && Array.isArray(dict?.local_card?.badges) && dict.local_card.badges.length > 0)
+              ? (dict.local_card.badges as string[])
+              : (isGranular && option.id === "visa" && Array.isArray(dict?.intl_card?.badges) && dict.intl_card.badges.length > 0)
+              ? (dict.intl_card.badges as string[])
+              : option.badges
+          ) ?? [];
 
           return (
             <div

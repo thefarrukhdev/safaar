@@ -2428,6 +2428,28 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
         }),
       ).rejects.toMatchObject({ response: { code: 'AUTH_ACCOUNT_LOCKED' } });
     });
+
+    it('throws PARTNER_NOT_ACTIVE when organization is not approved yet (submitted/pending)', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          organization_id: ORG_ID,
+          organization_status: 'submitted',
+          user_id: USER_ID,
+          user_status: 'active',
+          password_hash: 'hashed',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+
+      await expect(
+        service.partnerPasswordLogin({
+          phone: '+998901112201',
+          password: 'correct-password',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'PARTNER_NOT_ACTIVE' },
+      });
+    });
   });
 
   describe("partner/login (email) — regression: another concurrent change to this exact login path (usePartnerEmailLogin) replicated the same partnerType='hotel' bug via a different, always-false condition (tokens.partner_role === 'bus')", () => {
@@ -2480,6 +2502,31 @@ describe('AuthService partner password-login / set-password / email-OTP (2026-09
       });
 
       expect(result).toMatchObject({ organizationType: 'hotel' });
+    });
+
+    it('throws PARTNER_NOT_ACTIVE when organization is not approved yet (submitted/pending)', async () => {
+      pg.query.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          organization_id: ORG_ID,
+          email: 'partner-submitted@safaar.uz',
+          password_hash: 'hashed',
+          full_name: 'Test Owner',
+          role: 'owner',
+          status: 'active',
+        },
+      ]);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(true);
+      pg.query.mockResolvedValueOnce([{ id: ORG_ID, status: 'submitted' }]);
+
+      await expect(
+        service.partnerLogin({
+          email: 'partner-submitted@safaar.uz',
+          password: 'correct-password',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'PARTNER_NOT_ACTIVE' },
+      });
     });
   });
 

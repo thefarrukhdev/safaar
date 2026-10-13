@@ -795,7 +795,8 @@ export class AuthService {
     if (!this.isPartnerLoginStatusAllowed(organizationStatus)) {
       throw new UnauthorizedException({
         code: 'PARTNER_NOT_ACTIVE',
-        message: 'Hamkor tashkilot faol emas',
+        message:
+          'Hamkor arizasi hali admin tomonidan tasdiqlanmagan yoki faol emas',
       });
     }
     // Authoritative partner-type source (same field issuePartnerTokensByPhone
@@ -1623,7 +1624,8 @@ export class AuthService {
     if (!row || !this.isPartnerLoginStatusAllowed(row['organization_status'])) {
       throw new UnauthorizedException({
         code: 'PARTNER_NOT_ACTIVE',
-        message: 'Hamkor tashkilot faol emas',
+        message:
+          'Hamkor arizasi hali admin tomonidan tasdiqlanmagan yoki faol emas',
       });
     }
     const organizationStatus = String(row['organization_status'] ?? '');
@@ -1664,15 +1666,9 @@ export class AuthService {
   }
 
   private isPartnerLoginStatusAllowed(status: unknown): boolean {
-    return [
-      'approved',
-      'submitted',
-      'draft',
-      'under_review',
-      'more_information_required',
-      'blocked',
-      'suspended',
-    ].includes(String(status ?? '').toLowerCase());
+    return ['approved', 'blocked', 'suspended'].includes(
+      String(status ?? '').toLowerCase(),
+    );
   }
 
   private isPartnerPasswordResetAllowed(status: unknown): boolean {
@@ -1707,7 +1703,6 @@ export class AuthService {
 
     if (
       !partnerUser ||
-      !this.isPartnerLoginStatusAllowed(partnerUser.organization_status) ||
       (partnerUser.user_status && partnerUser.user_status !== 'active') ||
       !partnerUser.password_hash ||
       !(await this.verifyPassword(partnerUser.password_hash, password))
@@ -1716,6 +1711,14 @@ export class AuthService {
       throw this.invalidCredentials();
     }
     await this.resetLoginAttempts(lockoutKey);
+
+    if (!this.isPartnerLoginStatusAllowed(partnerUser.organization_status)) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message:
+          'Hamkor arizasi hali admin tomonidan tasdiqlanmagan yoki faol emas',
+      });
+    }
 
     await this.auditAuthEvent(
       'partner',
@@ -2004,7 +2007,8 @@ export class AuthService {
     if (!row || !this.isPartnerLoginStatusAllowed(row['organization_status'])) {
       throw new UnauthorizedException({
         code: 'PARTNER_NOT_ACTIVE',
-        message: 'Hamkor tashkilot faol emas',
+        message:
+          'Hamkor arizasi hali admin tomonidan tasdiqlanmagan yoki faol emas',
       });
     }
     const organizationStatus = String(row['organization_status'] ?? '');

@@ -19,11 +19,12 @@ const SpotlightContext = createContext<SpotlightContextType | null>(null);
  * Interactive Spotlight + Dot Matrix Background (Linear & Vercel style)
  *
  * Senior architecture:
- * 1. 24px x 24px dot-matrix with radial falloff mask.
- * 2. GPU-accelerated 60fps cursor spotlight via requestAnimationFrame & CSS variables (0 React re-renders on move).
- * 3. Soft ambient center glow for mobile / resting state.
- * 4. All decorative layers have pointer-events-none and aria-hidden="true".
- * 5. Respects prefers-reduced-motion.
+ * 1. 24px x 24px subtle dot-matrix base.
+ * 2. Active illuminated blue dots layer masked around cursor position.
+ * 3. GPU-accelerated 60fps cursor spotlight via requestAnimationFrame & CSS variables (0 React re-renders on move).
+ * 4. Ambient center glow for mobile / resting state.
+ * 5. All decorative layers have pointer-events-none and aria-hidden="true".
+ * 6. Respects prefers-reduced-motion.
  */
 export function SpotlightBackground({
   children,
@@ -160,12 +161,12 @@ export function SpotlightBackground({
           "relative min-h-screen w-full flex flex-col items-center justify-center overflow-x-hidden",
           "bg-slate-50 text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100",
           "px-4 py-8 sm:py-12 selection:bg-blue-500/20",
-          "[--spotlight-glow:rgba(37,99,235,0.08)] dark:[--spotlight-glow:rgba(59,130,246,0.12)]",
-          "[--spotlight-opacity:0]",
+          "[--spotlight-glow:rgba(37,99,235,0.14)] dark:[--spotlight-glow:rgba(59,130,246,0.18)]",
+          "[--spotlight-opacity:1]",
           className
         )}
       >
-        {/* Layer 1: Dot Matrix Background (24px x 24px) */}
+        {/* Layer 1: Base Dot Matrix Background (24px x 24px) */}
         <div
           aria-hidden="true"
           className={cn(
@@ -176,9 +177,27 @@ export function SpotlightBackground({
           )}
           style={{
             maskImage:
-              "radial-gradient(ellipse 85% 75% at 50% 45%, #000 55%, transparent 100%)",
+              "radial-gradient(ellipse 90% 80% at 50% 45%, #000 60%, transparent 100%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 85% 75% at 50% 45%, #000 55%, transparent 100%)",
+              "radial-gradient(ellipse 90% 80% at 50% 45%, #000 60%, transparent 100%)",
+          }}
+        />
+
+        {/* Layer 1b: Active Illuminated Blue Dots (Follows Cursor) */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-0 z-0 transition-opacity duration-300",
+            "[background-size:24px_24px]",
+            "[background-image:radial-gradient(rgba(37,99,235,0.75)_1.3px,transparent_1.3px)]",
+            "dark:[background-image:radial-gradient(rgba(96,165,250,0.85)_1.3px,transparent_1.3px)]"
+          )}
+          style={{
+            opacity: "var(--spotlight-opacity, 1)",
+            maskImage:
+              "radial-gradient(380px circle at var(--mouse-x, 50%) var(--mouse-y, 45%), black 15%, transparent 75%)",
+            WebkitMaskImage:
+              "radial-gradient(380px circle at var(--mouse-x, 50%) var(--mouse-y, 45%), black 15%, transparent 75%)",
           }}
         />
 
@@ -187,21 +206,22 @@ export function SpotlightBackground({
           aria-hidden="true"
           className={cn(
             "pointer-events-none absolute inset-0 z-0",
-            "bg-[radial-gradient(circle_520px_at_50%_38%,rgba(37,99,235,0.06),transparent_80%)]",
-            "dark:bg-[radial-gradient(circle_520px_at_50%_38%,rgba(59,130,246,0.10),transparent_80%)]"
+            "bg-[radial-gradient(circle_520px_at_50%_42%,rgba(37,99,235,0.08),transparent_80%)]",
+            "dark:bg-[radial-gradient(circle_520px_at_50%_42%,rgba(59,130,246,0.12),transparent_80%)]"
           )}
         />
 
-        {/* Layer 3: Interactive Spotlight (Cursor Tracker) */}
+        {/* Layer 3: Interactive Spotlight Radial (Cursor Tracker) */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300 ease-out"
+          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-200 ease-out"
           style={{
-            opacity: "var(--spotlight-opacity, 0)",
+            opacity: "var(--spotlight-opacity, 1)",
             background: `radial-gradient(
-              620px circle at var(--mouse-x, 50%) var(--mouse-y, 38%),
-              var(--spotlight-glow, rgba(37, 99, 235, 0.08)),
-              transparent 70%
+              560px circle at var(--mouse-x, 50%) var(--mouse-y, 42%),
+              var(--spotlight-glow, rgba(37, 99, 235, 0.14)),
+              rgba(99, 102, 241, 0.04) 40%,
+              transparent 72%
             )`,
           }}
         />
@@ -216,8 +236,7 @@ export function SpotlightBackground({
 }
 
 /**
- * SpotlightCard with dynamic "Glow / Beam edge" effect.
- * When the cursor passes alongside or over the card, the edge illuminates with Safaar blue.
+ * SpotlightCard with dynamic "Glow / Beam edge" effect and elevated depth.
  */
 export function SpotlightCard({
   children,
@@ -245,8 +264,8 @@ export function SpotlightCard({
       ref={cardRef}
       className={cn(
         "group/card relative w-full rounded-2xl p-[1px] transition-shadow duration-300",
-        "shadow-xs hover:shadow-md",
-        "[--card-beam:rgba(37,99,235,0.55)] dark:[--card-beam:rgba(96,165,250,0.65)]",
+        "shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_0_rgba(15,23,42,0.04)] hover:shadow-xl",
+        "[--card-beam:rgba(37,99,235,0.65)] dark:[--card-beam:rgba(96,165,250,0.75)]",
         "[--card-border:rgba(226,232,240,0.95)] dark:[--card-border:rgba(51,65,85,0.7)]",
         className
       )}
@@ -273,7 +292,7 @@ export function SpotlightCard({
       />
 
       {/* Card Content Surface */}
-      <div className="relative rounded-[15px] bg-white/95 dark:bg-slate-900/95 p-6 sm:p-8 backdrop-blur-xs">
+      <div className="relative rounded-[15px] bg-white dark:bg-slate-900 p-7 sm:p-9">
         {children}
       </div>
     </div>

@@ -28,7 +28,7 @@ import { isValidPhone, normalizePhone, maskPhone } from '../../_lib/utils/phone'
 import { toast } from 'sonner';
 
 const INPUT_CLASS =
-  'h-10 w-full pl-9 pr-3.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:ring-rose-500/15 aria-invalid:border-rose-500 aria-invalid:ring-rose-500/15 transition-all disabled:opacity-60 disabled:bg-slate-50';
+  'h-11 w-full pl-10 pr-3.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:ring-rose-500/15 aria-invalid:border-rose-500 aria-invalid:ring-rose-500/15 transition-all disabled:opacity-60 disabled:bg-slate-50';
 
 const loginSchema = z.object({
   phone: z
@@ -290,7 +290,7 @@ export function LoginForm() {
     otpRequest.isPending || passwordLogin.isPending || setPassword.isPending;
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+    <form className="flex flex-col gap-4.5" onSubmit={onSubmit} noValidate>
       {/* Server error alert banner */}
       {serverError && <FormAlert message={serverError} />}
 
@@ -334,7 +334,7 @@ export function LoginForm() {
 
         <div className="relative">
           <Phone
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10"
             aria-hidden="true"
           />
           <Controller
@@ -379,14 +379,14 @@ export function LoginForm() {
                 setServerError(null);
                 form.clearErrors();
               }}
-              className="text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+              className="text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors font-normal cursor-pointer"
             >
               Parolni unutdingizmi?
             </button>
           </div>
           <div className="relative">
             <Lock
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10"
               aria-hidden="true"
             />
             <PasswordInput
@@ -445,7 +445,7 @@ export function LoginForm() {
 
             <div className="relative">
               <KeyRound
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10"
                 aria-hidden="true"
               />
               <input
@@ -458,7 +458,7 @@ export function LoginForm() {
                 placeholder="000000"
                 aria-invalid={!!form.formState.errors.code}
                 aria-describedby={form.formState.errors.code ? 'code-error' : undefined}
-                className="h-10 w-full pl-9 pr-3.5 text-base text-center tracking-[0.25em] font-mono tabular-nums font-semibold rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 transition-all"
+                className="h-11 w-full pl-10 pr-3.5 text-base text-center tracking-[0.25em] font-mono tabular-nums font-semibold rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 transition-all"
                 {...form.register('code', {
                   onChange: (e) => {
                     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -487,7 +487,7 @@ export function LoginForm() {
             </Label>
             <div className="relative">
               <Lock
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10"
                 aria-hidden="true"
               />
               <PasswordInput
@@ -516,12 +516,12 @@ export function LoginForm() {
       )}
 
       {/* Submit Button */}
-      <div className="pt-1">
+      <div className="pt-1.5">
         <Button
           type="submit"
           size="lg"
           loading={loading}
-          className="h-10 w-full text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+          className="h-11 w-full text-sm font-semibold rounded-xl bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-sm shadow-blue-500/25 active:scale-[0.99] transition-all cursor-pointer"
         >
           {mode === 'login'
             ? 'Kirish'

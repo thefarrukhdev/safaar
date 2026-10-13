@@ -110,7 +110,7 @@ export default async function HomePage({
       />
       <main className="relative flex flex-1 flex-col text-slate-900">
         {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
-        <div className="flex min-h-svh flex-col justify-between">
+        <div className="flex flex-col">
           <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>
           <Hero dict={dict.hero} bannerUrl={bannerUrl} heroBg={heroBg}>
             <div className="w-full space-y-4">

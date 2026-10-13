@@ -3192,9 +3192,11 @@ describe('PartnersService.profile and updateProfile — company details and bank
     expect(result.missingDetails).toEqual([]);
     expect(result.accountNumber).toBe('20208000900000123456');
     expect(result.companyName).toBe('Super Grand Hotel');
+    expect(result.hasCompanyName).toBe(true);
+    expect(result.hasAccountNumber).toBe(true);
   });
 
-  it('marks requiresCompanyDetails=true and missingDetails=["accountNumber"] when account_number is missing', async () => {
+  it('marks requiresCompanyDetails=false (optional) and indicates hasAccountNumber=false when account_number is missing', async () => {
     pg.query.mockResolvedValueOnce([
       {
         id: 'org-profile-1',
@@ -3206,13 +3208,13 @@ describe('PartnersService.profile and updateProfile — company details and bank
     ]);
 
     const result = await service.profile(actor);
-    expect(result.requiresCompanyDetails).toBe(true);
-    expect(result.hasRequiredCompanyDetails).toBe(false);
-    expect(result.missingDetails).toEqual(['accountNumber']);
-    expect(result.missingDetails).not.toContain('mfo');
+    expect(result.requiresCompanyDetails).toBe(false);
+    expect(result.hasRequiredCompanyDetails).toBe(true);
+    expect(result.hasCompanyName).toBe(true);
+    expect(result.hasAccountNumber).toBe(false);
   });
 
-  it('marks requiresCompanyDetails=true with companyName and accountNumber missing when both absent', async () => {
+  it('marks requiresCompanyDetails=false (optional) when both companyName and accountNumber are absent', async () => {
     pg.query.mockResolvedValueOnce([
       {
         id: 'org-profile-1',
@@ -3224,9 +3226,10 @@ describe('PartnersService.profile and updateProfile — company details and bank
     ]);
 
     const result = await service.profile(actor);
-    expect(result.requiresCompanyDetails).toBe(true);
-    expect(result.missingDetails).toEqual(['companyName', 'accountNumber']);
-    expect(result.missingDetails).not.toContain('mfo');
+    expect(result.requiresCompanyDetails).toBe(false);
+    expect(result.hasRequiredCompanyDetails).toBe(true);
+    expect(result.hasCompanyName).toBe(false);
+    expect(result.hasAccountNumber).toBe(false);
   });
 
   it('allows updating profile with company name and account number', async () => {
@@ -3266,6 +3269,46 @@ describe('PartnersService.profile and updateProfile — company details and bank
 
     expect(updated.companyName).toBe('New Brand Hotel');
     expect(updated.accountNumber).toBe('20208000900000123456');
+    expect(updated.requiresCompanyDetails).toBe(false);
+    expect(updated.hasCompanyName).toBe(true);
+    expect(updated.hasAccountNumber).toBe(true);
+  });
+
+  it('allows updating profile without account number (account number is optional)', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'org-profile-1',
+          brand_name: 'Brand Hotel',
+          legal_name: 'Brand LLC',
+          account_number: null,
+          mfo: null,
+          phone: '+998901234567',
+          email: 'partner@example.com',
+          address: 'Tashkent',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'org-profile-1',
+          brand_name: 'Brand Hotel Updated',
+          legal_name: 'Brand LLC',
+          account_number: null,
+          mfo: null,
+          phone: '+998901234567',
+          email: 'partner@example.com',
+          address: 'Tashkent',
+        },
+      ]);
+
+    const updated = await service.updateProfile(actor, {
+      companyName: 'Brand Hotel Updated',
+      accountNumber: '',
+    });
+
+    expect(updated.companyName).toBe('Brand Hotel Updated');
+    expect(updated.accountNumber).toBeUndefined();
+    expect(updated.requiresCompanyDetails).toBe(false);
   });
 });
 

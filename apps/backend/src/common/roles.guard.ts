@@ -239,34 +239,6 @@ export class RolesGuard implements CanActivate {
         });
       }
 
-      const method = String(request.method ?? 'GET').toUpperCase();
-      const isReadRequest =
-        method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
-
-      if (isReadRequest) {
-        return;
-      }
-
-      // Read-only bo'lmagan so'rovlar (POST, PUT, PATCH, DELETE):
-      // Agar profil yoki arizani to'ldirish/yuborish yo'li bo'lsa ruxsat beriladi
-      if (this.isLimitedPartnerRouteAllowed(request)) {
-        return;
-      }
-
-      // Boshqa barcha amallarni bajarish uchun kompaniya nomi va hisob raqami majburiy
-      const hasCompanyName = Boolean(
-        org.brand_name?.trim() || org.legal_name?.trim(),
-      );
-      const hasAccountNumber = Boolean(org.account_number?.trim());
-
-      if (!hasCompanyName || !hasAccountNumber) {
-        throw new ForbiddenException({
-          code: 'PARTNER_COMPANY_DETAILS_REQUIRED',
-          message:
-            'Amallarni bajarish uchun kompaniya nomi va hisob raqami kiritilishi majburiy.',
-        });
-      }
-
       return;
     }
   }

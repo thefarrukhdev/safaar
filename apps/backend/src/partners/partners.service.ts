@@ -228,19 +228,16 @@ export class PartnersService {
     const hasAccountNumber = Boolean(
       String(org['account_number'] ?? org['accountNumber'] ?? '').trim(),
     );
-    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
-
-    const missingDetails: string[] = [];
-    if (!hasCompanyName) missingDetails.push('companyName');
-    if (!hasAccountNumber) missingDetails.push('accountNumber');
 
     return {
       ...org,
       accountNumber: org['account_number'] ?? org['accountNumber'],
       companyName: org['brand_name'] ?? org['legal_name'],
-      requiresCompanyDetails,
-      hasRequiredCompanyDetails: !requiresCompanyDetails,
-      missingDetails,
+      requiresCompanyDetails: false,
+      hasRequiredCompanyDetails: true,
+      missingDetails: [],
+      hasCompanyName,
+      hasAccountNumber,
     };
   }
 
@@ -280,12 +277,12 @@ export class PartnersService {
       body.account_number ?? body.accountNumber ?? body.bank_account;
     const accountNumber =
       accountNumberRaw !== undefined && accountNumberRaw !== null
-        ? String(accountNumberRaw).replace(/\s/g, '').trim()
+        ? String(accountNumberRaw).replace(/\s/g, '').trim() || null
         : organization['account_number'];
     const mfoRaw = body.mfo;
     const mfo =
       mfoRaw !== undefined && mfoRaw !== null
-        ? String(mfoRaw).replace(/\s/g, '').trim()
+        ? String(mfoRaw).replace(/\s/g, '').trim() || null
         : organization['mfo'];
 
     if (
@@ -320,10 +317,22 @@ export class PartnersService {
       ],
     );
     const row = (result[0] ?? {}) as Record<string, unknown>;
+    const hasCompanyName = Boolean(
+      String(row['brand_name'] ?? '').trim() ||
+      String(row['legal_name'] ?? '').trim(),
+    );
+    const hasAccountNumber = Boolean(
+      String(row['account_number'] ?? row['accountNumber'] ?? '').trim(),
+    );
     return {
       ...row,
       accountNumber: row['account_number'] ?? row['accountNumber'],
       companyName: row['brand_name'] ?? row['legal_name'],
+      requiresCompanyDetails: false,
+      hasRequiredCompanyDetails: true,
+      missingDetails: [],
+      hasCompanyName,
+      hasAccountNumber,
     };
   }
 

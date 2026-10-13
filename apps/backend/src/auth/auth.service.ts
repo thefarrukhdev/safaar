@@ -804,14 +804,6 @@ export class AuthService {
     // frontend has no real way to tell a restaurant/transport/hostel/etc
     // partner apart from a hotel one, and silently defaults to 'hotel'.
     const organizationType = String(organization?.['type'] ?? 'hotel');
-    const hasCompanyName = Boolean(
-      String(organization?.['brand_name'] ?? '').trim() ||
-      String(organization?.['legal_name'] ?? '').trim(),
-    );
-    const hasAccountNumber = Boolean(
-      String(organization?.['account_number'] ?? '').trim(),
-    );
-    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
 
     return {
       ...(await this.issueTokens({
@@ -827,8 +819,8 @@ export class AuthService {
       organization_type: organizationType,
       organizationType,
       partner_role: partnerUser.role,
-      requiresCompanyDetails,
-      hasRequiredCompanyDetails: !requiresCompanyDetails,
+      requiresCompanyDetails: false,
+      hasRequiredCompanyDetails: true,
     };
   }
 
@@ -1637,14 +1629,6 @@ export class AuthService {
     const organizationId = String(row['organization_id']);
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
     const organizationType = String(row['organization_type'] ?? 'hotel');
-    const hasCompanyName = Boolean(
-      String(row['brand_name'] ?? '').trim() ||
-      String(row['legal_name'] ?? '').trim(),
-    );
-    const hasAccountNumber = Boolean(
-      String(row['account_number'] ?? '').trim(),
-    );
-    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
 
     return {
       ...(await this.issueTokens({
@@ -1660,8 +1644,8 @@ export class AuthService {
       organization_type: organizationType,
       organizationType,
       partner_role: String(row['partner_role'] ?? 'owner'),
-      requiresCompanyDetails,
-      hasRequiredCompanyDetails: !requiresCompanyDetails,
+      requiresCompanyDetails: false,
+      hasRequiredCompanyDetails: true,
     };
   }
 

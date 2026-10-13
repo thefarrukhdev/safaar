@@ -340,15 +340,15 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
       await expect(guard.canActivate(context)).resolves.toBe(true);
     });
 
-    it('denies mutation requests (e.g. POST) if account_number is missing with PARTNER_COMPANY_DETAILS_REQUIRED', async () => {
+    it('allows mutation requests (e.g. POST) even if account_number or company name is missing (company details are optional)', async () => {
       reflector.getAllAndOverride
         .mockReturnValueOnce([Role.PARTNER])
         .mockReturnValueOnce(undefined);
       pg.query.mockResolvedValueOnce([
         {
           status: 'submitted',
-          brand_name: 'Test Hotel',
-          legal_name: 'Test LLC',
+          brand_name: null,
+          legal_name: null,
           account_number: null,
           mfo: null,
         },
@@ -358,9 +358,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
         {},
         { method: 'POST', url: '/partner/rooms' },
       );
-      await expect(guard.canActivate(context)).rejects.toMatchObject({
-        response: { code: 'PARTNER_COMPANY_DETAILS_REQUIRED' },
-      });
+      await expect(guard.canActivate(context)).resolves.toBe(true);
     });
 
     it('allows PATCH /partner/profile even if account_number is missing, so partner can submit it', async () => {

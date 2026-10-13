@@ -5,6 +5,7 @@ import {
   SpotlightBackground,
   SpotlightCard,
 } from "./_components/spotlight-background";
+import { AuthHelpDrawer } from "./_components/auth-help-drawer";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -41,6 +42,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <footer className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
         © {new Date().getFullYear()} Safaar.uz · Barcha huquqlar himoyalangan
       </footer>
+
+      {/* Floating Question-Mark Help Button & Slide-over Drawer */}
+      <AuthHelpDrawer />
     </SpotlightBackground>
   );
 }

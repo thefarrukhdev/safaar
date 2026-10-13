@@ -18,16 +18,17 @@ export function AuthHelpDrawer() {
 
   return (
     <>
-      {/* Floating Trigger Button (Bottom-Right, Compact 32px) */}
+      {/* Floating Trigger Button (Bottom-Right, Accessible 44px Touch Target with Safe-Area Offset) */}
       <aside aria-label="Yordam va qo'llab-quvvatlash">
         <button
           type="button"
           onClick={() => setOpen(true)}
           title="Yordam & Yo'riqnoma"
           aria-label="Hamkorlik bo'yicha yordam va yo'riqnoma"
-          className="fixed bottom-4 right-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 text-slate-500 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-blue-600 hover:shadow-xs active:scale-90 cursor-pointer dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400 dark:hover:text-blue-400"
+          style={{ bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+          className="fixed right-4 z-40 flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200/90 bg-white/90 text-slate-500 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-blue-600 hover:shadow-xs active:scale-95 cursor-pointer dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400 dark:hover:text-blue-400 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]"
         >
-          <HelpCircle className="h-4 w-4" aria-hidden="true" />
+          <HelpCircle className="h-5 w-5" aria-hidden="true" />
         </button>
       </aside>
 

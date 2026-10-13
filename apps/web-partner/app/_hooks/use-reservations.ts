@@ -8,7 +8,32 @@ import { partners } from "../_lib/api";
 import { type WalkInDraft } from "../_stores/data-store";
 import { useAuthStore } from "../_stores/auth-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
+import { roomsQueryKey } from "./use-rooms";
+import { bedsQueryKey } from "./use-beds";
 import type { ReservationView } from "../_lib/domain/types";
+
+export interface VehicleWalkInDraft {
+  vehicleId: string;
+  checkIn: string;
+  checkOut: string;
+  fullName?: string;
+  phone?: string;
+  adults?: number;
+  children?: number;
+}
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    return (err as { message: string }).message;
+  }
+  return "Xatolik yuz berdi";
+}
 
 export const reservationsQueryKey = ["partner", "bookings"] as const;
 
@@ -63,6 +88,8 @@ export function useCreateWalkInReservation() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: bedsQueryKey });
     },
   });
 }
@@ -71,7 +98,7 @@ export function useCreateWalkInVehicleReservation() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (draft: any) => {
+    mutationFn: async (draft: VehicleWalkInDraft) => {
       const names = (draft.fullName || 'Mehmon').trim().split(' ');
       const firstName = names[0];
       const lastName = names.slice(1).join(' ') || 'Mehmon';
@@ -132,11 +159,11 @@ export function useConfirmReservation() {
       }
       return { previousReservations };
     },
-    onError: (err: any, _id, context) => {
+    onError: (err: unknown, _id, context) => {
       if (context?.previousReservations) {
         queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
       }
-      toast.error(err?.message || "Xatolik yuz berdi");
+      toast.error(getErrorMessage(err));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
@@ -166,11 +193,11 @@ export function useRejectReservation() {
       }
       return { previousReservations };
     },
-    onError: (err: any, _vars, context) => {
+    onError: (err: unknown, _vars, context) => {
       if (context?.previousReservations) {
         queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
       }
-      toast.error(err?.message || "Xatolik yuz berdi");
+      toast.error(getErrorMessage(err));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
@@ -205,15 +232,17 @@ export function useCheckIn() {
       }
       return { previousReservations };
     },
-    onError: (err: any, _id, context) => {
+    onError: (err: unknown, _id, context) => {
       if (context?.previousReservations) {
         queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
       }
-      toast.error(err?.message || "Xatolik yuz berdi");
+      toast.error(getErrorMessage(err));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: bedsQueryKey });
     },
   });
 }
@@ -247,15 +276,17 @@ export function useAssignRoom() {
       }
       return { previousReservations };
     },
-    onError: (err: any, _vars, context) => {
+    onError: (err: unknown, _vars, context) => {
       if (context?.previousReservations) {
         queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
       }
-      toast.error(err?.message || "Xatolik yuz berdi");
+      toast.error(getErrorMessage(err));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: bedsQueryKey });
     },
   });
 }
@@ -281,15 +312,17 @@ export function useCheckOut() {
       }
       return { previousReservations };
     },
-    onError: (err: any, _id, context) => {
+    onError: (err: unknown, _id, context) => {
       if (context?.previousReservations) {
         queryClient.setQueryData(reservationsQueryKey, context.previousReservations);
       }
-      toast.error(err?.message || "Xatolik yuz berdi");
+      toast.error(getErrorMessage(err));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: bedsQueryKey });
     },
   });
 }

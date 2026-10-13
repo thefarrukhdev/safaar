@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "../../_hooks/use-body-scroll-lock";
 import { useMounted } from "../../_hooks/use-mounted";
@@ -41,12 +41,48 @@ export function Drawer({
   footer,
 }: DrawerProps) {
   const mounted = useMounted();
+  const triggerElementRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const wasOpenRef = useRef(false);
+
   useBodyScrollLock(open);
 
+  // Focus management: save active element before open, restore on close
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      triggerElementRef.current = (document.activeElement as HTMLElement | null) ?? null;
+      const frame = requestAnimationFrame(() => {
+        panelRef.current?.focus();
+      });
+      return () => cancelAnimationFrame(frame);
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      if (triggerElementRef.current && typeof triggerElementRef.current.focus === "function") {
+        triggerElementRef.current.focus();
+      }
+      triggerElementRef.current = null;
+    }
+  }, [open]);
+
+  // Clean up focus on unmount if drawer was open
+  useEffect(() => {
+    return () => {
+      if (wasOpenRef.current && triggerElementRef.current && typeof triggerElementRef.current.focus === "function") {
+        triggerElementRef.current.focus();
+      }
+    };
+  }, []);
+
+  // Close on Escape key
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => {
@@ -63,6 +99,7 @@ export function Drawer({
         !open && "pointer-events-none",
       )}
       aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       {/* Backdrop */}
       <div
@@ -76,11 +113,14 @@ export function Drawer({
 
       {/* Drawer panel */}
       <div
+        ref={panelRef}
         role="dialog"
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby="drawer-title"
+        inert={!open ? true : undefined}
         className={cn(
-          "absolute right-0 top-0 flex h-full w-full flex-col border-l border-[var(--border)] bg-[var(--panel-gradient)] shadow-2xl transition-transform duration-300 ease-out",
+          "absolute right-0 top-0 flex h-full w-full flex-col border-l border-[var(--border)] bg-[var(--panel-gradient)] shadow-2xl transition-transform duration-300 ease-out outline-none",
           sizes[size],
           open ? "translate-x-0" : "translate-x-full",
         )}

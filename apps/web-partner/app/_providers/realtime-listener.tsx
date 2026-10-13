@@ -14,7 +14,7 @@ import { reservationsQueryKey } from "../_hooks/use-reservations";
  * bekor qiladi hamda bildirishnoma (toast) chiqaradi.
  */
 export function RealtimeListener() {
-  const { on } = useSocket();
+  const { on, connected } = useSocket();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -36,10 +36,57 @@ export function RealtimeListener() {
     const offChanged = on("hotel.listing_changed", refresh);
 
     const offBookingStatus = on("booking.status_changed", (...args) => {
-      const payload = args[0] as { message?: string; status?: string } | undefined;
+      const payload = (args[0] ?? {}) as {
+        message?: string;
+        status?: string;
+        previousStatus?: string;
+        id?: string;
+        booking_number?: string;
+        bookingNumber?: string;
+        booking?: {
+          id?: string;
+          status?: string;
+          booking_number?: string;
+          bookingNumber?: string;
+        };
+      };
+
       void queryClient.invalidateQueries({ queryKey: reservationsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["partner", "dashboard"] });
-      const msg = payload?.message || "Bron holati yangilandi";
+
+      const bookingObj = payload.booking ?? payload;
+      const status = (bookingObj.status || payload.status || "").toUpperCase();
+      const bookingNo =
+        bookingObj.bookingNumber ||
+        bookingObj.booking_number ||
+        payload.bookingNumber ||
+        payload.booking_number ||
+        bookingObj.id;
+
+      const statusMessages: Record<string, string> = {
+        CONFIRMED: "tasdiqlandi",
+        CANCELLED: "bekor qilindi",
+        COMPLETED: "yakunlandi",
+        CHECKED_IN: "joylashtirildi",
+        CHECKED_OUT: "chiqib ketdi",
+        PENDING: "yangi bron kelib tushdi",
+      };
+
+      let msg = payload.message;
+      if (!msg) {
+        if (status && statusMessages[status]) {
+          msg = bookingNo
+            ? `Bron #${bookingNo} ${statusMessages[status]}`
+            : `Bron ${statusMessages[status]}`;
+        } else if (status) {
+          msg = bookingNo
+            ? `Bron #${bookingNo} holati: ${status}`
+            : `Bron holati yangilandi: ${status}`;
+        } else {
+          msg = "Bron holati yangilandi";
+        }
+      }
+
       toast.info(msg);
     });
 
@@ -75,7 +122,7 @@ export function RealtimeListener() {
       offDashboardUpdated?.();
       offNotification?.();
     };
-  }, [on, queryClient]);
+  }, [on, connected, queryClient]);
 
   return null;
 }

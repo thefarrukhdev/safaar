@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { pageItems, toRoomType } from "../_lib/api/adapters";
 import { partners } from "../_lib/api";
 import { useAuthStore } from "../_stores/auth-store";
-import { useDataStore, type RoomTypeDraft } from "../_stores/data-store";
+import { type RoomTypeDraft } from "../_stores/data-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
 
 export const roomTypesQueryKey = ["partner", "room-types"] as const;
@@ -14,7 +13,6 @@ const EMPTY_ROOM_TYPES: ReturnType<typeof toRoomType>[] = [];
 
 export function useRoomTypes() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const setRoomTypes = useDataStore((s) => s.setRoomTypes);
   const query = useQuery({
     queryKey: roomTypesQueryKey,
     queryFn: async () => {
@@ -25,11 +23,13 @@ export function useRoomTypes() {
     enabled: Boolean(accessToken),
   });
 
-  useEffect(() => {
-    if (query.data) setRoomTypes(query.data);
-  }, [query.data, setRoomTypes]);
-
-  return { data: query.data ?? EMPTY_ROOM_TYPES, isLoading: query.isLoading && !query.data };
+  return {
+    data: query.data ?? EMPTY_ROOM_TYPES,
+    isLoading: query.isLoading && !query.data,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 function roomTypeBody(values: RoomTypeDraft) {

@@ -5,6 +5,7 @@ import type {
   FrontDeskStats,
   ReservationView,
   RoomType,
+  ReservationUiStatus,
 } from '../domain/types';
 import {
   CancellationPolicy,
@@ -120,7 +121,15 @@ export interface BackendBooking {
   policy_snapshot?: {
     source?: string;
     slot_time?: string;
+    checked_in_at?: string;
+    checked_in?: boolean | string;
+    checked_out_at?: string;
+    checked_out?: boolean | string;
+    boarded_at?: string;
+    [key: string]: unknown;
   };
+  checked_in_at?: string;
+  checked_out_at?: string;
   item?: {
     check_in?: string;
     check_out?: string;
@@ -302,9 +311,27 @@ export function toReservation(booking: BackendBooking): ReservationView {
     "Noma'lum mehmon";
   const phone =
     booking.guest_phone || booking.customer_phone || booking.user_phone || "Kiritilmagan";
+
+  const rawStatus = booking.status?.toUpperCase();
+  const checkedInAt =
+    booking.policy_snapshot?.checked_in_at ||
+    booking.policy_snapshot?.checked_in ||
+    booking.checked_in_at;
+  const checkedOutAt =
+    booking.policy_snapshot?.checked_out_at ||
+    booking.policy_snapshot?.checked_out ||
+    booking.checked_out_at;
+
+  const isConfirmed =
+    rawStatus === BookingStatus.CONFIRMED || rawStatus === 'CONFIRMED';
+  const status: ReservationUiStatus =
+    rawStatus === 'IN_HOUSE' || (isConfirmed && Boolean(checkedInAt) && !checkedOutAt)
+      ? 'IN_HOUSE'
+      : normalizeBookingStatus(booking.status);
+
   return {
     id: booking.id,
-    status: normalizeBookingStatus(booking.status),
+    status,
     guest: {
       id: booking.user_id ?? booking.id,
       fullName,

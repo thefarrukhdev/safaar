@@ -20,7 +20,7 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
@@ -170,13 +170,17 @@ export function ReservationsView() {
   }
 
   const urlQ = searchParams.get("q") ?? "";
-  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
   const [query, setQuery] = useState(urlQ);
+  const lastPushedQRef = useRef(urlQ);
+  const isInputFocusedRef = useRef(false);
 
-  if (urlQ !== prevUrlQ) {
-    setPrevUrlQ(urlQ);
-    setQuery(urlQ);
-  }
+  // Sync external URL changes (e.g. back/forward) to search input without stomping active typing
+  useEffect(() => {
+    if (!isInputFocusedRef.current && urlQ !== lastPushedQRef.current) {
+      setQuery(urlQ);
+      lastPushedQRef.current = urlQ;
+    }
+  }, [urlQ]);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -195,14 +199,11 @@ export function ReservationsView() {
       }
       const qs = params.toString();
       const nextUrl = qs ? `${pathname}?${qs}` : pathname;
-      if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", nextUrl);
-      }
       startTransition(() => {
         router.replace(nextUrl, { scroll: false });
       });
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams, setFilter],
   );
 
   // Debounce search query sync to URL params
@@ -212,6 +213,7 @@ export function ReservationsView() {
       const trimmed = query.trim();
       if (trimmed === currentQ) return;
 
+      lastPushedQRef.current = trimmed;
       const params = new URLSearchParams(searchParams.toString());
       if (trimmed) {
         params.set("q", trimmed);
@@ -220,9 +222,6 @@ export function ReservationsView() {
       }
       const qs = params.toString();
       const nextUrl = qs ? `${pathname}?${qs}` : pathname;
-      if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", nextUrl);
-      }
       startTransition(() => {
         router.replace(nextUrl, { scroll: false });
       });
@@ -513,6 +512,12 @@ export function ReservationsView() {
                   className="pl-9 h-10"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => {
+                    isInputFocusedRef.current = true;
+                  }}
+                  onBlur={() => {
+                    isInputFocusedRef.current = false;
+                  }}
                   aria-label="Bronlar ichidan qidirish"
                 />
               </div>
@@ -642,7 +647,17 @@ export function ReservationsView() {
                     size="sm"
                     onClick={() => {
                       setQuery("");
-                      handleFilterChange("all");
+                      lastPushedQRef.current = "";
+                      setFilter("all");
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete("status");
+                      params.delete("tab");
+                      params.delete("q");
+                      const qs = params.toString();
+                      const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+                      startTransition(() => {
+                        router.replace(nextUrl, { scroll: false });
+                      });
                     }}
                   >
                     Filtrlarni tozalash

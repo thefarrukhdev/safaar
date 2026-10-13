@@ -20,18 +20,14 @@ export interface UseSocketOptions {
 export function useSocket(options?: UseSocketOptions) {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const socketRef = useRef<Socket | null>(null);
+  const listenersRef = useRef<Map<string, Set<(...args: unknown[]) => void>>>(new Map());
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const enabled = options?.enabled !== false;
 
   useEffect(() => {
-    // ── Hamma uchun vaqtincha Demo rejim (Backend ulanmagan) ───────────────
-    // Dasturchi vaqtincha backendni to'liq o'chirib qo'yishni so'radi
-    return;
-    // ────────────────────────────────────────────────────────────────────────
-
     if (!enabled || typeof window === "undefined" || !accessToken) return;
-    
+
     const nextSocket = io(WS_URL, {
       auth: { token: accessToken },
       transports: ["websocket", "polling"],
@@ -40,35 +36,63 @@ export function useSocket(options?: UseSocketOptions) {
       reconnectionAttempts: 50,
     });
 
+    socketRef.current = nextSocket;
+
+    const listeners = listenersRef.current;
+
+    // Rebind all registered event listeners to the active socket
+    listeners.forEach((handlers, event) => {
+      handlers.forEach((handler) => {
+        nextSocket.on(event, handler);
+      });
+    });
+
     nextSocket.on("connect", () => {
       setConnected(true);
       setSocket(nextSocket);
     });
     nextSocket.on("disconnect", () => {
       setConnected(false);
-      setSocket(null);
     });
     nextSocket.on("connect_error", () => {
       setConnected(false);
-      setSocket(null);
     });
 
-    socketRef.current = nextSocket;
-
     return () => {
+      listeners.forEach((handlers, event) => {
+        handlers.forEach((handler) => {
+          nextSocket.off(event, handler);
+        });
+      });
       nextSocket.disconnect();
       socketRef.current = null;
       setConnected(false);
+      setSocket(null);
     };
   }, [enabled, accessToken]);
 
   const on = useCallback(
     (event: string, handler: (...args: unknown[]) => void) => {
+      let handlers = listenersRef.current.get(event);
+      if (!handlers) {
+        handlers = new Set();
+        listenersRef.current.set(event, handlers);
+      }
+      handlers.add(handler);
+
+      // If socket is already instantiated, bind immediately
       const current = socketRef.current;
-      if (!current) return;
-      current.on(event, handler);
+      if (current) {
+        current.on(event, handler);
+      }
+
       return () => {
-        current.off(event, handler);
+        const set = listenersRef.current.get(event);
+        set?.delete(handler);
+        if (set && set.size === 0) {
+          listenersRef.current.delete(event);
+        }
+        socketRef.current?.off(event, handler);
       };
     },
     [],

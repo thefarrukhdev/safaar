@@ -140,8 +140,8 @@ export function RestaurantsView({
  </div>
  </div>
  
- {/* ═══ Premium Sticky Filter Bar ═══ */}
- <div className="sticky top-20 z-30 mb-8 rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4">
+ {/* ═══ Filter Bar ═══ */}
+ <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 shadow-sm">
  <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
  {/* Search Input */}
  <div className="relative flex-1 group">
@@ -153,7 +153,7 @@ export function RestaurantsView({
  value={query}
  onChange={(e) => setQuery(e.target.value)}
  placeholder={dict.searchPlaceholder || "Restoran nomini yoki taom turini qidiring..."}
- className="h-12 w-full rounded-xl bg-white border border-slate-200 pl-11 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white :bg-slate-950 focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-400"
+ className="h-12 w-full rounded-xl bg-white border border-slate-200 pl-11 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-400"
  />
  </div>
  
@@ -168,7 +168,7 @@ export function RestaurantsView({
  options={cityOptions}
  placeholder={(dict as any).city || "Shahar"}
  className="w-full"
- buttonClassName="h-12 bg-white border-slate-200 hover:bg-white :bg-slate-800 transition-colors"
+ buttonClassName="h-12 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
  icon={<MapPin className="h-4 w-4 text-slate-500 mr-2" />}
  />
  </div>
@@ -181,13 +181,13 @@ export function RestaurantsView({
  options={cuisineOptions}
  placeholder={(dict as any).cuisineType || "Oshxona turi"}
  className="w-full"
- buttonClassName="h-12 bg-white border-slate-200 hover:bg-white :bg-slate-800 transition-colors"
+ buttonClassName="h-12 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
  icon={<Utensils className="h-4 w-4 text-slate-500 mr-2" />}
  />
  </div>
 
  {/* Map Button */}
- <button className="h-12 w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-all hover:bg-white hover:text-slate-900 focus:ring-4 focus:ring-slate-100 :bg-slate-800 :text-white :ring-slate-800">
+ <button className="h-12 w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-900 focus:ring-4 focus:ring-slate-100">
  <Map className="h-4 w-4" />
  {(dict as any).viewOnMap || "Xaritada ko'rish"}
  </button>
@@ -198,7 +198,7 @@ export function RestaurantsView({
  <div className="mt-4 hidden lg:flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
  <button 
  onClick={() => setSelectedCuisine("all")}
- className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all ${ selectedCuisine === "all" ? 'bg-slate-900 text-white ' : 'bg-white border border-slate-200 text-slate-600 hover:bg-white :bg-slate-800' }`}
+ className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all ${ selectedCuisine === "all" ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }`}
  >
  {(dict as any).all || "Barchasi"}
  </button>
@@ -206,7 +206,7 @@ export function RestaurantsView({
  <button 
  key={c}
  onClick={() => setSelectedCuisine(c)}
- className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all whitespace-nowrap ${ selectedCuisine === c ? 'bg-slate-900 text-white ' : 'bg-white border border-slate-200 text-slate-600 hover:bg-white :bg-slate-800' }`}
+ className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all whitespace-nowrap ${ selectedCuisine === c ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }`}
  >
  {(dict as any).cuisines?.[cuisineKeys[c] || c] || c}
  </button>
@@ -219,7 +219,7 @@ export function RestaurantsView({
  options={cuisineOptions.filter(o => o.value === 'all' || !popularCuisines.includes(o.value))}
  placeholder={(dict as any).moreCuisines || "Boshqa"}
  className="w-32"
- buttonClassName="h-10 bg-transparent border-0 text-slate-500 hover:text-slate-900 :text-white"
+ buttonClassName="h-10 bg-transparent border-0 text-slate-500 hover:text-slate-900"
  menuClassName="right-0 left-auto w-48"
  />
  </div>

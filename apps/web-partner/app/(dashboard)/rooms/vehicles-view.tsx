@@ -1,7 +1,7 @@
 "use client";
 
-import { CarFront, Pencil } from "lucide-react";
-import { useState, useEffect } from "react";
+import { CarFront, Pencil, Search } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useVehicles, useCreateVehicle, useUpdateVehicle } from "../../_hooks/use-vehicles";
 import { Button } from "../../_components/ui/button";
@@ -30,16 +30,38 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function VehiclesView() {
-  const { data: vehicles, isLoading, isError, refetch } = useVehicles();
+  const { data: vehicles = [], isLoading, isError, refetch } = useVehicles();
   const updateVehicle = useUpdateVehicle();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
 
   const [addingVehicle, setAddingVehicle] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
+  const metrics = useMemo(() => {
+    const total = vehicles.length;
+    const active = vehicles.filter((v) => v.status === "active").length;
+    const inactive = vehicles.filter((v) => v.status === "inactive").length;
+    return { total, active, inactive };
+  }, [vehicles]);
+
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      if (statusFilter !== "all" && v.status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = v.name?.toLowerCase().includes(q);
+        const matchesPlate = v.plateNumber?.toLowerCase().includes(q);
+        if (!matchesName && !matchesPlate) return false;
+      }
+      return true;
+    });
+  }, [vehicles, statusFilter, searchQuery]);
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           eyebrow="Operatsion"
@@ -47,41 +69,129 @@ export function VehiclesView() {
           description={labels.unitsPageDescription}
         />
         <div className="mt-4 sm:mt-0">
-          {vehicles && vehicles.length > 0 && (
-            <Button onClick={() => setAddingVehicle(true)}>
-              <CarFront className="mr-2 h-4 w-4" />
-              {labels.addUnitLabel}
-            </Button>
-          )}
+          <Button onClick={() => setAddingVehicle(true)}>
+            <CarFront className="mr-2 h-4 w-4" />
+            {labels.addUnitLabel}
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-10">
+      {/* KPI Ko'rsatkichlar */}
+      {vehicles.length > 0 && (
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("all")}
+            className={cn(
+              "flex flex-col rounded-xl border p-4 text-left transition-all",
+              statusFilter === "all"
+                ? "border-brand-500 bg-brand-50/50 shadow-sm dark:border-brand-600 dark:bg-brand-950/20"
+                : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50"
+            )}
+          >
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Jami avtomobillar</span>
+            <span className="mt-1 text-2xl font-bold text-zinc-900 dark:text-white">{metrics.total} ta</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}
+            className={cn(
+              "flex flex-col rounded-xl border p-4 text-left transition-all",
+              statusFilter === "active"
+                ? "border-emerald-500 bg-emerald-50/50 shadow-sm dark:border-emerald-600 dark:bg-emerald-950/20"
+                : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50"
+            )}
+          >
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Faol (Sotuvda)</span>
+            <span className="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-400">{metrics.active} ta</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")}
+            className={cn(
+              "flex flex-col rounded-xl border p-4 text-left transition-all",
+              statusFilter === "inactive"
+                ? "border-amber-500 bg-amber-50/50 shadow-sm dark:border-amber-600 dark:bg-amber-950/20"
+                : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50"
+            )}
+          >
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Nofaol (Yopiq)</span>
+            <span className="mt-1 text-2xl font-bold text-zinc-700 dark:text-zinc-300">{metrics.inactive} ta</span>
+          </button>
+        </section>
+      )}
+
+      {/* Filter & Qidiruv paneli */}
+      {vehicles.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-[var(--surface-muted)]">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rusumi yoki davlat raqami..."
+              className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:focus:bg-zinc-800"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              aria-label="Holat filtri"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium focus:border-brand-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+            >
+              <option value="all">Barcha holatlar</option>
+              <option value="active">Faqat faol</option>
+              <option value="inactive">Faqat nofaol</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-6">
         {isLoading ? (
           <LoadingState title="Avtomobillar yuklanmoqda..." />
         ) : isError ? (
           <ErrorState 
-            title="Avtomobillarni yuklashda xatolik" 
+            title="Avtomobillarni yuklashda xatolik yuz berdi" 
             action={<Button onClick={() => refetch()} variant="outline" size="sm">Qayta urinish</Button>} 
           />
         ) : vehicles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 py-20 px-6 text-center dark:border-zinc-800 dark:bg-zinc-900/20">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100/50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 mb-4">
-              <CarFront className="h-8 w-8" />
-            </div>
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-              Hali hech qanday avtomobil qo'shilmagan
-            </h3>
-            <p className="mt-2 mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
-              Avtomobil qo'shish tugmasini bosib birinchi avtomobilingizni yarating.
-            </p>
-            <Button onClick={() => setAddingVehicle(true)}>
-              {labels.addUnitLabel}
-            </Button>
-          </div>
+          <EmptyState
+            icon={<CarFront className="h-8 w-8" />}
+            title="Hali hech qanday avtomobil qo'shilmagan"
+            description="Avtomobil qo'shish tugmasini bosib birinchi avtomobilingizni yarating."
+            action={
+              <Button onClick={() => setAddingVehicle(true)}>
+                <CarFront className="mr-2 h-4 w-4" />
+                {labels.addUnitLabel}
+              </Button>
+            }
+          />
+        ) : filteredVehicles.length === 0 ? (
+          <EmptyState
+            title="Qidiruv natijasida avtomobil topilmadi"
+            description="Qidiruv so'zini o'zgartiring yoki filtrlarni tozalang."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                }}
+              >
+                Filtrlarni tozalash
+              </Button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {vehicles.map((vehicle) => (
+            {filteredVehicles.map((vehicle) => (
               <div key={vehicle.id} className={`relative flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 group transition-all duration-200 ${vehicle.status === 'inactive' ? 'opacity-50 bg-zinc-50 dark:bg-zinc-900/50 grayscale-[50%]' : ''}`}>
                 <div className="flex items-start justify-between">
                   <div>

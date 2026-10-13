@@ -81,7 +81,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
       onClose();
       return;
     }
-  }, [open, reservation, dacha, isBus, rooms, vehicles, roomsLoading, vehiclesLoading]);
+  }, [open, reservation, dacha, isBus, rooms, vehicles, roomsLoading, vehiclesLoading, assignRoom, onAssigned, onClose]);
 
   if (dacha || isBus) return null;
 

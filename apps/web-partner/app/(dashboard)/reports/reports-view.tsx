@@ -13,7 +13,7 @@ import {
   Download,
   Wallet
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Card,
@@ -34,7 +34,7 @@ import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
 import { TODAY_ISO } from "../../_lib/utils/date";
 import { cn } from "../../_lib/utils/cn";
-import { getWithdrawals, createWithdrawal, WithdrawalRequest } from "../../_lib/api/endpoints/partners";
+import { useWithdrawals, useCreateWithdrawal } from "../../_hooks/use-withdrawals";
 import { formatDate } from "../../_lib/utils/format";
 
 type TimeRange = "7days" | "30days" | "year";
@@ -54,43 +54,17 @@ export function ReportsView() {
   const isBus = hasBuses(partnerType);
 
   // Finance states
-  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const {
+    data: withdrawals,
+    isLoading: financeLoading,
+    isError: financeError,
+    refetch: refetchWithdrawals,
+  } = useWithdrawals(activeTab === "finance");
+  const createWithdrawalMutation = useCreateWithdrawal();
+
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawBank, setWithdrawBank] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [financeLoading, setFinanceLoading] = useState(false);
-
-  const fetchWithdrawals = async (silent = false) => {
-    try {
-      if (!silent) setFinanceLoading(true);
-      const data = await getWithdrawals(null);
-      setWithdrawals(data);
-    } catch {
-      toast.error("Pul yechish tarixini yuklab bo'lmadi");
-    } finally {
-      if (!silent) setFinanceLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        setFinanceLoading(true);
-        const data = await getWithdrawals(null);
-        if (!cancelled) setWithdrawals(data);
-      } catch {
-        if (!cancelled) toast.error("Pul yechish tarixini yuklab bo'lmadi");
-      } finally {
-        if (!cancelled) setFinanceLoading(false);
-      }
-    };
-
-    if (activeTab === "finance") {
-      void load();
-    }
-    return () => { cancelled = true; };
-  }, [activeTab]);
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,13 +76,12 @@ export function ReportsView() {
     
     try {
       setIsSubmitting(true);
-      await createWithdrawal({ amount, bankAccount: withdrawBank }, null);
+      await createWithdrawalMutation.mutateAsync({ amount, bankAccount: withdrawBank });
       toast.success("Pul yechish so'rovi yuborildi");
       setWithdrawAmount("");
       setWithdrawBank("");
-      fetchWithdrawals();
     } catch {
-      toast.error("So'rov yuborishda xatolik");
+      toast.error("So'rov yuborishda xatolik yuz berdi");
     } finally {
       setIsSubmitting(false);
     }
@@ -427,6 +400,17 @@ export function ReportsView() {
 
                 {financeLoading ? (
                   <div className="py-12 text-center text-sm text-zinc-500">Yuklanmoqda...</div>
+                ) : financeError ? (
+                  <div className="py-12 text-center text-sm text-red-500">
+                    Pul yechish tarixini yuklashda xatolik yuz berdi.
+                    <button
+                      type="button"
+                      onClick={() => refetchWithdrawals()}
+                      className="ml-2 text-brand-600 underline font-medium"
+                    >
+                      Qayta urinish
+                    </button>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">

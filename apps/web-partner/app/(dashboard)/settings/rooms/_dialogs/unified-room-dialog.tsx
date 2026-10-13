@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageIcon, X } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";

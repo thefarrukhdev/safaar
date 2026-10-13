@@ -6,7 +6,6 @@ import {
   CarFront,
   Camera,
   CheckCircle2,
-  CheckSquare,
   Cigarette,
   Dog,
   Eye,
@@ -16,18 +15,15 @@ import {
   MapPin,
   Pencil,
   Plus,
-  RefreshCcw,
   RotateCcw,
   Send,
   Sparkles,
   Star,
-  Tag,
   Trash2,
   UtensilsCrossed,
   Users,
-  XCircle,
 } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../_components/ui/button';
 import { Card, CardBody } from '../../_components/ui/card';
@@ -38,7 +34,6 @@ import { PhotosEditor } from './_editors/photos-editor';
 import { AmenitiesEditor } from './_editors/amenities-editor';
 import { LocationEditor } from './_editors/location-editor';
 import { RulesEditor } from './_editors/rules-editor';
-import { RoomDialog } from '../settings/rooms/_dialogs/room-dialog';
 import { UnifiedRoomDialog } from '../settings/rooms/_dialogs/unified-room-dialog';
 
 import {
@@ -831,7 +826,7 @@ function RoomListingsPanel({
         try {
           await deleteRoomType.mutateAsync(roomType.id);
           toast.success("Muvaffaqiyatli o'chirildi");
-        } catch (backendError) {
+        } catch {
           // BIZNES MANTIQ UCHUN FRONTEND-HACK: Backend o'chirishga ruxsat bermasa, 
           // biz frontendda uning nomini o'zgartirib yashirib qo'yamiz
           await updateRoomType.mutateAsync({

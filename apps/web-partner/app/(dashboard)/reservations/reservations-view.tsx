@@ -2,22 +2,25 @@
 
 import {
   BedDouble,
-  CarFront,
   CalendarCheck,
   CalendarPlus,
   CalendarRange,
+  CarFront,
   CheckCircle2,
   ChevronRight,
   Clock3,
   Download,
+  FilterX,
+  LayoutGrid,
+  List,
+  LogOut,
   Search,
   UserPlus,
   UtensilsCrossed,
   Wallet,
   XCircle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
@@ -35,6 +38,7 @@ import {
   useConfirmReservation,
   useRejectReservation,
   useCheckIn,
+  useCheckOut,
 } from "../../_hooks/use-reservations";
 import { useBeds } from "../../_hooks/use-beds";
 import { cn } from "../../_lib/utils/cn";
@@ -43,6 +47,8 @@ import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
 import { useDataStore } from "../../_stores/data-store";
 import { getPartnerLabels, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
+import { ReservationQuickDrawer } from "./reservation-quick-drawer";
+import { ReservationsTable } from "./reservations-table";
 
 type FilterKey = "all" | ReservationUiStatus;
 
@@ -110,25 +116,53 @@ function exportToCsv(items: ReservationView[], unitLabel: string, beds: Bed[], r
   URL.revokeObjectURL(url);
 }
 
+function useIsMobile(): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      if (typeof window === "undefined") return () => {};
+      const mq = window.matchMedia("(max-width: 768px)");
+      mq.addEventListener("change", callback);
+      return () => mq.removeEventListener("change", callback);
+    },
+    () => (typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)").matches : false),
+    () => false,
+  );
+}
+
 export function ReservationsView() {
   const { data, isLoading, isError, refetch } = useReservations();
-  const router = useRouter();
   const confirmReservation = useConfirmReservation();
   const rejectReservation = useRejectReservation();
   const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
   useBeds();
   const beds = useDataStore((s) => s.beds);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const restaurant = isRestaurant(partnerType);
+  const isBus = hasBuses(partnerType);
+
+  const isMobile = useIsMobile();
+  const [userViewMode, setUserViewMode] = useState<"table" | "card" | null>(null);
+  const viewMode = userViewMode ?? (isMobile ? "card" : "table");
 
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<ReservationView | null>(null);
   const [assignTarget, setAssignTarget] = useState<ReservationView | null>(null);
+  const [checkOutTarget, setCheckOutTarget] = useState<ReservationView | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const selectedReservation = useMemo(() => {
+    if (!selectedReservationId) return null;
+    return data.find((r) => r.id === selectedReservationId) ?? null;
+  }, [data, selectedReservationId]);
 
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = {
@@ -147,6 +181,9 @@ export function ReservationsView() {
         c[r.status as FilterKey]++;
       }
     }
+    // "Yangi" tabida PENDING va AWAITING_PARTNER_CONFIRMATION ikkisi ham hisoblanadi
+    c[BookingStatus.PENDING] =
+      c[BookingStatus.PENDING] + c[BookingStatus.AWAITING_PARTNER_CONFIRMATION];
     return c;
   }, [data]);
 
@@ -159,8 +196,10 @@ export function ReservationsView() {
     );
     const arrivalsToday = data.filter(
       (r) =>
-        r.checkIn === today &&
-        (r.status === BookingStatus.CONFIRMED || r.status === BookingStatus.PENDING),
+        r.checkIn.slice(0, 10) === today &&
+        (r.status === BookingStatus.CONFIRMED ||
+          r.status === BookingStatus.PENDING ||
+          r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION),
     );
     const unpaid = active.reduce(
       (sum, r) => sum + Math.max(0, r.totalPrice - r.paidAmount),
@@ -176,7 +215,19 @@ export function ReservationsView() {
 
   const filtered = useMemo(() => {
     let list = data;
-    if (filter !== "all") list = list.filter((r) => r.status === filter);
+    if (filter !== "all") {
+      if (filter === BookingStatus.PENDING) {
+        list = list.filter(
+          (r) =>
+            r.status === BookingStatus.PENDING ||
+            r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION,
+        );
+      } else {
+        list = list.filter((r) => r.status === filter);
+      }
+    }
+    if (startDate) list = list.filter((r) => r.checkIn.slice(0, 10) >= startDate);
+    if (endDate) list = list.filter((r) => r.checkIn.slice(0, 10) <= endDate);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter((r) =>
@@ -188,19 +239,25 @@ export function ReservationsView() {
       );
     }
     return [...list].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
-  }, [data, filter, query]);
+  }, [data, endDate, filter, query, startDate]);
 
   const focusItems = useMemo(() => {
     return data
       .filter(
         (r) =>
           r.status === BookingStatus.PENDING ||
+          r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION ||
           r.status === BookingStatus.AWAITING_PAYMENT ||
-          (r.checkIn === today && r.status === BookingStatus.CONFIRMED),
+          (r.checkIn.slice(0, 10) === today && r.status === BookingStatus.CONFIRMED),
       )
       .sort((a, b) => {
         const priority = (r: ReservationView) =>
-          r.status === BookingStatus.PENDING ? 0 : r.checkIn === today ? 1 : 2;
+          r.status === BookingStatus.PENDING ||
+          r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION
+            ? 0
+            : r.checkIn.slice(0, 10) === today
+              ? 1
+              : 2;
         return priority(a) - priority(b) || a.checkIn.localeCompare(b.checkIn);
       })
       .slice(0, 5);
@@ -208,13 +265,19 @@ export function ReservationsView() {
 
   const handleConfirm = (reservation: ReservationView) => {
     confirmReservation.mutate(reservation.id, {
-      onSuccess: () => toast.success(`Bron tasdiqlandi: ${reservation.id}`)
+      onSuccess: () => toast.success(`Bron tasdiqlandi: ${reservation.id}`),
     });
   };
 
   const handleCheckIn = (reservation: ReservationView) => {
     setAssignTarget(reservation);
   };
+
+  const handleCheckOut = (reservation: ReservationView) => {
+    setCheckOutTarget(reservation);
+  };
+
+  const hasDateFilter = Boolean(startDate || endDate);
 
   return (
     <div className="flex flex-col gap-5">
@@ -295,7 +358,7 @@ export function ReservationsView() {
                     <button
                       key={r.id}
                       type="button"
-                      onClick={() => router.push(`/reservations/${r.id}`)}
+                      onClick={() => setSelectedReservationId(r.id)}
                       className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]"
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -357,24 +420,117 @@ export function ReservationsView() {
         </aside>
 
         <section className="flex min-w-0 flex-col gap-3">
+          {/* Search, Date Range Filter & View Toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="relative min-w-[240px] flex-1">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-                aria-hidden
-              />
-              <Input
-                type="search"
-                placeholder={`ID, ism, telefon, ${labels.unitSingular} bo'yicha qidirish...`}
-                className="pl-9"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Bronlar ichidan qidirish"
-              />
+            <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[280px]">
+              <div className="relative min-w-[200px] flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                  aria-hidden
+                />
+                <Input
+                  type="search"
+                  placeholder={`ID, ism, telefon, ${labels.unitSingular} bo'yicha qidirish...`}
+                  className="pl-9 h-10"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Bronlar ichidan qidirish"
+                />
+              </div>
+
+              {/* Date range filters */}
+              <div className="flex items-center gap-1.5 bg-[var(--surface-muted)] p-1 rounded-lg border border-[var(--border)] w-full sm:w-auto">
+                <Input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStartDate(val);
+                    if (endDate && val > endDate) {
+                      setEndDate("");
+                    }
+                  }}
+                  className="h-8 text-xs flex-1 sm:w-[130px] border-0 bg-transparent px-2 shadow-none focus-visible:ring-1"
+                  title="Boshlanish sanasi"
+                  aria-label="Boshlanish sanasi"
+                />
+                <span className="text-xs text-[var(--muted-foreground)]">→</span>
+                <Input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEndDate(val);
+                    if (startDate && val < startDate) {
+                      setStartDate("");
+                    }
+                  }}
+                  className="h-8 text-xs flex-1 sm:w-[130px] border-0 bg-transparent px-2 shadow-none focus-visible:ring-1"
+                  title="Tugash sanasi"
+                  aria-label="Tugash sanasi"
+                />
+                {hasDateFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="p-1 rounded text-[var(--muted-foreground)] hover:text-red-600 transition-colors"
+                    title="Sanani tozalash"
+                    aria-label="Sanani tozalash"
+                  >
+                    <FilterX className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
-            <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-sm text-[var(--muted-foreground)]">
-              {filtered.length} ta natija
-            </span>
+
+            <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              <div
+                role="group"
+                aria-label="Ko'rinish rejimi"
+                className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-1"
+              >
+                <button
+                  type="button"
+                  onClick={() => setUserViewMode("table")}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                    viewMode === "table"
+                      ? "bg-[var(--surface)] text-[var(--foreground)] shadow-xs"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                  )}
+                  title="Jadval ko'rinishi"
+                  aria-pressed={viewMode === "table"}
+                >
+                  <List className="h-4 w-4" aria-hidden />
+                  <span className="hidden sm:inline">Jadval</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserViewMode("card")}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                    viewMode === "card"
+                      ? "bg-[var(--surface)] text-[var(--foreground)] shadow-xs"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                  )}
+                  title="Kartochka ko'rinishi"
+                  aria-pressed={viewMode === "card"}
+                >
+                  <LayoutGrid className="h-4 w-4" aria-hidden />
+                  <span className="hidden sm:inline">Kartochka</span>
+                </button>
+              </div>
+
+              <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] whitespace-nowrap">
+                {filtered.length} ta natija
+              </span>
+            </div>
           </div>
 
           {isLoading ? (
@@ -388,7 +544,36 @@ export function ReservationsView() {
             <EmptyState
               icon={<CalendarRange className="h-10 w-10" aria-hidden />}
               title="Bron topilmadi"
-              description="Filter yoki qidiruvni o'zgartirib ko'ring."
+              description="Filter, sana yoki qidiruvni o'zgartirib ko'ring."
+              action={
+                hasDateFilter ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                  >
+                    Sana filtrini tozalash
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : viewMode === "table" ? (
+            <ReservationsTable
+              data={filtered}
+              beds={beds}
+              unitLabel={labels.unitSingular}
+              isRestaurant={restaurant}
+              isBus={isBus}
+              checkInLabel={labels.checkInLabel}
+              checkOutLabel={labels.checkOutLabel}
+              onSelect={(r) => setSelectedReservationId(r.id)}
+              onConfirm={handleConfirm}
+              onReject={(r) => setRejectTarget(r)}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
             />
           ) : (
             <div className="grid gap-3">
@@ -396,16 +581,37 @@ export function ReservationsView() {
                 <ReservationCard
                   key={reservation.id}
                   reservation={reservation}
-                  onOpen={() => router.push(`/reservations/${reservation.id}`)}
+                  onOpen={() => setSelectedReservationId(reservation.id)}
                   onConfirm={() => handleConfirm(reservation)}
                   onReject={() => setRejectTarget(reservation)}
                   onCheckIn={() => handleCheckIn(reservation)}
+                  onCheckOut={() => handleCheckOut(reservation)}
                 />
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {/* Quick Drawer */}
+      <ReservationQuickDrawer
+        reservation={selectedReservation}
+        open={Boolean(selectedReservation)}
+        onClose={() => setSelectedReservationId(null)}
+        onConfirm={(r) => handleConfirm(r)}
+        onReject={(r) => {
+          setSelectedReservationId(null);
+          setRejectTarget(r);
+        }}
+        onCheckIn={(r) => {
+          setSelectedReservationId(null);
+          handleCheckIn(r);
+        }}
+        onCheckOut={(r) => {
+          setSelectedReservationId(null);
+          handleCheckOut(r);
+        }}
+      />
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
       <CheckInDialog
@@ -417,7 +623,7 @@ export function ReservationsView() {
             checkIn.mutate(assignTarget.id, {
               onSuccess: () => {
                 toast.success(`Check-in qilindi: ${assignTarget.guest.fullName}`);
-              }
+              },
             });
           }
         }}
@@ -433,8 +639,8 @@ export function ReservationsView() {
                 onSuccess: () => {
                   toast.success(`Bron rad etildi: ${rejectTarget.id}`);
                   setRejectTarget(null);
-                }
-              }
+                },
+              },
             );
           }
         }}
@@ -446,6 +652,28 @@ export function ReservationsView() {
         }
         confirmLabel="Ha, rad etish"
         tone="danger"
+      />
+      <ConfirmDialog
+        open={Boolean(checkOutTarget)}
+        onClose={() => setCheckOutTarget(null)}
+        onConfirm={() => {
+          if (checkOutTarget) {
+            checkOut.mutate(checkOutTarget.id, {
+              onSuccess: () => {
+                toast.success(`${labels.checkOutLabel} qilindi: ${checkOutTarget.guest.fullName}`);
+                setCheckOutTarget(null);
+              },
+            });
+          }
+        }}
+        title={`${labels.checkOutLabel} qilinsinmi?`}
+        description={
+          checkOutTarget
+            ? `${checkOutTarget.guest.fullName} ning chiqishini tasdiqlaysizmi?`
+            : undefined
+        }
+        confirmLabel="Ha, chiqish qilish"
+        tone="primary"
       />
     </div>
   );
@@ -499,19 +727,25 @@ function ReservationCard({
   onConfirm,
   onReject,
   onCheckIn,
+  onCheckOut,
 }: {
   reservation: ReservationView;
   onOpen: () => void;
   onConfirm: () => void;
   onReject: () => void;
   onCheckIn: () => void;
+  onCheckOut?: () => void;
 }) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const today = new Date().toISOString().split("T")[0];
-  const isPastCheckIn = today > reservation.checkIn;
-  const isPastCheckOut = today > reservation.checkOut;
-  const canConfirm = reservation.status === BookingStatus.PENDING && !isPastCheckIn;
+  const isPastCheckIn = today > reservation.checkIn.slice(0, 10);
+  const isPastCheckOut = today > reservation.checkOut.slice(0, 10);
+  const canConfirm =
+    (reservation.status === BookingStatus.PENDING ||
+      reservation.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION) &&
+    !isPastCheckIn;
   const canCheckIn = reservation.status === BookingStatus.CONFIRMED && !isPastCheckOut;
+  const canCheckOut = reservation.status === "IN_HOUSE";
   const beds = useDataStore((s) => s.beds);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
@@ -543,9 +777,13 @@ function ReservationCard({
                   <SourceBadge source={reservation.source} />
                   <ReservationStatusBadge status={reservation.status} />
                   {reservation.paidAmount >= reservation.totalPrice && reservation.totalPrice > 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">paid</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                      To'langan
+                    </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">awaiting_cash</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                      Qoldiq to'lov bor
+                    </span>
                   )}
                 </div>
                 <h3 className="mt-2 truncate text-lg font-semibold">
@@ -616,15 +854,18 @@ function ReservationCard({
               />
             </div>
 
-            <div className="flex flex-wrap gap-2 lg:justify-end">
+            <div
+              className="flex flex-wrap gap-2 lg:justify-end"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
               {canConfirm && (
                 <>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={(event) => {
-                      event.stopPropagation();
+                    onClick={() => {
                       onReject();
                     }}
                   >
@@ -634,8 +875,7 @@ function ReservationCard({
                   <Button
                     type="button"
                     size="sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
+                    onClick={() => {
                       onConfirm();
                     }}
                   >
@@ -648,13 +888,25 @@ function ReservationCard({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={(event) => {
-                    event.stopPropagation();
+                  onClick={() => {
                     onCheckIn();
                   }}
                 >
                   <CalendarCheck className="h-4 w-4" aria-hidden />
                   {labels.checkInLabel}
+                </Button>
+              )}
+              {canCheckOut && onCheckOut && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    onCheckOut();
+                  }}
+                >
+                  <LogOut className="h-4 w-4" aria-hidden />
+                  {labels.checkOutLabel}
                 </Button>
               )}
             </div>

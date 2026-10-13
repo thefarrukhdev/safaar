@@ -26,7 +26,6 @@ import { getPartnerLabels, hasBuses, isDacha, isRestaurant } from "../../_lib/ut
 import { DEFAULT_SLOT_DURATION_MINUTES, buildTimeSlots, toMinutes } from "../../_lib/utils/time-slots";
 import {
   isValidPhone,
-  maskPhone,
   normalizePhone,
 } from "../../_lib/utils/phone";
 

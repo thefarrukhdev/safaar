@@ -23,6 +23,11 @@ export interface PartnerProfile {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  account_number?: string | null;
+  accountNumber?: string | null;
+  mfo?: string | null;
+  requiresCompanyDetails?: boolean;
+  hasRequiredCompanyDetails?: boolean;
 }
 
 /** Hamkor bosh paneli ko'rsatkichlari (`GET /api/partners/dashboard`). */

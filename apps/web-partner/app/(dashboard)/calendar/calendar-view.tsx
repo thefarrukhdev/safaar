@@ -12,14 +12,22 @@ import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
-import { EmptyState } from "../../_components/ui/empty-state";
+import { EmptyState, ErrorState } from "../../_components/ui/empty-state";
+import { Skeleton } from "../../_components/ui/skeleton";
 import { Tooltip } from "../../_components/ui/tooltip";
 import { WalkInDialog, type WalkInInitial } from "../../_components/domain/walk-in-dialog";
 import { BlackoutDialog } from "../../_components/domain/blackout-dialog";
+import { toast } from "sonner";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useBeds } from "../../_hooks/use-beds";
 import { useRooms } from "../../_hooks/use-rooms";
-import { useReservations } from "../../_hooks/use-reservations";
+import {
+  useReservations,
+  useConfirmReservation,
+  useRejectReservation,
+  useCheckIn,
+  useCheckOut,
+} from "../../_hooks/use-reservations";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
@@ -30,6 +38,7 @@ import { TODAY_ISO } from "../../_lib/utils/date";
 import { getPartnerLabels, hasBeds, isDacha, isRestaurant, hasBuses } from "../../_lib/utils/partner-labels";
 import type { ReservationView } from "../../_lib/domain/types";
 import { ReservationBar } from "./_components/reservation-bar";
+import { ReservationQuickDrawer } from "../reservations/reservation-quick-drawer";
 import { DachaAvailabilityView } from "./_components/dacha-availability-view";
 import { RestaurantScheduleView } from "./_components/restaurant-schedule-view";
 
@@ -84,9 +93,9 @@ export function CalendarView() {
   const isHostel = hasBeds(partnerType);
   const isBus = hasBuses(partnerType);
 
-  const { data: roomsData } = useRooms();
-  const { data: vehicles } = useVehicles();
-  const { data: reservations } = useReservations();
+  const { data: roomsData, isLoading: roomsLoading, isError: roomsError, refetch: refetchRooms } = useRooms();
+  const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError, refetch: refetchVehicles } = useVehicles();
+  const { data: reservations, isLoading: reservationsLoading, isError: reservationsError, refetch: refetchReservations } = useReservations();
   const { data: roomTypes } = useRoomTypes();
   useBeds();
   const beds = useDataStore((s) => s.beds);
@@ -106,12 +115,22 @@ export function CalendarView() {
     return roomsData;
   }, [roomsData, vehicles, isBus]);
 
+  const confirmReservation = useConfirmReservation();
+  const rejectReservation = useRejectReservation();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
+
+  const [selectedReservationForDrawer, setSelectedReservationForDrawer] = useState<ReservationView | null>(null);
+
   const [viewMode, setViewMode] = useState<ViewMode>(14);
   const [startOffset, setStartOffset] = useState(0);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInInitial, setWalkInInitial] = useState<WalkInInitial>({});
   const [blackoutOpen, setBlackoutOpen] = useState(false);
+
+  const isLoading = roomsLoading || reservationsLoading || (isBus && vehiclesLoading);
+  const isError = roomsError || reservationsError || (isBus && vehiclesError);
 
   const startDate = addDays(TODAY_ISO, startOffset);
   const days = useMemo(
@@ -275,6 +294,39 @@ export function CalendarView() {
 
   if (isDacha(partnerType)) return <DachaAvailabilityView />;
   if (isRestaurant(partnerType)) return <RestaurantScheduleView />;
+
+  if (isLoading) {
+    return <CalendarSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          eyebrow="Operatsion"
+          title={labels.calendarTitle}
+          description={labels.calendarDescription}
+        />
+        <ErrorState
+          title="Kalendar ma'lumotlarini yuklashda xatolik yuz berdi"
+          description="Internet aloqasini tekshiring yoki qayta urinib ko'ring."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                refetchRooms();
+                refetchReservations();
+                if (isBus) refetchVehicles();
+              }}
+            >
+              Qayta urinish
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -449,11 +501,12 @@ export function CalendarView() {
       ) : (
         <div className="overflow-x-auto rounded-card border border-[var(--border)] bg-[var(--surface)]">
           <div
-            className="relative"
+            className="relative min-w-full"
             style={{
               display: "grid",
               gridTemplateColumns: `${roomColWidth}px repeat(${viewMode}, ${cellWidth}px)`,
               gridAutoRows: `${rowHeight}px`,
+              width: "max-content",
             }}
           >
             {/* Header (sticky top) — bo'sh katak */}
@@ -467,10 +520,15 @@ export function CalendarView() {
                 left: 0,
                 zIndex: 30,
               }}
-              className="flex items-center justify-center border-b border-r border-[var(--border)] bg-[var(--surface-muted)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]"
+              className="flex items-center justify-between border-b border-r border-[var(--border)] bg-[var(--surface-muted)] px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
             >
-              {labels.unitSingular.charAt(0).toUpperCase()}
-              {labels.unitSingular.slice(1)}
+              <span>
+                {labels.unitSingular.charAt(0).toUpperCase()}
+                {labels.unitSingular.slice(1)}
+              </span>
+              <span className="text-[9px] font-normal lowercase opacity-75">
+                ({sortedRows.length})
+              </span>
             </div>
 
             {/* Header — kun katakchalari */}
@@ -530,6 +588,7 @@ export function CalendarView() {
                   cellWidth={cellWidth}
                   bars={bars}
                   onEmptyClick={(dateIso) => handleEmptyClick(row, dateIso)}
+                  onSelectReservation={setSelectedReservationForDrawer}
                 />
               );
             })}
@@ -546,6 +605,53 @@ export function CalendarView() {
         open={blackoutOpen}
         onClose={() => setBlackoutOpen(false)}
         hotelId={useAuthStore.getState().user?.organizationId}
+      />
+
+      <ReservationQuickDrawer
+        reservation={selectedReservationForDrawer}
+        open={Boolean(selectedReservationForDrawer)}
+        onClose={() => setSelectedReservationForDrawer(null)}
+        onConfirm={(r) => {
+          confirmReservation.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Bron tasdiqlandi");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: BookingStatus.CONFIRMED } : null
+              );
+            },
+          });
+        }}
+        onCheckIn={(r) => {
+          checkIn.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Mehmon joylashtirildi (Check-in)");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: "IN_HOUSE" as any } : null
+              );
+            },
+          });
+        }}
+        onCheckOut={(r) => {
+          checkOut.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Chiqish amalga oshirildi (Check-out)");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: BookingStatus.COMPLETED } : null
+              );
+            },
+          });
+        }}
+        onReject={(r) => {
+          rejectReservation.mutate(
+            { id: r.id, reason: "Hamkor tomonidan bekor qilindi" },
+            {
+              onSuccess: () => {
+                toast.success("Bron bekor qilindi");
+                setSelectedReservationForDrawer(null);
+              },
+            }
+          );
+        }}
       />
     </div>
   );
@@ -571,6 +677,7 @@ interface RoomRowProps {
     truncatedEnd: boolean;
   }>;
   onEmptyClick: (dateIso: string) => void;
+  onSelectReservation?: (reservation: ReservationView) => void;
 }
 
 function RoomRow({
@@ -583,6 +690,7 @@ function RoomRow({
   cellWidth,
   bars,
   onEmptyClick,
+  onSelectReservation,
 }: RoomRowProps) {
   void cellWidth;
   return (
@@ -596,7 +704,7 @@ function RoomRow({
           left: 0,
           zIndex: 15,
         }}
-        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3"
+        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
       >
         <div className="flex w-full items-center justify-between gap-2">
           <span className="font-mono text-sm font-bold leading-none">
@@ -630,13 +738,16 @@ function RoomRow({
             type="button"
             onClick={() => onEmptyClick(iso)}
             aria-label={`${primaryLabel}, ${iso} uchun bron yaratish`}
+            title={`${primaryLabel} · ${iso} (Bo'sh) — yangi bron yaratish uchun bosing`}
             style={{ gridRow, gridColumn: i + 2 }}
             className={cn(
-              "border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50 dark:hover:bg-brand-900/20",
-              isToday && "bg-brand-50 dark:bg-brand-900",
-              isWeekend && !isToday && "bg-[var(--surface-muted)]",
+              "group relative flex items-center justify-center border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50/80 dark:hover:bg-brand-900/25",
+              isToday && "bg-brand-50/40 dark:bg-brand-950/20",
+              isWeekend && !isToday && "bg-[var(--surface-muted)]/60",
             )}
-          />
+          >
+            <Plus className="h-3.5 w-3.5 text-brand-600 opacity-0 transition-all duration-150 group-hover:scale-110 group-hover:opacity-100 dark:text-brand-400" />
+          </button>
         );
       })}
 
@@ -650,9 +761,62 @@ function RoomRow({
           spanCols={b.spanCols}
           truncatedStart={b.truncatedStart}
           truncatedEnd={b.truncatedEnd}
+          onSelect={onSelectReservation}
         />
       ))}
     </>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-4 w-24 mb-2" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-9 w-32" />
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-card border border-[var(--border)] bg-[var(--surface)] p-4">
+            <Skeleton className="h-3 w-20 mb-2" />
+            <Skeleton className="h-7 w-28 mb-1" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between rounded-card border border-[var(--border)] bg-[var(--surface)] p-3">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-8 w-36" />
+      </div>
+
+      <div className="overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="flex gap-2 border-b border-[var(--border)] pb-3">
+          <Skeleton className="h-10 w-40 shrink-0" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 flex-1" />
+          ))}
+        </div>
+        <div className="mt-3 flex flex-col gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Skeleton className="h-12 w-40 shrink-0" />
+              {Array.from({ length: 8 }).map((_, j) => (
+                <Skeleton key={j} className="h-12 flex-1" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

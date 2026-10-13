@@ -30,7 +30,22 @@ import { PageHeader } from '../../../_components/layout/page-header';
 
 const schema = z.object({
   name: z.string().min(2, 'Nom kamida 2 belgi'),
+  legalName: z.string().optional(),
   inn: z.string().trim().min(3, 'STIR kiriting'),
+  accountNumber: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || /^\d{20}$/.test(val.replace(/\s/g, '')),
+      "Hisob raqami 20 ta raqamdan iborat bo'lishi kerak",
+    ),
+  mfo: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || /^\d{5}$/.test(val.replace(/\s/g, '')),
+      "MFO 5 ta raqamdan iborat bo'lishi kerak",
+    ),
   phone: z.string().min(7, "Telefon noto'g'ri"),
   email: z.string().email("Email noto'g'ri"),
   address: z.string().min(5, 'Manzil juda qisqa'),
@@ -57,7 +72,12 @@ export function HotelSettingsView() {
       partners.updateProfile(
         {
           brand_name: values.name,
+          legal_name: values.legalName || values.name,
           tax_id: values.inn,
+          account_number: values.accountNumber
+            ? values.accountNumber.replace(/\s/g, '')
+            : undefined,
+          mfo: values.mfo ? values.mfo.replace(/\s/g, '') : undefined,
           phone: values.phone,
           email: values.email,
           address: values.address,
@@ -75,7 +95,13 @@ export function HotelSettingsView() {
         profileQuery.data?.brand_name ||
         profileQuery.data?.legal_name ||
         '',
+      legalName: profileQuery.data?.legal_name ?? '',
       inn: profileQuery.data?.tax_id ?? '',
+      accountNumber:
+        profileQuery.data?.account_number ||
+        profileQuery.data?.accountNumber ||
+        '',
+      mfo: profileQuery.data?.mfo ?? '',
       phone: profileQuery.data?.phone ?? '',
       email: profileQuery.data?.email ?? userEmail ?? '',
       address: listing.address || profileQuery.data?.address || '',
@@ -86,10 +112,13 @@ export function HotelSettingsView() {
       listing.fullDescription,
       listing.name,
       listing.shortDescription,
+      profileQuery.data?.accountNumber,
+      profileQuery.data?.account_number,
       profileQuery.data?.address,
       profileQuery.data?.brand_name,
       profileQuery.data?.email,
       profileQuery.data?.legal_name,
+      profileQuery.data?.mfo,
       profileQuery.data?.phone,
       profileQuery.data?.tax_id,
       userEmail,
@@ -204,6 +233,57 @@ export function HotelSettingsView() {
               />
               {err.address && (
                 <p className="text-xs text-red-600">{err.address.message}</p>
+              )}
+            </div>
+
+            {/* Bank va Yuridik Rekvizitlar */}
+            <div className="md:col-span-2 mt-2 pt-4 border-t border-zinc-200/80 dark:border-zinc-800">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Bank va Yuridik Rekvizitlar
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Amallarni bajarish va mablag&apos;larni yechib olish uchun hisob raqami kiritilishi majburiy.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="legalName">Yuridik shaxs nomi (MCHJ / XK / YaTT)</Label>
+              <Input
+                id="legalName"
+                placeholder="Masalan: 'Grand Samarkand' MCHJ"
+                aria-invalid={Boolean(err.legalName)}
+                {...form.register('legalName')}
+              />
+              {err.legalName && (
+                <p className="text-xs text-red-600">{err.legalName.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="accountNumber">Bank hisob raqami (20 ta raqam)</Label>
+              <Input
+                id="accountNumber"
+                placeholder="20208000000000000000"
+                maxLength={20}
+                aria-invalid={Boolean(err.accountNumber)}
+                {...form.register('accountNumber')}
+              />
+              {err.accountNumber && (
+                <p className="text-xs text-red-600">{err.accountNumber.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="mfo">Bank MFOsi (5 ta raqam, ixtiyoriy)</Label>
+              <Input
+                id="mfo"
+                placeholder="00444"
+                maxLength={5}
+                aria-invalid={Boolean(err.mfo)}
+                {...form.register('mfo')}
+              />
+              {err.mfo && (
+                <p className="text-xs text-red-600">{err.mfo.message}</p>
               )}
             </div>
 

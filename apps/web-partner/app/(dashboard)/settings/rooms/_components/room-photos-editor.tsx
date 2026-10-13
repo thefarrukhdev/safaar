@@ -24,7 +24,7 @@ export function RoomPhotosEditor({ room }: { room: Room }) {
 
     try {
       setUploading(true);
-      const uploaded = await partners.uploadImage(file);
+      const uploaded = await partners.uploadImage(file, accessToken);
       await addPhoto.mutateAsync({
         roomId: room.id,
         fileId: uploaded.id,
@@ -43,7 +43,7 @@ export function RoomPhotosEditor({ room }: { room: Room }) {
     try {
       await deletePhoto.mutateAsync({ roomId: room.id, imageId });
       toast.success("Rasm o'chirildi");
-    } catch (error) {
+    } catch {
       toast.error("Rasmni o'chirib bo'lmadi");
     }
   };

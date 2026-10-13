@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../../../_components/ui/button";
 import { Dialog } from "../../../_components/ui/dialog";
 import { EmptyState } from "../../../_components/ui/empty-state";
-import { RoomStatusBadge } from "../../../_components/domain/room-status-badge";
-import { Plus } from "lucide-react";
 import { useRooms, useUpdateRoom } from "../../../_hooks/use-rooms";
 import { toast } from "sonner";
 import { getPartnerLabels } from "../../../_lib/utils/partner-labels";

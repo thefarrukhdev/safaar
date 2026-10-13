@@ -206,7 +206,7 @@ export function Sidebar() {
 
         {/* Footer */}
         {(!collapsed || mobileOpen) && (
-          <div className="border-t border-[var(--border)] p-4 text-xs leading-tight text-[var(--muted-foreground)]">
+          <div className="border-t border-[var(--border)] p-4 pb-8 text-xs leading-tight text-[var(--muted-foreground)]">
             <p className="font-semibold text-[var(--foreground)]">
               Safaar Hamkor v0.1
             </p>

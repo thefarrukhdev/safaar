@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImageIcon, X } from "lucide-react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -17,13 +16,10 @@ import {
   useRooms,
   useUpdateRoom,
 } from "../../../../_hooks/use-rooms";
-import { useRoomTypes, useCreateRoomType, useUpdateRoomType } from "../../../../_hooks/use-room-types";
+import { useRoomTypes } from "../../../../_hooks/use-room-types";
 import { useGenerateBeds } from "../../../../_hooks/use-beds";
 import { RoomStatus, type Room } from "../../../../_lib/domain/types";
-import { roomStatusLabel } from "../../../../_components/domain/room-status-badge";
-import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "../../../../_lib/utils/partner-labels";
-import { partners } from "../../../../_lib/api";
-import { getPrimaryHotel } from "../../../../_hooks/use-primary-hotel";
+import { getPartnerLabels, hasBeds, hasBuses } from "../../../../_lib/utils/partner-labels";
 import { RoomPhotosEditor } from "../_components/room-photos-editor";
 
 const schema = z.object({
@@ -33,10 +29,6 @@ const schema = z.object({
   isListed: z.boolean(),
   roomTypeId: z.string().min(1, "Xona turini tanlang"),
 });
-
-
-
-const roomStatusOptions = Object.values(RoomStatus);
 
 type Values = z.infer<typeof schema>;
 
@@ -49,8 +41,6 @@ interface Props {
 export function RoomDialog({ open, onClose, editing }: Props) {
   const { data: roomTypes } = useRoomTypes();
   const { data: rooms, allRooms } = useRooms();
-  const createRoomType = useCreateRoomType();
-  const updateRoomType = useUpdateRoomType();
   const createRoom = useCreateRoom();
   const updateRoom = useUpdateRoom();
   const deleteRoom = useDeleteRoom();
@@ -62,7 +52,6 @@ export function RoomDialog({ open, onClose, editing }: Props) {
   const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
 
   const [uploading, setUploading] = useState(false);
-  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),

@@ -3,6 +3,7 @@
 import { Star, MessageSquare, ThumbsUp, Clock, AlertCircle } from "lucide-react";
 import { PageHeader } from "../../_components/layout/page-header";
 import { EmptyState } from "../../_components/ui/empty-state";
+import { StatCard } from "../../_components/ui/stat-card";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
@@ -31,25 +32,25 @@ export function ReviewsView() {
         description={`${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} va xizmatlarga mijozlar tomonidan qoldirilgan sharhlar.`}
       />
 
-      {/* Statistika kartalar — backend tayyor bo'lgach real data bilan to'ldiriladi */}
+      {/* Statistika kartalar — umumiy StatCard komponentidan foydalaniladi */}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           icon={<Star className="h-5 w-5 text-yellow-500" />}
           label="O'rtacha reyting"
           value="—"
-          bg="bg-yellow-50 dark:bg-yellow-900/20"
+          hint="Sharhlar kelgach hisoblanadi"
         />
         <StatCard
           icon={<MessageSquare className="h-5 w-5 text-brand-500" />}
           label="Jami sharhlar"
-          value="—"
-          bg="bg-brand-50 dark:bg-brand-900/20"
+          value="0"
+          hint="Mijozlar mulohazalari"
         />
         <StatCard
-          icon={<ThumbsUp className="h-5 w-5 text-green-500" />}
+          icon={<ThumbsUp className="h-5 w-5 text-emerald-500" />}
           label="Ijobiy sharhlar"
           value="—"
-          bg="bg-green-50 dark:bg-green-900/20"
+          hint="4 va 5 yulduzli baholar"
         />
       </div>
 
@@ -68,30 +69,6 @@ export function ReviewsView() {
           title="Sharhlar hali mavjud emas"
           description="Mijozlar sizning xizmatingiz haqida sharhlar qoldirgach, ular shu yerda ko'rinadi. Siz sharhlarga javob berishingiz va reytingingizni kuzatib borishingiz mumkin bo'ladi."
         />
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  bg,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  bg: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${bg}`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
-        <p className="text-2xl font-semibold text-[var(--foreground)]">{value}</p>
       </div>
     </div>
   );

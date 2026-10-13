@@ -4,6 +4,8 @@ import {
   AlertCircle,
   CalendarDays,
   CalendarPlus,
+  Car,
+  Home,
   LogIn,
   LogOut,
   Phone,
@@ -15,21 +17,27 @@ import {
   BedDouble,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
+import { partners } from "../../_lib/api";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { ConfirmDialog } from "../../_components/ui/dialog";
 import { Input } from "../../_components/ui/input";
+import { Skeleton } from "../../_components/ui/skeleton";
 import { Tooltip } from "../../_components/ui/tooltip";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
+import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { OnboardingWizard } from "../../_components/domain/onboarding-wizard";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useBeds } from "../../_hooks/use-beds";
+import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import {
   useCheckIn,
   useCheckOut,
@@ -87,7 +95,18 @@ const TASK_ORDER: Record<TaskKind, number> = {
 };
 
 export function FrontDeskView() {
+  const router = useRouter();
   const reservations = useReservations();
+  const frontDeskStats = useFrontDeskStats();
+  const rooms = useDataStore((s) => s.rooms);
+  const beds = useDataStore((s) => s.beds);
+  const getStats = useDataStore((s) => s.getStats);
+  const localStats = useMemo(() => {
+    void reservations.data;
+    void rooms;
+    void beds;
+    return getStats();
+  }, [getStats, reservations.data, rooms, beds]);
   const user = useAuthStore((s) => s.user);
   const partnerType = user?.partnerType ?? "hotel";
   const labels = getPartnerLabels(partnerType);
@@ -97,6 +116,14 @@ export function FrontDeskView() {
   const confirmReservation = useConfirmReservation();
   const rejectReservation = useRejectReservation();
   useBeds();
+
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const profileQuery = useQuery({
+    queryKey: ["partner", "profile"],
+    queryFn: () => partners.getProfile(accessToken),
+    enabled: Boolean(accessToken),
+    staleTime: 60_000,
+  });
 
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [confirmReject, setConfirmReject] = useState<{
@@ -130,6 +157,20 @@ export function FrontDeskView() {
     for (const task of tasks) c[task.kind]++;
     return c;
   }, [tasks]);
+
+  const stats = useMemo(() => {
+    const backend = frontDeskStats.data;
+    return {
+      occupancyPercent: backend.occupancyPercent || localStats.occupancyPercent,
+      occupiedRooms: backend.occupiedRooms || localStats.occupiedRooms,
+      totalRooms: backend.totalRooms || localStats.totalRooms,
+      arrivalsToday: backend.arrivalsToday || counts.arrival || localStats.arrivalsToday,
+      departuresToday: backend.departuresToday || counts.departure || localStats.departuresToday,
+      monthRevenue: backend.monthRevenue || localStats.monthRevenue,
+    };
+  }, [frontDeskStats.data, localStats, counts.arrival, counts.departure]);
+
+  const isStatsLoading = frontDeskStats.isLoading && reservations.isLoading;
 
   const filtered = useMemo(() => {
     let list =
@@ -182,16 +223,16 @@ export function FrontDeskView() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto">
       <PageHeader
         eyebrow={labels.dashboardEyebrow}
         title={
           <div className="flex items-center gap-3 mt-1">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950 w-[3.25rem] shrink-0">
-              <div className="bg-brand-600 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-white">
+            <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950 min-w-[4.25rem] shrink-0">
+              <div className="bg-brand-600 px-1 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
                 {MONTHS[new Date(TODAY_ISO).getMonth()]}
               </div>
-              <div className="py-1.5 text-center text-xl font-black leading-none text-zinc-900 dark:text-white">
+              <div className="py-1 text-center text-xl font-black leading-none text-zinc-900 dark:text-white">
                 {new Date(TODAY_ISO).getDate()}
               </div>
             </div>
@@ -208,7 +249,7 @@ export function FrontDeskView() {
         description=""
         actions={
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => window.location.href = '/calendar'}>
+            <Button variant="outline" onClick={() => router.push('/calendar')}>
               <CalendarDays className="mr-2 h-4 w-4" aria-hidden />
               Kalendar
             </Button>
@@ -219,6 +260,116 @@ export function FrontDeskView() {
           </div>
         }
       />
+ 
+      {profileQuery.data?.requiresCompanyDetails && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 dark:border-amber-900/40 dark:bg-amber-950/20 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-200">
+                Tashkilot bank hisob raqami kiritilmagan
+              </p>
+              <p className="text-xs text-amber-800 dark:text-amber-400">
+                Amallarni to&apos;liq bajarish va mablag&apos;larni yechib olish uchun kompaniya nomi va hisob raqami (20 ta raqam) kiritilishi majburiy.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-300 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 shrink-0"
+            onClick={() => router.push("/settings/hotel")}
+          >
+            Rekvizitlarni kiritish
+          </Button>
+        </div>
+      )}
+
+      {/* 4 ta Asosiy KPI Kartochkalari */}
+      <section aria-label="Asosiy ko'rsatkichlar" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <OccupancyCard
+          title={
+            labels.isDacha
+              ? "Dacha bandligi"
+              : labels.isRestaurant
+                ? "Stollar bandligi"
+                : labels.isBus
+                  ? "Transport bandligi"
+                  : labels.isHostel
+                    ? "Yotoqlar bandligi"
+                    : "Bandlik ko'rsatkichi"
+          }
+          percent={stats.occupancyPercent}
+          occupied={stats.occupiedRooms}
+          total={stats.totalRooms}
+          unitLabel={labels.unitPlural}
+          icon={
+            labels.isRestaurant ? (
+              <UtensilsCrossed className="h-5 w-5" />
+            ) : labels.isBus ? (
+              <Car className="h-5 w-5" />
+            ) : labels.isDacha ? (
+              <Home className="h-5 w-5" />
+            ) : (
+              <BedDouble className="h-5 w-5" />
+            )
+          }
+          isLoading={isStatsLoading}
+        />
+
+        <MetricCard
+          title={
+            labels.isRestaurant
+              ? "Bugungi bronlar"
+              : labels.isBus
+                ? "Olib ketishlar"
+                : "Bugungi kelishlar"
+          }
+          value={stats.arrivalsToday}
+          subtext={
+            labels.isRestaurant
+              ? "Bugun keladigan mehmonlar"
+              : labels.isBus
+                ? "Bugun topshiriladigan avtomobillar"
+                : "Bugun kutilayotgan mehmonlar"
+          }
+          icon={<LogIn className="h-5 w-5" />}
+          tone="emerald"
+          isLoading={isStatsLoading}
+        />
+
+        <MetricCard
+          title={
+            labels.isRestaurant
+              ? "Yakunlangan bronlar"
+              : labels.isBus
+                ? "Qaytarishlar"
+                : "Bugungi ketishlar"
+          }
+          value={stats.departuresToday}
+          subtext={
+            labels.isRestaurant
+              ? "Bugun yakunlanadigan stollar"
+              : labels.isBus
+                ? "Bugun qaytariladigan avtomobillar"
+                : "Bugun chiqib ketadigan mehmonlar"
+          }
+          icon={<LogOut className="h-5 w-5" />}
+          tone="blue"
+          isLoading={isStatsLoading}
+        />
+
+        <MetricCard
+          title="Oylik tushum"
+          value={formatMoney(stats.monthRevenue)}
+          subtext="Joriy oy uchun daromad"
+          icon={<Wallet className="h-5 w-5" />}
+          tone="brand"
+          isLoading={isStatsLoading}
+        />
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         {/* Asosiy vazifalar qismi */}
@@ -266,7 +417,13 @@ export function FrontDeskView() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {reservations.isLoading ? (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <TaskCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <Card className="border-dashed border-2 border-zinc-200 dark:border-zinc-800 bg-transparent shadow-none">
               <EmptyState
                 icon={<LogOut className="h-10 w-10 text-zinc-300" aria-hidden />}
@@ -311,7 +468,15 @@ export function FrontDeskView() {
                 <Sparkles className="h-4 w-4 text-brand-600" aria-hidden />
                 <h2 className="text-sm font-semibold">Tezkor vazifa</h2>
               </div>
-              {nextTask ? (
+              {reservations.isLoading ? (
+                <div className="rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-4 dark:border-zinc-800/60 dark:bg-zinc-900/50 animate-pulse">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              ) : nextTask ? (
                 <NextTaskCard task={nextTask} labels={labels} dacha={dacha} restaurant={isRestaurant(partnerType)} />
               ) : (
                 <div className="rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 text-center text-sm text-zinc-500">
@@ -326,6 +491,7 @@ export function FrontDeskView() {
               <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">Tezkor yo'nalishlar</h2>
               <QuickLink href="/reservations" icon={<Users />} label={labels.reservationsTitle} />
               <QuickLink href="/calendar" icon={<CalendarDays />} label={labels.calendarTitle.split(" ")[0]} />
+              <QuickLink href="/rooms" icon={isRestaurant(partnerType) ? <UtensilsCrossed /> : <BedDouble />} label={labels.unitsPageTitle} />
             </CardBody>
           </Card>
         </aside>
@@ -659,3 +825,132 @@ function QuickLink({
     </Link>
   );
 }
+
+function OccupancyCard({
+  title,
+  percent,
+  occupied,
+  total,
+  unitLabel,
+  icon,
+  isLoading,
+}: {
+  title: string;
+  percent: number;
+  occupied: number;
+  total: number;
+  unitLabel: string;
+  icon: React.ReactNode;
+  isLoading?: boolean;
+}) {
+  return (
+    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200/60 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-zinc-800/60 dark:bg-zinc-900">
+      <div>
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              {title}
+            </span>
+            {isLoading ? (
+              <Skeleton className="my-0.5 h-8 w-20" />
+            ) : (
+              <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                {percent}%
+              </span>
+            )}
+          </div>
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400">
+            {icon}
+          </div>
+        </div>
+        <div className="mt-3">
+          <OccupancyMeter percent={percent} className="h-2" />
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+        {total > 0 ? (
+          <span>
+            <strong className="font-semibold text-zinc-700 dark:text-zinc-300">
+              {occupied}
+            </strong>{" "}
+            / {total} {unitLabel} band
+          </span>
+        ) : (
+          <span>{unitLabel} mavjud emas</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  subtext,
+  icon,
+  tone = "brand",
+  isLoading,
+}: {
+  title: string;
+  value: string | number;
+  subtext: string;
+  icon: React.ReactNode;
+  tone?: "brand" | "emerald" | "blue" | "amber";
+  isLoading?: boolean;
+}) {
+  const toneClasses = {
+    brand: "bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400",
+    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
+    amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+  }[tone];
+
+  return (
+    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200/60 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-zinc-800/60 dark:bg-zinc-900">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            {title}
+          </span>
+          {isLoading ? (
+            <Skeleton className="my-0.5 h-8 w-24" />
+          ) : (
+            <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              {value}
+            </span>
+          )}
+        </div>
+        <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", toneClasses)}>
+          {icon}
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+        {subtext}
+      </div>
+    </div>
+  );
+}
+
+function TaskCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-zinc-200/60 bg-white p-4 shadow-sm dark:border-zinc-800/60 dark:bg-zinc-900 md:flex-row md:items-center animate-pulse">
+      <Skeleton className="hidden h-12 w-12 shrink-0 rounded-full md:block" />
+      <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-4 w-16 rounded-full" />
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 pt-3 md:pt-0">
+        <Skeleton className="h-9 w-9 rounded-full" />
+        <Skeleton className="h-9 w-24 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+

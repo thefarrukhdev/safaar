@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Tag } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../../../_components/ui/button";
 import { PageHeader } from "../../../../_components/layout/page-header";
@@ -19,7 +19,7 @@ export function PromotionsView() {
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const loadPromotions = async () => {
+  const loadPromotions = useCallback(async () => {
     try {
       setLoading(true);
       setLoadError(false);
@@ -32,7 +32,7 @@ export function PromotionsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     // AuthGuard renders this page only once the Zustand `persist` store has
@@ -46,7 +46,7 @@ export function PromotionsView() {
     if (!accessToken) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPromotions();
-  }, [accessToken]);
+  }, [accessToken, loadPromotions]);
 
   // Prepend the REAL POST response for immediate feedback. A full page
   // reload re-fetches from GET /partners/promotions (now real) and shows

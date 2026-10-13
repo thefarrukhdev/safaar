@@ -37,6 +37,7 @@ interface ReservationBarProps {
   truncatedStart: boolean;
   /** Oxirida kesilganmi (bron keyinroq tugaydi) */
   truncatedEnd: boolean;
+  onSelect?: (reservation: ReservationView) => void;
 }
 
 export function ReservationBar({
@@ -46,6 +47,7 @@ export function ReservationBar({
   spanCols,
   truncatedStart,
   truncatedEnd,
+  onSelect,
 }: ReservationBarProps) {
   const router = useRouter();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
@@ -78,7 +80,11 @@ export function ReservationBar({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/reservations/${reservation.id}`);
+          if (onSelect) {
+            onSelect(reservation);
+          } else {
+            router.push(`/reservations/${reservation.id}`);
+          }
         }}
         title={
           restaurant
@@ -108,7 +114,7 @@ export function ReservationBar({
       </button>
 
       {/* Rich tooltip — hover'da */}
-      <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden -translate-x-1/2 min-w-[220px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-xs shadow-xl group-hover:block group-focus-within:block">
+      <div className="pointer-events-none absolute left-1/2 bottom-full z-50 mb-1.5 hidden -translate-x-1/2 min-w-[240px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-xs shadow-2xl group-hover:block group-focus-within:block">
         <p className="font-semibold">{reservation.guest.fullName}</p>
         <p className="text-[var(--muted-foreground)]">
           {formatPhone(reservation.guest.phone)}

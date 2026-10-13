@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
+import { ConfirmProvider } from '../_components/ui/confirm-dialog';
 import { QueryProvider } from './query-provider';
 import { RealtimeListener } from './realtime-listener';
 import { SessionExpiryHandler } from './session-expiry-handler';
@@ -15,9 +16,11 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <QueryProvider>
-        <SessionExpiryHandler />
-        <RealtimeListener />
-        {children}
+        <ConfirmProvider>
+          <SessionExpiryHandler />
+          <RealtimeListener />
+          {children}
+        </ConfirmProvider>
         <Toaster
           position="top-right"
           richColors

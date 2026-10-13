@@ -23,6 +23,7 @@ import { UnifiedRoomDialog } from "./_dialogs/unified-room-dialog";
 import { BedManagementDialog } from "./_dialogs/bed-management-dialog";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Button } from "../../_components/ui/button";
+import { useConfirm } from "../../_components/ui/confirm-dialog";
 import { formatMoney } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels, hasBeds, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
@@ -41,6 +42,7 @@ export function RoomsView() {
   const isBus = hasBuses(partnerType);
 
   const { mutate: deleteRoom } = useDeleteRoom();
+  const confirm = useConfirm();
 
   const [addingRoom, setAddingRoom] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -369,8 +371,15 @@ export function RoomsView() {
                       restaurant={restaurant}
                       isBus={isBus}
                       onEdit={() => setEditingRoom(room)}
-                      onDelete={() => {
-                        if (window.confirm(`Rostdan ham ${room.number} raqamli ${labels.unitSingular.toLowerCase()}ni o'chirmoqchimisiz?`)) {
+                      onDelete={async () => {
+                        const ok = await confirm({
+                          title: `${room.number} raqamli ${labels.unitSingular.toLowerCase()}ni o'chirish`,
+                          description: `Rostdan ham ${room.number} raqamli ${labels.unitSingular.toLowerCase()}ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
+                          confirmText: "O'chirish",
+                          cancelText: "Bekor qilish",
+                          destructive: true,
+                        });
+                        if (ok) {
                           deleteRoom(room.id, {
                             onSuccess: () => {
                               toast.success(`${room.number} raqamli ${labels.unitSingular.toLowerCase()} muvaffaqiyatli o'chirildi`);

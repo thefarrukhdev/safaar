@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Users, UserPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PartnerTeamMember, listTeamMembers, inviteTeamMember, deleteTeamMember, updateTeamMember } from "@/lib/api/endpoints/partners";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function TeamSettingsPage() {
+  const confirm = useConfirm();
   const [members, setMembers] = useState<PartnerTeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -61,7 +63,14 @@ export default function TeamSettingsPage() {
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm("Ushbu xodimni rostdan ham o'chirmoqchimisiz? Uning tizimga kirish ruxsati bekor qilinadi.")) return;
+    const ok = await confirm({
+      title: "Xodimni o'chirish",
+      description: "Ushbu xodimni rostdan ham o'chirmoqchimisiz? Uning tizimga kirish ruxsati bekor qilinadi.",
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteTeamMember(id, null);
       toast.success("Xodim o'chirildi");

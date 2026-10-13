@@ -27,6 +27,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../_components/ui/button';
 import { Card, CardBody } from '../../_components/ui/card';
+import { useConfirm } from '../../_components/ui/confirm-dialog';
 import { PreviewDrawer } from './_components/preview-drawer';
 
 import { GeneralEditor } from './_editors/general-editor';
@@ -100,6 +101,7 @@ export function ListingOverview() {
   const { data: beds = [] } = useBeds();
   const updateStatus = useUpdateListingStatus();
   const resetListing = useResetListing();
+  const confirm = useConfirm();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const showStars = hasStarRating(partnerType);
@@ -393,10 +395,15 @@ export function ListingOverview() {
     });
   };
 
-  const handleResetListing = () => {
-    const confirmed = window.confirm(
-      "E'lonni qayta yaratmoqchimisiz? Nomi, tavsifi, rasmlari, qulayliklari va xonalari butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.",
-    );
+  const handleResetListing = async () => {
+    const confirmed = await confirm({
+      title: "E'lonni qayta yaratmoqchimisiz?",
+      description:
+        "Nomi, tavsifi, rasmlari, qulayliklari va xonalari butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.",
+      confirmText: "Qayta yaratish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
     if (!confirmed) return;
 
     resetListing.mutate(undefined, {
@@ -807,14 +814,22 @@ function RoomListingsPanel({
   const updateRoomType = useUpdateRoomType();
   const deleteRoom = useDeleteRoom();
   const updateRoom = useUpdateRoom();
+  const confirm = useConfirm();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (roomType: import('../../_lib/domain/types').RoomType, relatedRooms: import('../../_lib/domain/types').Room[]) => {
-    const msg = relatedRooms.length > 0
-      ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta xona mavjud. Ushbu xona turini o'chirsangiz, ichidagi barcha xonalar ham qo'shib o'chiriladi. Rozimisiz?`
-      : `Rostdan ham "${roomType.name}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`;
+    const isCascade = relatedRooms.length > 0;
+    const ok = await confirm({
+      title: `"${roomType.name}" ni o'chirish`,
+      description: isCascade
+        ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta xona mavjud. Ushbu xona turini o'chirsangiz, ichidagi barcha xonalar ham qo'shib o'chiriladi. Rozimisiz?`
+        : `Rostdan ham "${roomType.name}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
       
-    if (window.confirm(msg)) {
+    if (ok) {
       setIsDeleting(true);
       try {
         if (relatedRooms.length > 0) {

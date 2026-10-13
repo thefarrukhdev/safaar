@@ -110,54 +110,6 @@ export function Dialog({
   );
 }
 
-interface ConfirmDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  description?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  tone?: "danger" | "primary";
-}
+export { ConfirmDialog } from "./confirm-dialog";
+export type { ConfirmDialogProps } from "./confirm-dialog";
 
-/** Tasdiqlash dialogi (Rad etish, Bekor qilish va h.k. uchun). */
-export function ConfirmDialog({
-  open,
-  onClose,
-  onConfirm,
-  title,
-  description,
-  confirmLabel = "Tasdiqlash",
-  cancelLabel = "Bekor qilish",
-  tone = "primary",
-}: ConfirmDialogProps) {
-  return (
-    <Dialog open={open} onClose={onClose} title={title} description={description}>
-      <div className="flex justify-end gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
-        >
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onConfirm();
-            onClose();
-          }}
-          className={cn(
-            "inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium text-white transition-colors",
-            tone === "danger"
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-brand-700 hover:bg-brand-800",
-          )}
-        >
-          {confirmLabel}
-        </button>
-      </div>
-    </Dialog>
-  );
-}

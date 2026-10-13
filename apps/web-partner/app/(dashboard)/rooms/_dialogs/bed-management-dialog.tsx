@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RoomStatusBadge } from "@/components/domain/room-status-badge";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useCreateBed, useDeleteBed, useUpdateBed, useBeds } from "@/hooks/use-beds";
 import { RoomStatus, type Room } from "@/lib/domain/types";
 
@@ -21,6 +22,7 @@ export function BedManagementDialog({ open, onClose, room }: Props) {
   const createBed = useCreateBed();
   const updateBed = useUpdateBed();
   const deleteBed = useDeleteBed();
+  const confirm = useConfirm();
 
   const roomBeds = room
     ? beds.filter((b) => b.roomId === room.id).sort((a, b) => a.label.localeCompare(b.label))
@@ -52,7 +54,14 @@ export function BedManagementDialog({ open, onClose, room }: Props) {
   };
 
   const handleDelete = async (bedId: string, label: string) => {
-    if (!confirm(`Rostdan ham ${label} ni o'chirmoqchimisiz?`)) return;
+    const ok = await confirm({
+      title: `${label} ni o'chirish`,
+      description: `Rostdan ham ${label} ni o'chirmoqchimisiz?`,
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteBed.mutateAsync(bedId);
       toast.success(`${label} o'chirildi`);

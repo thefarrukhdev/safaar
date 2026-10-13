@@ -14,8 +14,10 @@ import {
   deleteWebhook 
 } from "@/lib/api/endpoints/partners";
 import { formatDate } from "@/lib/utils/format";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function DeveloperSettingsPage() {
+  const confirm = useConfirm();
   const [apiKeys, setApiKeys] = useState<PartnerApiKey[]>([]);
   const [webhooks, setWebhooks] = useState<PartnerWebhook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,14 @@ export default function DeveloperSettingsPage() {
   };
 
   const handleDeleteKey = async (id: string) => {
-    if (!confirm("Kalitni o'chirmoqchimisiz?")) return;
+    const ok = await confirm({
+      title: "API kalitini o'chirish",
+      description: "Ushbu API kalitini rostdan ham o'chirmoqchimisiz? Kalit orqali bog'langan tashqi integratsiyalar ishlamay qoladi.",
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteApiKey(id, null);
       toast.success("Kalit o'chirildi");
@@ -96,7 +105,14 @@ export default function DeveloperSettingsPage() {
   };
 
   const handleDeleteWebhook = async (id: string) => {
-    if (!confirm("Webhookni o'chirmoqchimisiz?")) return;
+    const ok = await confirm({
+      title: "Webhookni o'chirish",
+      description: "Ushbu webhookni rostdan ham o'chirmoqchimisiz? Tizim hodisalari ushbu URL ga yuborilmaydi.",
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteWebhook(id, null);
       toast.success("Webhook o'chirildi");

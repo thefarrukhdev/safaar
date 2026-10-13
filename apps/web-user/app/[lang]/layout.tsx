@@ -16,6 +16,7 @@ import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/Toaster";
 import { config } from "@/lib/config";
+import { GlobalSpotlightBackground } from "@/components/ui/GlobalSpotlightBackground";
 
 
 
@@ -139,7 +140,7 @@ export default async function LangLayout({
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${manrope.variable} h-full subpixel-antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white text-slate-900 subpixel-antialiased">
+      <body className="flex min-h-full flex-col bg-slate-50/40 text-slate-900 subpixel-antialiased">
         <PostHogProvider>
           <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
             <NuqsAdapter>
@@ -147,6 +148,7 @@ export default async function LangLayout({
               <SessionProvider session={session}>
               <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
                 <div className="relative flex min-h-screen w-full flex-col">
+                  <GlobalSpotlightBackground />
                   {children}
                   <Toaster />
                   <ServiceWorkerRegister />

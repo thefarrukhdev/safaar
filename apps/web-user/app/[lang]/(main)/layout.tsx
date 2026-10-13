@@ -42,7 +42,7 @@ export default async function MainLayout({
         </div>
         <SiteHeader locale={locale} dict={common} authed={!!session} />
       </div>
-      <div className="flex flex-1 flex-col bg-white ">{children}</div>
+      <div className="flex flex-1 flex-col relative">{children}</div>
       <SiteFooter locale={locale} dict={common} />
       <LiveSupportWidget dict={common.chat} />
     </RealtimeProvider>

@@ -56,11 +56,6 @@ const schema = z.object({
   email: z.string().email("Email noto'g'ri"),
   city: z.string().min(2, 'Shaharni kiriting'),
   address: z.string().min(5, 'Manzilni kiriting'),
-  taxId: z
-    .string()
-    .min(9, "STIR 9 ta raqamdan iborat bo'lishi kerak")
-    .max(9, "STIR 9 ta raqamdan iborat bo'lishi kerak")
-    .regex(/^\d{9}$/, 'Faqat raqamlar kiriting'),
   accountNumber: z
     .string()
     .optional()
@@ -111,7 +106,6 @@ export default function RegisterPage() {
       email: '',
       city: '',
       address: '',
-      taxId: '',
       accountNumber: '',
       note: '',
     },
@@ -523,7 +517,7 @@ export default function RegisterPage() {
             />
           </Field>
 
-          {/* City & STIR */}
+          {/* City & Bank Account Number */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Shahar" error={form.formState.errors.city?.message}>
               <Input
@@ -532,38 +526,23 @@ export default function RegisterPage() {
                 className={inputBaseClasses}
               />
             </Field>
-            <Field label="STIR (9 ta raqam)" error={form.formState.errors.taxId?.message}>
+            <Field
+              label="Bank hisob raqami (20 ta raqam, ixtiyoriy)"
+              error={form.formState.errors.accountNumber?.message}
+            >
               <Input
                 inputMode="numeric"
-                maxLength={9}
-                {...form.register('taxId', {
+                maxLength={20}
+                {...form.register('accountNumber', {
                   onChange: (e) => {
-                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
                   },
                 })}
-                placeholder="123456789"
+                placeholder="20208000900000123456"
                 className={inputBaseClasses}
               />
             </Field>
           </div>
-
-          {/* Bank Account Number */}
-          <Field
-            label="Bank hisob raqami (20 ta raqam, ixtiyoriy)"
-            error={form.formState.errors.accountNumber?.message}
-          >
-            <Input
-              inputMode="numeric"
-              maxLength={20}
-              {...form.register('accountNumber', {
-                onChange: (e) => {
-                  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
-                },
-              })}
-              placeholder="20208000900000123456"
-              className={inputBaseClasses}
-            />
-          </Field>
 
           {/* Address */}
           <Field label="Manzil" error={form.formState.errors.address?.message}>

@@ -23,7 +23,7 @@ export interface PartnerApplicationDraft {
   email: string;
   city: string;
   address: string;
-  taxId: string;
+  taxId?: string;
   accountNumber?: string;
   mfo?: string;
   password?: string;

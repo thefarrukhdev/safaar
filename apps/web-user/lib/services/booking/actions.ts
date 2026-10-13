@@ -28,11 +28,20 @@ async function redirectToLoginIfSessionExpired(
 function extractErrorCode(data: any, fallback = "ERROR"): string {
   if (!data) return fallback;
   if (data.error && typeof data.error === "object") {
-    if (data.error.code) return String(data.error.code);
-    if (data.error.message) return String(data.error.message);
+    if (data.error.code && data.error.code !== "Bad Request") return String(data.error.code);
+    if (data.error.message) {
+      return Array.isArray(data.error.message) ? data.error.message.join(", ") : String(data.error.message);
+    }
+  }
+  if (data.code && data.code !== "Bad Request") return String(data.code);
+  if (data.message) {
+    if (Array.isArray(data.message)) return data.message.join(", ");
+    if (data.message !== "Bad Request") return String(data.message);
+  }
+  if (data.error && typeof data.error === "string" && data.error !== "Bad Request") {
+    return data.error;
   }
   if (data.code) return String(data.code);
-  if (data.message) return String(data.message);
   return fallback;
 }
 
@@ -289,6 +298,40 @@ export async function createHotelBookingDirectAction(input: {
 
   try {
     const base = config.apiUrl.endsWith("/") ? config.apiUrl : `${config.apiUrl}/`;
+    const payload: Record<string, unknown> = {
+      hotel_id: input.hotelId,
+      room_id: input.roomId,
+      check_in: input.checkIn,
+      check_out: input.checkOut,
+      rooms: 1,
+      adults: input.guests ?? 1,
+      payment_method: input.paymentMethod,
+      agree_terms: input.agreeTerms,
+      source: "web-user",
+    };
+
+    if (fullName) {
+      payload.guest_name = fullName;
+      payload.fullName = fullName;
+    }
+    if (input.firstName) payload.firstName = input.firstName;
+    if (input.lastName) payload.lastName = input.lastName;
+    if (input.email) {
+      payload.guest_email = input.email;
+      payload.email = input.email;
+    }
+    if (input.phone) {
+      const cleanPhone = input.phone.replace(/[^\d+]/g, "").trim();
+      payload.guest_phone = cleanPhone;
+      payload.phone = cleanPhone;
+    }
+    if (input.promoCode) {
+      payload.promo_code = input.promoCode;
+    }
+    if (input.verificationToken) {
+      payload.verification_token = input.verificationToken;
+    }
+
     const res = await fetch(`${base}bookings/hotel`, {
       method: "POST",
       headers: {
@@ -296,28 +339,7 @@ export async function createHotelBookingDirectAction(input: {
         Accept: "application/json",
         ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
       },
-      body: JSON.stringify({
-        hotel_id: input.hotelId,
-        room_id: input.roomId,
-        check_in: input.checkIn,
-        check_out: input.checkOut,
-        rooms: 1,
-        adults: input.guests ?? 1,
-        payment_method: input.paymentMethod,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        fullName,
-        guest_name: fullName,
-        guest_email: input.email,
-        guest_phone: input.phone,
-        email: input.email,
-        phone: input.phone,
-        special_requests: input.specialRequests,
-        promo_code: input.promoCode,
-        agree_terms: input.agreeTerms,
-        verification_token: input.verificationToken,
-        source: "web-user",
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json().catch(() => null);

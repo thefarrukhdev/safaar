@@ -186,7 +186,7 @@ export function CheckoutForm({
       );
 
       if (paymentResult.error || !paymentResult.payment?.paymentUrl) {
-        setFormError(paymentResult.error || "Payment session error");
+        setFormError(getErrorMessage(paymentResult.error || "Payment session error"));
         setLoading(false);
       } else {
         setSuccessBookingId(bookingId);

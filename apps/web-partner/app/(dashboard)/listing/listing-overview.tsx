@@ -17,7 +17,7 @@ import {
   Plus,
   RotateCcw,
   Send,
-  Sparkles,
+  Gem,
   Star,
   Trash2,
   UtensilsCrossed,
@@ -216,7 +216,7 @@ export function ListingOverview() {
           listing.amenities.length > 0
             ? `${listing.amenities.length} ta qulaylik belgilangan`
             : 'Qulayliklar tanlanmagan',
-        icon: <Sparkles className="h-4 w-4" aria-hidden />,
+        icon: <Gem className="h-4 w-4" aria-hidden />,
         missing: !amenitiesComplete
           ? 'Kamida 3 ta asosiy qulaylikni belgilang.'
           : undefined,

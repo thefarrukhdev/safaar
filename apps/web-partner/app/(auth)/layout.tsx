@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
-import { Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CalendarDays, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -66,7 +66,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-sm backdrop-blur-md">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <Sparkles className="h-5 w-5" />
+                    <CalendarDays className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900">Aqlli Bandlik Kalendari</p>

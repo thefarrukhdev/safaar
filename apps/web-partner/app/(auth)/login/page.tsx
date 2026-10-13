@@ -1,4 +1,4 @@
-import { ShieldCheck, ArrowRight, FileSearch, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowRight, FileSearch, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { LoginForm } from './login-form';
 
@@ -8,7 +8,7 @@ export default function LoginPage() {
       {/* Header & Title */}
       <div className="flex flex-col gap-2">
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100/80 text-[11px] font-semibold text-blue-700 w-fit">
-          <Sparkles className="h-3 w-3 text-blue-600" />
+          <Building2 className="h-3 w-3 text-blue-600" />
           <span>Hamkorlik Portali</span>
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">

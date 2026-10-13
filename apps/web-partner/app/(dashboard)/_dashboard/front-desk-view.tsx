@@ -10,7 +10,7 @@ import {
   LogOut,
   Phone,
   Search,
-  Sparkles,
+  Zap,
   Users,
   Wallet,
   UtensilsCrossed,
@@ -465,7 +465,7 @@ export function FrontDeskView() {
           <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
             <CardBody className="p-5 flex flex-col gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-brand-600" aria-hidden />
+                <Zap className="h-4 w-4 text-brand-600" aria-hidden />
                 <h2 className="text-sm font-semibold">Tezkor vazifa</h2>
               </div>
               {reservations.isLoading ? (

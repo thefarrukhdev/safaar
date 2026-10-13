@@ -1,6 +1,6 @@
 "use client";
 
-import { BedSingle, Sparkles, Check, Zap } from "lucide-react";
+import { BedSingle, BedDouble, Check, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
@@ -149,7 +149,7 @@ export function AssignBedDialog({ open, onClose, reservation, onAssigned }: Prop
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-brand-50 p-4 border border-brand-100 dark:bg-brand-900/20 dark:border-brand-900/40">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
-                <Sparkles className="h-5 w-5" />
+                <BedDouble className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-brand-900 dark:text-brand-100">

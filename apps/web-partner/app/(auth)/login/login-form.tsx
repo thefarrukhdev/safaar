@@ -10,7 +10,7 @@ import {
   Lock,
   RotateCw,
   AlertCircle,
-  Sparkles,
+  Terminal,
   ArrowLeft,
   Copy,
   Check,
@@ -433,7 +433,7 @@ export function LoginForm() {
               <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 border border-emerald-200/80 shadow-xs">
                 <div className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Terminal className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   <div>
                     <p className="text-[11px] font-medium text-emerald-800">

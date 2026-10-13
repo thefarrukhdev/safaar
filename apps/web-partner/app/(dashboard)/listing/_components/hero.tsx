@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, ImageIcon, Loader2, Send, Sparkles, Star } from "lucide-react";
+import { Eye, EyeOff, ImageIcon, Loader2, Send, LayoutList, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../../_components/ui/button";
 import { Tooltip } from "../../../_components/ui/tooltip";
@@ -192,7 +192,7 @@ export function Hero({ onPreview }: HeroProps) {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-medium">
-              <Sparkles className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+              <LayoutList className="h-3.5 w-3.5 text-brand-600" aria-hidden />
               To'ldirilganlik
             </span>
             <span className="text-[var(--muted-foreground)]">

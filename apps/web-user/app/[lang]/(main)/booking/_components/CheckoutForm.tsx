@@ -254,14 +254,14 @@ export function CheckoutForm({
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 gap-8 lg:gap-12 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] items-start"
+        className="grid grid-cols-1 gap-6 sm:gap-8 lg:gap-10 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] items-start"
       >
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="hotelId" value={hotelId} />
         <input type="hidden" name="roomId" value={room.id} />
 
-        <div className="flex flex-col gap-8">
-          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
+        <div className="flex flex-col gap-6 sm:gap-8">
+          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-xs">
             <h2 className="text-xl font-bold text-slate-900">{dict.guestDetails}</h2>
 
             {isGuest ? (
@@ -367,7 +367,7 @@ export function CheckoutForm({
             </label>
           </section>
 
-          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
+          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-xs">
             <h2 className="text-xl font-bold text-slate-900">{dict.paymentMethod}</h2>
             <PaymentSelector
               defaultValue="uzcard"
@@ -377,7 +377,7 @@ export function CheckoutForm({
             />
 
             {paymentMethod !== "cash" && (
-              <div className="mt-1 flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
+              <div className="mt-1 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-3.5 text-xs text-slate-600">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                 <span>{dict.secureCardNotice}</span>
               </div>
@@ -385,7 +385,7 @@ export function CheckoutForm({
           </section>
         </div>
 
-        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 lg:sticky lg:top-28">
+        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 lg:sticky lg:top-24 shadow-xs">
           <h2 className="text-xl font-bold text-slate-900">{dict.summary}</h2>
           <div className="flex flex-col gap-0.5">
             <p className="font-semibold text-slate-900">{hotelName}</p>
@@ -515,7 +515,13 @@ export function CheckoutForm({
 
         <CheckoutMobileCtaBar
           total={feeBreakdown.totalAmount}
-          dict={{ total: dict.total, payButton: dict.payButton }}
+          dict={{
+            total: dict.total,
+            payButton:
+              paymentMethod === "cash"
+                ? (dict.confirm || "Bronni tasdiqlash")
+                : (dict.payButton || "To'lash"),
+          }}
           pending={loading}
           disabled={nights < 1 || !agreeTerms || loading}
           targetId="checkout-original-cta"

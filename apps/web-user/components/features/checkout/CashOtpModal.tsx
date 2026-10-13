@@ -219,7 +219,7 @@ export function CashOtpModal({
               onKeyDown={(e) => handleKeyDown(index, e)}
               disabled={isLoading}
               placeholder={dict.inputPlaceholder}
-              className={`w-11 h-14 text-center text-2xl font-bold font-mono border-2 rounded-xl transition-colors focus:outline-none ${
+              className={`w-9 sm:w-11 h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono border-2 rounded-xl transition-colors focus:outline-none ${
                 errorCode
                   ? "border-red-400 focus:border-red-500"
                   : "border-slate-200 focus:border-blue-500"

@@ -46,7 +46,33 @@ export const CARD_IMAGE_MAP: Record<string, string> = {
   mastercard: "/payments/mastercard.jpg",
 };
 
-const TRANSPARENT_PAYMENT_OPTIONS: PaymentOptionConfig[] = [
+/** Standart checkout uchun 2 ta aniq va moslashuvchan variant: Karta va Joyida to'lash */
+export const CHECKOUT_PAYMENT_OPTIONS: PaymentOptionConfig[] = [
+  {
+    id: "uzcard",
+    name: "Karta orqali to'lash",
+    subtitle: "Uzcard, Humo, Visa, Mastercard",
+    badges: ["3D-Secure", "Onlayn to'lov"],
+    logos: [
+      { src: CARD_IMAGE_MAP.uzcard, alt: "Uzcard" },
+      { src: CARD_IMAGE_MAP.humo, alt: "Humo" },
+      { src: CARD_IMAGE_MAP.visa, alt: "Visa" },
+      { src: CARD_IMAGE_MAP.mastercard, alt: "Mastercard" },
+    ],
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "cash",
+    name: "Joyida to'lash (Naqd)",
+    subtitle: "Oldindan to'lov talab qilinmaydi, 0% to'lov haqi",
+    badges: ["0% to'lov haqi", "Oldindan to'lovsiz"],
+    logos: [],
+    colorTheme: CASH_THEME,
+  },
+];
+
+/** Qayta to'lash (Retry) oqimi uchun batafsil variantlar */
+export const GRANULAR_PAYMENT_OPTIONS: PaymentOptionConfig[] = [
   {
     id: "uzcard",
     name: "Uzcard / Humo",
@@ -102,7 +128,19 @@ export function PaymentSelector({
 }: PaymentSelectorProps) {
   const [selected, setSelected] = useState<PaymentMethodId>(defaultValue);
 
-  const options = TRANSPARENT_PAYMENT_OPTIONS.filter((option) => {
+  // Agar faqat kartalar ruxsat etilgan bo'lsa (masalan RetryForm), granular kartalar ko'rsatiladi.
+  // Default checkout'da esa aynan foydalanuvchi so'raganidek 2 ta variant: Karta va Naqd.
+  const isGranular = Boolean(
+    allow &&
+      (allow.includes("visa") ||
+        allow.includes("mastercard") ||
+        allow.includes("humo")) &&
+      !allow.includes("cash")
+  );
+
+  const baseOptions = isGranular ? GRANULAR_PAYMENT_OPTIONS : CHECKOUT_PAYMENT_OPTIONS;
+
+  const options = baseOptions.filter((option) => {
     if (!allow) return true;
     if (option.id === "uzcard") {
       return allow.includes("uzcard") || allow.includes("humo");
@@ -134,11 +172,28 @@ export function PaymentSelector({
     <div className={cn("flex flex-col gap-3", className, disabled && "pointer-events-none opacity-60")}>
       <input type="hidden" name={name} value={selected} />
 
-      <div className={cn("grid grid-cols-1 gap-3", options.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-3 sm:gap-4",
+          options.length === 2 ? "sm:grid-cols-2" : options.length >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"
+        )}
+      >
         {options.map((option) => {
           const isSelected = isOptionSelected(option.id);
-          const nameText = option.id === "cash" && dict?.cash?.title ? dict.cash.title : option.name;
-          const subtitleText = option.subtitle;
+          
+          let nameText = option.name;
+          let subtitleText = option.subtitle;
+          
+          if (option.id === "cash") {
+            if (dict?.cash?.title) nameText = dict.cash.title;
+            if (dict?.cash?.desc) subtitleText = dict.cash.desc;
+          } else if (!isGranular && option.id === "uzcard") {
+            if (dict?.local_card?.title) nameText = dict.local_card.title;
+            if (dict?.local_card?.desc) subtitleText = dict.local_card.desc;
+          } else if (isGranular) {
+            if (option.id === "visa" && dict?.intl_card?.title) nameText = dict.intl_card.title;
+          }
+
           const badges = option.badges ?? [];
 
           return (
@@ -156,35 +211,35 @@ export function PaymentSelector({
                 }
               }}
               className={cn(
-                "group relative flex flex-col justify-between gap-3 cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
+                "group relative flex flex-col justify-between gap-3 sm:gap-4 cursor-pointer rounded-2xl border p-4 sm:p-5 transition-all duration-200 hover:shadow-md active:scale-[0.99] touch-manipulation select-none",
                 isSelected
                   ? cn(option.colorTheme.borderSelected, option.colorTheme.bgSelected)
-                  : "border-slate-200 bg-card hover:border-slate-300"
+                  : "border-slate-200 bg-white hover:border-slate-300 shadow-2xs"
               )}
             >
               <div className="flex items-start justify-between w-full gap-3">
-                <div className="flex items-start gap-3 w-full">
+                <div className="flex items-start gap-3 sm:gap-3.5 w-full min-w-0">
                   {/* Method Icon */}
                   <div
                     className={cn(
                       "flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 mt-0.5",
-                      "h-9 w-9 rounded-xl shadow-sm",
+                      "h-10 w-10 sm:h-11 sm:w-11 rounded-xl shadow-xs",
                       option.colorTheme.iconBg
                     )}
                   >
                     {option.id !== "cash" ? (
-                      <CreditCard className="h-5 w-5 stroke-[2.2]" />
+                      <CreditCard className="h-5 w-5 sm:h-5.5 sm:w-5.5 stroke-[2.2]" />
                     ) : (
-                      <Banknote className="h-5 w-5 stroke-[2.2]" />
+                      <Banknote className="h-5 w-5 sm:h-5.5 sm:w-5.5 stroke-[2.2]" />
                     )}
                   </div>
 
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <span className="font-bold text-slate-900 text-sm leading-snug">
+                    <span className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
                       {nameText}
                     </span>
                     {subtitleText && (
-                      <p className="text-xs text-slate-500 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
                         {subtitleText}
                       </p>
                     )}
@@ -195,12 +250,12 @@ export function PaymentSelector({
                           <span
                             key={i}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold",
+                              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] sm:text-xs font-semibold",
                               option.colorTheme.badgeBg,
                               option.colorTheme.badgeText
                             )}
                           >
-                            {badge.toLowerCase().includes("3d") && <ShieldCheck className="h-3 w-3" />}
+                            {badge.toLowerCase().includes("3d") && <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                             {badge}
                           </span>
                         ))}
@@ -209,11 +264,11 @@ export function PaymentSelector({
 
                     {/* Logos */}
                     {option.logos && option.logos.length > 0 && (
-                      <div className="mt-2 flex items-center flex-wrap gap-1.5">
+                      <div className="mt-2.5 flex items-center flex-wrap gap-1.5 sm:gap-2">
                         {option.logos.map((card) => (
                           <div
                             key={card.alt}
-                            className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/80"
+                            className="flex h-6 w-9 sm:h-7 sm:w-10 items-center justify-center overflow-hidden rounded-md bg-white shadow-2xs border border-slate-200/90"
                           >
                             <img
                               src={card.src}
@@ -228,16 +283,16 @@ export function PaymentSelector({
                 </div>
 
                 {/* Custom Radio Circle indicator */}
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center pt-0.5">
+                <div className="flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center pt-0.5">
                   <div
                     className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                      "flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full border transition-all",
                       isSelected
-                        ? "border-blue-600 bg-blue-600 text-white"
+                        ? "border-blue-600 bg-blue-600 text-white shadow-xs"
                         : "border-slate-300 bg-slate-50"
                     )}
                   >
-                    {isSelected && <CheckCircle2 className="h-4 w-4 stroke-[3]" />}
+                    {isSelected && <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[3]" />}
                   </div>
                 </div>
               </div>

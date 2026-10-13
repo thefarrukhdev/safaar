@@ -201,10 +201,10 @@ export function UnifiedCheckoutClient({
   }
 
   return (
-    <div className="container mx-auto max-w-6xl py-8 px-4 md:py-12 mb-10">
-      <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-8 md:mb-12">{dict.title}</h1>
+    <div className="container mx-auto max-w-6xl py-6 px-3.5 sm:px-4 md:py-10 mb-10">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 mb-6 md:mb-10">{dict.title}</h1>
 
-      <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
+      <div className="flex flex-col lg:flex-row gap-6 md:gap-8 xl:gap-12">
         {/* Left Column - Form */}
         <div className="flex-1 lg:w-2/3">
           {errorMsg === 'CUSTOMER_BLOCKED_FROM_CASH_BOOKING' ? (
@@ -219,9 +219,9 @@ export function UnifiedCheckoutClient({
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="space-y-8 lg:space-y-10">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 lg:space-y-10">
             {/* Guest Info Section */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-xs">
               <div className="mb-6 border-b border-slate-100 pb-4">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm">1</span>
@@ -290,7 +290,7 @@ export function UnifiedCheckoutClient({
             </section>
 
             {/* Payment Method Section */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-xs">
               <div className="mb-6 border-b border-slate-100 pb-4">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm">2</span>
@@ -299,7 +299,7 @@ export function UnifiedCheckoutClient({
               </div>
               
               {isNoCardType ? (
-                <div className="flex items-start gap-4 rounded-xl border-2 border-amber-200 bg-amber-50 p-5 text-amber-900">
+                <div className="flex items-start gap-4 rounded-xl border-2 border-amber-200 bg-amber-50 p-4 sm:p-5 text-amber-900">
                   <div className="mt-0.5 rounded-full bg-amber-200/50 p-2 text-amber-600">
                     <ShieldCheck className="h-6 w-6" />
                   </div>
@@ -318,7 +318,7 @@ export function UnifiedCheckoutClient({
                     dict={dict.paymentMethods}
                   />
                   {paymentMethod !== "cash" && (
-                    <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                    <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3.5 sm:p-4 text-xs sm:text-sm text-slate-600">
                       <Info className="h-5 w-5 shrink-0 text-slate-400 mt-0.5" />
                       <p>{dict.secureCardNotice}</p>
                     </div>
@@ -328,8 +328,8 @@ export function UnifiedCheckoutClient({
             </section>
 
             {/* Terms and Submit */}
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6 md:p-8 shadow-sm">
-              <label className="flex items-start gap-4 mb-8 cursor-pointer group">
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6 md:p-8 shadow-xs">
+              <label className="flex items-start gap-3 sm:gap-4 mb-6 sm:mb-8 cursor-pointer group">
                 <div className="flex h-6 items-center">
                   <input
                     type="checkbox"
@@ -339,7 +339,7 @@ export function UnifiedCheckoutClient({
                     className="h-5 w-5 rounded-md border-slate-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 transition-colors"
                   />
                 </div>
-                <span className="text-slate-700 text-base leading-snug pt-0.5 select-none">
+                <span className="text-slate-700 text-sm sm:text-base leading-snug pt-0.5 select-none">
                   {dict.agreeTermsPrefix}{" "}
                   <Link
                     href={`/${locale}/terms`}
@@ -355,7 +355,7 @@ export function UnifiedCheckoutClient({
               <Button
                 type="submit"
                 disabled={loading || !agreeTerms}
-                className="w-full bg-blue-600 font-extrabold text-white hover:bg-blue-700 py-7 text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:hover:shadow-none rounded-xl"
+                className="w-full bg-blue-600 font-extrabold text-white hover:bg-blue-700 py-5 sm:py-6 text-base sm:text-lg shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:hover:shadow-none rounded-xl"
               >
                 {loading ? "Jarayonda..." : dict.confirm}
               </Button>
@@ -365,7 +365,7 @@ export function UnifiedCheckoutClient({
 
         {/* Right Column - Order Summary Sidebar */}
         <div className="lg:w-1/3">
-          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
             <h2 className="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100 flex items-center gap-2">
               <CalendarClock className="h-5 w-5 text-slate-500" />
               {dict.summary}

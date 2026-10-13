@@ -110,7 +110,7 @@ export function UzumCheckoutFrame({
 
   return (
     <Modal isOpen onClose={onClose} title={title ?? "Xavfsiz to'lov — Uzum Checkout"}>
-      <div className="flex h-[70vh] w-full min-w-[320px] flex-col gap-2 sm:h-[600px] bg-white">
+      <div className="flex h-[75vh] w-full min-w-0 flex-col gap-2 sm:h-[620px] bg-white">
         {verifying && (
           <div className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs font-medium text-blue-600">
             <ThinkingOrb size={16} state="base" />

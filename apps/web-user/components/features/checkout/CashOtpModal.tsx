@@ -26,18 +26,22 @@ export interface CashOtpDict {
 
 export interface CashOtpModalProps {
   isOpen: boolean;
-  bookingId: string;
-  maskedPhone: string;
+  bookingId?: string;
+  phone?: string;
+  maskedPhone?: string;
+  challengeId?: string;
   initialExpiresIn?: number;
   dict: CashOtpDict;
-  onSuccess: (bookingId: string) => void;
+  onSuccess: (result: { bookingId?: string; verificationToken?: string }) => void;
   onClose: () => void;
 }
 
 export function CashOtpModal({
   isOpen,
   bookingId,
+  phone = "",
   maskedPhone,
+  challengeId,
   initialExpiresIn = 180,
   dict,
   onSuccess,
@@ -127,13 +131,21 @@ export function CashOtpModal({
     setIsLoading(true);
     setErrorCode(null);
     try {
-      const result = await cashOtpVerifyAction({ booking_id: bookingId, otp_code: code });
+      const result = await cashOtpVerifyAction({
+        booking_id: bookingId,
+        phone: phone || maskedPhone || "",
+        otp_code: code,
+        challenge_id: challengeId,
+      });
       if (result?.ok) {
-        onSuccess(bookingId);
+        onSuccess({
+          bookingId: result.bookingId || bookingId,
+          verificationToken: result.verificationToken,
+        });
       } else {
         setErrorCode((result?.error as keyof CashOtpDict["errors"]) || "UNKNOWN");
       }
-    } catch (err) {
+    } catch {
       setErrorCode("UNKNOWN");
     } finally {
       setIsLoading(false);
@@ -146,16 +158,19 @@ export function CashOtpModal({
     setIsLoading(true);
     setErrorCode(null);
     try {
-      const result = await cashOtpResendAction({ booking_id: bookingId });
+      const result = await cashOtpResendAction({
+        booking_id: bookingId,
+        phone: phone || maskedPhone,
+      });
       if (result?.ok) {
         setTimeLeft(initialExpiresIn);
-        setResendCooldown(60);
+        setResendCooldown(result.resendAvailableIn ?? 60);
         setOtp(Array(6).fill(""));
         inputRefs.current[0]?.focus();
       } else {
         setErrorCode((result?.error as keyof CashOtpDict["errors"]) || "UNKNOWN");
       }
-    } catch (err) {
+    } catch {
       setErrorCode("UNKNOWN");
     } finally {
       setIsLoading(false);
@@ -170,13 +185,15 @@ export function CashOtpModal({
 
   const errorMessage = errorCode ? dict.errors[errorCode] || dict.errors.UNKNOWN : null;
   const isExpired = timeLeft === 0;
+  const displayPhone = maskedPhone || (phone ? phone.replace(/(\+998\d{2})\d{3}(\d{2})(\d{2})/, "$1 *** ** $3") : "");
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
         <h2 className="text-xl font-bold text-slate-900 mb-2">{dict.title}</h2>
         <p className="text-sm text-slate-600 mb-6">
-          {dict.description} <strong className="font-semibold">{maskedPhone}</strong>
+          {dict.description.replace("{phone}", "").trim()}{" "}
+          <strong className="font-semibold">{displayPhone}</strong>
         </p>
 
         <div className="flex justify-between gap-2 mb-4" onPaste={handlePaste}>
@@ -218,6 +235,7 @@ export function CashOtpModal({
 
         <div className="flex flex-col gap-3">
           <button
+            type="button"
             onClick={handleVerify}
             disabled={isLoading || otp.join("").length < 6 || isExpired}
             className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 disabled:opacity-50 transition-colors"
@@ -226,6 +244,7 @@ export function CashOtpModal({
           </button>
           
           <button
+            type="button"
             onClick={handleResend}
             disabled={isLoading || resendCooldown > 0}
             className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
@@ -236,6 +255,7 @@ export function CashOtpModal({
           </button>
           
           <button
+            type="button"
             onClick={onClose}
             disabled={isLoading}
             className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"

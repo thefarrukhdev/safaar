@@ -16,6 +16,7 @@ import { PaymentSelector, type PaymentMethodId } from "./PaymentSelector";
 import { CashOtpModal } from "./CashOtpModal";
 import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
 import { previewPayment } from "@/lib/services/payments/actions";
+import { calculatePaymentFee } from "@/lib/payments/fee";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
 export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
@@ -397,9 +398,10 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
             {totalPrice > 0 && (
               <div className="mt-8 pt-6 border-t border-slate-200">
                 {(() => {
-                  const feeRate = (paymentMethod === 'visa' || paymentMethod === 'mastercard') ? 0.035 : (paymentMethod === 'cash' ? 0 : 0.015);
-                  const finalAmount = Math.ceil(totalPrice / (1 - feeRate));
-                  const feeAmount = finalAmount - totalPrice;
+                  const feeBreakdown = calculatePaymentFee(totalPrice, paymentMethod);
+                  const feeRate = feeBreakdown.feeRate;
+                  const finalAmount = feeBreakdown.totalAmount;
+                  const feeAmount = feeBreakdown.feeAmount;
 
                   return (
                     <>
@@ -438,7 +440,8 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
           guestToken={guestToken}
           onPaid={() => {
             setPaymentUrl(null);
-            router.refresh();
+            const guestParam = guestToken ? `&guestToken=${encodeURIComponent(guestToken)}` : "";
+            router.push(`/${locale}/booking/${successBookingId}?status=confirmed&payment=success${guestParam}`);
           }}
           onClose={() => setPaymentUrl(null)}
         />
@@ -448,11 +451,13 @@ export function UnifiedCheckoutClient({ dict }: { dict: CheckoutDict }) {
         <CashOtpModal
           isOpen={cashOtpState.isOpen}
           bookingId={cashOtpState.bookingId}
+          phone={guestPhone}
           maskedPhone={cashOtpState.maskedPhone}
           initialExpiresIn={cashOtpState.expiresIn}
           dict={dict.otp}
-          onSuccess={(id) => {
+          onSuccess={(res) => {
             setCashOtpState(null);
+            const id = res.bookingId || cashOtpState.bookingId;
             router.push(`/${locale}/booking/${id}?status=confirmed&payment=cash`);
           }}
           onClose={() => setCashOtpState(null)}

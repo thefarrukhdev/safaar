@@ -2,358 +2,554 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useRef } from "react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { ShieldCheck, Lock } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CheckoutDict } from "@/i18n/dictionaries";
-import { createBookingAction, validatePromoAction, type CheckoutState } from "@/lib/booking/actions";
+import {
+  createHotelBookingDirectAction,
+  sendCashOtpAction,
+  validatePromoAction,
+} from "@/lib/booking/actions";
 import { formatSum } from "@/lib/money";
+import { calculatePaymentFee } from "@/lib/payments/fee";
+import { previewPayment } from "@/lib/services/payments/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { PaymentSelector, type PaymentMethodId } from "@/components/features/checkout/PaymentSelector";
+import { CashOtpModal } from "@/components/features/checkout/CashOtpModal";
+import { UzumCheckoutFrame } from "@/app/[lang]/(main)/booking/[id]/_components/UzumCheckoutFrame";
 import { trackBookingStarted } from "@/lib/services/analytics/tracker";
 import { CheckoutMobileCtaBar } from "./CheckoutMobileCtaBar";
 
 function nightsBetween(checkIn: string, checkOut: string): number {
- const start = Date.parse(checkIn);
- const end = Date.parse(checkOut);
- if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
- return 0;
- }
- return Math.ceil((end - start) / 86_400_000);
+  const start = Date.parse(checkIn);
+  const end = Date.parse(checkOut);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return 0;
+  }
+  return Math.ceil((end - start) / 86_400_000);
 }
 
 export function CheckoutForm({
- locale,
- dict,
- hotelId,
- hotelName,
- room,
- defaults,
- isGuest = false,
+  locale,
+  dict,
+  hotelId,
+  hotelName,
+  room,
+  defaults,
+  isGuest = false,
 }: {
- locale: Locale;
- dict: CheckoutDict;
- hotelId: string;
- hotelName: string;
- room: { id: string; name: string; priceSum: number; capacity: number; basePriceSum?: number };
- defaults: { checkIn: string; checkOut: string; guests: number };
- isGuest?: boolean;
+  locale: Locale;
+  dict: CheckoutDict;
+  hotelId: string;
+  hotelName: string;
+  room: { id: string; name: string; priceSum: number; capacity: number; basePriceSum?: number };
+  defaults: { checkIn: string; checkOut: string; guests: number };
+  isGuest?: boolean;
 }) {
- const [checkIn, setCheckIn] = useState(defaults.checkIn);
- const [checkOut, setCheckOut] = useState(defaults.checkOut);
- const [guests, setGuests] = useState(Math.min(room.capacity, Math.max(1, defaults.guests)));
- const [promoCode, setPromoCode] = useState("");
- const [promoDiscount, setPromoDiscount] = useState<{ type: string; value: number } | null>(null);
- const [promoLoading, setPromoLoading] = useState(false);
- const [promoError, setPromoError] = useState("");
+  const router = useRouter();
+  const [checkIn, setCheckIn] = useState(defaults.checkIn);
+  const [checkOut, setCheckOut] = useState(defaults.checkOut);
+  const [guests, setGuests] = useState(Math.min(room.capacity, Math.max(1, defaults.guests)));
+  const [promoCode, setPromoCode] = useState("");
+  const [promoDiscount, setPromoDiscount] = useState<{ type: string; value: number } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
- const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
- const [isSmsLoading, setIsSmsLoading] = useState(false);
- const [, setShowSmsModal] = useState(false);
- const [agreeTerms, setAgreeTerms] = useState(false);
- 
- const formRef = useRef<HTMLFormElement>(null);
- const [state, action, pending] = useActionState<CheckoutState, FormData>(
- createBookingAction,
- {},
- );
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("+998");
+  const [specialRequests, setSpecialRequests] = useState("");
 
- const nights = nightsBetween(checkIn, checkOut);
- let total = room.priceSum * Math.max(nights, 0);
- let discountAmount = 0;
- if (promoDiscount && total > 0) {
- if (promoDiscount.type.startsWith("percent")) {
- discountAmount = (total * promoDiscount.value) / 100;
- } else {
- discountAmount = promoDiscount.value;
- }
- if (discountAmount > total) discountAmount = total;
- total -= discountAmount;
- }
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("uzcard");
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
- const getErrorMessage = (error: string) => {
- if (error === "ERROR") return dict.error;
- const errorsDict = dict.errors as Record<string, string> | undefined;
- return errorsDict?.[error] ?? error;
- };
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | undefined>(undefined);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
- 
- const handleApplyPromo = async () => {
- if (!promoCode.trim()) return;
- setPromoLoading(true);
- setPromoError("");
- const res = await validatePromoAction(promoCode.trim(), room.id);
- if (res.success && res.data) {
-   if (res.data.valid) {
-     setPromoDiscount({ type: res.data.discount_type || "percent", value: Number(res.data.discount_value) });
-   } else {
-     setPromoDiscount(null);
-     const errMessage =
-       res.data.message ||
-       (res.data.reason === "PROMO_STACKING_NOT_ALLOWED"
-         ? "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi"
-         : dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
-     setPromoError(errMessage);
-   }
- } else {
-   setPromoDiscount(null);
-   setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
- }
- setPromoLoading(false);
- };
+  const [cashOtpState, setCashOtpState] = useState<{
+    isOpen: boolean;
+    phone: string;
+    challengeId?: string;
+    expiresIn: number;
+  } | null>(null);
 
- const handleSubmitForm = (formData: FormData) => {
- trackBookingStarted({
- hotelId,
- roomId: room.id,
- totalSum: total,
- });
- action(formData);
- };
+  const formRef = useRef<HTMLFormElement>(null);
 
- const handleOnSubmit = (e: React.FormEvent<HTMLFormElement>) => {
- if (false) { // Skip SMS logic completely now
- e.preventDefault();
- 
- if (!formRef.current?.checkValidity()) {
- formRef.current?.reportValidity();
- return;
- }
- 
- setIsSmsLoading(true);
- setTimeout(() => {
- setIsSmsLoading(false);
- setShowSmsModal(true);
- }, 1500);
- }
- };
+  const nights = nightsBetween(checkIn, checkOut);
+  let total = room.priceSum * Math.max(nights, 0);
+  let discountAmount = 0;
+  if (promoDiscount && total > 0) {
+    if (promoDiscount.type.startsWith("percent")) {
+      discountAmount = (total * promoDiscount.value) / 100;
+    } else {
+      discountAmount = promoDiscount.value;
+    }
+    if (discountAmount > total) discountAmount = total;
+    total -= discountAmount;
+  }
 
- return (
- <>
- <form
- ref={formRef}
- onSubmit={handleOnSubmit}
- action={handleSubmitForm}
- className="grid grid-cols-1 gap-8 lg:gap-12 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] items-start"
- >
- <input type="hidden" name="locale" value={locale} />
- <input type="hidden" name="hotelId" value={hotelId} />
- <input type="hidden" name="roomId" value={room.id} />
+  const feeBreakdown = calculatePaymentFee(total, paymentMethod);
 
- <div className="flex flex-col gap-8">
- <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 ">
- <h2 className="text-xl font-bold text-slate-900 ">{dict.guestDetails}</h2>
- 
- {isGuest ? (
- <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.firstName}</span>
- <Input
- name="firstName"
- autoComplete="given-name"
- required
- placeholder={dict.firstName}
- />
- </label>
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.lastName}</span>
- <Input
- name="lastName"
- autoComplete="family-name"
- required
- placeholder={dict.lastName}
- />
- </label>
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.email}</span>
- <Input
- type="email"
- name="email"
- autoComplete="email"
- required
- placeholder="example@mail.com"
- />
- </label>
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.phone}</span>
- <Input
- type="tel"
- name="phone"
- autoComplete="tel"
- required
- placeholder="+998 90 123 45 67"
- />
- </label>
- </div>
- ) : (
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.fullName}</span>
- <Input
- name="fullName"
- autoComplete="name"
- placeholder={dict.fullNamePlaceholder}
- />
- </label>
- )}
+  const getErrorMessage = (error: string) => {
+    if (error === "ERROR") return dict.error;
+    const errorsDict = dict.errors as Record<string, string> | undefined;
+    return errorsDict?.[error] ?? error;
+  };
 
- <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
- <div className="sm:col-span-2">
- <DateRangePicker
- locale={locale}
- checkInLabel={dict.checkIn}
- checkOutLabel={dict.checkOut}
- checkIn={checkIn}
- checkOut={checkOut}
- onCheckInChange={setCheckIn}
- onCheckOutChange={setCheckOut}
- min={new Date().toISOString().split("T")[0]}
- />
- <input type="hidden" name="checkIn" value={checkIn} />
- <input type="hidden" name="checkOut" value={checkOut} />
- </div>
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.guests}</span>
- <Input
- type="number"
- name="guests"
- min={1}
- max={room.capacity}
- value={guests}
- onChange={(e) => setGuests(Math.min(room.capacity, Math.max(1, Number(e.target.value))))}
- />
- </label>
- </div>
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError("");
+    const res = await validatePromoAction(promoCode.trim(), room.id);
+    if (res.success && res.data) {
+      if (res.data.valid) {
+        setPromoDiscount({ type: res.data.discount_type || "percent", value: Number(res.data.discount_value) });
+      } else {
+        setPromoDiscount(null);
+        const errMessage =
+          res.data.message ||
+          (res.data.reason === "PROMO_STACKING_NOT_ALLOWED"
+            ? "Ushbu xonaga allaqachon chegirma e'lon qilingan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi"
+            : dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
+        setPromoError(errMessage);
+      }
+    } else {
+      setPromoDiscount(null);
+      setPromoError(res.error || dict.errors?.PROMO_INVALID || "Promo kod noto'g'ri");
+    }
+    setPromoLoading(false);
+  };
 
- <label className="flex flex-col gap-1.5 mt-2">
- <span className="text-sm font-semibold text-slate-700 ">{dict.specialRequests}</span>
- <textarea
- name="specialRequests"
- rows={3}
- placeholder={dict.specialRequestsPlaceholder}
- className="w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-900/60 transition-[border-color,box-shadow] duration-200 hover:border-slate-900/70 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 :border-slate-600 :text-slate-400"
- />
- </label>
- </section>
+  const executeBookingCreation = async (verificationToken?: string) => {
+    setLoading(true);
+    setFormError("");
 
- <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 ">
- <h2 className="text-xl font-bold text-slate-900 ">{dict.paymentMethod}</h2>
- <PaymentSelector
- defaultValue="uzcard"
- name="paymentMethod"
- dict={dict.paymentMethods}
- onChange={setPaymentMethod}
- />
+    try {
+      trackBookingStarted({
+        hotelId,
+        roomId: room.id,
+        totalSum: total,
+      });
 
- {/* Karta tanlansa — xom karta raqami/CVV BU YERDA umuman
- so'ralmaydi. Haqiqiy to'lov keyingi qadamda (bron detail
- sahifasida) to'lov provayderining HAQIQIY xavfsiz sahifasiga
- redirect orqali amalga oshiriladi. */}
- {paymentMethod !== "cash" && (
- <div className="mt-1 flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
- <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
- <span>{dict.secureCardNotice}</span>
- </div>
- )}
- </section>
- </div>
+      const res = await createHotelBookingDirectAction({
+        hotelId,
+        roomId: room.id,
+        checkIn,
+        checkOut,
+        guests,
+        paymentMethod,
+        firstName: isGuest ? firstName : undefined,
+        lastName: isGuest ? lastName : undefined,
+        fullName: !isGuest ? fullName : `${firstName} ${lastName}`.trim(),
+        email: isGuest ? email : undefined,
+        phone: isGuest ? phone : undefined,
+        specialRequests: specialRequests || undefined,
+        promoCode: promoDiscount ? promoCode.trim() : undefined,
+        agreeTerms,
+        locale,
+        verificationToken,
+      });
 
- <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 lg:sticky lg:top-28 ">
- <h2 className="text-xl font-bold text-slate-900 ">{dict.summary}</h2>
- <div className="flex flex-col gap-0.5">
- <p className="font-semibold text-slate-900 ">{hotelName}</p>
- <p className="text-sm text-slate-500 ">{room.name}</p>
- </div>
- <div className="flex justify-between text-sm">
- <span className="text-slate-500">
- {formatSum(room.priceSum)} × {nights} {dict.nights}
- </span>
- <span>{formatSum(room.priceSum * nights)}</span>
- </div>
- {discountAmount > 0 && (
- <div className="flex justify-between text-sm text-green-600 font-medium">
- <span>Chegirma ({promoCode})</span>
- <span>-{formatSum(discountAmount)}</span>
- </div>
- )}
+      if (!res.ok || !res.bookingId) {
+        setFormError(getErrorMessage(res.error || "ERROR"));
+        setLoading(false);
+        return;
+      }
 
- <div className="border-t border-slate-100 pt-4 ">
- <label className="flex flex-col gap-1.5">
- <span className="text-sm font-semibold text-slate-700 ">{dict.promoCode}</span>
- <div className="flex gap-2">
- <Input
- name="promoCode"
- value={promoCode}
- onChange={(e) => setPromoCode(e.target.value)}
- placeholder="PROMO2025"
- />
- <Button type="button" variant="secondary" onClick={handleApplyPromo} loading={promoLoading} className="px-4 rounded-xl active:scale-[0.97]">{dict.applyPromo}</Button>
- </div>
- {room.basePriceSum && room.basePriceSum > room.priceSum && (
-   <p className="text-xs text-amber-600 mt-1">
-     💡 Ushbu xonaga aksiya chegirmasi qo'llanilgan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi.
-   </p>
- )}
- {promoError && <span className="text-xs font-medium text-red-600 mt-1">{promoError}</span>}
- {promoDiscount && <span className="text-xs font-medium text-green-600 mt-1">{(dict as any).promoApplied || "Chegirma qo'llanildi:"} {promoDiscount.type.startsWith("percent") ? promoDiscount.value + "%" : formatSum(promoDiscount.value)}</span>}
- </label>
- </div>
+      const bookingId = res.bookingId;
+      const guestAccessToken = res.guestAccessToken;
 
- <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold ">
- <span className="text-slate-900 ">{dict.total}</span>
- <span className="text-slate-900 ">{formatSum(total)}</span>
- </div>
+      if (paymentMethod === "cash") {
+        const guestParam = guestAccessToken
+          ? `&guestToken=${encodeURIComponent(guestAccessToken)}`
+          : "";
+        router.push(
+          `/${locale}/booking/${bookingId}?status=confirmed&payment=cash${guestParam}`
+        );
+        return;
+      }
 
- {nights < 1 && (
- <p className="text-sm text-amber-600">{dict.needDates}</p>
- )}
- {state.error && (
- <p className="text-sm text-red-600">
- {getErrorMessage(state.error)}
- </p>
- )}
+      // Card payment flow:
+      const paymentResult = await previewPayment(
+        bookingId,
+        paymentMethod,
+        guestAccessToken
+      );
 
- <div className="mt-4 w-full">
- <label className="flex items-start gap-2.5 text-xs">
- <input type="checkbox" name="agreeTerms" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required
- className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 "
- />
- <span className="text-slate-600 leading-tight">
- {dict.agreeTermsPrefix}
- <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-blue-600 hover:underline">
- {dict.termsLink}
- </Link>
- {dict.agreeTermsSuffix}
- </span>
- </label>
- </div>
+      if (paymentResult.error || !paymentResult.payment?.paymentUrl) {
+        setFormError(paymentResult.error || "Payment session error");
+        setLoading(false);
+      } else {
+        setSuccessBookingId(bookingId);
+        setGuestToken(guestAccessToken);
+        setPaymentUrl(paymentResult.payment.paymentUrl);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setFormError(err?.message || dict.error);
+      setLoading(false);
+    }
+  };
 
- <div id="checkout-original-cta" className="w-full mt-2">
- <Button
- type="submit"
- variant="primary"
- size="lg"
- className="w-full rounded-xl py-6 text-base font-bold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
- loading={pending || isSmsLoading}
- disabled={nights < 1 || !agreeTerms}
- >
- <Lock className="w-4 h-4" />
- {dict.payButton || dict.confirm}
- </Button>
- </div>
- </aside>
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!agreeTerms) {
+      setFormError(dict.errors?.TERMS_NOT_ACCEPTED || "Oferta shartlariga rozilik bering");
+      return;
+    }
+    if (nights < 1) {
+      setFormError(dict.needDates);
+      return;
+    }
 
- <CheckoutMobileCtaBar
- total={total}
- dict={{ total: dict.total, payButton: dict.payButton }}
- pending={pending || isSmsLoading}
- disabled={nights < 1 || !agreeTerms}
- targetId="checkout-original-cta"
- />
+    if (!formRef.current?.checkValidity()) {
+      formRef.current?.reportValidity();
+      return;
+    }
 
- 
- </form>
- </>
- );
+    // Guest cash flow requires OTP verification
+    if (isGuest && paymentMethod === "cash") {
+      setLoading(true);
+      setFormError("");
+      const otpRes = await sendCashOtpAction({ phone });
+      setLoading(false);
+      if (!otpRes.ok) {
+        setFormError(getErrorMessage(otpRes.error));
+        return;
+      }
+      setCashOtpState({
+        isOpen: true,
+        phone,
+        challengeId: otpRes.challengeId,
+        expiresIn: 180,
+      });
+      return;
+    }
+
+    // Authenticated user cash booking or direct card payment
+    await executeBookingCreation();
+  };
+
+  const handleCashOtpSuccess = async (result: { verificationToken?: string }) => {
+    setCashOtpState(null);
+    if (result.verificationToken) {
+      await executeBookingCreation(result.verificationToken);
+    }
+  };
+
+  return (
+    <>
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 gap-8 lg:gap-12 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] items-start"
+      >
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="hotelId" value={hotelId} />
+        <input type="hidden" name="roomId" value={room.id} />
+
+        <div className="flex flex-col gap-8">
+          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
+            <h2 className="text-xl font-bold text-slate-900">{dict.guestDetails}</h2>
+
+            {isGuest ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">{dict.firstName}</span>
+                  <Input
+                    name="firstName"
+                    autoComplete="given-name"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder={dict.firstName}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">{dict.lastName}</span>
+                  <Input
+                    name="lastName"
+                    autoComplete="family-name"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder={dict.lastName}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">{dict.email}</span>
+                  <Input
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="example@mail.com"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">{dict.phone}</span>
+                  <Input
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+998 90 123 45 67"
+                  />
+                </label>
+              </div>
+            ) : (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700">{dict.fullName}</span>
+                <Input
+                  name="fullName"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder={dict.fullNamePlaceholder}
+                />
+              </label>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <DateRangePicker
+                  locale={locale}
+                  checkInLabel={dict.checkIn}
+                  checkOutLabel={dict.checkOut}
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  onCheckInChange={setCheckIn}
+                  onCheckOutChange={setCheckOut}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+                <input type="hidden" name="checkIn" value={checkIn} />
+                <input type="hidden" name="checkOut" value={checkOut} />
+              </div>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-700">{dict.guests}</span>
+                <Input
+                  type="number"
+                  name="guests"
+                  min={1}
+                  max={room.capacity}
+                  value={guests}
+                  onChange={(e) => setGuests(Math.min(room.capacity, Math.max(1, Number(e.target.value))))}
+                />
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-1.5 mt-2">
+              <span className="text-sm font-semibold text-slate-700">{dict.specialRequests}</span>
+              <textarea
+                name="specialRequests"
+                rows={3}
+                value={specialRequests}
+                onChange={(e) => setSpecialRequests(e.target.value)}
+                placeholder={dict.specialRequestsPlaceholder}
+                className="w-full rounded-xl border border-slate-900/50 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-900/60 transition-[border-color,box-shadow] duration-200 hover:border-slate-900/70 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              />
+            </label>
+          </section>
+
+          <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
+            <h2 className="text-xl font-bold text-slate-900">{dict.paymentMethod}</h2>
+            <PaymentSelector
+              defaultValue="uzcard"
+              name="paymentMethod"
+              dict={dict.paymentMethods}
+              onChange={setPaymentMethod}
+            />
+
+            {paymentMethod !== "cash" && (
+              <div className="mt-1 flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                <span>{dict.secureCardNotice}</span>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 lg:sticky lg:top-28">
+          <h2 className="text-xl font-bold text-slate-900">{dict.summary}</h2>
+          <div className="flex flex-col gap-0.5">
+            <p className="font-semibold text-slate-900">{hotelName}</p>
+            <p className="text-sm text-slate-500">{room.name}</p>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-500">
+              {formatSum(room.priceSum, locale)} × {nights} {dict.nights}
+            </span>
+            <span>{formatSum(room.priceSum * nights, locale)}</span>
+          </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-green-600 font-medium">
+              <span>Chegirma ({promoCode})</span>
+              <span>-{formatSum(discountAmount, locale)}</span>
+            </div>
+          )}
+
+          <div className="border-t border-slate-100 pt-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold text-slate-700">{dict.promoCode}</span>
+              <div className="flex gap-2">
+                <Input
+                  name="promoCode"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder="PROMO2025"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleApplyPromo}
+                  loading={promoLoading}
+                  className="px-4 rounded-xl active:scale-[0.97]"
+                >
+                  {dict.applyPromo}
+                </Button>
+              </div>
+              {room.basePriceSum && room.basePriceSum > room.priceSum && (
+                <p className="text-xs text-amber-600 mt-1">
+                  💡 Ushbu xonaga aksiya chegirmasi qo'llanilgan. Promo-kod faqat chegirmasiz xonalar uchun amal qiladi.
+                </p>
+              )}
+              {promoError && <span className="text-xs font-medium text-red-600 mt-1">{promoError}</span>}
+              {promoDiscount && (
+                <span className="text-xs font-medium text-green-600 mt-1">
+                  {(dict as any).promoApplied || "Chegirma qo'llanildi:"}{" "}
+                  {promoDiscount.type.startsWith("percent")
+                    ? promoDiscount.value + "%"
+                    : formatSum(promoDiscount.value, locale)}
+                </span>
+              )}
+            </label>
+          </div>
+
+          {/* Dynamic Order Summary Fee Breakdown */}
+          {total > 0 && (
+            <div className="flex flex-col gap-2 border-t border-slate-100 pt-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">{dict.baseAmount || "Asosiy summa"}</span>
+                <span className="font-semibold text-slate-700">{formatSum(total, locale)}</span>
+              </div>
+
+              {paymentMethod !== "cash" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">
+                    {dict.paymentFee || "To'lov komissiyasi"} ({(feeBreakdown.feeRate * 100).toFixed(1)}%)
+                  </span>
+                  <span className="font-semibold text-slate-700">
+                    {formatSum(feeBreakdown.feeAmount, locale)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between border-t border-slate-100 pt-3 text-lg font-bold">
+                <span className="text-slate-900">{dict.total}</span>
+                <span className="text-slate-900">{formatSum(feeBreakdown.totalAmount, locale)}</span>
+              </div>
+            </div>
+          )}
+
+          {nights < 1 && (
+            <p className="text-sm text-amber-600">{dict.needDates}</p>
+          )}
+          {formError && (
+            <p className="text-sm text-red-600 font-medium">
+              {formError}
+            </p>
+          )}
+
+          <div className="mt-4 w-full">
+            <label className="flex items-start gap-2.5 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                name="agreeTerms"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                required
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-slate-600 leading-tight">
+                {dict.agreeTermsPrefix}
+                <Link href={`/${locale}/terms`} target="_blank" className="font-semibold text-blue-600 hover:underline">
+                  {dict.termsLink}
+                </Link>
+                {dict.agreeTermsSuffix}
+              </span>
+            </label>
+          </div>
+
+          <div id="checkout-original-cta" className="w-full mt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full rounded-xl py-6 text-base font-bold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              loading={loading}
+              disabled={nights < 1 || !agreeTerms || loading}
+            >
+              <Lock className="w-4 h-4" />
+              {paymentMethod === "cash"
+                ? (dict.confirm || "Bronni tasdiqlash")
+                : (dict.payButton || "To'lash")}
+            </Button>
+          </div>
+        </aside>
+
+        <CheckoutMobileCtaBar
+          total={feeBreakdown.totalAmount}
+          dict={{ total: dict.total, payButton: dict.payButton }}
+          pending={loading}
+          disabled={nights < 1 || !agreeTerms || loading}
+          targetId="checkout-original-cta"
+        />
+      </form>
+
+      {/* Uzum Checkout Frame modal directly on checkout page */}
+      {paymentUrl && successBookingId && (
+        <UzumCheckoutFrame
+          checkoutUrl={paymentUrl}
+          bookingId={successBookingId}
+          guestToken={guestToken}
+          onPaid={() => {
+            setPaymentUrl(null);
+            const guestParam = guestToken
+              ? `&guestToken=${encodeURIComponent(guestToken)}`
+              : "";
+            router.push(
+              `/${locale}/booking/${successBookingId}?status=confirmed&payment=success${guestParam}`
+            );
+          }}
+          onClose={() => setPaymentUrl(null)}
+        />
+      )}
+
+      {/* Guest Cash OTP Modal */}
+      {cashOtpState && dict.otp && (
+        <CashOtpModal
+          isOpen={cashOtpState.isOpen}
+          phone={cashOtpState.phone}
+          challengeId={cashOtpState.challengeId}
+          initialExpiresIn={cashOtpState.expiresIn}
+          dict={dict.otp}
+          onSuccess={handleCashOtpSuccess}
+          onClose={() => setCashOtpState(null)}
+        />
+      )}
+    </>
+  );
 }

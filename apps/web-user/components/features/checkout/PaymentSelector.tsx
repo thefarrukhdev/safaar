@@ -6,25 +6,14 @@ import { cn } from "@/lib/cn";
 import { trackPaymentMethodSelected } from "@/lib/services/analytics/tracker";
 import type { CheckoutDict } from "@/i18n/dictionaries";
 
-// `humo`/`uzcard`/`visa`/`mastercard` — backend'da barchasi to'lov shlyuzi
-// orqali (bitta texnik transport) ishlaydi; karta turi FEE stavkasini
-// belgilaydi (1.5% / 3.5%). Qarang docs/frontend-payment-integration.md.
-//
-// `id` HAR DOIM haqiqiy `PaymentMethodId` bo'lishi shart — backend
-// `payment_method`ni `@IsIn(['click','payme','uzcard','humo','visa',
-// 'mastercard','cash'])` bilan qat'iy tekshiradi (bookings/dto/booking.dto.ts).
-// 1-qadamda "Karta orqali to'lash" tanlanganda submit qiymati sifatida "uzcard"
-// yuboriladi, generic "card" emas.
 export type PaymentMethodId = "uzcard" | "humo" | "visa" | "mastercard" | "cash";
 
-export interface PaymentMethodConfig {
+export interface PaymentOptionConfig {
   id: PaymentMethodId;
-  dictKey?: "card" | "local_card" | "intl_card" | "cash";
-  type: "online" | "card" | "local_card" | "intl_card" | "cash";
-  name?: string;
-  subtitle?: string;
-  badges?: string[];
-  showAllCardLogos?: boolean;
+  name: string;
+  subtitle: string;
+  badges: string[];
+  logos?: { src: string; alt: string }[];
   colorTheme: {
     badgeBg: string;
     badgeText: string;
@@ -50,96 +39,57 @@ const CASH_THEME = {
   iconBg: "bg-amber-500 text-white",
 };
 
-// 1-qadam (Checkout / Bron qilish) uchun 2 ta asosiy to'lov usuli:
-// Karta orqali to'lash va Naqd to'lash (Joyida to'lash).
-const DEFAULT_CHECKOUT_OPTIONS: PaymentMethodConfig[] = [
-  {
-    id: "uzcard",
-    dictKey: "local_card",
-    type: "card",
-    name: "Karta orqali to'lash",
-    subtitle: "Uzcard, Humo, Visa va Mastercard orqali xavfsiz to'lov",
-    badges: ["3D-Secure xavfsizlik"],
-    showAllCardLogos: true,
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "cash",
-    dictKey: "cash",
-    type: "cash",
-    name: "Joyida to'lash",
-    subtitle: "Oldindan to'lov talab qilinmaydi. Yetib kelganda to'lanadi",
-    colorTheme: CASH_THEME,
-  },
-];
-
-// 2-qadam (Qayta to'lash / Karta sxemasini tanlash) uchun batafsil variantlar:
-const DETAILED_PAYMENT_OPTIONS: PaymentMethodConfig[] = [
-  {
-    id: "uzcard",
-    type: "local_card",
-    name: "Uzcard",
-    subtitle: "Komissiya 1.5%",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "humo",
-    type: "local_card",
-    name: "Humo",
-    subtitle: "Komissiya 1.5%",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "visa",
-    type: "intl_card",
-    name: "Visa",
-    subtitle: "Komissiya 3.5%",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "mastercard",
-    type: "intl_card",
-    name: "Mastercard",
-    subtitle: "Komissiya 3.5%",
-    colorTheme: CARD_THEME,
-  },
-  {
-    id: "cash",
-    dictKey: "cash",
-    type: "cash",
-    name: "Joyida to'lash",
-    subtitle: "Oldindan to'lov talab qilinmaydi",
-    colorTheme: CASH_THEME,
-  },
-];
-
-const CARD_IMAGE_MAP: Record<string, string> = {
+export const CARD_IMAGE_MAP: Record<string, string> = {
   uzcard: "/payments/uzcard.jpg",
   humo: "/payments/humo.png",
   visa: "/payments/visa.jpeg",
   mastercard: "/payments/mastercard.jpg",
 };
 
-const CARD_LOGOS = [
-  { src: CARD_IMAGE_MAP.uzcard, alt: "Uzcard" },
-  { src: CARD_IMAGE_MAP.humo, alt: "Humo" },
-  { src: CARD_IMAGE_MAP.visa, alt: "Visa" },
-  { src: CARD_IMAGE_MAP.mastercard, alt: "Mastercard" },
+const TRANSPARENT_PAYMENT_OPTIONS: PaymentOptionConfig[] = [
+  {
+    id: "uzcard",
+    name: "Uzcard / Humo",
+    subtitle: "Milliy kartalar, 1.5% to'lov haqi",
+    badges: ["1.5% to'lov haqi", "3D-Secure"],
+    logos: [
+      { src: CARD_IMAGE_MAP.uzcard, alt: "Uzcard" },
+      { src: CARD_IMAGE_MAP.humo, alt: "Humo" },
+    ],
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "visa",
+    name: "Visa / Mastercard",
+    subtitle: "Xalqaro kartalar, 3.5% to'lov haqi",
+    badges: ["3.5% to'lov haqi", "3D-Secure"],
+    logos: [
+      { src: CARD_IMAGE_MAP.visa, alt: "Visa" },
+      { src: CARD_IMAGE_MAP.mastercard, alt: "Mastercard" },
+    ],
+    colorTheme: CARD_THEME,
+  },
+  {
+    id: "cash",
+    name: "Joyida to'lash (Naqd)",
+    subtitle: "Oldindan to'lov talab qilinmaydi, 0% to'lov haqi",
+    badges: ["0% to'lov haqi"],
+    logos: [],
+    colorTheme: CASH_THEME,
+  },
 ];
 
 export interface PaymentSelectorProps {
   defaultValue?: PaymentMethodId;
   name?: string;
   onChange?: (value: PaymentMethodId) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dict?: CheckoutDict["paymentMethods"] | any;
   className?: string;
-  /** Faqat shu ID'lar ko'rsatiladi (masalan retry oqimida "cash"ni yashirish yoki faqat kartalarni ko'rsatish uchun). */
+  /** Faqat shu ID'lar ko'rsatiladi (masalan retry oqimida faqat kartalarni ko'rsatish uchun). */
   allow?: PaymentMethodId[];
   disabled?: boolean;
 }
-
-const isCardMethod = (id: PaymentMethodId) =>
-  id === "uzcard" || id === "humo" || id === "visa" || id === "mastercard";
 
 export function PaymentSelector({
   defaultValue = "uzcard",
@@ -150,15 +100,18 @@ export function PaymentSelector({
   allow,
   disabled = false,
 }: PaymentSelectorProps) {
-  const isDefaultCheckoutMode = !allow;
+  const [selected, setSelected] = useState<PaymentMethodId>(defaultValue);
 
-  const initialSelected =
-    isDefaultCheckoutMode && isCardMethod(defaultValue) ? "uzcard" : defaultValue;
-
-  const [selected, setSelected] = useState<PaymentMethodId>(initialSelected);
-  const options = allow
-    ? DETAILED_PAYMENT_OPTIONS.filter((option) => allow.includes(option.id))
-    : DEFAULT_CHECKOUT_OPTIONS;
+  const options = TRANSPARENT_PAYMENT_OPTIONS.filter((option) => {
+    if (!allow) return true;
+    if (option.id === "uzcard") {
+      return allow.includes("uzcard") || allow.includes("humo");
+    }
+    if (option.id === "visa") {
+      return allow.includes("visa") || allow.includes("mastercard");
+    }
+    return allow.includes(option.id);
+  });
 
   const handleSelect = (id: PaymentMethodId) => {
     if (disabled) return;
@@ -167,26 +120,26 @@ export function PaymentSelector({
     if (onChange) onChange(id);
   };
 
+  const isOptionSelected = (optionId: PaymentMethodId) => {
+    if (optionId === "uzcard") {
+      return selected === "uzcard" || selected === "humo";
+    }
+    if (optionId === "visa") {
+      return selected === "visa" || selected === "mastercard";
+    }
+    return selected === optionId;
+  };
+
   return (
     <div className={cn("flex flex-col gap-3", className, disabled && "pointer-events-none opacity-60")}>
       <input type="hidden" name={name} value={selected} />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className={cn("grid grid-cols-1 gap-3", options.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
         {options.map((option) => {
-          const isSelected =
-            isDefaultCheckoutMode && option.type === "card"
-              ? isCardMethod(selected)
-              : selected === option.id;
-
-          const methodInfo = option.dictKey
-            ? (dict as any)?.[option.dictKey] ?? (dict as any)?.["card"]
-            : undefined;
-          const nameText = methodInfo?.title ?? option.name ?? option.dictKey ?? option.id;
-          const subtitleText = methodInfo?.desc ?? option.subtitle ?? "";
-          const badges: string[] =
-            methodInfo?.badges && methodInfo.badges.length > 0
-              ? methodInfo.badges
-              : (option.badges ?? []);
+          const isSelected = isOptionSelected(option.id);
+          const nameText = option.id === "cash" && dict?.cash?.title ? dict.cash.title : option.name;
+          const subtitleText = option.subtitle;
+          const badges = option.badges ?? [];
 
           return (
             <div
@@ -203,14 +156,14 @@ export function PaymentSelector({
                 }
               }}
               className={cn(
-                "group relative flex flex-col gap-3 cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
+                "group relative flex flex-col justify-between gap-3 cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:shadow-md",
                 isSelected
                   ? cn(option.colorTheme.borderSelected, option.colorTheme.bgSelected)
                   : "border-slate-200 bg-card hover:border-slate-300"
               )}
             >
               <div className="flex items-start justify-between w-full gap-3">
-                <div className="flex items-start gap-3.5 w-full">
+                <div className="flex items-start gap-3 w-full">
                   {/* Method Icon */}
                   <div
                     className={cn(
@@ -219,18 +172,17 @@ export function PaymentSelector({
                       option.colorTheme.iconBg
                     )}
                   >
-                    {(option.type === "card" || option.type === "local_card" || option.type === "intl_card") && (
+                    {option.id !== "cash" ? (
                       <CreditCard className="h-5 w-5 stroke-[2.2]" />
+                    ) : (
+                      <Banknote className="h-5 w-5 stroke-[2.2]" />
                     )}
-                    {option.id === "cash" && <Banknote className="h-5 w-5 stroke-[2.2]" />}
                   </div>
 
-                  <div className="flex flex-col gap-1 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">
-                        {nameText}
-                      </span>
-                    </div>
+                  <div className="flex flex-col gap-1 flex-1 min-w-0">
+                    <span className="font-bold text-slate-900 text-sm leading-snug">
+                      {nameText}
+                    </span>
                     {subtitleText && (
                       <p className="text-xs text-slate-500 leading-relaxed">
                         {subtitleText}
@@ -238,17 +190,17 @@ export function PaymentSelector({
                     )}
 
                     {badges.length > 0 && (
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {badges.map((badge: string, i: number) => (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {badges.map((badge, i) => (
                           <span
                             key={i}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+                              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold",
                               option.colorTheme.badgeBg,
                               option.colorTheme.badgeText
                             )}
                           >
-                            {badge.toLowerCase().includes("xavfsiz") && <ShieldCheck className="h-3 w-3" />}
+                            {badge.toLowerCase().includes("3d") && <ShieldCheck className="h-3 w-3" />}
                             {badge}
                           </span>
                         ))}
@@ -256,9 +208,9 @@ export function PaymentSelector({
                     )}
 
                     {/* Logos */}
-                    {option.showAllCardLogos ? (
+                    {option.logos && option.logos.length > 0 && (
                       <div className="mt-2 flex items-center flex-wrap gap-1.5">
-                        {CARD_LOGOS.map((card) => (
+                        {option.logos.map((card) => (
                           <div
                             key={card.alt}
                             className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/80"
@@ -271,17 +223,7 @@ export function PaymentSelector({
                           </div>
                         ))}
                       </div>
-                    ) : option.id !== "cash" && CARD_IMAGE_MAP[option.id] ? (
-                      <div className="mt-2 flex items-center flex-wrap gap-2">
-                        <div className="flex h-6 w-9 items-center justify-center overflow-hidden rounded bg-white shadow-sm border border-slate-200/70">
-                          <img
-                            src={CARD_IMAGE_MAP[option.id]}
-                            alt={option.name}
-                            className="h-full w-full object-contain p-[2px] mix-blend-multiply"
-                          />
-                        </div>
-                      </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
 

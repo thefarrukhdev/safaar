@@ -111,7 +111,11 @@ export default async function BookingDetailPage({
  const statusLabel = statuses[booking.status] ?? booking.status;
  const payment = booking.payment;
 
- const isConfirmed = booking.status === "CONFIRMED" || payment?.status === "paid" || booking.status === "COMPLETED";
+ const isConfirmed =
+  booking.status === "CONFIRMED" ||
+  payment?.status === "paid" ||
+  booking.status === "COMPLETED" ||
+  paymentQuery === "success";
 
  const isFailed = paymentQuery === "failed" || payment?.status === "failed";
  const isAwaitingCash =
@@ -124,8 +128,17 @@ export default async function BookingDetailPage({
  const isRefunded =
  payment?.status === "refunded" || payment?.status === "reversed";
  const isCancelled = booking.status.toLowerCase() === "cancelled";
+ const isExpired = booking.status === "EXPIRED" || paymentQuery === "expired";
+ const isRetryRequired = paymentQuery === "retry";
  const isProcessing =
  !isConfirmed && !isFailed && !isRefunded && !isCancelled && payment?.status === "processing";
+
+ const shouldShowRetryForm =
+ !isConfirmed &&
+ !isAwaitingCash &&
+ !isRefunded &&
+ !isCancelled &&
+ (isFailed || isExpired || isRetryRequired);
 
  return (
  <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
@@ -259,7 +272,7 @@ export default async function BookingDetailPage({
  </section>
  </div>
 
- {(!isConfirmed && !isAwaitingCash && !isRefunded && !isCancelled) || isFailed ? (
+ {shouldShowRetryForm ? (
  <section className="flex flex-col gap-4 rounded-xl border border-slate-900/[0.08] bg-card p-6 ">
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2">

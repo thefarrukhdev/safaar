@@ -46,16 +46,16 @@ const schema = z.object({
     'dacha',
     'restaurant',
   ]),
-  companyName: z.string().min(2, 'Obyekt/Kompaniya nomini kiriting'),
-  contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting"),
+  companyName: z.string().min(2, 'Obyekt/Kompaniya nomini kiriting').optional().or(z.literal('')),
+  contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting").optional().or(z.literal('')),
   phone: z
     .string()
     .min(1, 'Telefon raqamni kiriting')
     .refine(isValidPhone, "Telefon noto'g'ri formatda"),
   password: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak"),
-  email: z.string().email("Email noto'g'ri"),
-  city: z.string().min(2, 'Shaharni kiriting'),
-  address: z.string().min(5, 'Manzilni kiriting'),
+  email: z.string().email("Email noto'g'ri").optional().or(z.literal('')),
+  city: z.string().min(2, 'Shaharni kiriting').optional().or(z.literal('')),
+  address: z.string().min(5, 'Manzilni kiriting').optional().or(z.literal('')),
   accountNumber: z
     .string()
     .optional()
@@ -202,9 +202,15 @@ export default function RegisterPage() {
       const result = await access.submitPartnerApplication({
         ...pendingValues,
         phone: formattedPhone,
+        companyName: pendingValues.companyName?.trim() || undefined,
+        contactPerson: pendingValues.contactPerson?.trim() || undefined,
+        email: pendingValues.email?.trim() || undefined,
+        city: pendingValues.city?.trim() || undefined,
+        address: pendingValues.address?.trim() || undefined,
         accountNumber: pendingValues.accountNumber?.trim()
           ? pendingValues.accountNumber.replace(/\s/g, '')
           : undefined,
+        note: pendingValues.note?.trim() || undefined,
         phoneVerificationToken: verified.verificationToken,
       });
       setSubmitted({ id: result?.item?.id || 'demo-id' });
@@ -526,7 +532,7 @@ export default function RegisterPage() {
           {/* Company Name */}
           <Field
             id="companyName"
-            label="Obyekt yoki Kompaniya nomi"
+            label="Obyekt yoki Kompaniya nomi (ixtiyoriy)"
             error={form.formState.errors.companyName?.message}
           >
             <Input
@@ -543,7 +549,7 @@ export default function RegisterPage() {
           {/* Contact Person */}
           <Field
             id="contactPerson"
-            label="Mas'ul shaxs"
+            label="Mas'ul shaxs (ixtiyoriy)"
             error={form.formState.errors.contactPerson?.message}
           >
             <Input
@@ -558,7 +564,7 @@ export default function RegisterPage() {
           </Field>
 
           {/* Email */}
-          <Field id="email" label="Email" error={form.formState.errors.email?.message}>
+          <Field id="email" label="Email (ixtiyoriy)" error={form.formState.errors.email?.message}>
             <Input
               id="email"
               type="email"
@@ -575,7 +581,7 @@ export default function RegisterPage() {
 
           {/* City & Bank Account Number */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="city" label="Shahar" error={form.formState.errors.city?.message}>
+            <Field id="city" label="Shahar (ixtiyoriy)" error={form.formState.errors.city?.message}>
               <Input
                 id="city"
                 autoComplete="address-level2"
@@ -611,7 +617,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Address */}
-          <Field id="address" label="Manzil" error={form.formState.errors.address?.message}>
+          <Field id="address" label="Manzil (ixtiyoriy)" error={form.formState.errors.address?.message}>
             <Input
               id="address"
               autoComplete="street-address"

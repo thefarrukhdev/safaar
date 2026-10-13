@@ -9,7 +9,7 @@ export type PartnerAccessStatus =
   | 'submitted';
 
 export interface PartnerApplicationDraft {
-  companyName: string;
+  companyName?: string;
   type:
     | 'hotel'
     | 'bus'
@@ -18,11 +18,11 @@ export interface PartnerApplicationDraft {
     | 'motel'
     | 'dacha'
     | 'restaurant';
-  contactPerson: string;
+  contactPerson?: string;
   phone: string;
-  email: string;
-  city: string;
-  address: string;
+  email?: string;
+  city?: string;
+  address?: string;
   taxId?: string;
   accountNumber?: string;
   mfo?: string;

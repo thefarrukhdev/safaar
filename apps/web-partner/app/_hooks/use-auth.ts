@@ -207,7 +207,7 @@ export function usePartnerEmailLogin() {
         isDemo: false,
       };
     },
-    onSuccess: ({ email, tokens, organizationId, partnerType, isDemo }) => {
+    onSuccess: ({ email, tokens, organizationId, partnerType }) => {
       const { user } = buildPartnerSession(email, tokens, partnerType, 'email');
       user.organizationId = organizationId;
       setSession(user, tokens);
@@ -226,7 +226,7 @@ export function usePartnerPasswordLogin() {
 
   return useMutation({
     mutationFn: async ({ phone, password }: { phone: string; password?: string }) => {
-      const tokens = await auth.partnerPasswordLogin(phone, password) as any;
+      const tokens = await auth.partnerPasswordLogin(phone, password);
       return {
         phone,
         tokens,
@@ -235,7 +235,7 @@ export function usePartnerPasswordLogin() {
         isDemo: false,
       };
     },
-    onSuccess: ({ phone, tokens, organizationId, partnerType, isDemo }) => {
+    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
       const { user } = buildPartnerSession(phone, tokens, partnerType, 'phone');
       user.organizationId = organizationId;
       setSession(user, tokens);

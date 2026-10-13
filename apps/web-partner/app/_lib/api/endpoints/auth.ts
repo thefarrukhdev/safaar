@@ -43,6 +43,8 @@ export interface PartnerLoginResponse extends AuthTokens {
   organization_type?: string;
   organizationType?: string;
   partner_role: string;
+  requiresCompanyDetails?: boolean;
+  hasRequiredCompanyDetails?: boolean;
 }
 
 /** OTP'ni tekshirib, JWT tokenlarini olish. Backend: `POST /auth/otp/verify`

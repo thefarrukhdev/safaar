@@ -155,13 +155,13 @@ export function LoginForm() {
       const code = String(values.code ?? '').replace(/\D/g, '').trim();
       const pwd = String(values.password ?? '').trim();
 
-      if (code.length < 4) {
-        form.setError('code', { message: "Tasdiqlash kodini to'liq kiriting" });
+      if (code.length !== 6) {
+        form.setError('code', { message: "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak" });
         return;
       }
-      if (pwd.length < 6) {
+      if (pwd.length < 8) {
         form.setError('password', {
-          message: "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak",
+          message: "Yangi parol kamida 8 ta belgidan iborat bo'lishi kerak",
         });
         return;
       }
@@ -454,12 +454,15 @@ export function LoginForm() {
               <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
               <PasswordInput
                 id="new_password"
-                placeholder="Kamida 6 ta belgi"
+                placeholder="Kamida 8 ta belgi"
                 autoComplete="new-password"
                 className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
                 {...form.register('password')}
               />
             </div>
+            <p className="text-[11px] text-slate-500">
+              Parol kamida 8 ta belgi (harf, raqam va maxsus belgi) bo&apos;lishi zarur.
+            </p>
             {form.formState.errors.password && (
               <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />

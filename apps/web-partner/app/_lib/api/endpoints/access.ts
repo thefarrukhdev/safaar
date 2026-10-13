@@ -24,6 +24,9 @@ export interface PartnerApplicationDraft {
   city: string;
   address: string;
   taxId: string;
+  accountNumber?: string;
+  mfo?: string;
+  password?: string;
   note?: string;
   /** `verifyPartnerRegistrationOtp()`dan olingan, bir martalik server-side
    * proof — backend buni majburiy talab qiladi (`PARTNER_PHONE_NOT_VERIFIED`
@@ -44,6 +47,24 @@ export async function submitPartnerApplication(body: PartnerApplicationDraft) {
   return result;
 }
 
+export interface PartnerAccessRequestDetails {
+  id: string;
+  organizationId?: string;
+  companyName: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  city?: string;
+  address?: string;
+  taxId?: string;
+  accountNumber?: string;
+  mfo?: string;
+  status: PartnerAccessStatus;
+  type?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+}
+
 export async function getPartnerAccessStatus(lookup: PartnerAccessLookup) {
   const searchParams =
     typeof lookup === 'string'
@@ -56,12 +77,7 @@ export async function getPartnerAccessStatus(lookup: PartnerAccessLookup) {
   const result = await request<{
     found: boolean;
     status: PartnerAccessStatus;
-    request?: {
-      id: string;
-      companyName: string;
-      status: PartnerAccessStatus;
-      type?: string;
-    } | null;
+    request?: PartnerAccessRequestDetails | null;
   }>('/partners/requests', {
     searchParams,
   });

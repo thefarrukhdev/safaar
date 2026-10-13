@@ -52,7 +52,7 @@ const schema = z.object({
     .string()
     .min(1, 'Telefon raqamni kiriting')
     .refine(isValidPhone, "Telefon noto'g'ri formatda"),
-  password: z.string().min(6, "Parol kamida 6ta belgi bo'lishi kerak"),
+  password: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak"),
   email: z.string().email("Email noto'g'ri"),
   city: z.string().min(2, 'Shaharni kiriting'),
   address: z.string().min(5, 'Manzilni kiriting'),
@@ -61,6 +61,13 @@ const schema = z.object({
     .min(9, "STIR 9 ta raqamdan iborat bo'lishi kerak")
     .max(9, "STIR 9 ta raqamdan iborat bo'lishi kerak")
     .regex(/^\d{9}$/, 'Faqat raqamlar kiriting'),
+  accountNumber: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || /^\d{20}$/.test(val.replace(/\s/g, '')),
+      "Hisob raqami 20 ta raqamdan iborat bo'lishi kerak",
+    ),
   note: z.string().optional(),
 });
 
@@ -105,6 +112,7 @@ export default function RegisterPage() {
       city: '',
       address: '',
       taxId: '',
+      accountNumber: '',
       note: '',
     },
   });
@@ -193,11 +201,17 @@ export default function RegisterPage() {
         challengeId: challenge.challengeId,
       });
 
+      const digits = normalizePhone(pendingValues.phone);
+      const formattedPhone = digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
+
       const result = await access.submitPartnerApplication({
         ...pendingValues,
-        phone: normalizePhone(pendingValues.phone),
+        phone: formattedPhone,
+        accountNumber: pendingValues.accountNumber?.trim()
+          ? pendingValues.accountNumber.replace(/\s/g, '')
+          : undefined,
         phoneVerificationToken: verified.verificationToken,
-      } as any);
+      });
       setSubmitted({ id: result?.item?.id || 'demo-id' });
     } catch (cause: any) {
       if (cause?.payload?.fields) {
@@ -229,19 +243,28 @@ export default function RegisterPage() {
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Ariza yuborildi
+            Ariza qabul qilindi
           </h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            Arizangiz muvaffaqiyatli qabul qilindi va web-admin paneliga yo'naltirildi. Admin tasdiqlagandan so'ng kiritgan parolingiz bilan tizimga to'liq kira olasiz.
+            Arizangiz muvaffaqiyatli qabul qilindi va ko&apos;rib chiqish uchun yuborildi. Adminlar tasdiqlagandan so&apos;ng kiritgan parolingiz bilan tizimga to&apos;liq kira olasiz.
           </p>
         </div>
-        <div className="pt-2">
-          <Link href="/login" className="w-full inline-block">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Link href="/login" className="flex-1 inline-block">
             <Button
               className="w-full text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/25 active:scale-[0.99] transition-all cursor-pointer"
               size="lg"
             >
-              Login sahifasiga o'tish
+              Login sahifasiga o&apos;tish
+            </Button>
+          </Link>
+          <Link href="/status" className="flex-1 inline-block">
+            <Button
+              variant="outline"
+              className="w-full text-sm font-semibold rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+              size="lg"
+            >
+              Ariza holatini tekshirish
             </Button>
           </Link>
         </div>
@@ -429,7 +452,7 @@ export default function RegisterPage() {
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
               <PasswordInput
-                placeholder="Kamida 6 ta belgi"
+                placeholder="Kamida 8 ta belgi"
                 className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
                 {...form.register('password')}
               />
@@ -523,6 +546,24 @@ export default function RegisterPage() {
               />
             </Field>
           </div>
+
+          {/* Bank Account Number */}
+          <Field
+            label="Bank hisob raqami (20 ta raqam, ixtiyoriy)"
+            error={form.formState.errors.accountNumber?.message}
+          >
+            <Input
+              inputMode="numeric"
+              maxLength={20}
+              {...form.register('accountNumber', {
+                onChange: (e) => {
+                  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
+                },
+              })}
+              placeholder="20208000900000123456"
+              className={inputBaseClasses}
+            />
+          </Field>
 
           {/* Address */}
           <Field label="Manzil" error={form.formState.errors.address?.message}>

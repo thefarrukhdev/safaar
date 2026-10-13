@@ -2,36 +2,36 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Search, CheckCircle2, AlertCircle, Clock, RotateCcw, Phone } from "lucide-react";
+import { ArrowLeft, Search, CheckCircle2, AlertCircle, Clock, Phone } from "lucide-react";
 import { Button } from "../../_components/ui/button";
 import { PhoneInput } from "../../_components/ui/phone-input";
 import { Label } from "../../_components/ui/label";
 import { access } from "../../_lib/api";
 import { normalizePhone } from "../../_lib/utils/phone";
 import { toast } from "sonner";
-import { PartnerAccessStatus } from "../../_lib/api/endpoints/access";
+import type {
+  PartnerAccessStatus,
+  PartnerAccessRequestDetails,
+} from "../../_lib/api/endpoints/access";
 
 export default function ApplicationStatusPage() {
   const [phone, setPhone] = useState("+998 ");
   const [loading, setLoading] = useState(false);
-  const [resubmitting, setResubmitting] = useState(false);
   const [statusResult, setStatusResult] = useState<{
     found: boolean;
     status: PartnerAccessStatus;
-    request?: {
-      id: string;
-      companyName: string;
-      status: PartnerAccessStatus;
-    } | null;
+    request?: PartnerAccessRequestDetails | null;
   } | null>(null);
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.length < 9) return;
+    const digits = normalizePhone(phone);
+    if (digits.length < 9) return;
     setLoading(true);
     setStatusResult(null);
     try {
-      const res = await access.getPartnerAccessStatus(normalizePhone(phone));
+      const formattedPhone = digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
+      const res = await access.getPartnerAccessStatus(formattedPhone);
       setStatusResult(res);
       if (!res.found) {
         toast.error("Bunday raqamga bog'liq ariza topilmadi");
@@ -40,44 +40,6 @@ export default function ApplicationStatusPage() {
       toast.error("Ariza holatini tekshirib bo'lmadi");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResubmit = async () => {
-    if (!statusResult?.request?.id) return;
-    setResubmitting(true);
-    try {
-      // PRE-EXISTING STUB (out of scope for the 2026-09-15 phone-verification
-      // task): this doesn't actually resubmit the original application — it
-      // POSTs a brand-new one with fabricated placeholder data (fake email,
-      // fake city, hardcoded taxId). Left as-is; the real fix is a proper
-      // resubmit UI wired to PartnersService.resubmitApplication, which
-      // doesn't exist here and isn't part of this task's declared scope.
-      // `phoneVerificationToken` is now a required, backend-enforced proof
-      // (see register/page.tsx) — this stub never had a real phone-OTP step
-      // of its own, so it's passed empty. Previously this call would
-      // SILENTLY SUCCEED and create a garbage application; now the backend
-      // correctly rejects it with PARTNER_PHONE_NOT_VERIFIED instead — a
-      // safety improvement, not a regression, for a flow that was already
-      // non-functional.
-      await access.submitPartnerApplication({
-        type: "hotel",
-        companyName: statusResult.request.companyName,
-        contactPerson: "Qayta yuboruvchi",
-        phone: normalizePhone(phone),
-        email: "resubmitted@example.com",
-        city: "Toshkent",
-        address: "Qayta yuborilgan manzil",
-        taxId: "123456789",
-        note: "Qayta yuborilgan ariza",
-        phoneVerificationToken: "",
-      });
-      toast.success("Ariza muvaffaqiyatli qayta yuborildi");
-      setStatusResult({ ...statusResult, status: "submitted" });
-    } catch {
-      toast.error("Xatolik yuz berdi");
-    } finally {
-      setResubmitting(false);
     }
   };
 
@@ -101,7 +63,7 @@ export default function ApplicationStatusPage() {
           </h2>
         </div>
         <p className="text-sm text-slate-500 leading-normal">
-          Arizangiz qaysi bosqichda ekanligini ko'rish uchun ariza berilgan telefon raqamingizni kiriting.
+          Arizangiz qaysi bosqichda ekanligini ko&apos;rish uchun ariza berilgan telefon raqamingizni kiriting.
         </p>
       </div>
 
@@ -144,15 +106,33 @@ export default function ApplicationStatusPage() {
           <div>
             <p className="text-xs font-medium text-slate-500 mb-2">Ariza holati</p>
             {statusResult.status === 'approved' && (
-              <div className="flex items-center gap-2.5 text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                <span>Tasdiqlangan</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2.5 text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <span>Tasdiqlangan</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Arizangiz muvaffaqiyatli tasdiqlangan. Endi parolingiz bilan tizimga kirishingiz mumkin.
+                </p>
+                <Link href="/login" className="w-full inline-block">
+                  <Button
+                    className="w-full text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/25 cursor-pointer"
+                    size="lg"
+                  >
+                    Tizimga kirish
+                  </Button>
+                </Link>
               </div>
             )}
             {(statusResult.status === 'submitted' || statusResult.status === 'reviewing' || statusResult.status === 'new') && (
-              <div className="flex items-center gap-2.5 text-amber-800 bg-amber-50 border border-amber-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
-                <Clock className="h-5 w-5 text-amber-600 shrink-0" />
-                <span>Ko'rib chiqilmoqda</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5 text-amber-800 bg-amber-50 border border-amber-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
+                  <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+                  <span>Ko&apos;rib chiqilmoqda</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Arizangiz qabul qilingan va admin tomonidan ko&apos;rib chiqilmoqda. Natija haqida tez orada SMS orqali xabar beriladi.
+                </p>
               </div>
             )}
             {statusResult.status === 'rejected' && (
@@ -161,18 +141,23 @@ export default function ApplicationStatusPage() {
                   <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
                   <span>Rad etilgan</span>
                 </div>
+                {statusResult.request.rejectionReason && (
+                  <p className="text-xs text-rose-700 bg-rose-50/80 p-2.5 rounded-lg border border-rose-200/60 font-medium">
+                    Sabab: {statusResult.request.rejectionReason}
+                  </p>
+                )}
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Arizangiz ba'zi kamchiliklar sababli rad etilgan. Iltimos, ma'lumotlarni tekshirib qayta yuboring.
+                  Arizangiz ba&apos;zi kamchiliklar sababli rad etilgan. Iltimos, ma&apos;lumotlarni tekshirib yangi ariza yuboring.
                 </p>
-                <Button
-                  onClick={handleResubmit}
-                  loading={resubmitting}
-                  variant="outline"
-                  className="w-full flex items-center justify-center gap-2 text-xs font-semibold rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Arizani qayta yuborish
-                </Button>
+                <Link href="/register" className="w-full inline-block">
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 text-xs font-semibold rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    size="lg"
+                  >
+                    Yangi ariza topshirish
+                  </Button>
+                </Link>
               </div>
             )}
           </div>

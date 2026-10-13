@@ -27,6 +27,7 @@ export interface AuthUser {
   role: Role;
   organizationId?: string;
   partnerType?: string;
+  requiresCompanyDetails?: boolean;
 }
 
 interface AuthState {
@@ -35,7 +36,7 @@ interface AuthState {
   setSession: (user: AuthUser, tokens: AuthTokens) => void;
   updateUser: (
     patch: Partial<
-      Pick<AuthUser, 'fullName' | 'phone' | 'email' | 'partnerType'>
+      Pick<AuthUser, 'fullName' | 'phone' | 'email' | 'partnerType' | 'requiresCompanyDetails'>
     >,
   ) => void;
   clearSession: () => void;

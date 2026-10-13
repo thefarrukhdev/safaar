@@ -26,7 +26,7 @@ export function isAccessTokenExpired(
 
 export function buildPartnerSession(
   contact: string,
-  tokens: AuthTokens,
+  tokens: AuthTokens & { requiresCompanyDetails?: boolean },
   partnerType?: string,
   contactType: 'email' | 'phone' = 'email',
 ): { user: AuthUser; tokens: AuthTokens } {
@@ -46,6 +46,7 @@ export function buildPartnerSession(
       role: Role.PARTNER,
       organizationId,
       partnerType: partnerType || 'hotel',
+      requiresCompanyDetails: Boolean(tokens.requiresCompanyDetails),
     },
     tokens,
   };

@@ -810,9 +810,7 @@ export class AuthService {
     const hasAccountNumber = Boolean(
       String(organization?.['account_number'] ?? '').trim(),
     );
-    const hasMfo = Boolean(String(organization?.['mfo'] ?? '').trim());
-    const requiresCompanyDetails =
-      !hasCompanyName || !hasAccountNumber || !hasMfo;
+    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
 
     return {
       ...(await this.issueTokens({
@@ -1644,9 +1642,7 @@ export class AuthService {
     const hasAccountNumber = Boolean(
       String(row['account_number'] ?? '').trim(),
     );
-    const hasMfo = Boolean(String(row['mfo'] ?? '').trim());
-    const requiresCompanyDetails =
-      !hasCompanyName || !hasAccountNumber || !hasMfo;
+    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
 
     return {
       ...(await this.issueTokens({

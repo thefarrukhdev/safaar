@@ -2998,6 +2998,120 @@ describe('PartnersService.submitPublicPartnerRequest (regression: Hotel QA BUG-0
   });
 });
 
+describe('PartnersService.profile and updateProfile — company details and bank account gating without MFO', () => {
+  let service: PartnersService;
+  let pg: { query: jest.Mock };
+  const actor: RequestActor = {
+    id: 'partner-user-1',
+    actorType: 'partner',
+    role: Role.PARTNER,
+    roles: [Role.PARTNER],
+    organizationId: 'org-profile-1',
+    sessionId: 'session-1',
+  };
+
+  beforeEach(() => {
+    pg = { query: jest.fn() };
+    service = new PartnersService(
+      pg as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
+  });
+
+  it('marks requiresCompanyDetails=false when company name and account_number are present, even without mfo', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'org-profile-1',
+        brand_name: 'Super Grand Hotel',
+        legal_name: 'Super Grand LLC',
+        account_number: '20208000900000123456',
+        mfo: null,
+      },
+    ]);
+
+    const result = await service.profile(actor);
+    expect(result.requiresCompanyDetails).toBe(false);
+    expect(result.hasRequiredCompanyDetails).toBe(true);
+    expect(result.missingDetails).toEqual([]);
+    expect(result.accountNumber).toBe('20208000900000123456');
+    expect(result.companyName).toBe('Super Grand Hotel');
+  });
+
+  it('marks requiresCompanyDetails=true and missingDetails=["accountNumber"] when account_number is missing', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'org-profile-1',
+        brand_name: 'Super Grand Hotel',
+        legal_name: 'Super Grand LLC',
+        account_number: null,
+        mfo: null,
+      },
+    ]);
+
+    const result = await service.profile(actor);
+    expect(result.requiresCompanyDetails).toBe(true);
+    expect(result.hasRequiredCompanyDetails).toBe(false);
+    expect(result.missingDetails).toEqual(['accountNumber']);
+    expect(result.missingDetails).not.toContain('mfo');
+  });
+
+  it('marks requiresCompanyDetails=true with companyName and accountNumber missing when both absent', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'org-profile-1',
+        brand_name: null,
+        legal_name: '',
+        account_number: null,
+        mfo: null,
+      },
+    ]);
+
+    const result = await service.profile(actor);
+    expect(result.requiresCompanyDetails).toBe(true);
+    expect(result.missingDetails).toEqual(['companyName', 'accountNumber']);
+    expect(result.missingDetails).not.toContain('mfo');
+  });
+
+  it('allows updating profile with company name and account number', async () => {
+    // 1st query: profile() -> assertOrganization()
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'org-profile-1',
+          brand_name: '',
+          legal_name: '',
+          account_number: null,
+          mfo: null,
+          phone: '+998901234567',
+          email: 'partner@example.com',
+          address: 'Tashkent',
+        },
+      ])
+      // 2nd query: UPDATE partner_organizations ... RETURNING *
+      .mockResolvedValueOnce([
+        {
+          id: 'org-profile-1',
+          brand_name: 'New Brand Hotel',
+          legal_name: 'New Legal LLC',
+          account_number: '20208000900000123456',
+          mfo: null,
+          phone: '+998901234567',
+          email: 'partner@example.com',
+          address: 'Tashkent',
+        },
+      ]);
+
+    const updated = await service.updateProfile(actor, {
+      brand_name: 'New Brand Hotel',
+      legal_name: 'New Legal LLC',
+      account_number: '20208000900000123456',
+    });
+
+    expect(updated.companyName).toBe('New Brand Hotel');
+    expect(updated.accountNumber).toBe('20208000900000123456');
+  });
+});
+
 describe('PartnersService.listPromotions (regression: "SAFAAR — COMPLETE PARTNER PROMOTIONS RELOAD PERSISTENCE" — no GET /partners/promotions existed at all, so a page reload could never restore a partner\'s own promotion list)', () => {
   let service: PartnersService;
   let pg: { query: jest.Mock };

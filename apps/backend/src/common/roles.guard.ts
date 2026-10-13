@@ -195,9 +195,8 @@ export class RolesGuard implements CanActivate {
         brand_name: string | null;
         legal_name: string | null;
         account_number: string | null;
-        mfo: string | null;
       }>(
-        `SELECT status, brand_name, legal_name, account_number, mfo FROM partner_organizations WHERE id = $1 LIMIT 1`,
+        `SELECT status, brand_name, legal_name, account_number FROM partner_organizations WHERE id = $1 LIMIT 1`,
         [actor.organizationId],
       );
 
@@ -254,18 +253,17 @@ export class RolesGuard implements CanActivate {
         return;
       }
 
-      // Boshqa barcha amallarni bajarish uchun kompaniya nomi, hisob raqami va MFO majburiy
+      // Boshqa barcha amallarni bajarish uchun kompaniya nomi va hisob raqami majburiy
       const hasCompanyName = Boolean(
         org.brand_name?.trim() || org.legal_name?.trim(),
       );
       const hasAccountNumber = Boolean(org.account_number?.trim());
-      const hasMfo = Boolean(org.mfo?.trim());
 
-      if (!hasCompanyName || !hasAccountNumber || !hasMfo) {
+      if (!hasCompanyName || !hasAccountNumber) {
         throw new ForbiddenException({
           code: 'PARTNER_COMPANY_DETAILS_REQUIRED',
           message:
-            'Amallarni bajarish uchun kompaniya nomi, hisob raqami va MFO kiritilishi majburiy.',
+            'Amallarni bajarish uchun kompaniya nomi va hisob raqami kiritilishi majburiy.',
         });
       }
 

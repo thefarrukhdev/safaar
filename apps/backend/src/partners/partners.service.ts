@@ -228,14 +228,11 @@ export class PartnersService {
     const hasAccountNumber = Boolean(
       String(org['account_number'] ?? org['accountNumber'] ?? '').trim(),
     );
-    const hasMfo = Boolean(String(org['mfo'] ?? '').trim());
-    const requiresCompanyDetails =
-      !hasCompanyName || !hasAccountNumber || !hasMfo;
+    const requiresCompanyDetails = !hasCompanyName || !hasAccountNumber;
 
     const missingDetails: string[] = [];
     if (!hasCompanyName) missingDetails.push('companyName');
     if (!hasAccountNumber) missingDetails.push('accountNumber');
-    if (!hasMfo) missingDetails.push('mfo');
 
     return {
       ...org,

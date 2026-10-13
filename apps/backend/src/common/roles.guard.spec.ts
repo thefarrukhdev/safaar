@@ -304,7 +304,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
     await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  describe('Partner Access Control (read-only until company name, account number and MFO provided)', () => {
+  describe('Partner Access Control (read-only until company name and account number provided)', () => {
     const partnerToken = () =>
       signJwt(
         {
@@ -340,7 +340,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
       await expect(guard.canActivate(context)).resolves.toBe(true);
     });
 
-    it('denies mutation requests (e.g. POST) if account_number or mfo is missing with PARTNER_COMPANY_DETAILS_REQUIRED', async () => {
+    it('denies mutation requests (e.g. POST) if account_number is missing with PARTNER_COMPANY_DETAILS_REQUIRED', async () => {
       reflector.getAllAndOverride
         .mockReturnValueOnce([Role.PARTNER])
         .mockReturnValueOnce(undefined);
@@ -363,7 +363,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
       });
     });
 
-    it('allows PATCH /partner/profile even if account_number and mfo are missing, so partner can submit them', async () => {
+    it('allows PATCH /partner/profile even if account_number is missing, so partner can submit it', async () => {
       reflector.getAllAndOverride
         .mockReturnValueOnce([Role.PARTNER])
         .mockReturnValueOnce(undefined);
@@ -384,7 +384,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
       await expect(guard.canActivate(context)).resolves.toBe(true);
     });
 
-    it('allows mutation requests once company name, account_number, and mfo are present', async () => {
+    it('allows mutation requests once company name and account_number are present (even without mfo)', async () => {
       reflector.getAllAndOverride
         .mockReturnValueOnce([Role.PARTNER])
         .mockReturnValueOnce(undefined);
@@ -394,7 +394,7 @@ describe('RolesGuard — admin RBAC deny-by-default (regression: CRITICAL — CO
           brand_name: 'Test Hotel',
           legal_name: 'Test LLC',
           account_number: '20208000900000123456',
-          mfo: '00014',
+          mfo: null,
         },
       ]);
       const { context } = contextFor(

@@ -147,9 +147,11 @@ export default async function LangLayout({
 
               <SessionProvider session={session}>
               <CurrencyProvider initialCurrency={initialCurrency} initialRates={initialRates}>
-                <div className="relative flex min-h-screen w-full flex-col">
+                <div className="relative flex min-h-screen w-full flex-col isolate">
                   <GlobalSpotlightBackground />
-                  {children}
+                  <div className="relative z-10 flex flex-1 flex-col">
+                    {children}
+                  </div>
                   <Toaster />
                   <ServiceWorkerRegister />
                   <PwaInstallBanner dict={common.pwa} />

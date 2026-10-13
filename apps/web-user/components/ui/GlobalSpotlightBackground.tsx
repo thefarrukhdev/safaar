@@ -91,7 +91,7 @@ export function GlobalSpotlightBackground() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden select-none"
+      className="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none"
       style={
         {
           "--mouse-x": "50%",
@@ -102,9 +102,9 @@ export function GlobalSpotlightBackground() {
     >
       {/* 1. Base Subtle Dot Matrix Grid (24px x 24px) */}
       <div
-        className="absolute inset-0 opacity-40 dark:opacity-20"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(148, 163, 184, 0.35) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, rgba(148, 163, 184, 0.45) 1.1px, transparent 1.1px)`,
           backgroundSize: "24px 24px",
           backgroundPosition: "0 0",
         }}
@@ -115,44 +115,44 @@ export function GlobalSpotlightBackground() {
         className="absolute inset-0 transition-opacity duration-300 motion-reduce:hidden"
         style={{
           opacity: "var(--spotlight-opacity, 1)",
-          backgroundImage: `radial-gradient(circle, rgba(37, 99, 235, 0.6) 1.2px, transparent 1.2px)`,
+          backgroundImage: `radial-gradient(circle, rgba(37, 99, 235, 0.8) 1.3px, transparent 1.3px)`,
           backgroundSize: "24px 24px",
           backgroundPosition: "0 0",
           WebkitMaskImage: `radial-gradient(
-            320px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
-            black 0%,
-            transparent 80%
+            380px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
+            black 15%,
+            transparent 75%
           )`,
           maskImage: `radial-gradient(
-            320px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
-            black 0%,
-            transparent 80%
+            380px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
+            black 15%,
+            transparent 75%
           )`,
         }}
       />
 
       {/* 3. Interactive Cursor Spotlight Radial Glow */}
       <div
-        className="absolute inset-0 transition-opacity duration-300 motion-reduce:hidden"
+        className="absolute inset-0 transition-opacity duration-200 ease-out motion-reduce:hidden"
         style={{
           opacity: "var(--spotlight-opacity, 1)",
           background: `radial-gradient(
-            680px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
-            rgba(37, 99, 235, 0.07),
-            rgba(99, 102, 241, 0.025) 45%,
-            transparent 72%
+            640px circle at var(--mouse-x, 50%) var(--mouse-y, 25%),
+            rgba(37, 99, 235, 0.12),
+            rgba(99, 102, 241, 0.04) 45%,
+            transparent 70%
           )`,
         }}
       />
 
       {/* 4. Ambient Top Center Header Glow (serene, tranquil depth) */}
       <div
-        className="absolute inset-x-0 top-0 h-[500px]"
+        className="absolute inset-x-0 top-0 h-[600px]"
         style={{
           background: `radial-gradient(
-            900px circle at 50% -120px,
-            rgba(59, 130, 246, 0.07),
-            rgba(147, 197, 253, 0.02) 50%,
+            900px circle at 50% -100px,
+            rgba(59, 130, 246, 0.09),
+            rgba(147, 197, 253, 0.03) 50%,
             transparent 80%
           )`,
         }}

@@ -61,8 +61,8 @@ export function Hero({
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         {/* Qatlam 3: Markaziy matn himoyasi — faqat matn bo'lagida (qorong'i EMAS, nozik) */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50" />
-        {/* Qatlam 4: Pastki oq gradient — faqat search bar qismida */}
-        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-white from-[25%] via-white/60 to-transparent" />
+        {/* Qatlam 4: Pastki nozik gradient — SearchBar ostida ohista o'tish */}
+        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-slate-50/70 via-slate-50/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Hero Text */}

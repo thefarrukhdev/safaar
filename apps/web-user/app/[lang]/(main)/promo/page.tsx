@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function PromoPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 w-full overflow-hidden">
+    <div className="flex flex-col min-h-screen w-full overflow-hidden">
       {/* Urgency Banner */}
       <div className="bg-primary px-4 py-3 text-center text-sm font-medium text-white flex items-center justify-center gap-2 shadow-sm">
         <Clock className="w-4 h-4 animate-pulse" />

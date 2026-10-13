@@ -31,7 +31,7 @@ export function AuthLayout({ children, locale, dict }: AuthLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row items-stretch justify-center overflow-hidden relative selection:bg-blue-500/30">
+    <div className="min-h-screen flex flex-col lg:flex-row items-stretch justify-center overflow-hidden relative selection:bg-blue-500/30">
       {/* Top Controls */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
         <Link 

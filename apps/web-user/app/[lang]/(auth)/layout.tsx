@@ -10,7 +10,7 @@ export default async function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-svh flex-col bg-slate-50 ">
+    <div className="flex min-h-svh flex-col">
       {/* Auth content */}
       <main className="flex flex-1 flex-col">{children}</main>
     </div>

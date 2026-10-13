@@ -108,7 +108,7 @@ export default async function HomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
       />
-      <main className="relative flex flex-1 flex-col bg-white text-slate-900">
+      <main className="relative flex flex-1 flex-col text-slate-900">
         {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
         <div className="flex min-h-svh flex-col justify-between">
           <div className="relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both w-full" style={{ animationDelay: "0ms" }}>

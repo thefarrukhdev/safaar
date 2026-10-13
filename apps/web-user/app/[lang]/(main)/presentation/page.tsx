@@ -6,7 +6,7 @@ export default function PresentationDashboard() {
   const [activeTab, setActiveTab] = useState("flyer");
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-12 font-sans w-full">
+    <div className="min-h-screen pb-12 font-sans w-full">
       
       {/* 1. ENG TEPADA - PROMO BAR (Tayyor ish) */}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-4 py-3 text-white text-center relative z-50 shadow-md w-full">

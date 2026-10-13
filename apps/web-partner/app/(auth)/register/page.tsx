@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../_components/ui/button';
 import { Input } from '../../_components/ui/input';
+import { Select } from '../../_components/ui/select';
 import { PhoneInput } from '../../_components/ui/phone-input';
 import { PasswordInput } from '../../_components/ui/password-input';
 import { Label } from '../../_components/ui/label';
@@ -35,6 +36,29 @@ import {
   maskPhone,
 } from '../../_lib/utils/phone';
 import { toast } from 'sonner';
+
+const UZBEKISTAN_CITIES = [
+  'Toshkent',
+  'Samarqand',
+  'Buxoro',
+  'Xiva',
+  'Farg\'ona',
+  'Namangan',
+  'Andijon',
+  'Nukus',
+  'Qarshi',
+  'Termiz',
+  'Jizzax',
+  'Urganch',
+  'Navoiy',
+  'Guliston',
+  'Zomin',
+  'Chorvoq',
+  'Chimyon',
+  'Qo\'qon',
+  'Marg\'ilon',
+  'Shahrisabz',
+] as const;
 
 const schema = z.object({
   type: z.enum([
@@ -80,6 +104,8 @@ export default function RegisterPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [citySelection, setCitySelection] = useState<string>('Toshkent');
+  const [customCity, setCustomCity] = useState<string>('');
 
   const otpRequest = usePartnerRegistrationOtpRequest();
   const otpVerify = usePartnerRegistrationOtpVerify();
@@ -89,7 +115,7 @@ export default function RegisterPage() {
     defaultValues: {
       type: 'hotel',
       companyName: '',
-      city: '',
+      city: 'Toshkent',
       phone: '+998 ',
       password: '',
     },
@@ -476,12 +502,11 @@ export default function RegisterPage() {
 
           {/* Business Type Select */}
           <Field id="type" label="Obyekt turi" error={form.formState.errors.type?.message}>
-            <select
+            <Select
               id="type"
               aria-invalid={!!form.formState.errors.type}
               aria-describedby={form.formState.errors.type ? 'type-error' : undefined}
               {...form.register('type')}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 cursor-pointer"
             >
               <option value="hotel" className="bg-white text-slate-900">
                 Mehmonxona
@@ -504,7 +529,7 @@ export default function RegisterPage() {
               <option value="bus" className="bg-white text-slate-900">
                 Transport (Mashina Ijarasi)
               </option>
-            </select>
+            </Select>
           </Field>
 
           {/* Company Name */}
@@ -524,17 +549,53 @@ export default function RegisterPage() {
             />
           </Field>
 
-          {/* City */}
-          <Field id="city" label="Shahar" error={form.formState.errors.city?.message}>
-            <Input
-              id="city"
-              autoComplete="address-level2"
+          {/* City Dropdown */}
+          <Field id="city" label="Shahar yoki hudud" error={form.formState.errors.city?.message}>
+            <Select
+              id="city-select"
               aria-invalid={!!form.formState.errors.city}
               aria-describedby={form.formState.errors.city ? 'city-error' : undefined}
-              {...form.register('city')}
-              placeholder="Shaharni kiriting (masalan: Samarqand)"
-              className={inputBaseClasses}
-            />
+              value={citySelection}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCitySelection(val);
+                if (val !== 'custom') {
+                  form.setValue('city', val, { shouldValidate: true });
+                } else {
+                  form.setValue('city', customCity, { shouldValidate: true });
+                }
+              }}
+            >
+              <optgroup label="O'zbekiston shaharlari va dam olish hududlari">
+                {UZBEKISTAN_CITIES.map((c) => (
+                  <option key={c} value={c} className="bg-white text-slate-900">
+                    {c}
+                  </option>
+                ))}
+              </optgroup>
+              <option value="custom" className="bg-white text-slate-900 font-semibold text-blue-600">
+                + Boshqa hudud (qo'lda kiritish)...
+              </option>
+            </Select>
+
+            {citySelection === 'custom' && (
+              <div className="mt-2 animate-in fade-in-50 duration-150">
+                <Input
+                  id="city"
+                  autoFocus
+                  placeholder="Shahar yoki tuman nomini kiriting (masalan: Qo'qon)"
+                  className={inputBaseClasses}
+                  value={customCity}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomCity(val);
+                    form.setValue('city', val, { shouldValidate: true });
+                  }}
+                  aria-invalid={!!form.formState.errors.city}
+                  aria-describedby={form.formState.errors.city ? 'city-error' : undefined}
+                />
+              </div>
+            )}
           </Field>
 
           {/* Submit Button */}

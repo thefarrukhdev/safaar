@@ -1,22 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Search, CheckCircle2, AlertCircle, Clock, Phone } from "lucide-react";
-import { Button } from "../../_components/ui/button";
-import { PhoneInput } from "../../_components/ui/phone-input";
-import { Label } from "../../_components/ui/label";
-import { access } from "../../_lib/api";
-import { normalizePhone } from "../../_lib/utils/phone";
+import Link from "next/link";
+import { Phone, Search, ArrowLeft, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import type {
-  PartnerAccessStatus,
-  PartnerAccessRequestDetails,
+import { Button } from "../../_components/ui/button";
+import { Label } from "../../_components/ui/label";
+import { PhoneInput } from "../../_components/ui/phone-input";
+import { normalizePhone } from "../../_lib/utils/phone";
+import {
+  getPartnerAccessStatus,
+  type PartnerAccessStatus,
+  type PartnerAccessRequestDetails,
 } from "../../_lib/api/endpoints/access";
 
 export default function ApplicationStatusPage() {
-  const [phone, setPhone] = useState("+998 ");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [statusResult, setStatusResult] = useState<{
     found: boolean;
     status: PartnerAccessStatus;
@@ -26,17 +27,26 @@ export default function ApplicationStatusPage() {
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
     const digits = normalizePhone(phone);
-    if (digits.length < 9) return;
+    if (digits.length < 9) {
+      setStatusError("Telefon raqamini to'liq kiriting");
+      return;
+    }
+    setStatusError(null);
     setLoading(true);
     setStatusResult(null);
     try {
       const formattedPhone = digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
-      const res = await access.getPartnerAccessStatus(formattedPhone);
-      setStatusResult(res);
+      const res = await getPartnerAccessStatus(formattedPhone);
       if (!res.found) {
+        setStatusResult(null);
+        setStatusError("Bunday raqamga bog'liq ariza topilmadi");
         toast.error("Bunday raqamga bog'liq ariza topilmadi");
+      } else {
+        setStatusResult(res);
       }
     } catch {
+      setStatusResult(null);
+      setStatusError("Ariza holatini tekshirib bo'lmadi");
       toast.error("Ariza holatini tekshirib bo'lmadi");
     } finally {
       setLoading(false);
@@ -51,12 +61,12 @@ export default function ApplicationStatusPage() {
           href="/login"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors w-fit mb-0.5 cursor-pointer"
         >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           Login sahifasiga qaytish
         </Link>
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100/80">
-            <Search className="h-4 w-4" aria-hidden />
+            <Search className="h-4 w-4" aria-hidden="true" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Ariza holatini tekshirish
@@ -67,23 +77,40 @@ export default function ApplicationStatusPage() {
         </p>
       </div>
 
-      {!statusResult && (
-        <form onSubmit={handleCheck} className="flex flex-col gap-4">
+      {(!statusResult || !statusResult.found) && (
+        <form onSubmit={handleCheck} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="status-phone" className="text-xs font-bold text-slate-700">
               Telefon raqam
             </Label>
             <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
               <PhoneInput
                 id="status-phone"
                 required
+                autoComplete="tel"
+                inputMode="tel"
+                aria-invalid={!!statusError}
+                aria-describedby={statusError ? "status-phone-error" : undefined}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (statusError) setStatusError(null);
+                }}
                 placeholder="+998 90 123 45 67"
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
+                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all shadow-2xs"
               />
             </div>
+            {statusError && (
+              <p
+                id="status-phone-error"
+                role="alert"
+                className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50"
+              >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {statusError}
+              </p>
+            )}
           </div>
           <Button
             type="submit"
@@ -108,7 +135,7 @@ export default function ApplicationStatusPage() {
             {statusResult.status === 'approved' && (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2.5 text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" aria-hidden="true" />
                   <span>Tasdiqlangan</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
@@ -127,7 +154,7 @@ export default function ApplicationStatusPage() {
             {(statusResult.status === 'submitted' || statusResult.status === 'reviewing' || statusResult.status === 'new') && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2.5 text-amber-800 bg-amber-50 border border-amber-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
-                  <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+                  <Clock className="h-5 w-5 text-amber-600 shrink-0" aria-hidden="true" />
                   <span>Ko&apos;rib chiqilmoqda</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
@@ -138,7 +165,7 @@ export default function ApplicationStatusPage() {
             {statusResult.status === 'rejected' && (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2.5 text-rose-800 bg-rose-50 border border-rose-200/80 px-3.5 py-2.5 rounded-xl text-sm font-semibold">
-                  <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
+                  <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" aria-hidden="true" />
                   <span>Rad etilgan</span>
                 </div>
                 {statusResult.request.rejectionReason && (
@@ -164,7 +191,11 @@ export default function ApplicationStatusPage() {
 
           <Button
             variant="ghost"
-            onClick={() => setStatusResult(null)}
+            onClick={() => {
+              setStatusResult(null);
+              setStatusError(null);
+              setPhone("");
+            }}
             className="mt-1 text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
           >
             Boshqa raqam tekshirish

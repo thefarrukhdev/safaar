@@ -1,7 +1,9 @@
-import { forwardRef, useState, useEffect, type ChangeEvent } from "react";
+"use client";
+
+import { forwardRef, useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from "react";
 import { Input } from "./input";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
 function formatPhone(value: string) {
   const numbers = value.replace(/\D/g, '');
@@ -22,10 +24,27 @@ function formatPhone(value: string) {
 }
 
 export const PhoneInput = forwardRef<HTMLInputElement, InputProps>(function PhoneInput(
-  { onChange, value, defaultValue, placeholder = "+998 __ ___ __ __", ...props },
+  {
+    onChange,
+    value,
+    defaultValue,
+    placeholder = "+998 __ ___ __ __",
+    autoComplete = "tel",
+    inputMode = "tel",
+    type = "tel",
+    ...props
+  },
   ref
 ) {
-  const [internalValue, setInternalValue] = useState("");
+  const [internalValue, setInternalValue] = useState(() => {
+    if (value !== undefined && value !== null) {
+      return formatPhone(String(value));
+    }
+    if (defaultValue !== undefined && defaultValue !== null) {
+      return formatPhone(String(defaultValue));
+    }
+    return "";
+  });
 
   useEffect(() => {
     if (value !== undefined && value !== null) {
@@ -61,11 +80,12 @@ export const PhoneInput = forwardRef<HTMLInputElement, InputProps>(function Phon
   return (
     <Input
       ref={ref}
-      value={value !== undefined ? internalValue : undefined}
-      defaultValue={value === undefined ? internalValue : undefined}
+      value={internalValue}
       onChange={handleChange}
       placeholder={placeholder}
-      type="tel"
+      type={type}
+      autoComplete={autoComplete}
+      inputMode={inputMode}
       {...props}
     />
   );

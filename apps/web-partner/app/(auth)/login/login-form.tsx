@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,8 +63,6 @@ export function LoginForm() {
   const passwordLogin = usePartnerPasswordLogin();
   const setPassword = usePartnerSetPassword();
 
-  const codeInputRef = useRef<HTMLInputElement | null>(null);
-
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -87,11 +85,12 @@ export function LoginForm() {
   // Focus code input when entering reset_verify mode
   useEffect(() => {
     if (mode === 'reset_verify') {
-      setTimeout(() => {
-        codeInputRef.current?.focus();
+      const timer = setTimeout(() => {
+        form.setFocus('code');
       }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [mode]);
+  }, [mode, form]);
 
   const handleCopyDevCode = (code: string) => {
     navigator.clipboard.writeText(code).then(() => {
@@ -230,10 +229,11 @@ export function LoginForm() {
       {/* Server error alert banner */}
       {serverError && (
         <div
+          id="login-server-error"
           role="alert"
           className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-in fade-in-50 duration-200"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
           <div className="flex-1 font-medium leading-relaxed">{serverError}</div>
         </div>
       )}
@@ -252,7 +252,7 @@ export function LoginForm() {
             onClick={resetToLogin}
             className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Kirish
           </button>
         </div>
@@ -271,7 +271,7 @@ export function LoginForm() {
             onClick={backToResetRequest}
             className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             O'zgartirish
           </button>
         </div>
@@ -285,14 +285,14 @@ export function LoginForm() {
           </Label>
           {mode === 'reset_verify' && challenge?.phone && (
             <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" />
               {maskPhone(challenge.phone)}
             </span>
           )}
         </div>
 
         <div className="relative">
-          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
           <Controller
             name="phone"
             control={form.control}
@@ -301,9 +301,17 @@ export function LoginForm() {
                 id="phone"
                 disabled={mode === 'reset_verify'}
                 placeholder="+998 90 123 45 67"
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-60 disabled:bg-slate-100"
+                autoComplete="tel"
+                inputMode="tel"
+                aria-invalid={!!form.formState.errors.phone}
+                aria-describedby={form.formState.errors.phone ? "phone-error" : undefined}
+                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all disabled:opacity-60 disabled:bg-slate-100"
                 value={field.value}
-                onChange={field.onChange}
+                onChange={(e) => {
+                  field.onChange(e);
+                  if (form.formState.errors.phone) form.clearErrors('phone');
+                  if (serverError) setServerError(null);
+                }}
                 onBlur={field.onBlur}
                 name={field.name}
               />
@@ -311,8 +319,8 @@ export function LoginForm() {
           />
         </div>
         {form.formState.errors.phone && (
-          <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <p id="phone-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {form.formState.errors.phone.message}
           </p>
         )}
@@ -338,18 +346,25 @@ export function LoginForm() {
             </button>
           </div>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
             <PasswordInput
               id="password"
               placeholder="Parolingizni kiriting"
               autoComplete="current-password"
-              className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
-              {...form.register('password')}
+              aria-invalid={!!form.formState.errors.password}
+              aria-describedby={form.formState.errors.password ? "password-error" : undefined}
+              className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
+              {...form.register('password', {
+                onChange: () => {
+                  if (form.formState.errors.password) form.clearErrors('password');
+                  if (serverError) setServerError(null);
+                },
+              })}
             />
           </div>
           {form.formState.errors.password && (
-            <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <p id="password-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {form.formState.errors.password.message}
             </p>
           )}
@@ -377,33 +392,38 @@ export function LoginForm() {
                   disabled={otpRequest.isPending}
                   className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} />
+                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
                   Kodni qayta yuborish
                 </button>
               )}
             </div>
 
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
               <input
                 id="code"
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
+                spellCheck={false}
                 placeholder="000000"
-                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
+                aria-invalid={!!form.formState.errors.code}
+                aria-describedby={form.formState.errors.code ? "code-error" : undefined}
+                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
                 {...form.register('code', {
                   onChange: (e) => {
                     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    if (form.formState.errors.code) form.clearErrors('code');
+                    if (serverError) setServerError(null);
                   },
                 })}
               />
             </div>
 
             {form.formState.errors.code && (
-              <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <p id="code-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {form.formState.errors.code.message}
               </p>
             )}
@@ -413,7 +433,7 @@ export function LoginForm() {
               <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 border border-emerald-200/80 shadow-xs">
                 <div className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   <div>
                     <p className="text-[11px] font-medium text-emerald-800">
@@ -431,12 +451,12 @@ export function LoginForm() {
                 >
                   {copiedCode ? (
                     <>
-                      <Check className="h-3 w-3 text-emerald-600" />
+                      <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                       Kiritildi
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3 text-emerald-700" />
+                      <Copy className="h-3 w-3 text-emerald-700" aria-hidden="true" />
                       To'ldirish
                     </>
                   )}
@@ -447,25 +467,36 @@ export function LoginForm() {
 
           {/* New Password Field */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new_password" className="text-xs font-bold text-slate-700">
+            <Label htmlFor="new-password" className="text-xs font-bold text-slate-700">
               Yangi parol
             </Label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
               <PasswordInput
-                id="new_password"
-                placeholder="Kamida 8 ta belgi"
+                id="new-password"
+                placeholder="Yangi parol (kamida 8 ta belgi)"
                 autoComplete="new-password"
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
-                {...form.register('password')}
+                aria-invalid={!!form.formState.errors.password}
+                aria-describedby={
+                  form.formState.errors.password
+                    ? 'new-password-error new-password-hint'
+                    : 'new-password-hint'
+                }
+                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all"
+                {...form.register('password', {
+                  onChange: () => {
+                    if (form.formState.errors.password) form.clearErrors('password');
+                    if (serverError) setServerError(null);
+                  },
+                })}
               />
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p id="new-password-hint" className="text-[11px] text-slate-500">
               Parol kamida 8 ta belgi (harf, raqam va maxsus belgi) bo&apos;lishi zarur.
             </p>
             {form.formState.errors.password && (
-              <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <p id="new-password-error" role="alert" className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {form.formState.errors.password.message}
               </p>
             )}
@@ -513,7 +544,7 @@ export function LoginForm() {
               onClick={resetToLogin}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors py-1 cursor-pointer"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               Kirish oynasiga qaytish
             </button>
           </div>
@@ -526,7 +557,7 @@ export function LoginForm() {
               onClick={resetToLogin}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors py-1 cursor-pointer"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               Bekor qilish va kirishga qaytish
             </button>
           </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -70,7 +70,7 @@ type FormValues = z.infer<typeof schema>;
 
 // Reusable styling for consistent input appearance across light mode
 const inputBaseClasses =
-  'w-full py-2.5 px-3.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs';
+  'w-full py-2.5 px-3.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all shadow-2xs';
 
 export default function RegisterPage() {
   const [submitted, setSubmitted] = useState<{ id: string } | null>(null);
@@ -177,8 +177,9 @@ export default function RegisterPage() {
 
   const handleVerifyCodeAndSubmit = async () => {
     setError('');
-    if (codeValue.length < 4) {
-      setError("Kodni to'g'ri kiriting");
+    const cleanCode = codeValue.replace(/\D/g, '').trim();
+    if (cleanCode.length !== 6) {
+      setError("Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak");
       return;
     }
     if (!challenge || !pendingValues) {
@@ -296,10 +297,11 @@ export default function RegisterPage() {
       {/* Error alert banner */}
       {error && (
         <div
+          id="reg-error"
           role="alert"
           className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 animate-in fade-in-50 duration-200"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
           <div className="flex-1 font-medium leading-relaxed">{error}</div>
         </div>
       )}
@@ -316,7 +318,7 @@ export default function RegisterPage() {
             </div>
             {challenge?.phone && (
               <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                 {maskPhone(challenge.phone)}
               </span>
             )}
@@ -339,24 +341,30 @@ export default function RegisterPage() {
                   disabled={otpRequest.isPending}
                   className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} />
+                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
                   Kodni qayta yuborish
                 </button>
               )}
             </div>
 
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
               <input
                 id="reg-code"
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
+                spellCheck={false}
                 placeholder="000000"
+                aria-invalid={!!error}
+                aria-describedby={error ? "reg-error" : undefined}
                 value={codeValue}
-                onChange={(e) => setCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
+                onChange={(e) => {
+                  setCodeValue(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  if (error) setError('');
+                }}
+                className="w-full pl-10 pr-4 py-2.5 text-base text-center tracking-[0.3em] font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all shadow-2xs"
               />
             </div>
 
@@ -365,7 +373,7 @@ export default function RegisterPage() {
               <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 border border-emerald-200/80 shadow-xs">
                 <div className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   <div>
                     <p className="text-[11px] font-medium text-emerald-800">
@@ -383,12 +391,12 @@ export default function RegisterPage() {
                 >
                   {copiedCode ? (
                     <>
-                      <Check className="h-3 w-3 text-emerald-600" />
+                      <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                       Kiritildi
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3 text-emerald-700" />
+                      <Copy className="h-3 w-3 text-emerald-700" aria-hidden="true" />
                       To'ldirish
                     </>
                   )}
@@ -428,36 +436,68 @@ export default function RegisterPage() {
           noValidate
         >
           {/* Phone Field */}
-          <Field label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
+          <Field id="phone" label="Telefon raqamingiz" error={form.formState.errors.phone?.message}>
             <div className="relative">
-              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
-              <PhoneInput
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
-                {...form.register('phone')}
+              <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
+              <Controller
+                name="phone"
+                control={form.control}
+                render={({ field }) => (
+                  <PhoneInput
+                    id="phone"
+                    placeholder="+998 90 123 45 67"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    aria-invalid={!!form.formState.errors.phone}
+                    aria-describedby={form.formState.errors.phone ? 'phone-error' : undefined}
+                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all shadow-2xs"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                  />
+                )}
               />
             </div>
           </Field>
 
           {/* Password Field */}
           <Field
+            id="password"
             label="Tizimga kirish uchun parol"
             error={form.formState.errors.password?.message}
+            hint={
+              <p id="password-hint" className="text-[11px] text-slate-500">
+                Kamida 8 ta belgi, mustahkam parol
+              </p>
+            }
           >
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" aria-hidden="true" />
               <PasswordInput
+                id="password"
                 placeholder="Kamida 8 ta belgi"
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-2xs"
+                autoComplete="new-password"
+                aria-invalid={!!form.formState.errors.password}
+                aria-describedby={
+                  form.formState.errors.password
+                    ? 'password-error password-hint'
+                    : 'password-hint'
+                }
+                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 transition-all shadow-2xs"
                 {...form.register('password')}
               />
             </div>
           </Field>
 
           {/* Business Type Select */}
-          <Field label="Obyekt turi" error={form.formState.errors.type?.message}>
+          <Field id="type" label="Obyekt turi" error={form.formState.errors.type?.message}>
             <select
+              id="type"
+              aria-invalid={!!form.formState.errors.type}
+              aria-describedby={form.formState.errors.type ? 'type-error' : undefined}
               {...form.register('type')}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white cursor-pointer"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:border-blue-600 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-red-500/20 aria-[invalid=true]:focus:border-red-600 aria-[invalid=true]:focus:ring-red-500/25 aria-invalid:border-red-500 aria-invalid:ring-red-500/20 aria-invalid:focus:border-red-600 aria-invalid:focus:ring-red-500/25 cursor-pointer"
             >
               <option value="hotel" className="bg-white text-slate-900">
                 Mehmonxona
@@ -485,77 +525,111 @@ export default function RegisterPage() {
 
           {/* Company Name */}
           <Field
+            id="companyName"
             label="Obyekt yoki Kompaniya nomi"
             error={form.formState.errors.companyName?.message}
           >
             <Input
+              id="companyName"
+              autoComplete="organization"
+              aria-invalid={!!form.formState.errors.companyName}
+              aria-describedby={form.formState.errors.companyName ? 'companyName-error' : undefined}
               {...form.register('companyName')}
-              placeholder="Grand Samarkand Hotel"
+              placeholder="Kompaniya yoki brend nomi (masalan: Grand Hotel)"
               className={inputBaseClasses}
             />
           </Field>
 
           {/* Contact Person */}
           <Field
+            id="contactPerson"
             label="Mas'ul shaxs"
             error={form.formState.errors.contactPerson?.message}
           >
             <Input
+              id="contactPerson"
+              autoComplete="name"
+              aria-invalid={!!form.formState.errors.contactPerson}
+              aria-describedby={form.formState.errors.contactPerson ? 'contactPerson-error' : undefined}
               {...form.register('contactPerson')}
-              placeholder="Ali Valiyev"
+              placeholder="To'liq ism-familiya"
               className={inputBaseClasses}
             />
           </Field>
 
           {/* Email */}
-          <Field label="Email" error={form.formState.errors.email?.message}>
+          <Field id="email" label="Email" error={form.formState.errors.email?.message}>
             <Input
+              id="email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
+              aria-invalid={!!form.formState.errors.email}
+              aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
               {...form.register('email')}
-              placeholder="hotel@example.com"
+              placeholder="namuna@domen.uz"
               className={inputBaseClasses}
             />
           </Field>
 
           {/* City & Bank Account Number */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Shahar" error={form.formState.errors.city?.message}>
+            <Field id="city" label="Shahar" error={form.formState.errors.city?.message}>
               <Input
+                id="city"
+                autoComplete="address-level2"
+                aria-invalid={!!form.formState.errors.city}
+                aria-describedby={form.formState.errors.city ? 'city-error' : undefined}
                 {...form.register('city')}
-                placeholder="Samarqand"
+                placeholder="Shaharni kiriting (masalan: Samarqand)"
                 className={inputBaseClasses}
               />
             </Field>
             <Field
+              id="accountNumber"
               label="Bank hisob raqami (20 ta raqam, ixtiyoriy)"
               error={form.formState.errors.accountNumber?.message}
             >
               <Input
+                id="accountNumber"
                 inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
                 maxLength={20}
+                aria-invalid={!!form.formState.errors.accountNumber}
+                aria-describedby={form.formState.errors.accountNumber ? 'accountNumber-error' : undefined}
                 {...form.register('accountNumber', {
                   onChange: (e) => {
                     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
                   },
                 })}
-                placeholder="20208000900000123456"
+                placeholder="20 ta raqamdan iborat bank hisob raqami"
                 className={inputBaseClasses}
               />
             </Field>
           </div>
 
           {/* Address */}
-          <Field label="Manzil" error={form.formState.errors.address?.message}>
+          <Field id="address" label="Manzil" error={form.formState.errors.address?.message}>
             <Input
+              id="address"
+              autoComplete="street-address"
+              aria-invalid={!!form.formState.errors.address}
+              aria-describedby={form.formState.errors.address ? 'address-error' : undefined}
               {...form.register('address')}
-              placeholder="Registon ko'chasi 10"
+              placeholder="Ko'cha, uy raqami"
               className={inputBaseClasses}
             />
           </Field>
 
           {/* Note */}
-          <Field label="Izoh (Ixtiyoriy)" error={form.formState.errors.note?.message}>
+          <Field id="note" label="Izoh (Ixtiyoriy)" error={form.formState.errors.note?.message}>
             <Input
+              id="note"
+              autoComplete="off"
+              aria-invalid={!!form.formState.errors.note}
+              aria-describedby={form.formState.errors.note ? 'note-error' : undefined}
               {...form.register('note')}
               placeholder="Qo'shimcha ma'lumot yoki talablar"
               className={inputBaseClasses}
@@ -578,21 +652,32 @@ export default function RegisterPage() {
 }
 
 function Field({
+  id,
   label,
   error,
   children,
+  hint,
 }: {
+  id?: string;
   label: string;
   error?: string;
   children: ReactNode;
+  hint?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-bold text-slate-700">{label}</Label>
+      <Label htmlFor={id} className="text-xs font-bold text-slate-700">
+        {label}
+      </Label>
       {children}
+      {hint}
       {error ? (
-        <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+        <p
+          id={id ? `${id}-error` : undefined}
+          role="alert"
+          className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-0.5 animate-in fade-in-50"
+        >
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : null}

@@ -46,24 +46,13 @@ const schema = z.object({
     'dacha',
     'restaurant',
   ]),
-  companyName: z.string().min(2, 'Obyekt/Kompaniya nomini kiriting').optional().or(z.literal('')),
-  contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting").optional().or(z.literal('')),
+  companyName: z.string().min(2, 'Obyekt yoki kompaniya nomini kiriting'),
+  city: z.string().min(2, 'Shaharni kiriting'),
   phone: z
     .string()
     .min(1, 'Telefon raqamni kiriting')
     .refine(isValidPhone, "Telefon noto'g'ri formatda"),
   password: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak"),
-  email: z.string().email("Email noto'g'ri").optional().or(z.literal('')),
-  city: z.string().min(2, 'Shaharni kiriting').optional().or(z.literal('')),
-  address: z.string().min(5, 'Manzilni kiriting').optional().or(z.literal('')),
-  accountNumber: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^\d{20}$/.test(val.replace(/\s/g, '')),
-      "Hisob raqami 20 ta raqamdan iborat bo'lishi kerak",
-    ),
-  note: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -100,14 +89,9 @@ export default function RegisterPage() {
     defaultValues: {
       type: 'hotel',
       companyName: '',
-      contactPerson: '',
+      city: '',
       phone: '+998 ',
       password: '',
-      email: '',
-      city: '',
-      address: '',
-      accountNumber: '',
-      note: '',
     },
   });
 
@@ -200,17 +184,11 @@ export default function RegisterPage() {
       const formattedPhone = digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
 
       const result = await access.submitPartnerApplication({
-        ...pendingValues,
+        type: pendingValues.type,
+        companyName: pendingValues.companyName.trim(),
+        city: pendingValues.city.trim(),
         phone: formattedPhone,
-        companyName: pendingValues.companyName?.trim() || undefined,
-        contactPerson: pendingValues.contactPerson?.trim() || undefined,
-        email: pendingValues.email?.trim() || undefined,
-        city: pendingValues.city?.trim() || undefined,
-        address: pendingValues.address?.trim() || undefined,
-        accountNumber: pendingValues.accountNumber?.trim()
-          ? pendingValues.accountNumber.replace(/\s/g, '')
-          : undefined,
-        note: pendingValues.note?.trim() || undefined,
+        password: pendingValues.password,
         phoneVerificationToken: verified.verificationToken,
       });
       setSubmitted({ id: result?.item?.id || 'demo-id' });
@@ -532,7 +510,7 @@ export default function RegisterPage() {
           {/* Company Name */}
           <Field
             id="companyName"
-            label="Obyekt yoki Kompaniya nomi (ixtiyoriy)"
+            label="Obyekt yoki Kompaniya nomi"
             error={form.formState.errors.companyName?.message}
           >
             <Input
@@ -546,98 +524,15 @@ export default function RegisterPage() {
             />
           </Field>
 
-          {/* Contact Person */}
-          <Field
-            id="contactPerson"
-            label="Mas'ul shaxs (ixtiyoriy)"
-            error={form.formState.errors.contactPerson?.message}
-          >
+          {/* City */}
+          <Field id="city" label="Shahar" error={form.formState.errors.city?.message}>
             <Input
-              id="contactPerson"
-              autoComplete="name"
-              aria-invalid={!!form.formState.errors.contactPerson}
-              aria-describedby={form.formState.errors.contactPerson ? 'contactPerson-error' : undefined}
-              {...form.register('contactPerson')}
-              placeholder="To'liq ism-familiya"
-              className={inputBaseClasses}
-            />
-          </Field>
-
-          {/* Email */}
-          <Field id="email" label="Email (ixtiyoriy)" error={form.formState.errors.email?.message}>
-            <Input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              spellCheck={false}
-              aria-invalid={!!form.formState.errors.email}
-              aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
-              {...form.register('email')}
-              placeholder="namuna@domen.uz"
-              className={inputBaseClasses}
-            />
-          </Field>
-
-          {/* City & Bank Account Number */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="city" label="Shahar (ixtiyoriy)" error={form.formState.errors.city?.message}>
-              <Input
-                id="city"
-                autoComplete="address-level2"
-                aria-invalid={!!form.formState.errors.city}
-                aria-describedby={form.formState.errors.city ? 'city-error' : undefined}
-                {...form.register('city')}
-                placeholder="Shaharni kiriting (masalan: Samarqand)"
-                className={inputBaseClasses}
-              />
-            </Field>
-            <Field
-              id="accountNumber"
-              label="Bank hisob raqami (20 ta raqam, ixtiyoriy)"
-              error={form.formState.errors.accountNumber?.message}
-            >
-              <Input
-                id="accountNumber"
-                inputMode="numeric"
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={20}
-                aria-invalid={!!form.formState.errors.accountNumber}
-                aria-describedby={form.formState.errors.accountNumber ? 'accountNumber-error' : undefined}
-                {...form.register('accountNumber', {
-                  onChange: (e) => {
-                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 20);
-                  },
-                })}
-                placeholder="20 ta raqamdan iborat bank hisob raqami"
-                className={inputBaseClasses}
-              />
-            </Field>
-          </div>
-
-          {/* Address */}
-          <Field id="address" label="Manzil (ixtiyoriy)" error={form.formState.errors.address?.message}>
-            <Input
-              id="address"
-              autoComplete="street-address"
-              aria-invalid={!!form.formState.errors.address}
-              aria-describedby={form.formState.errors.address ? 'address-error' : undefined}
-              {...form.register('address')}
-              placeholder="Ko'cha, uy raqami"
-              className={inputBaseClasses}
-            />
-          </Field>
-
-          {/* Note */}
-          <Field id="note" label="Izoh (Ixtiyoriy)" error={form.formState.errors.note?.message}>
-            <Input
-              id="note"
-              autoComplete="off"
-              aria-invalid={!!form.formState.errors.note}
-              aria-describedby={form.formState.errors.note ? 'note-error' : undefined}
-              {...form.register('note')}
-              placeholder="Qo'shimcha ma'lumot yoki talablar"
+              id="city"
+              autoComplete="address-level2"
+              aria-invalid={!!form.formState.errors.city}
+              aria-describedby={form.formState.errors.city ? 'city-error' : undefined}
+              {...form.register('city')}
+              placeholder="Shaharni kiriting (masalan: Samarqand)"
               className={inputBaseClasses}
             />
           </Field>

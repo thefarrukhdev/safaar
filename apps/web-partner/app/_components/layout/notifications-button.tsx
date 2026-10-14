@@ -53,12 +53,12 @@ export function NotificationsButton() {
         <Button
           type="button"
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => setOpen((v) => !v)}
           aria-label={`Bildirishnomalar (${total})`}
           aria-haspopup="menu"
           aria-expanded={open}
-          className="relative h-9 w-9 min-h-0 min-w-0 p-0 text-zinc-500 hover:bg-[var(--surface-hover)]"
+          className="relative h-9 w-9 text-zinc-500 hover:bg-[var(--surface-hover)]"
         >
           <Bell className="h-5 w-5" aria-hidden="true" />
           {total > 0 && (

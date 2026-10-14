@@ -158,7 +158,7 @@ export function BulkActionBar({
             onClick={() => handleAction("confirm", onConfirmAll)}
             className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-white min-h-[38px]"
           >
-            <CheckCircle2 className="h-4 w-4 text-emerald-200 mr-1.5" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-200" />
             <span>Ommaviy tasdiqlash</span>
           </Button>
         )}
@@ -178,7 +178,7 @@ export function BulkActionBar({
                 showStatusMenu && "bg-slate-700 ring-2 ring-brand-400",
               )}
             >
-              <SlidersHorizontal className="h-4 w-4 text-slate-300 mr-1.5" />
+              <SlidersHorizontal className="h-4 w-4 text-slate-300" />
               <span>Holatini o'zgartirish</span>
             </Button>
 
@@ -252,7 +252,7 @@ export function BulkActionBar({
             onClick={() => handleAction("cancel", onCancelAll)}
             className="min-h-[38px]"
           >
-            <XCircle className="h-4 w-4 text-rose-200 mr-1.5" />
+            <XCircle className="h-4 w-4 text-rose-200" />
             <span>Bekor qilish</span>
           </Button>
         )}
@@ -266,7 +266,7 @@ export function BulkActionBar({
           title="Tanlovni tozalash (Esc)"
           className="text-slate-400 hover:text-white hover:bg-white/10 min-h-[38px] p-1.5 sm:px-2"
         >
-          <X className="h-4 w-4 mr-1" />
+          <X className="h-4 w-4" />
           <span className="hidden md:inline">Tozalash</span>
         </Button>
       </div>

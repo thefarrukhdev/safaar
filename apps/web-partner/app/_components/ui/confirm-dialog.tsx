@@ -340,10 +340,10 @@ function ConfirmDialogView({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={onClose}
             aria-label="Yopish"
-            className="h-8 w-8 min-h-0 min-w-0 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="h-4 w-4" />
           </Button>

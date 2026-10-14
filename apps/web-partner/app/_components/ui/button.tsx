@@ -1,6 +1,6 @@
 import { Slot } from "@radix-ui/react-slot";
 import { Loader2 } from "lucide-react";
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import React, { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "../../_lib/utils/cn";
 
 export type ButtonVariant =
@@ -30,52 +30,62 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: cn(
     "bg-gradient-to-b from-brand-500 to-brand-600 text-white font-medium",
     "border border-brand-600/90 hover:from-brand-400 hover:to-brand-500 active:from-brand-600 active:to-brand-700",
-    "shadow-sm shadow-brand-900/15 hover:shadow-md hover:shadow-brand-900/25",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]",
-    "dark:border-brand-400/30 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]",
+    "shadow-[0_1px_2px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.22)]",
+    "hover:shadow-[0_4px_12px_rgba(37,99,235,0.25),inset_0_1px_0_rgba(255,255,255,0.28)]",
+    "active:shadow-[0_1px_2px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(0,0,0,0.15)]",
+    "dark:border-brand-400/30 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.18)]",
+    "dark:hover:shadow-[0_4px_12px_rgba(37,99,235,0.35),inset_0_1px_0_rgba(255,255,255,0.22)]",
     "disabled:from-brand-400 disabled:to-brand-400 disabled:border-transparent disabled:opacity-50 disabled:shadow-none",
+    "aria-disabled:from-brand-400 aria-disabled:to-brand-400 aria-disabled:border-transparent aria-disabled:opacity-50 aria-disabled:shadow-none",
   ),
   secondary: cn(
     "bg-white text-slate-800 font-medium",
     "border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 active:bg-slate-100",
-    "shadow-xs shadow-slate-900/5",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
-    "dark:bg-slate-800/90 dark:text-slate-100 dark:border-slate-700/80 dark:hover:bg-slate-800 dark:hover:border-slate-600 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+    "shadow-[0_1px_2px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.8)]",
+    "hover:shadow-[0_2px_6px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]",
+    "dark:bg-slate-800/90 dark:text-slate-100 dark:border-slate-700/80 dark:hover:bg-slate-800 dark:hover:border-slate-600",
+    "dark:shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]",
+    "dark:hover:shadow-[0_2px_6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.12)]",
     "disabled:bg-slate-100 dark:disabled:bg-slate-800/40 disabled:border-slate-200/60 dark:disabled:border-slate-700/40 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none",
+    "aria-disabled:bg-slate-100 dark:aria-disabled:bg-slate-800/40 aria-disabled:border-slate-200/60 dark:aria-disabled:border-slate-700/40 aria-disabled:text-slate-400 dark:aria-disabled:text-slate-500 aria-disabled:shadow-none",
   ),
   outline: cn(
     "border border-[var(--border)] bg-transparent text-[var(--foreground)] font-medium",
     "hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)] active:bg-[var(--surface-hover)]",
-    "shadow-xs",
+    "shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:shadow-none",
     "disabled:border-[var(--border)]/50 disabled:text-[var(--muted-foreground)]/60 disabled:shadow-none",
+    "aria-disabled:border-[var(--border)]/50 aria-disabled:text-[var(--muted-foreground)]/60 aria-disabled:shadow-none",
   ),
   ghost: cn(
     "border border-transparent bg-transparent text-[var(--foreground)] font-medium",
     "hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] active:bg-[var(--surface-hover)]",
     "disabled:text-[var(--muted-foreground)]/50",
+    "aria-disabled:text-[var(--muted-foreground)]/50",
   ),
   danger: cn(
     "bg-gradient-to-b from-rose-500 to-rose-600 text-white font-medium",
     "border border-rose-600/90 hover:from-rose-400 hover:to-rose-500 active:from-rose-600 active:to-rose-700",
-    "shadow-sm shadow-rose-900/15 hover:shadow-md hover:shadow-rose-900/25",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]",
+    "shadow-[0_1px_2px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.22)]",
+    "hover:shadow-[0_4px_12px_rgba(225,29,72,0.25),inset_0_1px_0_rgba(255,255,255,0.28)]",
+    "dark:border-rose-400/30 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.18)]",
     "focus-visible:ring-rose-500",
-    "dark:border-rose-400/30 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]",
     "disabled:from-rose-400 disabled:to-rose-400 disabled:border-transparent disabled:opacity-50 disabled:shadow-none",
+    "aria-disabled:from-rose-400 aria-disabled:to-rose-400 aria-disabled:border-transparent aria-disabled:opacity-50 aria-disabled:shadow-none",
   ),
   subtle: cn(
     "bg-[var(--surface-muted)] text-[var(--foreground)] font-medium",
     "border border-[var(--border)]/70 hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
-    "shadow-2xs",
+    "shadow-[0_1px_2px_rgba(15,23,42,0.03)]",
     "disabled:bg-[var(--surface-muted)]/50 disabled:border-[var(--border)]/30 disabled:text-[var(--muted-foreground)]/60 disabled:shadow-none",
+    "aria-disabled:bg-[var(--surface-muted)]/50 aria-disabled:border-[var(--border)]/30 aria-disabled:text-[var(--muted-foreground)]/60 aria-disabled:shadow-none",
   ),
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-9 min-h-[36px] px-3.5 text-xs gap-1.5 rounded-lg touch-manipulation before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-[max(100%,44px)] before:h-[max(100%,44px)] before:content-[''] before:pointer-events-auto sm:before:hidden",
-  md: "h-11 min-h-[44px] px-4.5 text-sm gap-2 rounded-xl",
-  lg: "h-12 min-h-[48px] px-6 text-base gap-2.5 rounded-xl",
-  icon: "h-11 w-11 min-h-[44px] min-w-[44px] p-0 rounded-xl",
+  sm: "h-9 px-3.5 text-xs gap-1.5 rounded-lg touch-manipulation before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-[max(100%,44px)] before:h-[max(100%,44px)] before:content-[''] sm:before:hidden",
+  md: "h-11 px-4.5 text-sm gap-2 rounded-xl",
+  lg: "h-12 px-6 text-base gap-2.5 rounded-xl",
+  icon: "h-11 w-11 p-0 rounded-xl",
 };
 
 const spinnerSizes: Record<ButtonSize, string> = {
@@ -98,7 +108,8 @@ export function buttonVariants({
     "relative inline-flex items-center justify-center select-none whitespace-nowrap cursor-pointer",
     "transition-all duration-150 ease-out transform-gpu",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[var(--background)]",
-    "disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:transform-none",
+    "disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:transform-none disabled:active:scale-100",
+    "aria-disabled:cursor-not-allowed aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-disabled:shadow-none aria-disabled:transform-none aria-disabled:active:scale-100",
     "active:scale-[0.98]",
     variantClasses[variant],
     sizeClasses[size],
@@ -116,6 +127,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     disabled = false,
     asChild = false,
     children,
+    onClick,
     ...props
   },
   ref,
@@ -124,15 +136,52 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const classes = buttonVariants({ variant, size, className });
 
   if (asChild) {
+    const isElement = React.isValidElement(children);
+    const childElement = isElement ? (children as React.ReactElement<any>) : null;
+
     return (
       <Slot
         ref={ref}
-        aria-busy={loading || undefined}
-        aria-disabled={isDisabled || undefined}
+        aria-busy={loading ? "true" : undefined}
+        aria-disabled={isDisabled ? "true" : undefined}
         className={classes}
+        onClick={(e: React.MouseEvent) => {
+          if (isDisabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          onClick?.(e as React.MouseEvent<HTMLButtonElement>);
+        }}
         {...props}
       >
-        {children}
+        {childElement ? (
+          React.cloneElement(childElement, {
+            children: (
+              <>
+                {loading && (
+                  <span
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    aria-hidden="true"
+                  >
+                    <Loader2 className={cn("animate-spin shrink-0", spinnerSizes[size])} />
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center gap-[inherit] transition-opacity duration-150",
+                    loading && "opacity-0 select-none pointer-events-none",
+                  )}
+                  aria-hidden={loading || undefined}
+                >
+                  {childElement.props.children}
+                </span>
+              </>
+            ),
+          })
+        ) : (
+          children
+        )}
       </Slot>
     );
   }
@@ -142,8 +191,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type}
       disabled={isDisabled}
-      aria-busy={loading || undefined}
+      aria-busy={loading ? "true" : undefined}
+      aria-disabled={isDisabled ? "true" : undefined}
       className={classes}
+      onClick={onClick}
       {...props}
     >
       {loading && (
@@ -159,6 +210,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
           "inline-flex items-center justify-center gap-[inherit] transition-opacity duration-150",
           loading && "opacity-0 select-none pointer-events-none",
         )}
+        aria-hidden={loading || undefined}
       >
         {children}
       </span>

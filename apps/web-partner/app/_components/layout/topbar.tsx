@@ -29,10 +29,10 @@ export function Topbar() {
           <Button
             type="button"
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={openMobileMenu}
             aria-label="Menyu ochish"
-            className="h-9 w-9 min-h-0 min-w-0 p-0 text-zinc-500 hover:bg-[var(--surface-muted)] md:hidden"
+            className="h-9 w-9 text-zinc-500 hover:bg-[var(--surface-muted)] md:hidden"
           >
             <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>

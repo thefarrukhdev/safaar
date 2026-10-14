@@ -143,10 +143,10 @@ export function Drawer({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={onClose}
             aria-label="Yopish"
-            className="h-8 w-8 min-h-0 min-w-0 p-0 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+            className="h-8 w-8 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </Button>

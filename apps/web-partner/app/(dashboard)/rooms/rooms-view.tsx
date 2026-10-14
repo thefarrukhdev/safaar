@@ -690,14 +690,15 @@ function RoomCard({
             aria-label={`${room.number} tanlash`}
             className="h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
           />
-          <button 
-            type="button" 
+          <Button
+            type="button"
+            variant="ghost"
             onClick={onEdit}
-            className="text-2xl font-bold text-zinc-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400 transition-colors text-left truncate"
+            className="text-2xl font-bold text-zinc-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400 transition-colors text-left truncate p-0 h-auto hover:bg-transparent justify-start"
             title="Tahrirlash"
           >
             {room.number}
-          </button>
+          </Button>
           {!room.isListed && (
             <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
               YASHIRILGAN

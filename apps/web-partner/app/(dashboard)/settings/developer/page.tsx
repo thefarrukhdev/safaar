@@ -198,9 +198,9 @@ export default function DeveloperSettingsPage() {
                       <td className="px-5 py-4">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => handleDeleteKey(k.id)}
-                          className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="O'chirish"
                         >
                           <Trash2 size={16} />
@@ -257,9 +257,9 @@ export default function DeveloperSettingsPage() {
                       <td className="px-5 py-4">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => handleDeleteWebhook(w.id)}
-                          className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                           title="O'chirish"
                         >
                           <Trash2 size={16} />
@@ -289,9 +289,9 @@ export default function DeveloperSettingsPage() {
                   <code className="text-xs break-all text-left">{newKeyString}</code>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => copyToClipboard(newKeyString)}
-                    className="h-8 w-8 min-h-0 min-w-0 p-0 text-[var(--primary)]"
+                    className="h-8 w-8 text-[var(--primary)]"
                     title="Nusxalash"
                   >
                     <Copy size={16} />

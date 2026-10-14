@@ -180,11 +180,11 @@ export function PhotosEditor({
                       <Button
                         type="button"
                         variant="secondary"
-                        size="sm"
+                        size="icon"
                         onClick={() => void handleReorder(photo.id, "up")}
                         disabled={idx === 0 || busy}
                         aria-label="Yuqoriga"
-                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-zinc-800 hover:bg-white"
+                        className="h-8 w-8 bg-white/90 text-zinc-800 hover:bg-white"
                       >
                         <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
@@ -193,11 +193,11 @@ export function PhotosEditor({
                       <Button
                         type="button"
                         variant="secondary"
-                        size="sm"
+                        size="icon"
                         onClick={() => void handleReorder(photo.id, "down")}
                         disabled={idx === sortedPhotos.length - 1 || busy}
                         aria-label="Pastga"
-                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-zinc-800 hover:bg-white"
+                        className="h-8 w-8 bg-white/90 text-zinc-800 hover:bg-white"
                       >
                         <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
@@ -207,7 +207,7 @@ export function PhotosEditor({
                         <Button
                           type="button"
                           variant="secondary"
-                          size="sm"
+                          size="icon"
                           onClick={() => {
                             updatePhoto.mutate(
                               { imageId: photo.id, values: { isCover: true } },
@@ -225,7 +225,7 @@ export function PhotosEditor({
                             );
                           }}
                           aria-label="Asosiy qilish"
-                          className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-amber-600 hover:bg-white"
+                          className="h-8 w-8 bg-white/90 text-amber-600 hover:bg-white"
                         >
                           <Star className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
@@ -235,22 +235,22 @@ export function PhotosEditor({
                       <Button
                         type="button"
                         variant="secondary"
-                        size="sm"
+                        size="icon"
                         onClick={() => {
                           deletePhoto.mutate(photo.id, {
                             onSuccess: () => toast.success("Rasm o'chirildi"),
                             onError: (error) => {
                               toast.error(
                                 error instanceof Error
-                                  ? error.message
-                                  : "Rasmni o'chirib bo'lmadi",
+                                      ? error.message
+                                      : "Rasmni o'chirib bo'lmadi",
                               );
                             },
                           });
                         }}
                         disabled={busy}
                         aria-label="O'chirish"
-                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-red-600 hover:bg-white"
+                        className="h-8 w-8 bg-white/90 text-red-600 hover:bg-white"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>

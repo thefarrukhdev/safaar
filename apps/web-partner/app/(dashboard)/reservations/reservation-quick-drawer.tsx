@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   CarFront,
   CheckCircle2,
+  Copy,
   ExternalLink,
   LogOut,
   Mail,
@@ -16,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Drawer } from "../../_components/ui/drawer";
@@ -177,13 +179,28 @@ export function ReservationQuickDrawer({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">Telefon:</span>
-              <a
-                href={`tel:${reservation.guest.phone}`}
-                className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
-              >
-                <Phone className="h-3.5 w-3.5" aria-hidden />
-                {formatPhone(reservation.guest.phone)}
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`tel:${reservation.guest.phone}`}
+                  className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
+                >
+                  <Phone className="h-3.5 w-3.5" aria-hidden />
+                  {formatPhone(reservation.guest.phone)}
+                </a>
+                {reservation.guest.phone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(reservation.guest.phone);
+                      toast.success("Raqam nusxalandi");
+                    }}
+                    title="Raqamni nusxalash"
+                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  >
+                    <Copy className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                )}
+              </div>
             </div>
             {reservation.guest.email && (
               <div className="flex items-center justify-between">

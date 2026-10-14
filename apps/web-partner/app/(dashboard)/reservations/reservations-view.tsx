@@ -26,10 +26,12 @@ import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { ConfirmDialog } from "../../_components/ui/dialog";
+import { useConfirm } from "../../_components/ui/confirm-dialog";
 import { Tabs, TabsList, TabsTrigger } from "../../_components/ui/tabs";
 import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
+import { BulkActionBar } from "../../_components/domain/bulk-action-bar";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
 import { ReservationStatusBadge } from "../../_components/domain/reservation-status-badge";
 import { SourceBadge } from "../../_components/domain/source-badge";
@@ -356,6 +358,113 @@ export function ReservationsView() {
     setCheckOutTarget(reservation);
   };
 
+  const [selectedReservationIds, setSelectedReservationIds] = useState<Set<string>>(new Set());
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const confirm = useConfirm();
+
+  const handleToggleSelectReservation = useCallback((id: string) => {
+    setSelectedReservationIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, [setSelectedReservationIds]);
+
+  const handleToggleSelectAllReservations = useCallback(() => {
+    setSelectedReservationIds((prev) => {
+      if (prev.size === filtered.length) {
+        return new Set();
+      }
+      return new Set(filtered.map((r) => r.id));
+    });
+  }, [filtered, setSelectedReservationIds]);
+
+  const handleBulkConfirmReservations = async () => {
+    const ids = Array.from(selectedReservationIds);
+    const pendings = filtered.filter(
+      (r) =>
+        ids.includes(r.id) &&
+        (r.status === BookingStatus.PENDING ||
+          r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION),
+    );
+
+    if (pendings.length === 0) {
+      toast.info("Tanlanganlar ichida tasdiqlash kutilayotgan bronlar yo'q");
+      return;
+    }
+
+    setIsBulkProcessing(true);
+    try {
+      const results = await Promise.allSettled(
+        pendings.map((r) => confirmReservation.mutateAsync(r.id)),
+      );
+      const fulfilled = results.filter((r) => r.status === "fulfilled").length;
+      const rejected = results.filter((r) => r.status === "rejected").length;
+
+      if (rejected === 0) {
+        toast.success(`${fulfilled} ta bron muvaffaqiyatli tasdiqlandi`);
+        setSelectedReservationIds(new Set());
+      } else {
+        toast.warning(`${fulfilled} ta tasdiqlandi, ${rejected} tasida xatolik yuz berdi`);
+        const failedIds = new Set(
+          pendings
+            .filter((_, idx) => results[idx].status === "rejected")
+            .map((r) => r.id),
+        );
+        setSelectedReservationIds(failedIds);
+      }
+    } catch {
+      toast.error("Ommaviy tasdiqlashda xatolik yuz berdi");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkCancelReservations = async () => {
+    const ok = await confirm({
+      title: "Bronlarni bekor qilish",
+      description: `Tanlangan ${selectedReservationIds.size} ta bronni bekor qilishni tasdiqlaysizmi?`,
+      confirmText: "Bekor qilish",
+      cancelText: "Orqaga",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const ids = Array.from(selectedReservationIds);
+    setIsBulkProcessing(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          rejectReservation.mutateAsync({
+            id,
+            reason: "Hamkor tomonidan guruhli bekor qilindi",
+          }),
+        ),
+      );
+      const fulfilled = results.filter((r) => r.status === "fulfilled").length;
+      const rejected = results.filter((r) => r.status === "rejected").length;
+
+      if (rejected === 0) {
+        toast.success(`${fulfilled} ta bron bekor qilindi`);
+        setSelectedReservationIds(new Set());
+      } else {
+        toast.warning(`${fulfilled} ta bekor qilindi, ${rejected} tasida xatolik yuz berdi`);
+        const failedIds = new Set(
+          ids.filter((_, idx) => results[idx].status === "rejected"),
+        );
+        setSelectedReservationIds(failedIds);
+      }
+    } catch {
+      toast.error("Guruhli bekor qilishda xatolik yuz berdi");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
   const hasDateFilter = Boolean(startDate || endDate);
 
   return (
@@ -648,6 +757,9 @@ export function ReservationsView() {
               onReject={(r) => setRejectTarget(r)}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              selectedIds={selectedReservationIds}
+              onToggleSelect={handleToggleSelectReservation}
+              onToggleSelectAll={handleToggleSelectAllReservations}
             />
           ) : (
             <div className="grid gap-3">
@@ -660,6 +772,8 @@ export function ReservationsView() {
                   onReject={() => setRejectTarget(reservation)}
                   onCheckIn={() => handleCheckIn(reservation)}
                   onCheckOut={() => handleCheckOut(reservation)}
+                  isSelected={selectedReservationIds.has(reservation.id)}
+                  onToggleSelect={() => handleToggleSelectReservation(reservation.id)}
                 />
               ))}
             </div>
@@ -749,6 +863,15 @@ export function ReservationsView() {
         confirmLabel="Ha, chiqish qilish"
         tone="primary"
       />
+
+      <BulkActionBar
+        selectedCount={selectedReservationIds.size}
+        onClear={() => setSelectedReservationIds(new Set())}
+        entityName="ta bron tanlandi"
+        onConfirmAll={handleBulkConfirmReservations}
+        onCancelAll={handleBulkCancelReservations}
+        isProcessing={isBulkProcessing}
+      />
     </div>
   );
 }
@@ -802,6 +925,8 @@ function ReservationCard({
   onReject,
   onCheckIn,
   onCheckOut,
+  isSelected,
+  onToggleSelect,
 }: {
   reservation: ReservationView;
   onOpen: () => void;
@@ -809,6 +934,8 @@ function ReservationCard({
   onReject: () => void;
   onCheckIn: () => void;
   onCheckOut?: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const today = new Date().toISOString().split("T")[0];
@@ -827,7 +954,13 @@ function ReservationCard({
   const isBus = hasBuses(partnerType);
 
   return (
-    <Card interactive>
+    <Card
+      interactive
+      className={cn(
+        "transition-all",
+        isSelected && "ring-2 ring-brand-500 bg-brand-50/20 dark:bg-brand-950/20",
+      )}
+    >
       <CardBody className="p-0">
         <div
           role="button"
@@ -845,6 +978,20 @@ function ReservationCard({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
+                  {onToggleSelect && (
+                    <div
+                      className="flex items-center justify-center mr-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={onToggleSelect}
+                        aria-label={`${reservation.id} bronni tanlash`}
+                        className="h-4 w-4 rounded border-slate-300 dark:border-zinc-700 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
                   <span className="font-mono text-xs font-semibold text-brand-700 dark:text-brand-300">
                     {reservation.id}
                   </span>

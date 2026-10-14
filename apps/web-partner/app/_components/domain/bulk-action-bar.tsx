@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -56,6 +56,24 @@ export function BulkActionBar({
 }: BulkActionBarProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  // Tashqariga bosilganda status menyuni yopish
+  useEffect(() => {
+    if (!showStatusMenu) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        statusMenuRef.current &&
+        !statusMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowStatusMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showStatusMenu]);
 
   // Esc bosilganda tanlovni tozalash
   useEffect(() => {
@@ -153,7 +171,7 @@ export function BulkActionBar({
 
         {/* Action: Holatini o'zgartirish */}
         {onChangeStatus && (
-          <div className="relative">
+          <div ref={statusMenuRef} className="relative">
             <button
               type="button"
               disabled={isProcessing || loadingAction !== null}

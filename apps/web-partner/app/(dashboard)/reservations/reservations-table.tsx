@@ -41,6 +41,9 @@ interface ReservationsTableProps {
   onReject: (reservation: ReservationView) => void;
   onCheckIn: (reservation: ReservationView) => void;
   onCheckOut?: (reservation: ReservationView) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: () => void;
 }
 
 interface SortableHeaderProps {
@@ -82,6 +85,9 @@ export function ReservationsTable({
   onReject,
   onCheckIn,
   onCheckOut,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: ReservationsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "checkIn", desc: false },
@@ -89,6 +95,41 @@ export function ReservationsTable({
 
   const columns = useMemo<ColumnDef<ReservationView>[]>(() => {
     return [
+      ...(onToggleSelect
+        ? [
+            {
+              id: "select",
+              header: () => (
+                <div className="flex items-center justify-center px-1">
+                  <input
+                    type="checkbox"
+                    checked={data.length > 0 && selectedIds?.size === data.length}
+                    onChange={onToggleSelectAll}
+                    aria-label="Barcha bronlarni tanlash"
+                    className="h-4 w-4 rounded border-slate-300 dark:border-zinc-700 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                  />
+                </div>
+              ),
+              cell: ({ row }: { row: { original: ReservationView } }) => {
+                const isSelected = selectedIds?.has(row.original.id) ?? false;
+                return (
+                  <div
+                    className="flex items-center justify-center px-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(row.original.id)}
+                      aria-label={`${row.original.id} bronni tanlash`}
+                      className="h-4 w-4 rounded border-slate-300 dark:border-zinc-700 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                    />
+                  </div>
+                );
+              },
+            } as ColumnDef<ReservationView>,
+          ]
+        : []),
       {
         id: "id",
         accessorKey: "id",
@@ -298,7 +339,23 @@ export function ReservationsTable({
         },
       },
     ];
-  }, [beds, checkInLabel, checkOutLabel, isBus, isRest, onCheckIn, onCheckOut, onConfirm, onReject, onSelect, unitLabel]);
+  }, [
+    beds,
+    checkInLabel,
+    checkOutLabel,
+    isBus,
+    isRest,
+    onCheckIn,
+    onCheckOut,
+    onConfirm,
+    onReject,
+    onSelect,
+    unitLabel,
+    selectedIds,
+    onToggleSelect,
+    onToggleSelectAll,
+    data,
+  ]);
 
   const table = useReactTable({
     data,
@@ -360,6 +417,8 @@ export function ReservationsTable({
                 className={cn(
                   "cursor-pointer transition-colors duration-150",
                   "hover:bg-[var(--surface-hover)] focus:bg-[var(--surface-hover)] focus:outline-none",
+                  selectedIds?.has(row.original.id) &&
+                    "bg-brand-50/70 dark:bg-brand-950/30",
                 )}
               >
                 {row.getVisibleCells().map((cell) => (

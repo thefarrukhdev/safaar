@@ -51,34 +51,65 @@ interface DialogState extends ConfirmOptions {
 }
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [dialogState, setDialogState] = useState<DialogState | null>(null);
+  const [activeDialog, setActiveDialog] = useState<DialogState | null>(null);
+  const queueRef = useRef<DialogState[]>([]);
+  const activeDialogRef = useRef<DialogState | null>(null);
+
+  useEffect(() => {
+    activeDialogRef.current = activeDialog;
+  }, [activeDialog]);
+
+  const processNext = useCallback(() => {
+    if (queueRef.current.length > 0) {
+      const next = queueRef.current.shift()!;
+      setActiveDialog(next);
+    } else {
+      setActiveDialog(null);
+    }
+  }, []);
 
   const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
-      setDialogState({
-        ...options,
-        resolve,
-      });
+      const item: DialogState = { ...options, resolve };
+      if (!activeDialogRef.current) {
+        setActiveDialog(item);
+      } else {
+        queueRef.current.push(item);
+      }
     });
   }, []);
 
   const handleClose = useCallback(
     (result: boolean) => {
-      if (dialogState) {
-        dialogState.resolve(result);
-        setDialogState(null);
+      const current = activeDialogRef.current;
+      if (current) {
+        current.resolve(result);
+        processNext();
       }
     },
-    [dialogState],
+    [processNext],
   );
+
+  // Unmount bo'lganda barcha ochiq va navbatdagi dialoglarni bekor qilish (memory leak va hanging promise oldini olish)
+  useEffect(() => {
+    return () => {
+      if (activeDialogRef.current) {
+        activeDialogRef.current.resolve(false);
+      }
+      for (const item of queueRef.current) {
+        item.resolve(false);
+      }
+      queueRef.current = [];
+    };
+  }, []);
 
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      {dialogState && (
+      {activeDialog && (
         <ConfirmDialogView
           open={true}
-          options={dialogState}
+          options={activeDialog}
           onClose={() => handleClose(false)}
           onConfirm={() => handleClose(true)}
         />

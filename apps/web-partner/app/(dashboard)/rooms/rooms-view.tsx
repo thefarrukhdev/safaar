@@ -149,7 +149,7 @@ export function RoomsView() {
     const ids = Array.from(selectedRoomIds);
     setIsBulkProcessing(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         ids.map((id) => {
           const r = rooms.find((room) => room.id === id);
           if (!r) return Promise.resolve();
@@ -165,8 +165,19 @@ export function RoomsView() {
           });
         }),
       );
-      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} holati yangilandi`);
-      setSelectedRoomIds(new Set());
+      const fulfilled = results.filter((r) => r.status === "fulfilled").length;
+      const rejected = results.filter((r) => r.status === "rejected").length;
+
+      if (rejected === 0) {
+        toast.success(`${fulfilled} ta ${labels.unitSingular.toLowerCase()} holati yangilandi`);
+        setSelectedRoomIds(new Set());
+      } else {
+        toast.warning(`${fulfilled} ta muvaffaqiyatli, ${rejected} tasida xatolik yuz berdi`);
+        const failedIds = new Set(
+          ids.filter((_, idx) => results[idx].status === "rejected"),
+        );
+        setSelectedRoomIds(failedIds);
+      }
       refetch();
     } catch {
       toast.error("Guruhli yangilashda xatolik yuz berdi");
@@ -179,7 +190,7 @@ export function RoomsView() {
     const ids = Array.from(selectedRoomIds);
     setIsBulkProcessing(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         ids.map((id) => {
           const r = rooms.find((room) => room.id === id);
           if (!r) return Promise.resolve();
@@ -195,8 +206,19 @@ export function RoomsView() {
           });
         }),
       );
-      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} toza holatga o'tkazildi`);
-      setSelectedRoomIds(new Set());
+      const fulfilled = results.filter((r) => r.status === "fulfilled").length;
+      const rejected = results.filter((r) => r.status === "rejected").length;
+
+      if (rejected === 0) {
+        toast.success(`${fulfilled} ta ${labels.unitSingular.toLowerCase()} toza holatga o'tkazildi`);
+        setSelectedRoomIds(new Set());
+      } else {
+        toast.warning(`${fulfilled} ta muvaffaqiyatli, ${rejected} tasida xatolik yuz berdi`);
+        const failedIds = new Set(
+          ids.filter((_, idx) => results[idx].status === "rejected"),
+        );
+        setSelectedRoomIds(failedIds);
+      }
       refetch();
     } catch {
       toast.error("Ommaviy tasdiqlashda xatolik");
@@ -218,7 +240,7 @@ export function RoomsView() {
     const ids = Array.from(selectedRoomIds);
     setIsBulkProcessing(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         ids.map((id) => {
           const r = rooms.find((room) => room.id === id);
           if (!r) return Promise.resolve();
@@ -234,8 +256,19 @@ export function RoomsView() {
           });
         }),
       );
-      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} ta'mirga olindi`);
-      setSelectedRoomIds(new Set());
+      const fulfilled = results.filter((r) => r.status === "fulfilled").length;
+      const rejected = results.filter((r) => r.status === "rejected").length;
+
+      if (rejected === 0) {
+        toast.success(`${fulfilled} ta ${labels.unitSingular.toLowerCase()} ta'mirga olindi`);
+        setSelectedRoomIds(new Set());
+      } else {
+        toast.warning(`${fulfilled} ta muvaffaqiyatli, ${rejected} tasida xatolik yuz berdi`);
+        const failedIds = new Set(
+          ids.filter((_, idx) => results[idx].status === "rejected"),
+        );
+        setSelectedRoomIds(failedIds);
+      }
       refetch();
     } catch {
       toast.error("Xatolik yuz berdi");

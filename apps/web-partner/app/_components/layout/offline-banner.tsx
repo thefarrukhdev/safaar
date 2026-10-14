@@ -45,9 +45,9 @@ function OfflineAlert({ onRetry }: { onRetry: () => Promise<unknown> }) {
   const handleManualRetry = async () => {
     setIsRetrying(true);
     try {
-      if (typeof window !== "undefined" && navigator.onLine) {
-        await onRetry();
-      }
+      await onRetry();
+    } catch {
+      // Tarmoq hali ham mavjud emas
     } finally {
       setTimeout(() => setIsRetrying(false), 500);
     }
@@ -124,8 +124,8 @@ export function OfflineBanner() {
     if (!isOnline) {
       wasOfflineRef.current = true;
     } else if (wasOfflineRef.current) {
-      // Aloqa tiklandi: React Query ma'lumotlarini auto-revalidate qilish
-      queryClient.invalidateQueries();
+      // Aloqa tiklandi: barcha faol so'rovlarni avtomatik qayta yuborish
+      queryClient.refetchQueries({ type: "active" });
       wasOfflineRef.current = false;
       setShowRestored(true);
 
@@ -160,7 +160,7 @@ export function OfflineBanner() {
   // Agar offline bo'lsa
   if (!isOnline) {
     return (
-      <OfflineAlert onRetry={() => queryClient.invalidateQueries()} />
+      <OfflineAlert onRetry={() => queryClient.refetchQueries({ type: "active" })} />
     );
   }
 

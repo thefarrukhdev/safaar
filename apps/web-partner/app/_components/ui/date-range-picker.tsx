@@ -79,12 +79,13 @@ export type PresetKey =
   | "this_week"
   | "last_30_days"
   | "this_month"
-  | "last_month";
+  | "last_month"
+  | "custom";
 
 interface PresetItem {
   key: PresetKey;
   label: string;
-  getRange: () => DateRange;
+  getRange?: () => DateRange;
 }
 
 function getPresets(): PresetItem[] {
@@ -158,6 +159,10 @@ function getPresets(): PresetItem[] {
         endDate: toIsoString(lastDayLastMonth),
       }),
     },
+    {
+      key: "custom",
+      label: "Maxsus sana",
+    },
   ];
 }
 
@@ -185,9 +190,10 @@ function CalendarMonth({
 
   const todayIso = toIsoString(new Date());
 
-  const effectiveEnd = endDate || hoverDate || startDate;
-  const isRangeReversed =
-    startDate && effectiveEnd && effectiveEnd < startDate;
+  // Oraliq hisobi: hoverDate preview bo'lib xizmat qiladi
+  const effectiveEnd = endDate || hoverDate || "";
+  const hasRange = Boolean(startDate && effectiveEnd);
+  const isRangeReversed = hasRange && effectiveEnd < startDate;
   const rangeStart = isRangeReversed ? effectiveEnd : startDate;
   const rangeEnd = isRangeReversed ? startDate : effectiveEnd;
 
@@ -228,11 +234,12 @@ function CalendarMonth({
 
           const { day, iso } = cell;
           const isToday = iso === todayIso;
-          const isStart = iso === startDate;
-          const isEnd = iso === endDate;
+          const isStartEdge = Boolean(rangeStart && iso === rangeStart);
+          const isEndEdge = Boolean(rangeEnd && iso === rangeEnd);
+          const isSingleEdge = isStartEdge && isEndEdge;
           const isInRange =
-            rangeStart && rangeEnd && iso > rangeStart && iso < rangeEnd;
-          const isRangeEdge = isStart || isEnd;
+            Boolean(rangeStart && rangeEnd && iso > rangeStart && iso < rangeEnd);
+          const isPreviewHoverEnd = !endDate && Boolean(hoverDate) && isEndEdge;
 
           return (
             <button
@@ -242,24 +249,28 @@ function CalendarMonth({
               onMouseEnter={() => onHoverDate(iso)}
               onMouseLeave={() => onHoverDate(null)}
               className={cn(
-                "relative h-9 w-9 text-xs font-medium rounded-lg transition-all duration-150 flex items-center justify-center",
+                "relative h-9 w-9 text-xs font-medium transition-all duration-150 flex items-center justify-center",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
                 isInRange &&
                   "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 rounded-none",
-                isStart &&
-                  endDate &&
-                  "rounded-r-none rounded-l-lg bg-brand-600 text-white font-semibold shadow-sm",
-                isEnd &&
-                  startDate &&
-                  "rounded-l-none rounded-r-lg bg-brand-600 text-white font-semibold shadow-sm",
-                isRangeEdge &&
-                  (!startDate || !endDate || startDate === endDate) &&
+                isSingleEdge &&
                   "rounded-lg bg-brand-600 text-white font-semibold shadow-sm",
-                !isRangeEdge &&
+                !isSingleEdge &&
+                  isStartEdge &&
+                  "rounded-l-lg rounded-r-none bg-brand-600 text-white font-semibold shadow-sm",
+                !isSingleEdge &&
+                  isEndEdge &&
+                  cn(
+                    "rounded-r-lg rounded-l-none text-white font-semibold shadow-sm",
+                    isPreviewHoverEnd ? "bg-brand-500/90" : "bg-brand-600",
+                  ),
+                !isStartEdge &&
+                  !isEndEdge &&
                   !isInRange &&
-                  "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
+                  "rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
                 isToday &&
-                  !isRangeEdge &&
+                  !isStartEdge &&
+                  !isEndEdge &&
                   !isInRange &&
                   "border border-brand-500 font-bold text-brand-600 dark:text-brand-400",
               )}
@@ -337,6 +348,21 @@ export function DateRangePicker({
     };
   }, [isOpen]);
 
+  const handleToggleOpen = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        const targetIso = startDate || endDate;
+        const d = parseIso(targetIso);
+        if (d) {
+          setCurrentYear(d.getFullYear());
+          setCurrentMonth(d.getMonth());
+        }
+      }
+      return next;
+    });
+  };
+
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -394,6 +420,11 @@ export function DateRangePicker({
   };
 
   const handlePresetClick = (preset: PresetItem) => {
+    if (!preset.getRange) {
+      // "Maxsus sana" tanlandi - oraliqni kalendar orqali erkin tanlash
+      setDraftRange({ start: startDate, end: endDate });
+      return;
+    }
     const range = preset.getRange();
     setDraftRange(null);
     const d = parseIso(range.startDate);
@@ -417,6 +448,15 @@ export function DateRangePicker({
     return `${formatDisplayDate(startDate || endDate)} dan`;
   }, [startDate, endDate]);
 
+  const isCustomPresetSelected = useMemo(() => {
+    if (!tempStart && !tempEnd) return false;
+    return !presets.some((p) => {
+      if (!p.getRange) return false;
+      const r = p.getRange();
+      return tempStart === r.startDate && tempEnd === r.endDate;
+    });
+  }, [presets, tempStart, tempEnd]);
+
   // Keyingi oy (2-kalendar uchun)
   const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
   const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
@@ -425,49 +465,50 @@ export function DateRangePicker({
 
   return (
     <div ref={containerRef} className={cn("relative inline-block", className)}>
-      {/* Trigger Button */}
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setIsOpen((prev) => !prev)}
+      {/* Trigger Container: nested button bo'lmasligi uchun ergonomik ajratilgan */}
+      <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border transition-all duration-200 min-h-[40px]",
+          "inline-flex items-center rounded-xl border transition-all duration-200 min-h-[40px]",
           "bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 shadow-xs",
           "hover:border-slate-300 dark:hover:border-zinc-700 hover:bg-slate-50/50 dark:hover:bg-zinc-800/50",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
-          "disabled:opacity-50 disabled:pointer-events-none",
           isOpen && "ring-2 ring-brand-500 border-transparent",
+          disabled && "opacity-50 pointer-events-none",
         )}
       >
-        <CalendarIcon className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
-        <span
-          className={cn(
-            "truncate max-w-[240px]",
-            hasValue
-              ? "text-slate-900 dark:text-slate-100 font-semibold"
-              : "text-slate-500 dark:text-slate-400",
-          )}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={handleToggleOpen}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+          className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-l-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 text-left min-h-[38px]"
         >
-          {displayText || placeholder}
-        </span>
-        {hasValue && (
+          <CalendarIcon className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
           <span
-            role="button"
-            tabIndex={0}
+            className={cn(
+              "truncate max-w-[240px]",
+              hasValue
+                ? "text-slate-900 dark:text-slate-100 font-semibold"
+                : "text-slate-500 dark:text-slate-400",
+            )}
+          >
+            {displayText || placeholder}
+          </span>
+        </button>
+
+        {hasValue && (
+          <button
+            type="button"
+            disabled={disabled}
             onClick={handleClear}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleClear();
-              }
-            }}
             title="Sanani tozalash"
-            className="ml-1 p-0.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            aria-label="Sanani tozalash"
+            className="mr-2 p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
             <X className="h-3.5 w-3.5" />
-          </span>
+          </button>
         )}
-      </button>
+      </div>
 
       {/* Popover Dropdown */}
       {isOpen && (
@@ -489,9 +530,14 @@ export function DateRangePicker({
                 Tezkor tanlov
               </span>
               {presets.map((p) => {
-                const r = p.getRange();
+                const r = p.getRange ? p.getRange() : null;
                 const isSelected =
-                  tempStart === r.startDate && tempEnd === r.endDate;
+                  p.key === "custom"
+                    ? isCustomPresetSelected
+                    : r
+                      ? tempStart === r.startDate && tempEnd === r.endDate
+                      : false;
+
                 return (
                   <button
                     key={p.key}

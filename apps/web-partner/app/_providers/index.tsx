@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { ConfirmProvider } from '../_components/ui/confirm-dialog';
+import { OfflineBanner } from '../_components/layout/offline-banner';
 import { QueryProvider } from './query-provider';
 import { RealtimeListener } from './realtime-listener';
 import { SessionExpiryHandler } from './session-expiry-handler';
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <QueryProvider>
         <ConfirmProvider>
+          <OfflineBanner />
           <SessionExpiryHandler />
           <RealtimeListener />
           {children}

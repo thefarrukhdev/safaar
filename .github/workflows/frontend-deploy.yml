@@ -1,7 +1,7 @@
 name: Frontend Deploy (Vercel)
 
 # Safaar Monorepo — Frontend avtomatik deploy workflow
-# Har gal frontend dasturchilar `develop` yoki `main` branchlariga kod push qilganda:
+# Faqat `main` branchiga kod push qilinganda Vercel Production'ga deploy qilinadi:
 # paths-filter orqali qaysi frontend ilova(lar) o'zgargani aniqlanadi:
 #   - apps/web-admin/**   -> web-admin (staff.safaar.uz)
 #   - apps/web-partner/** -> web-partner (partner.safaar.uz)
@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - main
-      - develop
     paths:
       - "apps/web-admin/**"
       - "apps/web-partner/**"

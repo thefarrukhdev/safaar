@@ -90,8 +90,8 @@ Agar aniqlangan foydalanuvchi boshqa bo'lsa — **ogohlantir** va so'ra.
 
 ## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
 
-**Branch:** hamma **`develop`**'da ishlaydi. `main` — admin boshqaradigan release;
-lekin repo egasi (thefarrukhdev) ruxsat bersa, **sen `main`'ga ham merge qilasan**.
+**Branch:** hamma **`develop`**'da ishlaydi. `main` — admin boshqaradigan release.
+⛔ **AI agent / AGY CLI foydalanuvchidan (thefarrukhdev) so'ramasdan `main`'ga HECH QACHON merge yoki push qilmasin.**
 
 ### Ish boshlashdan oldin
 ```bash
@@ -126,5 +126,5 @@ git push origin develop
 - Push'dan oldin DOIM: build/test **yashil** va `git pull --rebase origin develop`.
 - Faqat `apps/backend/` va `packages/types/`da ishla. Frontend papkalariga
   (`web-user`, `web-partner`, `web-admin`) — **tegma**.
-- Asosan `develop`'ga push qil, repo egasi (thefarrukhdev) ruxsat bersa `main`'ga ham merge qila olasan.
+- Faqat `develop`'ga push qil. Foydalanuvchi (thefarrukhdev) suhbatda aniq so'ramaguncha va ruxsat bermaguncha `main` branchiga HECH QACHON merge yoki push qilma.
 - Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.

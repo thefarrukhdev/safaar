@@ -44,10 +44,11 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
 ## Konvensiyalar (butun monorepo)
 
 - O'zgartirishdan keyin **build va testni ishga tushiring**, yashil bo'lsin.
-- Commit'lar aniq va kichik bo'lsin. Kundalik ish **`develop`** branch'ida bo'ladi
+- Commit'lar aniq va kichik bo'lsin. Kundalik ish **faqat `develop`** branch'ida bo'ladi
   (hamma shu yerda, faqat o'z papkasida). Push'dan oldin doim
-  `git pull --rebase origin develop`. Repozitoriya egasi (thefarrukhdev) ruxsat bersa,
-  AI agent to'g'ridan-to'g'ri `main` branchiga ham merge qila oladi. Batafsil — `CONTRIBUTING.md`.
+  `git pull --rebase origin develop`.
+  ⛔ **Qat'iy qoida:** AI agent / AGY CLI foydalanuvchidan (thefarrukhdev) so'ramasdan va aniq ruxsat olmasdan
+  **hech qachon `develop`ni `main`ga merge qilmasin** va `main`ga push qilmasin! Batafsil — `CONTRIBUTING.md`.
 - Til: UI matnlari O'zbek tilida (kerak bo'lsa Rus/Ingliz). Pul birligi — so'm (UZS).
 
 ## AI protokoli (har bir agent uchun, majburiy)
@@ -57,7 +58,8 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
    tekshir — **o'sha papkadan tashqariga chiqma**.
 2. **Push'dan OLDIN** o'z app'ingda build/lint (backend uchun test) **yashil**
    bo'lsin. Qizil bo'lsa — push qilma, avval xatoni tuzat.
-3. Asosan **`develop`**'ga push qil; lekin repo egasi (thefarrukhdev) ruxsat bersa, `main` branchiga ham merge qila olasan.
+3. Har doim **faqat `develop`**'ga push qil. Foydalanuvchi (thefarrukhdev) suhbatda aniq so'ramaguncha va ruxsat bermaguncha
+   `main` branchiga HECH QACHON merge yoki push qilma.
 4. **Boshqaning papkasiga o'zgartirma.** `apps/backend/` va `packages/types/` —
    faqat o'qish (egasi backend dev).
 

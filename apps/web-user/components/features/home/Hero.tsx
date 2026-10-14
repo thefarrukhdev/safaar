@@ -40,7 +40,14 @@ export function Hero({
     }
   }
 
-  const finalImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
+  let rawImageUrl = heroBg?.imageUrl || bannerUrl || "/registon-blue-sky.webp";
+  if (rawImageUrl.startsWith("https://www.safaar.uz/") || rawImageUrl.startsWith("https://safaar.uz/")) {
+    rawImageUrl = rawImageUrl.replace(/^https?:\/\/(www\.)?safaar\.uz/, "");
+  }
+  if (rawImageUrl.includes("registon-blue-sky.jpeg")) {
+    rawImageUrl = rawImageUrl.replace("registon-blue-sky.jpeg", "registon-blue-sky.webp");
+  }
+  const finalImageUrl = rawImageUrl;
 
   return (
     <section className="relative flex min-h-[560px] md:min-h-[640px] lg:min-h-[700px] w-full flex-col items-center justify-center pb-12 -mt-14 md:-mt-16">

@@ -50,7 +50,7 @@ export function RealtimeProvider({
 
     const socket = io(WS_URL, {
       auth: accessToken ? { token: accessToken } : undefined,
-      transports: ["polling", "websocket"],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 50,

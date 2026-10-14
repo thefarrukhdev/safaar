@@ -113,6 +113,7 @@ import { api } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
+import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 
 export default async function LangLayout({
   children,
@@ -141,6 +142,7 @@ export default async function LangLayout({
       className={`${inter.variable} ${manrope.variable} h-full subpixel-antialiased`}
     >
       <body className="flex min-h-full flex-col bg-slate-50/40 text-slate-900 subpixel-antialiased">
+        <AnalyticsProvider />
         <PostHogProvider>
           <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
             <NuqsAdapter>

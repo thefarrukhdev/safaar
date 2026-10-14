@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Clock3,
   Download,
-  FilterX,
   LayoutGrid,
   List,
   LogOut,
@@ -28,6 +27,7 @@ import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { ConfirmDialog } from "../../_components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "../../_components/ui/tabs";
+import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
@@ -529,54 +529,16 @@ export function ReservationsView() {
                 />
               </div>
 
-              {/* Date range filters */}
-              <div className="flex items-center gap-1.5 bg-[var(--surface-muted)] p-1 rounded-lg border border-[var(--border)] w-full sm:w-auto">
-                <Input
-                  type="date"
-                  value={startDate}
-                  max={endDate || undefined}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setStartDate(val);
-                    if (endDate && val > endDate) {
-                      setEndDate("");
-                    }
-                  }}
-                  className="h-8 text-xs flex-1 sm:w-[130px] border-0 bg-transparent px-2 shadow-none focus-visible:ring-1"
-                  title="Boshlanish sanasi"
-                  aria-label="Boshlanish sanasi"
-                />
-                <span className="text-xs text-[var(--muted-foreground)]">→</span>
-                <Input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setEndDate(val);
-                    if (startDate && val < startDate) {
-                      setStartDate("");
-                    }
-                  }}
-                  className="h-8 text-xs flex-1 sm:w-[130px] border-0 bg-transparent px-2 shadow-none focus-visible:ring-1"
-                  title="Tugash sanasi"
-                  aria-label="Tugash sanasi"
-                />
-                {hasDateFilter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStartDate("");
-                      setEndDate("");
-                    }}
-                    className="p-1 rounded text-[var(--muted-foreground)] hover:text-red-600 transition-colors"
-                    title="Sanani tozalash"
-                    aria-label="Sanani tozalash"
-                  >
-                    <FilterX className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
+              {/* Date Range Picker */}
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onChange={({ startDate: s, endDate: e }) => {
+                  setStartDate(s);
+                  setEndDate(e);
+                }}
+                placeholder="Sana oralig'i"
+              />
             </div>
 
             <div className="flex items-center gap-2">

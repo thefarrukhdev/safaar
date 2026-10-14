@@ -20,6 +20,7 @@ import {
   CardBody,
 } from "../../_components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../_components/ui/tabs";
+import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { PageHeader } from "../../_components/layout/page-header";
 import { formatMoney } from "../../_lib/utils/format";
 import {
@@ -46,6 +47,8 @@ type ViewTab = "stats" | "finance" | "detailed";
 export function ReportsView() {
   const [activeTab, setActiveTab] = useState<ViewTab>("stats");
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
   
   const { data: reservations } = useReservations();
   const { data: rooms } = useRooms();
@@ -134,6 +137,17 @@ export function ReportsView() {
 
   const recentRevenue = revenue.slice(-7).reverse();
   const recentOccupancy = occupancy.slice(-7).reverse();
+
+  const filteredDetailedReservations = useMemo(() => {
+    let list = reservations || [];
+    if (reportStartDate) {
+      list = list.filter((r) => r.checkIn.slice(0, 10) >= reportStartDate);
+    }
+    if (reportEndDate) {
+      list = list.filter((r) => r.checkIn.slice(0, 10) <= reportEndDate);
+    }
+    return list;
+  }, [reservations, reportStartDate, reportEndDate]);
 
   return (
     <Tabs
@@ -503,37 +517,48 @@ export function ReportsView() {
         <div className="flex flex-col gap-6">
           <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
             <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
                 <div>
                   <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Bronlar va To'lovlar (To'liq)</h2>
                   <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Onlayn va joyida qilingan to'lovlar bo'yicha batafsil hisobot</p>
                 </div>
-                <button
-                  onClick={() => {
-                    toast.success("Hisobot admin panelga yuvorildi!");
-                  }}
-                  className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
-                >
-                  <Download size={16} /> Adminga yuborish
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <DateRangePicker
+                    startDate={reportStartDate}
+                    endDate={reportEndDate}
+                    onChange={({ startDate: s, endDate: e }) => {
+                      setReportStartDate(s);
+                      setReportEndDate(e);
+                    }}
+                    placeholder="Sana bo'yicha filter"
+                  />
+                  <button
+                    onClick={() => {
+                      toast.success("Hisobot admin panelga yuborildi!");
+                    }}
+                    className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+                  >
+                    <Download size={16} /> Adminga yuborish
+                  </button>
+                </div>
               </div>
 
               {/* Stats summary block */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
                   <p className="text-sm text-zinc-500 mb-1">Jami bronlar</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{reservations?.length || 0}</p>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{filteredDetailedReservations.length}</p>
                 </div>
                 <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
                   <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Onlayn (UzBron)</p>
                   <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">
-                    {reservations?.filter(r => r.source === "UZBRON").length || 0}
+                    {filteredDetailedReservations.filter(r => r.source === "UZBRON").length}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30">
                   <p className="text-sm text-amber-600 dark:text-amber-400 mb-1">Joyida to'lanadigan</p>
                   <p className="text-2xl font-bold text-amber-900 dark:text-amber-300">
-                    {reservations?.filter(r => r.source !== "UZBRON").length || 0}
+                    {filteredDetailedReservations.filter(r => r.source !== "UZBRON").length}
                   </p>
                 </div>
               </div>
@@ -550,9 +575,9 @@ export function ReportsView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                    {!reservations || reservations.length === 0 ? (
+                    {filteredDetailedReservations.length === 0 ? (
                       <tr><td colSpan={5} className="px-4 py-12 text-center text-zinc-500">Bronlar topilmadi</td></tr>
-                    ) : reservations.map((r) => {
+                    ) : filteredDetailedReservations.map((r) => {
                       const isOnline = r.source === "UZBRON";
                       return (
                       <tr key={r.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">

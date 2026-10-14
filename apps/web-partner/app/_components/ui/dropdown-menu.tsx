@@ -22,9 +22,27 @@ import { createPortal } from "react-dom";
 import { useMounted } from "../../_hooks/use-mounted";
 import { cn } from "../../_lib/utils/cn";
 
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
+/* -------------------------------------------------------------------------------------------------
+ * Helper: Query enabled menu items in exact DOM order
+ * -----------------------------------------------------------------------------------------------*/
+
+function getEnabledMenuItems(container: HTMLElement | null): HTMLElement[] {
+  if (!container) return [];
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      '[role^="menuitem"]:not([disabled]):not([aria-disabled="true"])',
+    ),
+  );
+}
+
 /* -------------------------------------------------------------------------------------------------
  * Context & Types
  * -----------------------------------------------------------------------------------------------*/
+
+type OpenSource = "mouse" | "keyboard-first" | "keyboard-last" | null;
 
 interface DropdownMenuContextValue {
   open: boolean;
@@ -33,11 +51,7 @@ interface DropdownMenuContextValue {
   contentRef: React.RefObject<HTMLDivElement | null>;
   menuId: string;
   triggerId: string;
-  highlightedIndex: number;
-  setHighlightedIndex: (index: number) => void;
-  registerItem: (id: string, element: HTMLElement, disabled?: boolean, text?: string) => void;
-  unregisterItem: (id: string) => void;
-  items: { id: string; element: HTMLElement; disabled?: boolean; text: string }[];
+  openSourceRef: React.MutableRefObject<OpenSource>;
 }
 
 const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(null);
@@ -71,13 +85,11 @@ export function DropdownMenu({
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
 
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [items, setItems] = useState<{ id: string; element: HTMLElement; disabled?: boolean; text: string }[]>([]);
-
   const triggerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const openSourceRef = useRef<OpenSource>(null);
 
-  const baseId = useId();
+  const baseId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const menuId = `menu-${baseId}`;
   const triggerId = `menu-trigger-${baseId}`;
 
@@ -88,30 +100,11 @@ export function DropdownMenu({
       }
       onOpenChange?.(nextOpen);
       if (!nextOpen) {
-        setHighlightedIndex(-1);
+        openSourceRef.current = null;
       }
     },
     [isControlled, onOpenChange],
   );
-
-  const registerItem = useCallback((id: string, element: HTMLElement, disabled?: boolean, text?: string) => {
-    setItems((prev) => {
-      const filtered = prev.filter((item) => item.id !== id);
-      return [
-        ...filtered,
-        {
-          id,
-          element,
-          disabled,
-          text: text || element.textContent || "",
-        },
-      ];
-    });
-  }, []);
-
-  const unregisterItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  }, []);
 
   return (
     <DropdownMenuContext.Provider
@@ -122,11 +115,7 @@ export function DropdownMenu({
         contentRef,
         menuId,
         triggerId,
-        highlightedIndex,
-        setHighlightedIndex,
-        registerItem,
-        unregisterItem,
-        items,
+        openSourceRef,
       }}
     >
       {children}
@@ -145,11 +134,12 @@ export interface DropdownMenuTriggerProps extends ButtonHTMLAttributes<HTMLButto
 
 export const DropdownMenuTrigger = forwardRef<HTMLButtonElement, DropdownMenuTriggerProps>(
   function DropdownMenuTrigger({ asChild, children, className, onClick, onKeyDown, ...props }, ref) {
-    const { open, setOpen, triggerRef, triggerId, menuId, setHighlightedIndex } = useDropdownMenuContext();
+    const { open, setOpen, triggerRef, triggerId, menuId, openSourceRef } = useDropdownMenuContext();
 
     const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
       onClick?.(e);
       if (e.defaultPrevented) return;
+      openSourceRef.current = "mouse";
       setOpen(!open);
     };
 
@@ -159,12 +149,12 @@ export const DropdownMenuTrigger = forwardRef<HTMLButtonElement, DropdownMenuTri
 
       if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        openSourceRef.current = "keyboard-first";
         setOpen(true);
-        setHighlightedIndex(0);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        openSourceRef.current = "keyboard-last";
         setOpen(true);
-        setHighlightedIndex(-1); // will focus last item on mount
       }
     };
 
@@ -243,12 +233,11 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
       contentRef,
       menuId,
       triggerId,
-      highlightedIndex,
-      setHighlightedIndex,
-      items,
+      openSourceRef,
     } = useDropdownMenuContext();
 
     const mounted = useMounted();
+    const [isPositioned, setIsPositioned] = useState(false);
     const [coords, setCoords] = useState<Coords>({
       top: 0,
       left: 0,
@@ -258,7 +247,7 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
     const typeaheadQueryRef = useRef("");
     const typeaheadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Calculate dynamic coords based on trigger bounding rect & viewport collisions
+    // Dynamic coordinates based on trigger bounding rect & viewport collisions
     const updatePosition = useCallback(() => {
       const triggerEl = triggerRef.current;
       const contentEl = contentRef.current;
@@ -275,29 +264,34 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
       let chosenSide = side;
       let top = 0;
       let left = 0;
+      let availableHeight = viewportHeight - padding * 2;
 
-      // Handle vertical collision check for top/bottom
+      // Vertical collision check for top/bottom
       if (avoidCollisions) {
+        const spaceBelow = viewportHeight - triggerRect.bottom - sideOffset - padding;
+        const spaceAbove = triggerRect.top - sideOffset - padding;
+
         if (side === "bottom") {
-          const spaceBelow = viewportHeight - triggerRect.bottom - sideOffset;
-          const spaceAbove = triggerRect.top - sideOffset;
           if (spaceBelow < contentHeight && spaceAbove > spaceBelow) {
             chosenSide = "top";
           }
         } else if (side === "top") {
-          const spaceAbove = triggerRect.top - sideOffset;
-          const spaceBelow = viewportHeight - triggerRect.bottom - sideOffset;
           if (spaceAbove < contentHeight && spaceBelow > spaceAbove) {
             chosenSide = "bottom";
           }
         }
       }
 
-      // Compute Top
+      // Compute Top & maxHeight based on chosen side
       if (chosenSide === "bottom") {
         top = triggerRect.bottom + sideOffset;
+        availableHeight = Math.max(120, viewportHeight - top - padding);
       } else if (chosenSide === "top") {
         top = triggerRect.top - contentHeight - sideOffset;
+        availableHeight = Math.max(120, triggerRect.top - sideOffset - padding);
+        if (top < padding) {
+          top = padding;
+        }
       } else {
         // side left or right
         top = triggerRect.top + (triggerRect.height - contentHeight) / 2;
@@ -320,27 +314,30 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
         }
       }
 
-      // Clamping to screen viewport
-      const maxLeft = viewportWidth - contentWidth - padding;
+      // Clamping to screen viewport horizontally
+      const maxLeft = Math.max(padding, viewportWidth - contentWidth - padding);
       left = Math.min(Math.max(padding, left), maxLeft);
 
-      const maxTop = viewportHeight - contentHeight - padding;
+      // Clamping vertically
+      const maxTop = Math.max(padding, viewportHeight - contentHeight - padding);
       top = Math.min(Math.max(padding, top), maxTop);
 
       setCoords({
-        top,
-        left,
+        top: Math.round(top),
+        left: Math.round(left),
         placement: chosenSide,
-        maxHeight: Math.max(160, viewportHeight - padding * 2),
+        maxHeight: Math.round(availableHeight),
       });
     }, [triggerRef, contentRef, side, align, sideOffset, alignOffset, avoidCollisions]);
 
-    // Initial position update when opened & re-measuring
-    useEffect(() => {
-      if (!open) return;
+    // Synchronous layout positioning on mount/update to prevent (0,0) flash
+    useIsomorphicLayoutEffect(() => {
+      if (!open) {
+        setIsPositioned(false);
+        return;
+      }
       updatePosition();
-      const animFrame = requestAnimationFrame(updatePosition);
-      return () => cancelAnimationFrame(animFrame);
+      setIsPositioned(true);
     }, [open, updatePosition]);
 
     // Scroll & Resize auto-positioning
@@ -391,7 +388,15 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
           e.stopPropagation();
           e.stopImmediatePropagation();
           setOpen(false);
-          triggerRef.current?.focus();
+
+          const activeEl = document.activeElement;
+          if (
+            !activeEl ||
+            activeEl === document.body ||
+            contentRef.current?.contains(activeEl)
+          ) {
+            triggerRef.current?.focus({ preventScroll: true });
+          }
         }
       };
 
@@ -399,68 +404,57 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
       return () => {
         document.removeEventListener("keydown", handleKeyDownCapture, { capture: true });
       };
-    }, [open, setOpen, triggerRef]);
+    }, [open, setOpen, triggerRef, contentRef]);
 
-    // Focus management on mount
+    // Initial keyboard focus management on open
     useEffect(() => {
-      if (!open) return;
-      // If index was -1 on open from ArrowUp, select the last item
-      if (highlightedIndex === -1 && items.length > 0) {
-        const lastEnabled = [...items].reverse().findIndex((item) => !item.disabled);
-        if (lastEnabled !== -1) {
-          setHighlightedIndex(items.length - 1 - lastEnabled);
-        }
-      } else if (highlightedIndex >= 0 && items[highlightedIndex]) {
-        items[highlightedIndex].element.focus();
+      if (!open || !isPositioned) return;
+
+      const source = openSourceRef.current;
+      const items = getEnabledMenuItems(contentRef.current);
+
+      if (source === "keyboard-first" && items.length > 0) {
+        items[0]?.focus({ preventScroll: true });
+      } else if (source === "keyboard-last" && items.length > 0) {
+        items[items.length - 1]?.focus({ preventScroll: true });
       }
-    }, [open, highlightedIndex, items, setHighlightedIndex]);
+    }, [open, isPositioned, openSourceRef, contentRef]);
 
     // Keyboard navigation within the dropdown
     const handleContentKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
       onKeyDown?.(e);
       if (e.defaultPrevented) return;
 
-      const enabledIndices = items
-        .map((it, idx) => (!it.disabled ? idx : -1))
-        .filter((idx) => idx !== -1);
+      const items = getEnabledMenuItems(contentRef.current);
+      if (items.length === 0) return;
 
-      if (enabledIndices.length === 0) return;
+      const currentActive = document.activeElement as HTMLElement | null;
+      const currentIndex = items.indexOf(currentActive!);
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        const currentPos = enabledIndices.indexOf(highlightedIndex);
-        const nextIdx = currentPos === -1 || currentPos === enabledIndices.length - 1
-          ? enabledIndices[0]
-          : enabledIndices[currentPos + 1];
-        setHighlightedIndex(nextIdx);
-        items[nextIdx]?.element.focus();
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % items.length;
+        items[nextIndex]?.focus({ preventScroll: true });
         return;
       }
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        const currentPos = enabledIndices.indexOf(highlightedIndex);
-        const prevIdx = currentPos === -1 || currentPos === 0
-          ? enabledIndices[enabledIndices.length - 1]
-          : enabledIndices[currentPos - 1];
-        setHighlightedIndex(prevIdx);
-        items[prevIdx]?.element.focus();
+        const prevIndex =
+          currentIndex === -1 || currentIndex === 0 ? items.length - 1 : currentIndex - 1;
+        items[prevIndex]?.focus({ preventScroll: true });
         return;
       }
 
       if (e.key === "Home") {
         e.preventDefault();
-        const firstIdx = enabledIndices[0];
-        setHighlightedIndex(firstIdx);
-        items[firstIdx]?.element.focus();
+        items[0]?.focus({ preventScroll: true });
         return;
       }
 
       if (e.key === "End") {
         e.preventDefault();
-        const lastIdx = enabledIndices[enabledIndices.length - 1];
-        setHighlightedIndex(lastIdx);
-        items[lastIdx]?.element.focus();
+        items[items.length - 1]?.focus({ preventScroll: true });
         return;
       }
 
@@ -480,12 +474,11 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
           typeaheadQueryRef.current = "";
         }, 500);
 
-        const matchIdx = items.findIndex(
-          (item) => !item.disabled && item.text.toLowerCase().startsWith(typeaheadQueryRef.current),
+        const match = items.find((item) =>
+          item.textContent?.trim().toLowerCase().startsWith(typeaheadQueryRef.current),
         );
-        if (matchIdx !== -1) {
-          setHighlightedIndex(matchIdx);
-          items[matchIdx]?.element.focus();
+        if (match) {
+          match.focus({ preventScroll: true });
         }
       }
     };
@@ -516,9 +509,10 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
           top: `${coords.top}px`,
           left: `${coords.left}px`,
           maxHeight: coords.maxHeight ? `${coords.maxHeight}px` : undefined,
+          visibility: isPositioned ? "visible" : "hidden",
         }}
         className={cn(
-          "z-[100] min-w-[190px] overflow-x-hidden overflow-y-auto rounded-xl p-1.5",
+          "z-[100] min-w-[190px] max-w-[calc(100vw-16px)] overflow-x-hidden overflow-y-auto rounded-xl p-1.5 outline-none",
           // Apple / Linear glassmorphic styling
           "bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl",
           "border border-zinc-200/80 dark:border-zinc-800/80",
@@ -566,23 +560,15 @@ export const DropdownMenuItem = forwardRef<HTMLButtonElement, DropdownMenuItemPr
       onSelect,
       onClick,
       onPointerEnter,
+      onKeyDown,
       className,
       children,
       ...props
     },
     ref,
   ) {
-    const { setOpen, triggerRef, registerItem, unregisterItem, items, setHighlightedIndex } = useDropdownMenuContext();
-    const itemId = useId();
+    const { setOpen, triggerRef, contentRef } = useDropdownMenuContext();
     const internalRef = useRef<HTMLButtonElement | null>(null);
-
-    // Register with parent context for roving focus and typeahead
-    useEffect(() => {
-      const el = internalRef.current;
-      if (!el) return;
-      registerItem(itemId, el, disabled, el.textContent || "");
-      return () => unregisterItem(itemId);
-    }, [itemId, disabled, registerItem, unregisterItem]);
 
     const handleSelect = (e: MouseEvent<HTMLButtonElement>) => {
       if (disabled) {
@@ -597,17 +583,32 @@ export const DropdownMenuItem = forwardRef<HTMLButtonElement, DropdownMenuItemPr
 
       if (!preventClose && !customEvent.defaultPrevented) {
         setOpen(false);
-        triggerRef.current?.focus();
+
+        // Return focus to trigger ONLY if focus hasn't moved to an active dialog or input
+        const activeEl = document.activeElement;
+        if (
+          !activeEl ||
+          activeEl === document.body ||
+          contentRef.current?.contains(activeEl)
+        ) {
+          triggerRef.current?.focus({ preventScroll: true });
+        }
       }
     };
 
     const handlePointerEnter = (e: PointerEvent<HTMLButtonElement>) => {
       onPointerEnter?.(e);
       if (disabled) return;
-      const idx = items.findIndex((it) => it.id === itemId);
-      if (idx !== -1) {
-        setHighlightedIndex(idx);
-        internalRef.current?.focus();
+      internalRef.current?.focus({ preventScroll: true });
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+
+      if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        internalRef.current?.click();
       }
     };
 
@@ -636,9 +637,10 @@ export const DropdownMenuItem = forwardRef<HTMLButtonElement, DropdownMenuItemPr
       role: "menuitem" as const,
       tabIndex: -1,
       "aria-disabled": disabled ? true : undefined,
-      disabled,
+      disabled: asChild ? undefined : disabled,
       onClick: handleSelect,
       onPointerEnter: handlePointerEnter,
+      onKeyDown: handleKeyDown,
       className: itemClasses,
       ...props,
     };
@@ -731,7 +733,9 @@ export const DropdownMenuRadioItem = forwardRef<HTMLButtonElement, DropdownMenuR
         {...props}
       >
         <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center">
-          {checked && <Circle className="h-2 w-2 fill-brand-600 text-brand-600 dark:fill-brand-400 dark:text-brand-400" />}
+          {checked && (
+            <Circle className="h-2 w-2 fill-brand-600 text-brand-600 dark:fill-brand-400 dark:text-brand-400" />
+          )}
         </span>
         {children}
       </DropdownMenuItem>

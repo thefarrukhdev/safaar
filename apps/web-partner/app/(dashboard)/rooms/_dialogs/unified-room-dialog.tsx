@@ -193,6 +193,21 @@ export function UnifiedRoomDialog({
   const nameValue = useWatch({ control: form.control, name: "name" }) ?? "";
   const bedTypeValue = useWatch({ control: form.control, name: "bedType" }) ?? "";
 
+  const roomTypeOptions = [
+    ...HOTEL_ROOM_TYPES,
+    ...(nameValue && !HOTEL_ROOM_TYPES.some((rt) => rt.value === nameValue)
+      ? [{ value: nameValue, label: `${nameValue} (Mavjud)` }]
+      : []),
+  ];
+
+  const bedTypeOptions = [
+    { value: "", label: "Tanlang (ixtiyoriy)" },
+    ...BED_TYPES,
+    ...(bedTypeValue && !BED_TYPES.some((bt) => bt.value === bedTypeValue)
+      ? [{ value: bedTypeValue, label: `${bedTypeValue} (Mavjud)` }]
+      : []),
+  ];
+
   const toggleAmenity = (value: string) => {
     const current = form.getValues("amenities") || [];
     if (current.includes(value)) {
@@ -217,7 +232,7 @@ export function UnifiedRoomDialog({
 
   // Smart tab switcher on invalid form errors
   const handleFormError = (errors: typeof form.formState.errors) => {
-    if (errors.name || errors.capacity || errors.roomNumber || errors.floor) {
+    if (errors.name || errors.capacity || errors.roomNumber || errors.floor || errors.description) {
       setActiveTab("general");
     } else if (errors.basePrice || errors.sizeSqm || errors.bedType) {
       setActiveTab("pricing");
@@ -355,23 +370,32 @@ export function UnifiedRoomDialog({
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-3 p-1">
-              <TabsTrigger value="general" className="gap-2">
-                <Building2 className="h-4 w-4" aria-hidden />
-                <span>Asosiy</span>
-                {(err.name || err.capacity || err.roomNumber || err.floor) && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              <TabsTrigger value="general" className="gap-1.5 sm:gap-2 px-1 sm:px-3 text-xs">
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" aria-hidden />
+                <span className="truncate">Asosiy</span>
+                {(err.name || err.capacity || err.roomNumber || err.floor || err.description) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
                 )}
               </TabsTrigger>
-              <TabsTrigger value="pricing" className="gap-2">
-                <Coins className="h-4 w-4" aria-hidden />
-                <span>Narx & Parametrlar</span>
+              <TabsTrigger value="pricing" className="gap-1.5 sm:gap-2 px-1 sm:px-3 text-xs">
+                <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" aria-hidden />
+                <span className="truncate">
+                  <span className="inline sm:hidden">Narx</span>
+                  <span className="hidden sm:inline">Narx & Parametrlar</span>
+                </span>
                 {(err.basePrice || err.sizeSqm || err.bedType) && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
                 )}
               </TabsTrigger>
-              <TabsTrigger value="amenities" className="gap-2">
-                <Sparkles className="h-4 w-4" aria-hidden />
-                <span>Qulaylik & Rasm</span>
+              <TabsTrigger value="amenities" className="gap-1.5 sm:gap-2 px-1 sm:px-3 text-xs">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" aria-hidden />
+                <span className="truncate">
+                  <span className="inline sm:hidden">Qulaylik</span>
+                  <span className="hidden sm:inline">Qulaylik & Rasm</span>
+                </span>
+                {(err.amenities || err.imageUrl) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -402,10 +426,7 @@ export function UnifiedRoomDialog({
                           shouldDirty: true,
                         })
                       }
-                      options={HOTEL_ROOM_TYPES.map((rt) => ({
-                        value: rt.value,
-                        label: rt.label,
-                      }))}
+                      options={roomTypeOptions}
                     />
                   )}
                   {err.name && <p className="text-xs text-red-600 dark:text-red-400">{err.name.message}</p>}
@@ -445,7 +466,9 @@ export function UnifiedRoomDialog({
                 <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                      Xona raqami va joylashuvi
+                      {isBus
+                        ? "Davlat raqami va ma'lumotlari"
+                        : `${unitCap} raqami va joylashuvi`}
                     </span>
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                       Darhol faollashadi
@@ -531,10 +554,7 @@ export function UnifiedRoomDialog({
                               shouldDirty: true,
                             })
                           }
-                          options={BED_TYPES.map((bt) => ({
-                            value: bt.value,
-                            label: bt.label,
-                          }))}
+                          options={bedTypeOptions}
                         />
                       )}
                     </div>
@@ -649,15 +669,38 @@ export function UnifiedRoomDialog({
           </Tabs>
 
           {/* Form Actions Footer */}
-          <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-2">
-            <div className="text-xs text-[var(--muted-foreground)]">
-              {activeTab === "general" ? "1 / 3 qadam" : activeTab === "pricing" ? "2 / 3 qadam" : "3 / 3 qadam"}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4 mt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--muted-foreground)]">
+                {activeTab === "general" ? "1 / 3 qadam" : activeTab === "pricing" ? "2 / 3 qadam" : "3 / 3 qadam"}
+              </span>
+              {activeTab !== "general" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab(activeTab === "amenities" ? "pricing" : "general")}
+                  className="h-7 px-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                >
+                  &larr; Ortga
+                </Button>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
                 Bekor qilish
               </Button>
+              {activeTab !== "amenities" ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isLoading}
+                  onClick={() => setActiveTab(activeTab === "general" ? "pricing" : "amenities")}
+                >
+                  Keyingisi &rarr;
+                </Button>
+              ) : null}
               <Button type="submit" variant="primary" disabled={isLoading} loading={isLoading}>
                 {editing
                   ? "Saqlash"

@@ -43,7 +43,7 @@ export function UserMenu({ name, contact, onLogout }: UserMenuProps) {
         <button
           type="button"
           className={cn(
-            'flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-2.5 text-sm transition-all duration-150',
+            'group flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-2.5 text-sm transition-all duration-150',
             'hover:bg-[var(--surface-hover)] hover:border-[var(--border-strong)]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30',
             'data-[state=open]:bg-[var(--surface-muted)] data-[state=open]:border-[var(--border-strong)]',
@@ -86,7 +86,7 @@ export function UserMenu({ name, contact, onLogout }: UserMenuProps) {
 
           <DropdownMenuItem asChild>
             <Link
-              href="/settings/profile"
+              href="/settings/hotel"
               className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium"
             >
               <Settings className="h-4 w-4 text-zinc-500" aria-hidden />

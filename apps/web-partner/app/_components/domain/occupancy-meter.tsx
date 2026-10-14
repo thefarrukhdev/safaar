@@ -41,7 +41,8 @@ export function OccupancyMeter({
 }: OccupancyMeterProps) {
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
   const [mounted, setMounted] = useState(!animated);
-  const gradientId = useId();
+  const rawId = useId();
+  const gradientId = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
 
   // Mount bo'lganda animatsiyani ishga tushirish (React 19 / Compiler compliant)
   useEffect(() => {
@@ -143,7 +144,7 @@ export function OccupancyMeter({
             strokeWidth={ringConfig.strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
+            strokeLinecap={displayValue > 0 ? "round" : "butt"}
             filter={showGlow && clamped > 0 ? `url(#glow-${gradientId})` : undefined}
             style={{
               transition: animated ? "stroke-dashoffset 850ms cubic-bezier(0.16, 1, 0.3, 1)" : "none",
@@ -175,6 +176,12 @@ export function OccupancyMeter({
     lg: "h-3.5",
   };
 
+  const tipSizes = {
+    sm: "h-1 w-1",
+    md: "h-1.5 w-1.5",
+    lg: "h-2 w-2",
+  };
+
   const hasTicks = showTicks ?? (size !== "sm");
 
   return (
@@ -196,9 +203,10 @@ export function OccupancyMeter({
     >
       {/* Micro-ticks (25%, 50%, 75% da yengil ajratgichlar) */}
       {hasTicks && (
-        <div className="pointer-events-none absolute inset-0 flex justify-between px-[25%] opacity-30 dark:opacity-20 z-10">
-          <div className="h-full w-px bg-zinc-900 dark:bg-white" />
-          <div className="h-full w-px bg-zinc-900 dark:bg-white" />
+        <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
+          <div className="absolute left-1/4 top-0 bottom-0 w-px bg-zinc-900/25 dark:bg-white/20" />
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-900/25 dark:bg-white/20" />
+          <div className="absolute left-3/4 top-0 bottom-0 w-px bg-zinc-900/25 dark:bg-white/20" />
         </div>
       )}
 
@@ -220,7 +228,8 @@ export function OccupancyMeter({
         {clamped > 3 && (
           <div
             className={cn(
-              "absolute right-0.5 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full shadow-[0_0_6px_rgba(255,255,255,0.9)]",
+              "absolute right-0.5 top-1/2 -translate-y-1/2 rounded-full shadow-[0_0_6px_rgba(255,255,255,0.9)]",
+              tipSizes[size],
               scheme.tipColor,
             )}
             aria-hidden

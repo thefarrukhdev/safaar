@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { AlertTriangle, Ban, CalendarRange } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Select } from "../ui/select";
+import { DateRangePicker } from "../ui/date-range-picker";
 import { TODAY_ISO } from "../../_lib/utils/date";
 import { useAuthStore } from "../../_stores/auth-store";
 import { useRooms } from "../../_hooks/use-rooms";
@@ -18,8 +21,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const schema = z.object({
   roomNumber: z.string().min(1, "Xonani tanlang"),
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
+  startDate: z.string().min(1, "Boshlanish sanasini tanlang"),
+  endDate: z.string().min(1, "Tugash sanasini tanlang"),
   reason: z.string().optional(),
 });
 
@@ -32,52 +35,57 @@ interface BlackoutDialogProps {
 }
 
 export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) {
-  const { data: rooms } = useRooms();
+  const { data: rooms = [] } = useRooms();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
   const dacha = isDacha(partnerType);
-  
+
+  const authHotelId = useAuthStore((s) => s.user?.organizationId);
+  const effectiveHotelId = hotelId || authHotelId;
   const queryClient = useQueryClient();
-  
   const defaultCheckIn = TODAY_ISO;
   const dachaRoom = dacha ? rooms[0] : undefined;
+  const defaultRoomNumber = dacha ? (dachaRoom?.number ?? "1") : (dachaRoom?.number ?? "");
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      roomNumber: dachaRoom?.number ?? "",
+      roomNumber: defaultRoomNumber,
       startDate: defaultCheckIn,
       endDate: defaultCheckIn,
       reason: "",
     },
   });
 
+  const startDate = useWatch({ control: form.control, name: "startDate" }) ?? defaultCheckIn;
+  const endDate = useWatch({ control: form.control, name: "endDate" }) ?? defaultCheckIn;
+
   useEffect(() => {
     if (open) {
       form.reset({
-        roomNumber: dachaRoom?.number ?? "",
+        roomNumber: dacha ? (dachaRoom?.number ?? "1") : (dachaRoom?.number ?? ""),
         startDate: defaultCheckIn,
         endDate: defaultCheckIn,
         reason: "",
       });
     }
-  }, [open, dachaRoom, form, defaultCheckIn]);
+  }, [open, dacha, dachaRoom, form, defaultCheckIn]);
 
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
-      if (!hotelId) throw new Error("Hotel ID mavjud emas");
-      await blackoutDates(hotelId, values);
+      if (!effectiveHotelId) throw new Error("Hotel ID mavjud emas");
+      await blackoutDates(effectiveHotelId, values);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reservations"] });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      toast.success("Inventar muvaffaqiyatli yopildi");
+      toast.success("Inventar muvaffaqiyatli sotuvdan yopildi");
       onClose();
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Xatolik yuz berdi");
-    }
+    },
   });
 
   const onSubmit = form.handleSubmit((values) => {
@@ -95,57 +103,89 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
       open={open}
       onClose={onClose}
       title="Inventarni yopish (Blackout)"
-      description="Ta'mirlash yoki boshqa sabablarga ko'ra sotuvni vaqtincha to'xtatish."
-      size="sm"
+      description="Ta'mirlash yoki profilaktika sababli sotuvni to'xtatish."
+      size="md"
     >
-      <form onSubmit={onSubmit} className="grid gap-4">
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+        {/* Apple-style alert notice */}
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-900 backdrop-blur-sm dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <div className="flex-1 leading-relaxed">
+            <span className="font-semibold">Diqqat:</span> Tanlangan muddat davomida ushbu {labels.unitSingular} uchun mehmonlar tomonidan yangi bronlar qabul qilinmaydi.
+          </div>
+        </div>
+
+        {/* Room / Unit selector */}
         {!dacha && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="roomNumber">{unitCap}</Label>
-            <select
+            <Select
               id="roomNumber"
-              className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+              error={Boolean(err.roomNumber)}
+              aria-describedby={err.roomNumber ? "roomNumber-error" : undefined}
               {...form.register("roomNumber")}
             >
               <option value="">{unitCap}ni tanlang</option>
               {rooms.map((r) => (
                 <option key={r.id} value={r.number}>
-                  {r.number} {r.roomTypeName ? `(${r.roomTypeName})` : ''}
+                  {r.number} {r.roomTypeName ? `(${r.roomTypeName})` : ""}
                 </option>
               ))}
-            </select>
-            {err.roomNumber && <p className="text-xs text-red-600">{err.roomNumber.message}</p>}
+            </Select>
+            {err.roomNumber && (
+              <p id="roomNumber-error" className="text-xs text-red-600 dark:text-red-400">
+                {err.roomNumber.message}
+              </p>
+            )}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="startDate">Boshlanish</Label>
-            <Input id="startDate" type="date" {...form.register("startDate")} />
-            {err.startDate && <p className="text-xs text-red-600">{err.startDate.message}</p>}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="endDate">Tugash</Label>
-            <Input id="endDate" type="date" {...form.register("endDate")} />
-            {err.endDate && <p className="text-xs text-red-600">{err.endDate.message}</p>}
-          </div>
+        {/* PMS DateRangePicker */}
+        <div className="flex flex-col gap-1.5">
+          <Label className="flex items-center gap-1.5">
+            <CalendarRange className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
+            Yopilish sanalari oralig'i
+          </Label>
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(range) => {
+              form.setValue("startDate", range.startDate, { shouldValidate: true });
+              form.setValue("endDate", range.endDate, { shouldValidate: true });
+            }}
+            showPresets={true}
+            className="w-full"
+          />
+          {(err.startDate || err.endDate) && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {err.startDate?.message || err.endDate?.message}
+            </p>
+          )}
         </div>
 
+        {/* Reason field */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reason">Sabab (ixtiyoriy)</Label>
-          <Input id="reason" placeholder="Masalan: Ta'mirlash ishlari" {...form.register("reason")} />
+          <Input
+            id="reason"
+            placeholder="Masalan: Ta'mirlash, profilaktika yoki dezinfeksiya"
+            className="h-10"
+            {...form.register("reason")}
+          />
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4 mt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+        {/* Modal actions */}
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Bekor qilish
           </Button>
           <Button
             type="submit"
             disabled={mutation.isPending}
             loading={mutation.isPending}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white shadow-sm transition-all"
           >
+            <Ban className="h-4 w-4 mr-1.5" />
             Sotuvni to'xtatish
           </Button>
         </div>

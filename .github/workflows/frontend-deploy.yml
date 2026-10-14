@@ -11,6 +11,7 @@ name: Frontend Deploy (Vercel)
 # Deploy yakunlanganda Telegram bot orqali natija yuboriladi.
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main

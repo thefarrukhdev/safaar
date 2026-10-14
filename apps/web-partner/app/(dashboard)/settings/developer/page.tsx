@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/endpoints/partners";
 import { formatDate } from "@/lib/utils/format";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function DeveloperSettingsPage() {
   const confirm = useConfirm();
@@ -145,120 +146,118 @@ export default function DeveloperSettingsPage() {
         </div>
       </div>
 
-      <div className="flex border-b border-[var(--border)] gap-6">
-        <button
-          onClick={() => setActiveTab("keys")}
-          className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === "keys" ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
-        >
-          <span className="flex items-center gap-2"><Key size={16} /> API Kalitlar</span>
-          {activeTab === "keys" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />}
-        </button>
-        <button
-          onClick={() => setActiveTab("webhooks")}
-          className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === "webhooks" ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
-        >
-          <span className="flex items-center gap-2"><Globe size={16} /> Webhooklar</span>
-          {activeTab === "webhooks" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />}
-        </button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as "keys" | "webhooks")}
+        variant="underline"
+      >
+        <TabsList>
+          <TabsTrigger value="keys" className="gap-2">
+            <Key size={16} /> API Kalitlar
+          </TabsTrigger>
+          <TabsTrigger value="webhooks" className="gap-2">
+            <Globe size={16} /> Webhooklar
+          </TabsTrigger>
+        </TabsList>
 
-      {activeTab === "keys" && (
-        <div className="flex flex-col gap-4 animate-fade-in">
-          <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-950/30 p-4 rounded-xl border border-blue-100 dark:border-blue-900/50">
-            <div>
-              <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Shaxsiy API Kalitlar</h4>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">O'z tizimingiz bilan integratsiya qilish uchun kalit yarating.</p>
+        <TabsContent value="keys" className="mt-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-950/30 p-4 rounded-xl border border-blue-100 dark:border-blue-900/50">
+              <div>
+                <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Shaxsiy API Kalitlar</h4>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">O'z tizimingiz bilan integratsiya qilish uchun kalit yarating.</p>
+              </div>
+              <button
+                onClick={() => setShowKeyModal(true)}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                Yangi kalit
+              </button>
             </div>
-            <button
-              onClick={() => setShowKeyModal(true)}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Yangi kalit
-            </button>
-          </div>
 
-          <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-[var(--muted)]/50 border-b border-[var(--border)]">
-                <tr>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Nomi</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Prefiks</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Yaratilgan</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Amallar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {apiKeys.length === 0 ? (
-                  <tr><td colSpan={4} className="px-5 py-8 text-center text-[var(--muted-foreground)]">Kalitlar mavjud emas</td></tr>
-                ) : apiKeys.map((k) => (
-                  <tr key={k.id}>
-                    <td className="px-5 py-4 font-medium">{k.name}</td>
-                    <td className="px-5 py-4 font-mono text-xs text-[var(--muted-foreground)]">{k.keyPrefix}••••••••</td>
-                    <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(k.createdAt)}</td>
-                    <td className="px-5 py-4">
-                      <button onClick={() => handleDeleteKey(k.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+            <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-[var(--muted)]/50 border-b border-[var(--border)]">
+                  <tr>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Nomi</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Prefiks</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Yaratilgan</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Amallar</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "webhooks" && (
-        <div className="flex flex-col gap-4 animate-fade-in">
-          <div className="flex justify-between items-center bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
-            <div>
-              <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Webhook Integratsiya</h4>
-              <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Yangi bronlar bo'yicha tezkor xabarnomalar olish uchun Webhook sozlang.</p>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {apiKeys.length === 0 ? (
+                    <tr><td colSpan={4} className="px-5 py-8 text-center text-[var(--muted-foreground)]">Kalitlar mavjud emas</td></tr>
+                  ) : apiKeys.map((k) => (
+                    <tr key={k.id}>
+                      <td className="px-5 py-4 font-medium">{k.name}</td>
+                      <td className="px-5 py-4 font-mono text-xs text-[var(--muted-foreground)]">{k.keyPrefix}••••••••</td>
+                      <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(k.createdAt)}</td>
+                      <td className="px-5 py-4">
+                        <button onClick={() => handleDeleteKey(k.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <button
-              onClick={() => setShowWebhookModal(true)}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
-            >
-              Webhook qo'shish
-            </button>
           </div>
+        </TabsContent>
 
-          <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-[var(--muted)]/50 border-b border-[var(--border)]">
-                <tr>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">URL Manzil</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Holat</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Yaratilgan</th>
-                  <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Amallar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {webhooks.length === 0 ? (
-                  <tr><td colSpan={4} className="px-5 py-8 text-center text-[var(--muted-foreground)]">Webhooklar mavjud emas</td></tr>
-                ) : webhooks.map((w) => (
-                  <tr key={w.id}>
-                    <td className="px-5 py-4 font-mono text-xs text-blue-600 max-w-[250px] truncate">{w.url}</td>
-                    <td className="px-5 py-4">
-                      {w.isActive ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-medium"><CheckCircle2 size={14} /> Faol</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-red-600 text-xs font-medium"><XCircle size={14} /> O'chirilgan</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(w.createdAt)}</td>
-                    <td className="px-5 py-4">
-                      <button onClick={() => handleDeleteWebhook(w.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+        <TabsContent value="webhooks" className="mt-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center bg-indigo-50 dark:bg-indigo-950/30 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
+              <div>
+                <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Webhook Integratsiya</h4>
+                <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Yangi bronlar bo'yicha tezkor xabarnomalar olish uchun Webhook sozlang.</p>
+              </div>
+              <button
+                onClick={() => setShowWebhookModal(true)}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+              >
+                Webhook qo'shish
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-[var(--muted)]/50 border-b border-[var(--border)]">
+                  <tr>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">URL Manzil</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Holat</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Yaratilgan</th>
+                    <th className="px-5 py-3 font-medium text-[var(--muted-foreground)]">Amallar</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {webhooks.length === 0 ? (
+                    <tr><td colSpan={4} className="px-5 py-8 text-center text-[var(--muted-foreground)]">Webhooklar mavjud emas</td></tr>
+                  ) : webhooks.map((w) => (
+                    <tr key={w.id}>
+                      <td className="px-5 py-4 font-mono text-xs text-blue-600 max-w-[250px] truncate">{w.url}</td>
+                      <td className="px-5 py-4">
+                        {w.isActive ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-medium"><CheckCircle2 size={14} /> Faol</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-red-600 text-xs font-medium"><XCircle size={14} /> O'chirilgan</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(w.createdAt)}</td>
+                      <td className="px-5 py-4">
+                        <button onClick={() => handleDeleteWebhook(w.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       {showKeyModal && (

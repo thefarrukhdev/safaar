@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "../../_components/ui/tabs";
 import { EmptyState, ErrorState } from "../../_components/ui/empty-state";
 import { Skeleton } from "../../_components/ui/skeleton";
 import { Tooltip } from "../../_components/ui/tooltip";
@@ -383,31 +384,19 @@ export function CalendarView() {
       {/* Boshqaruv lentasi */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-[var(--border)] bg-[var(--surface)] p-3">
         {/* View mode */}
-        <div
-          role="tablist"
-          aria-label="Ko'rinish davri"
-          className="flex gap-1 rounded-lg bg-[var(--surface-muted)] p-1"
+        <Tabs
+          value={String(viewMode)}
+          onValueChange={(val) => setViewMode(Number(val) as typeof viewMode)}
+          variant="segmented"
         >
-          {([7, 14, 30] as const).map((v) => {
-            const active = viewMode === v;
-            return (
-              <button
-                key={v}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setViewMode(v)}
-                className={cn(
-                  "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                  active
-                    ? "bg-[var(--surface)] text-brand-700 shadow-sm dark:text-brand-300"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
-                )}
-              >
+          <TabsList aria-label="Ko'rinish davri">
+            {([7, 14, 30] as const).map((v) => (
+              <TabsTrigger key={v} value={String(v)}>
                 {v} kun
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         {/* Date navigation */}
         <div className="flex items-center gap-1">

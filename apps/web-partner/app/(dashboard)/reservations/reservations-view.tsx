@@ -27,6 +27,7 @@ import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { ConfirmDialog } from "../../_components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "../../_components/ui/tabs";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
@@ -462,37 +463,43 @@ export function ReservationsView() {
           <Card>
             <CardBody className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold">Status filteri</h2>
-              <div role="tablist" aria-label="Status bo'yicha filter" className="grid gap-1">
-                {FILTERS.map((f) => {
-                  const active = filter === f.key;
-                  return (
-                    <button
-                      key={f.key}
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => handleFilterChange(f.key)}
-                      className={cn(
-                        "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        active
-                          ? "bg-brand-700 text-white shadow-sm"
-                          : "text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300",
-                      )}
-                    >
-                      <span>{f.label}</span>
-                      <span
+              <Tabs
+                value={filter}
+                onValueChange={(val) => handleFilterChange(val as FilterKey)}
+                orientation="vertical"
+                variant="pills"
+                className="w-full"
+              >
+                <TabsList aria-label="Status bo'yicha filter" className="w-full gap-1 p-0 bg-transparent flex flex-col">
+                  {FILTERS.map((f) => {
+                    const active = filter === f.key;
+                    return (
+                      <TabsTrigger
+                        key={f.key}
+                        value={f.key}
                         className={cn(
-                          "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                          "w-full flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors min-h-[40px]",
                           active
-                            ? "bg-white/20 text-white"
-                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                            ? "!bg-brand-700 !text-white shadow-sm"
+                            : "text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300",
                         )}
                       >
-                        {counts[f.key]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        <span>{f.label}</span>
+                        <span
+                          className={cn(
+                            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                            active
+                              ? "bg-white/20 text-white"
+                              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                          )}
+                        >
+                          {counts[f.key]}
+                        </span>
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </Tabs>
             </CardBody>
           </Card>
         </aside>

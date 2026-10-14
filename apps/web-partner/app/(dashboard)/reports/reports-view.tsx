@@ -19,6 +19,7 @@ import {
   Card,
   CardBody,
 } from "../../_components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../_components/ui/tabs";
 import { PageHeader } from "../../_components/layout/page-header";
 import { formatMoney } from "../../_lib/utils/format";
 import {
@@ -135,46 +136,26 @@ export function ReportsView() {
   const recentOccupancy = occupancy.slice(-7).reverse();
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-10">
+    <Tabs
+      value={activeTab}
+      onValueChange={(val) => setActiveTab(val as ViewTab)}
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-10"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
           eyebrow="Tahlil va Moliya"
           title="Biznes Hisobotlari"
           description="Moliyaviy holati, pul yechish va sotuvlar tahlili."
         />
-        <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit">
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={cn(
-              "px-5 py-2 text-sm font-medium rounded-lg transition-all",
-              activeTab === "stats" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
-            )}
-          >
-            Statistika
-          </button>
-          <button
-            onClick={() => setActiveTab("finance")}
-            className={cn(
-              "px-5 py-2 text-sm font-medium rounded-lg transition-all",
-              activeTab === "finance" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
-            )}
-          >
-            Moliya & Pul yechish
-          </button>
-          <button
-            onClick={() => setActiveTab("detailed")}
-            className={cn(
-              "px-5 py-2 text-sm font-medium rounded-lg transition-all",
-              activeTab === "detailed" ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
-            )}
-          >
-            To'liq Hisobot
-          </button>
-        </div>
+        <TabsList>
+          <TabsTrigger value="stats">Statistika</TabsTrigger>
+          <TabsTrigger value="finance">Moliya & Pul yechish</TabsTrigger>
+          <TabsTrigger value="detailed">To'liq Hisobot</TabsTrigger>
+        </TabsList>
       </div>
 
-      {activeTab === "stats" && (
-        <div className="flex flex-col gap-8 animate-fade-in">
+      <TabsContent value="stats">
+        <div className="flex flex-col gap-8">
           {/* Vaqt Filtrlari */}
           <div className="flex justify-center md:justify-end">
             <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/60 rounded-xl">
@@ -388,10 +369,10 @@ export function ReportsView() {
             )}
           </div>
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === "finance" && (
-        <div className="grid gap-6 md:grid-cols-[1fr_350px] animate-fade-in">
+      <TabsContent value="finance">
+        <div className="grid gap-6 md:grid-cols-[1fr_350px]">
           <div className="flex flex-col gap-6">
             <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
               <CardBody className="p-6">
@@ -516,10 +497,10 @@ export function ReportsView() {
             </Card>
           </div>
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === "detailed" && (
-        <div className="flex flex-col gap-6 animate-fade-in">
+      <TabsContent value="detailed">
+        <div className="flex flex-col gap-6">
           <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -601,8 +582,8 @@ export function ReportsView() {
             </CardBody>
           </Card>
         </div>
-      )}
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
 

@@ -31,18 +31,12 @@ export function ReservationsStats({
 }: ReservationsStatsProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={() => onSelectFilter("all")}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onSelectFilter("all");
-          }
-        }}
-        className="cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xl"
+        className="w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-transform active:scale-[0.99] cursor-pointer"
         title="Barcha faol bronlarni ko'rish"
+        aria-label="Barcha faol bronlarni ko'rish"
       >
         <StatCard
           label="Faol bronlar"
@@ -54,20 +48,14 @@ export function ReservationsStats({
           interactive
           className={activeFilter === "all" ? "ring-2 ring-blue-500/50" : undefined}
         />
-      </div>
+      </button>
 
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={() => onSelectFilter(BookingStatus.PENDING)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onSelectFilter(BookingStatus.PENDING);
-          }
-        }}
-        className="cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-xl"
+        className="w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-transform active:scale-[0.99] cursor-pointer"
         title="Javob kutilayotgan yangi bronlarni ko'rish"
+        aria-label="Javob kutilayotgan yangi bronlarni ko'rish"
       >
         <StatCard
           label="Javob kutilmoqda"
@@ -87,20 +75,14 @@ export function ReservationsStats({
           interactive
           className={activeFilter === BookingStatus.PENDING ? "ring-2 ring-amber-500/50" : undefined}
         />
-      </div>
+      </button>
 
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={onSelectToday}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onSelectToday();
-          }
-        }}
-        className="cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl"
+        className="w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-transform active:scale-[0.99] cursor-pointer"
         title="Bugun kelishi kutilayotgan mehmonlarni ko'rish"
+        aria-label="Bugun kelishi kutilayotgan mehmonlarni ko'rish"
       >
         <StatCard
           label="Bugungi kelishlar"
@@ -111,7 +93,7 @@ export function ReservationsStats({
           isLoading={isLoading}
           interactive
         />
-      </div>
+      </button>
 
       <div>
         <StatCard

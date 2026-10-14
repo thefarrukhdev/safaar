@@ -26,8 +26,13 @@ export function ReservationsFocus({
 }: ReservationsFocusProps) {
   return (
     <aside className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
-      {/* Priority Focus Card */}
-      <Card className="border-[var(--border)] shadow-xs">
+      {/* Priority Focus Card: if empty, show only on xl desktop */}
+      <Card
+        className={cn(
+          "border-[var(--border)] shadow-xs",
+          focusItems.length === 0 && "hidden xl:block",
+        )}
+      >
         <CardBody className="flex flex-col gap-3 p-4">
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -90,8 +95,8 @@ export function ReservationsFocus({
         </CardBody>
       </Card>
 
-      {/* Status Filter Tabs Card */}
-      <Card className="border-[var(--border)] shadow-xs">
+      {/* Status Filter Tabs Card (Desktop XL sidebar only, mobile has horizontal tabs in toolbar) */}
+      <Card className="hidden xl:block border-[var(--border)] shadow-xs">
         <CardBody className="flex flex-col gap-2 p-4">
           <h2 className="text-sm font-semibold text-[var(--foreground)]">Status filtrlari</h2>
           <Tabs
@@ -99,7 +104,7 @@ export function ReservationsFocus({
             onValueChange={(val) => onFilterChange(val as FilterKey)}
             orientation="vertical"
             variant="pills"
-            className="w-full"
+            className="w-full flex-col gap-1"
           >
             <TabsList
               aria-label="Status bo'yicha saralash"

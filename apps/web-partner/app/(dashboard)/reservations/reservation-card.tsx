@@ -7,6 +7,7 @@ import {
   CarFront,
   CheckCircle2,
   Copy,
+  DoorOpen,
   ExternalLink,
   Eye,
   LogOut,
@@ -45,6 +46,7 @@ interface ReservationCardProps {
   onReject: () => void;
   onCheckIn: () => void;
   onCheckOut?: () => void;
+  onAssignRoom?: () => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
 }
@@ -57,6 +59,7 @@ export function ReservationCard({
   onReject,
   onCheckIn,
   onCheckOut,
+  onAssignRoom,
   isSelected = false,
   onToggleSelect,
 }: ReservationCardProps) {
@@ -77,17 +80,35 @@ export function ReservationCard({
     !isPastCheckIn;
   const canCheckIn = reservation.status === BookingStatus.CONFIRMED && !isPastCheckOut;
   const canCheckOut = reservation.status === "IN_HOUSE";
+  const canAssignRoom =
+    reservation.status !== BookingStatus.CANCELLED &&
+    reservation.status !== BookingStatus.COMPLETED;
 
   const assignedBed = reservation.bedId ? beds.find((b) => b.id === reservation.bedId) : undefined;
   const assignedUnit = [reservation.roomNumber, assignedBed?.label].filter(Boolean).join(" · ");
 
-  const telHref = reservation.guest.phone ? `tel:${reservation.guest.phone}` : undefined;
+  const cleanPhone = reservation.guest.phone
+    ? reservation.guest.phone.replace(/[^\d+]/g, "")
+    : "";
+  const telHref = cleanPhone ? `tel:${cleanPhone}` : undefined;
 
-  const handleCopyPhone = (e?: React.MouseEvent) => {
+  const handleCopyPhone = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (reservation.guest.phone) {
-      void navigator.clipboard.writeText(reservation.guest.phone);
+    if (!reservation.guest.phone) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(reservation.guest.phone);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = reservation.guest.phone;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
       toast.success("Telefon raqami nusxalandi");
+    } catch {
+      toast.error("Raqamni nusxalab bo'lmadi");
     }
   };
 
@@ -105,6 +126,7 @@ export function ReservationCard({
           tabIndex={0}
           onClick={onOpen}
           onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               onOpen();
@@ -377,6 +399,13 @@ export function ReservationCard({
                   )}
 
                   <DropdownMenuSeparator />
+
+                  {canAssignRoom && onAssignRoom && (
+                    <DropdownMenuItem onClick={onAssignRoom}>
+                      <DoorOpen className="h-4 w-4 mr-2 text-brand-600" />
+                      <span>{reservation.roomNumber ? `${labels.unitSingular}ni almashtirish` : `${labels.unitSingular}ni biriktirish`}</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {canConfirm && (
                     <>

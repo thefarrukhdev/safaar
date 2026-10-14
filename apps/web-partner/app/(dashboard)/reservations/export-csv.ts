@@ -1,4 +1,4 @@
-import type { Bed, ReservationView } from "../../_lib/domain/types";
+import { ReservationSource, type Bed, type ReservationView } from "../../_lib/domain/types";
 
 /**
  * Bronlar ro'yxatini Excel/Numbers uchun to'liq mos keladigan UTF-8 BOM bilan
@@ -24,20 +24,45 @@ export function exportReservationsToCsv(
     "Manba",
   ];
 
+  const statusLabels: Record<string, string> = {
+    PENDING: "Yangi (Kutilmoqda)",
+    AWAITING_PAYMENT: "To'lov kutilmoqda",
+    AWAITING_PARTNER_CONFIRMATION: "Tasdiqlash kutilmoqda",
+    CONFIRMED: "Tasdiqlangan",
+    IN_HOUSE: "Yashayapti",
+    COMPLETED: "Yakunlangan",
+    CANCELLED: "Bekor qilingan",
+    EXPIRED: "Muddati o'tgan",
+  };
+
+  const sourceLabels: Record<string, string> = {
+    [ReservationSource.UZBRON]: "Safaar",
+    [ReservationSource.WALK_IN]: "Walk-in",
+    [ReservationSource.PHONE]: "Telefon",
+    [ReservationSource.BOOKING_COM]: "Booking.com",
+  };
+
   const rows = items.map((r) => {
     const bed = r.bedId ? beds.find((b) => b.id === r.bedId) : undefined;
+    const phoneRaw = r.guest.phone ? r.guest.phone.trim() : "";
+    const phoneFormatted = phoneRaw
+      ? phoneRaw.startsWith("+")
+        ? phoneRaw
+        : `+${phoneRaw}`
+      : "";
+
     return [
       r.id,
       r.guest.fullName,
-      `+${r.guest.phone}`,
+      phoneFormatted,
       r.roomTypeName,
-      [r.roomNumber, bed?.label].filter(Boolean).join(" · "),
+      [r.roomNumber, bed?.label].filter(Boolean).join(" · ") || "Belgilanmagan",
       r.checkIn,
       ...(restaurant ? [r.slotTime ?? ""] : [r.checkOut, r.nights]),
       r.totalPrice,
       r.paidAmount,
-      r.status,
-      r.source,
+      statusLabels[r.status] || r.status,
+      (r.source && sourceLabels[r.source]) || r.source || "",
     ];
   });
 

@@ -13,8 +13,8 @@ import { Button } from "../../_components/ui/button";
 import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { Input } from "../../_components/ui/input";
 import { cn } from "../../_lib/utils/cn";
-import { TODAY_ISO } from "../../_lib/utils/date";
-import type { ViewMode } from "./types";
+import { RESERVATION_FILTERS, type FilterKey, type ViewMode } from "./types";
+import { todayIso } from "../../_lib/utils/date";
 
 interface ReservationsFiltersProps {
   query: string;
@@ -29,6 +29,9 @@ interface ReservationsFiltersProps {
   unitSingular: string;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
+  statusFilter?: FilterKey;
+  onStatusFilterChange?: (filter: FilterKey) => void;
+  counts?: Record<FilterKey, number>;
 }
 
 export function ReservationsFilters({
@@ -44,38 +47,94 @@ export function ReservationsFilters({
   unitSingular,
   hasActiveFilters,
   onResetFilters,
+  statusFilter,
+  onStatusFilterChange,
+  counts,
 }: ReservationsFiltersProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Quick Date presets
+  const today = todayIso();
+  const dTomorrow = new Date();
+  dTomorrow.setDate(dTomorrow.getDate() + 1);
+  const tomorrowIso = dTomorrow.toISOString().slice(0, 10);
+
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - day + 1);
+  const thisWeekMon = mon.toISOString().slice(0, 10);
+  const sun = new Date(now);
+  sun.setDate(now.getDate() - day + 7);
+  const thisWeekSun = sun.toISOString().slice(0, 10);
+
+  const isTodayActive = startDate === today && endDate === today;
+  const isTomorrowActive = startDate === tomorrowIso && endDate === tomorrowIso;
+  const isThisWeekActive = startDate === thisWeekMon && endDate === thisWeekSun;
+
+  // Quick Date presets (toggleable)
   const handleSetToday = () => {
-    onDateChange({ startDate: TODAY_ISO, endDate: TODAY_ISO });
+    if (isTodayActive) {
+      onDateChange({ startDate: "", endDate: "" });
+    } else {
+      onDateChange({ startDate: today, endDate: today });
+    }
   };
 
   const handleSetTomorrow = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    const tomorrow = d.toISOString().slice(0, 10);
-    onDateChange({ startDate: tomorrow, endDate: tomorrow });
+    if (isTomorrowActive) {
+      onDateChange({ startDate: "", endDate: "" });
+    } else {
+      onDateChange({ startDate: tomorrowIso, endDate: tomorrowIso });
+    }
   };
 
   const handleSetThisWeek = () => {
-    const now = new Date();
-    const day = now.getDay() || 7;
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - day + 1);
-    const sun = new Date(now);
-    sun.setDate(now.getDate() - day + 7);
-    onDateChange({
-      startDate: mon.toISOString().slice(0, 10),
-      endDate: sun.toISOString().slice(0, 10),
-    });
+    if (isThisWeekActive) {
+      onDateChange({ startDate: "", endDate: "" });
+    } else {
+      onDateChange({ startDate: thisWeekMon, endDate: thisWeekSun });
+    }
   };
-
-  const isTodayActive = startDate === TODAY_ISO && endDate === TODAY_ISO;
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xs">
+      {/* Mobile Horizontal Status Tabs (< xl) */}
+      {statusFilter && onStatusFilterChange && (
+        <div className="xl:hidden -mx-1 overflow-x-auto no-scrollbar pb-1 border-b border-[var(--border)]">
+          <div className="flex items-center gap-1.5 min-w-max px-1">
+            {RESERVATION_FILTERS.map((f) => {
+              const active = statusFilter === f.key;
+              const count = counts?.[f.key] ?? 0;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => onStatusFilterChange(f.key)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all min-h-[36px]",
+                    active
+                      ? "bg-brand-600 text-white shadow-xs font-semibold"
+                      : "bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]",
+                  )}
+                >
+                  <span>{f.label}</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.2 text-[10px] font-bold tabular-nums",
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-black/5 dark:bg-white/10 text-[var(--muted-foreground)]",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Primary Toolbar: Search + Date Range + View Mode */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Search Input with quick clear */}
@@ -185,7 +244,7 @@ export function ReservationsFilters({
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-medium transition-colors border",
               isTodayActive
-                ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
+                ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 font-semibold"
                 : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
             )}
           >
@@ -194,14 +253,24 @@ export function ReservationsFilters({
           <button
             type="button"
             onClick={handleSetTomorrow}
-            className="rounded-full px-2.5 py-1 text-xs font-medium border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium transition-colors border",
+              isTomorrowActive
+                ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 font-semibold"
+                : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
+            )}
           >
             Ertaga
           </button>
           <button
             type="button"
             onClick={handleSetThisWeek}
-            className="rounded-full px-2.5 py-1 text-xs font-medium border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium transition-colors border",
+              isThisWeekActive
+                ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 font-semibold"
+                : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
+            )}
           >
             Shu hafta
           </button>

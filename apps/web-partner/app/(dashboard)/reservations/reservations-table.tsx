@@ -17,6 +17,7 @@ import {
   CalendarCheck,
   CheckCircle2,
   Copy,
+  DoorOpen,
   ExternalLink,
   Eye,
   LogOut,
@@ -41,6 +42,7 @@ import { SourceBadge } from "../../_components/domain/source-badge";
 import type { Bed, ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
+import { todayIso } from "../../_lib/utils/date";
 
 interface ReservationsTableProps {
   data: ReservationView[];
@@ -55,6 +57,7 @@ interface ReservationsTableProps {
   onReject: (reservation: ReservationView) => void;
   onCheckIn: (reservation: ReservationView) => void;
   onCheckOut?: (reservation: ReservationView) => void;
+  onAssignRoom?: (reservation: ReservationView) => void;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
   onToggleSelectAll?: () => void;
@@ -99,6 +102,7 @@ export function ReservationsTable({
   onReject,
   onCheckIn,
   onCheckOut,
+  onAssignRoom,
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
@@ -106,6 +110,31 @@ export function ReservationsTable({
   const [sorting, setSorting] = useState<SortingState>([
     { id: "checkIn", desc: false },
   ]);
+
+  const handleCopyPhone = async (phone: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(phone);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = phone;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast.success("Raqam nusxalandi");
+    } catch {
+      toast.error("Raqamni nusxalab bo'lmadi");
+    }
+  };
+
+  const isAllSelected =
+    data.length > 0 && selectedIds ? data.every((r) => selectedIds.has(r.id)) : false;
+  const isSomeSelected = Boolean(
+    selectedIds && data.some((r) => selectedIds.has(r.id)) && !isAllSelected,
+  );
 
   const columns = useMemo<ColumnDef<ReservationView>[]>(() => {
     return [
@@ -117,7 +146,10 @@ export function ReservationsTable({
                 <div className="flex items-center justify-center px-1">
                   <input
                     type="checkbox"
-                    checked={data.length > 0 && selectedIds?.size === data.length}
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
                     onChange={onToggleSelectAll}
                     aria-label="Barcha bronlarni tanlash"
                     className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700 cursor-pointer"
@@ -148,6 +180,9 @@ export function ReservationsTable({
       {
         id: "id",
         accessorKey: "id",
+        sortingFn: (rowA, rowB) =>
+          (Number(rowA.original.id) || 0) - (Number(rowB.original.id) || 0) ||
+          rowA.original.id.localeCompare(rowB.original.id),
         header: ({ column }) => <SortableHeader column={column} label="ID & Manba" />,
         cell: ({ row }) => {
           const r = row.original;
@@ -167,7 +202,8 @@ export function ReservationsTable({
         header: ({ column }) => <SortableHeader column={column} label="Mijoz" />,
         cell: ({ row }) => {
           const r = row.original;
-          const telHref = r.guest.phone ? `tel:${r.guest.phone}` : undefined;
+          const cleanPhone = r.guest.phone ? r.guest.phone.replace(/[^\d+]/g, "") : "";
+          const telHref = cleanPhone ? `tel:${cleanPhone}` : undefined;
           return (
             <div className="flex flex-col min-w-[140px] gap-0.5">
               <span className="font-semibold text-sm truncate text-[var(--foreground)]">
@@ -191,11 +227,7 @@ export function ReservationsTable({
                 {r.guest.phone && (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void navigator.clipboard.writeText(r.guest.phone);
-                      toast.success("Raqam nusxalandi");
-                    }}
+                    onClick={(e) => handleCopyPhone(r.guest.phone, e)}
                     title="Raqamni nusxalash"
                     className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   >
@@ -220,12 +252,31 @@ export function ReservationsTable({
           const r = row.original;
           const assignedBed = r.bedId ? beds.find((b) => b.id === r.bedId) : undefined;
           const assignedUnit = [r.roomNumber, assignedBed?.label].filter(Boolean).join(" · ");
+          const canAssign =
+            r.status !== BookingStatus.CANCELLED &&
+            r.status !== BookingStatus.COMPLETED &&
+            Boolean(onAssignRoom);
+
           return (
             <div className="flex flex-col min-w-[120px]">
               <span className="font-medium text-xs text-[var(--foreground)]">{r.roomTypeName}</span>
-              <span className="text-xs text-[var(--muted-foreground)]">
-                {assignedUnit || <span className="italic text-zinc-400">Belgilanmagan</span>}
-              </span>
+              {assignedUnit ? (
+                <span className="text-xs text-[var(--muted-foreground)]">{assignedUnit}</span>
+              ) : canAssign ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAssignRoom?.(r);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline dark:text-brand-400 mt-0.5 text-left"
+                >
+                  <DoorOpen className="h-3 w-3" aria-hidden />
+                  <span>Biriktirish</span>
+                </button>
+              ) : (
+                <span className="italic text-xs text-[var(--muted-foreground)]">Belgilanmagan</span>
+              )}
             </div>
           );
         },
@@ -305,7 +356,7 @@ export function ReservationsTable({
         header: () => <span className="sr-only">Amallar</span>,
         cell: ({ row }) => {
           const r = row.original;
-          const today = new Date().toISOString().split("T")[0];
+          const today = todayIso();
           const isPastCheckIn = today > r.checkIn.slice(0, 10);
           const isPastCheckOut = today > r.checkOut.slice(0, 10);
           const canConfirm =
@@ -314,7 +365,11 @@ export function ReservationsTable({
             !isPastCheckIn;
           const canCheckIn = r.status === BookingStatus.CONFIRMED && !isPastCheckOut;
           const canCheckOut = r.status === "IN_HOUSE";
-          const telHref = r.guest.phone ? `tel:${r.guest.phone}` : undefined;
+          const canAssignRoom =
+            r.status !== BookingStatus.CANCELLED &&
+            r.status !== BookingStatus.COMPLETED;
+          const cleanPhone = r.guest.phone ? r.guest.phone.replace(/[^\d+]/g, "") : "";
+          const telHref = cleanPhone ? `tel:${cleanPhone}` : undefined;
 
           return (
             <div
@@ -415,10 +470,7 @@ export function ReservationsTable({
                   {r.guest.phone && (
                     <>
                       <DropdownMenuItem
-                        onClick={() => {
-                          void navigator.clipboard.writeText(r.guest.phone);
-                          toast.success("Raqam nusxalandi");
-                        }}
+                        onClick={(e) => handleCopyPhone(r.guest.phone, e)}
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         <span>Raqamni nusxalash</span>
@@ -436,6 +488,13 @@ export function ReservationsTable({
                   )}
 
                   <DropdownMenuSeparator />
+
+                  {canAssignRoom && onAssignRoom && (
+                    <DropdownMenuItem onClick={() => onAssignRoom(r)}>
+                      <DoorOpen className="h-4 w-4 mr-2 text-brand-600" />
+                      <span>{r.roomNumber ? `${unitLabel}ni almashtirish` : `${unitLabel}ni biriktirish`}</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {canConfirm && (
                     <>
@@ -484,11 +543,13 @@ export function ReservationsTable({
     onConfirm,
     onReject,
     onSelect,
+    onAssignRoom,
     unitLabel,
     selectedIds,
     onToggleSelect,
     onToggleSelectAll,
-    data,
+    isAllSelected,
+    isSomeSelected,
   ]);
 
   const table = useReactTable({
@@ -543,6 +604,7 @@ export function ReservationsTable({
                 onClick={() => onSelect(row.original)}
                 tabIndex={0}
                 onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onSelect(row.original);

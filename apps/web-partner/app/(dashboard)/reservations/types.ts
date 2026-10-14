@@ -29,10 +29,13 @@ export interface DateRange {
 
 export function parseStatusParam(value: string | null): FilterKey {
   if (!value) return "all";
-  const upper = value.trim().toUpperCase();
-  if (upper === "NEW" || upper === "YANGI") return BookingStatus.PENDING;
-  if (upper === "ALL" || upper === "HAMMASI") return "all";
-  if (upper === "CANCELED") return BookingStatus.CANCELLED;
+  const upper = value.trim().toUpperCase().replace(/[-_ ]+/g, "_");
+  if (upper === "NEW" || upper === "YANGI" || upper === "PENDING") return BookingStatus.PENDING;
+  if (upper === "ALL" || upper === "HAMMASI" || upper === "BARCHASI") return "all";
+  if (upper === "CONFIRMED" || upper === "TASDIQLANGAN") return BookingStatus.CONFIRMED;
+  if (upper === "IN_HOUSE" || upper === "YASHAYAPTI" || upper === "JOYLASHTIRILGAN") return "IN_HOUSE";
+  if (upper === "COMPLETED" || upper === "YAKUNLANGAN") return BookingStatus.COMPLETED;
+  if (upper === "CANCELLED" || upper === "CANCELED" || upper === "BEKOR" || upper === "BEKOR_QILINGAN") return BookingStatus.CANCELLED;
   const found = RESERVATION_FILTERS.find((f) => f.key.toUpperCase() === upper);
   return found ? found.key : "all";
 }

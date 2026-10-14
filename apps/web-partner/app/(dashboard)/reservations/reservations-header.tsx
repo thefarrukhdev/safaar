@@ -95,7 +95,7 @@ export function ReservationsHeader({
               onClick={onRefresh}
               disabled={isFetching}
               aria-label="Ma'lumotlarni yangilash"
-              className="h-9 w-9 min-h-[36px] min-w-[36px]"
+              className="h-10 w-10 min-h-[44px] min-w-[44px] sm:h-9 sm:w-9 sm:min-h-[36px] sm:min-w-[36px]"
             >
               <RefreshCw
                 className={cn("h-4 w-4", isFetching && "animate-spin text-brand-600")}
@@ -110,7 +110,7 @@ export function ReservationsHeader({
             size="sm"
             onClick={handleExport}
             disabled={filteredReservations.length === 0}
-            className="gap-1.5"
+            className="min-h-[44px] sm:min-h-[36px] px-3 gap-1.5"
             title="Excel / CSV formatida eksport"
           >
             <Download className="h-4 w-4 text-[var(--muted-foreground)]" aria-hidden />
@@ -121,7 +121,7 @@ export function ReservationsHeader({
           <Button
             size="sm"
             onClick={onOpenWalkIn}
-            className="gap-1.5 shadow-sm"
+            className="min-h-[44px] sm:min-h-[36px] px-3.5 gap-1.5 shadow-sm font-semibold"
           >
             <CalendarPlus className="h-4 w-4" aria-hidden />
             <span>{labels.walkInTitle}</span>

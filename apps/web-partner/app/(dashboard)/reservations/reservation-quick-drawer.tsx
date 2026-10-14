@@ -38,6 +38,7 @@ interface ReservationQuickDrawerProps {
   onReject: (reservation: ReservationView) => void;
   onCheckIn: (reservation: ReservationView) => void;
   onCheckOut?: (reservation: ReservationView) => void;
+  onAssignRoom?: (reservation: ReservationView) => void;
 }
 
 export function ReservationQuickDrawer({
@@ -48,6 +49,7 @@ export function ReservationQuickDrawer({
   onReject,
   onCheckIn,
   onCheckOut,
+  onAssignRoom,
 }: ReservationQuickDrawerProps) {
   const { data: beds = [] } = useBeds();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
@@ -68,6 +70,9 @@ export function ReservationQuickDrawer({
     !isPastCheckIn;
   const canCheckIn = reservation.status === BookingStatus.CONFIRMED && !isPastCheckOut;
   const canCheckOut = reservation.status === "IN_HOUSE";
+  const canAssignRoom =
+    reservation.status !== BookingStatus.CANCELLED &&
+    reservation.status !== BookingStatus.COMPLETED;
 
   const assignedBed = reservation.bedId
     ? beds.find((b) => b.id === reservation.bedId)
@@ -78,6 +83,30 @@ export function ReservationQuickDrawer({
     : restaurant
       ? "Stol"
       : labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
+
+  const cleanPhone = reservation.guest.phone
+    ? reservation.guest.phone.replace(/[^\d+]/g, "")
+    : "";
+  const telHref = cleanPhone ? `tel:${cleanPhone}` : undefined;
+
+  const handleCopyPhone = async () => {
+    if (!reservation.guest.phone) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(reservation.guest.phone);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = reservation.guest.phone;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast.success("Raqam nusxalandi");
+    } catch {
+      toast.error("Raqamni nusxalab bo'lmadi");
+    }
+  };
 
   return (
     <Drawer
@@ -98,6 +127,17 @@ export function ReservationQuickDrawer({
           </Link>
 
           <div className="flex flex-wrap items-center gap-2">
+            {canAssignRoom && onAssignRoom && !canCheckIn && !canCheckOut && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onAssignRoom(reservation)}
+              >
+                {reservation.roomNumber
+                  ? `${labels.unitSingular}ni almashtirish`
+                  : `${labels.unitSingular}ni biriktirish`}
+              </Button>
+            )}
             {canConfirm && (
               <>
                 <Button
@@ -180,20 +220,21 @@ export function ReservationQuickDrawer({
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">Telefon:</span>
               <div className="flex items-center gap-2">
-                <a
-                  href={`tel:${reservation.guest.phone}`}
-                  className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
-                >
-                  <Phone className="h-3.5 w-3.5" aria-hidden />
-                  {formatPhone(reservation.guest.phone)}
-                </a>
+                {telHref ? (
+                  <a
+                    href={telHref}
+                    className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
+                  >
+                    <Phone className="h-3.5 w-3.5" aria-hidden />
+                    {formatPhone(reservation.guest.phone)}
+                  </a>
+                ) : (
+                  <span className="text-[var(--muted-foreground)]">Raqamsiz</span>
+                )}
                 {reservation.guest.phone && (
                   <button
                     type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(reservation.guest.phone);
-                      toast.success("Raqam nusxalandi");
-                    }}
+                    onClick={handleCopyPhone}
                     title="Raqamni nusxalash"
                     className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   >
@@ -248,11 +289,24 @@ export function ReservationQuickDrawer({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">Tayinlangan {labels.unitSingular}:</span>
-              <span className="font-medium text-[var(--foreground)]">
-                {[reservation.roomNumber, assignedBed?.label].filter(Boolean).join(" · ") || (
-                  <span className="italic text-[var(--muted-foreground)]">Hali tayinlanmagan</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[var(--foreground)]">
+                  {[reservation.roomNumber, assignedBed?.label].filter(Boolean).join(" · ") || (
+                    <span className="italic text-[var(--muted-foreground)]">Hali tayinlanmagan</span>
+                  )}
+                </span>
+                {canAssignRoom && onAssignRoom && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAssignRoom(reservation)}
+                    className="h-7 px-2 text-xs text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
+                  >
+                    {reservation.roomNumber ? "O'zgartirish" : "Biriktirish"}
+                  </Button>
                 )}
-              </span>
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">

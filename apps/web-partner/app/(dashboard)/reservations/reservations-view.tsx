@@ -10,6 +10,7 @@ import {
   useTransition,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
@@ -18,6 +19,8 @@ import { useConfirm } from "../../_components/ui/confirm-dialog";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { BulkActionBar } from "../../_components/domain/bulk-action-bar";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
+import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
+import { AssignBedDialog } from "../../_components/domain/assign-bed-dialog";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import {
   useReservations,
@@ -29,8 +32,8 @@ import {
 import { useBeds } from "../../_hooks/use-beds";
 import { useSocket } from "../../_hooks/use-socket";
 import { useAuthStore } from "../../_stores/auth-store";
-import { getPartnerLabels, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
-import { TODAY_ISO } from "../../_lib/utils/date";
+import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
+import { todayIso } from "../../_lib/utils/date";
 import type { ReservationView } from "../../_lib/domain/types";
 import {
   parseStatusParam,
@@ -114,6 +117,7 @@ export function ReservationsView() {
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<ReservationView | null>(null);
   const [assignTarget, setAssignTarget] = useState<ReservationView | null>(null);
+  const [roomAssignTarget, setRoomAssignTarget] = useState<ReservationView | null>(null);
   const [checkOutTarget, setCheckOutTarget] = useState<ReservationView | null>(null);
 
   // Multi-select & Bulk operations
@@ -195,8 +199,9 @@ export function ReservationsView() {
     return c;
   }, [data]);
 
-  // Overall Statistics
+  // Overall Statistics (dynamic current date for 24/7 reception displays)
   const stats: ReservationStatsData = useMemo(() => {
+    const today = todayIso();
     const active = data.filter(
       (r) =>
         r.status !== BookingStatus.CANCELLED &&
@@ -205,7 +210,7 @@ export function ReservationsView() {
     );
     const arrivalsToday = data.filter(
       (r) =>
-        r.checkIn.slice(0, 10) === TODAY_ISO &&
+        r.checkIn.slice(0, 10) === today &&
         (r.status === BookingStatus.CONFIRMED ||
           r.status === BookingStatus.PENDING ||
           r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION),
@@ -256,20 +261,21 @@ export function ReservationsView() {
 
   // Focus queue (high urgency items)
   const focusItems = useMemo(() => {
+    const today = todayIso();
     return data
       .filter(
         (r) =>
           r.status === BookingStatus.PENDING ||
           r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION ||
           r.status === BookingStatus.AWAITING_PAYMENT ||
-          (r.checkIn.slice(0, 10) === TODAY_ISO && r.status === BookingStatus.CONFIRMED),
+          (r.checkIn.slice(0, 10) === today && r.status === BookingStatus.CONFIRMED),
       )
       .sort((a, b) => {
         const priority = (r: ReservationView) =>
           r.status === BookingStatus.PENDING ||
           r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION
             ? 0
-            : r.checkIn.slice(0, 10) === TODAY_ISO
+            : r.checkIn.slice(0, 10) === today
               ? 1
               : 2;
         return priority(a) - priority(b) || a.checkIn.localeCompare(b.checkIn);
@@ -291,6 +297,10 @@ export function ReservationsView() {
     setAssignTarget(reservation);
   }, []);
 
+  const handleAssignRoom = useCallback((reservation: ReservationView) => {
+    setRoomAssignTarget(reservation);
+  }, []);
+
   const handleCheckOut = useCallback((reservation: ReservationView) => {
     setCheckOutTarget(reservation);
   }, []);
@@ -310,17 +320,26 @@ export function ReservationsView() {
 
   const handleToggleSelectAllReservations = useCallback(() => {
     setSelectedReservationIds((prev) => {
-      if (prev.size === filtered.length) {
-        return new Set();
+      const isAllSelected = filtered.length > 0 && filtered.every((r) => prev.has(r.id));
+      if (isAllSelected) {
+        const next = new Set(prev);
+        for (const r of filtered) {
+          next.delete(r.id);
+        }
+        return next;
       }
-      return new Set(filtered.map((r) => r.id));
+      const next = new Set(prev);
+      for (const r of filtered) {
+        next.add(r.id);
+      }
+      return next;
     });
   }, [filtered]);
 
   // Bulk actions
   const handleBulkConfirmReservations = async () => {
     const ids = Array.from(selectedReservationIds);
-    const pendings = filtered.filter(
+    const pendings = data.filter(
       (r) =>
         ids.includes(r.id) &&
         (r.status === BookingStatus.PENDING ||
@@ -356,26 +375,39 @@ export function ReservationsView() {
       toast.error("Ommaviy tasdiqlashda xatolik yuz berdi");
     } finally {
       setIsBulkProcessing(false);
+      void refetch();
     }
   };
 
   const handleBulkCancelReservations = async () => {
+    const ids = Array.from(selectedReservationIds);
+    const cancellables = data.filter(
+      (r) =>
+        ids.includes(r.id) &&
+        r.status !== BookingStatus.CANCELLED &&
+        r.status !== BookingStatus.COMPLETED,
+    );
+
+    if (cancellables.length === 0) {
+      toast.info("Tanlanganlar ichida bekor qilinadigan faol bronlar yo'q");
+      return;
+    }
+
     const ok = await confirm({
       title: "Bronlarni bekor qilish",
-      description: `Tanlangan ${selectedReservationIds.size} ta bronni bekor qilishni tasdiqlaysizmi?`,
+      description: `Tanlangan ${cancellables.length} ta faol bronni bekor qilishni tasdiqlaysizmi?`,
       confirmText: "Bekor qilish",
       cancelText: "Orqaga",
       destructive: true,
     });
     if (!ok) return;
 
-    const ids = Array.from(selectedReservationIds);
     setIsBulkProcessing(true);
     try {
       const results = await Promise.allSettled(
-        ids.map((id) =>
+        cancellables.map((r) =>
           rejectReservation.mutateAsync({
-            id,
+            id: r.id,
             reason: "Hamkor tomonidan guruhli bekor qilindi",
           }),
         ),
@@ -389,7 +421,9 @@ export function ReservationsView() {
       } else {
         toast.warning(`${fulfilled} ta bekor qilindi, ${rejected} tasida xatolik yuz berdi`);
         const failedIds = new Set(
-          ids.filter((_, idx) => results[idx].status === "rejected"),
+          cancellables
+            .filter((_, idx) => results[idx].status === "rejected")
+            .map((r) => r.id),
         );
         setSelectedReservationIds(failedIds);
       }
@@ -397,6 +431,7 @@ export function ReservationsView() {
       toast.error("Guruhli bekor qilishda xatolik yuz berdi");
     } finally {
       setIsBulkProcessing(false);
+      void refetch();
     }
   };
 
@@ -405,7 +440,7 @@ export function ReservationsView() {
     lastPushedQRef.current = "";
     setStartDate("");
     setEndDate("");
-    handleFilterChange("all");
+    setFilter("all");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("status");
     params.delete("tab");
@@ -415,7 +450,7 @@ export function ReservationsView() {
     startTransition(() => {
       router.replace(nextUrl, { scroll: false });
     });
-  }, [handleFilterChange, pathname, router, searchParams]);
+  }, [pathname, router, searchParams]);
 
   const hasActiveFilters = Boolean(startDate || endDate || query || filter !== "all");
 
@@ -445,8 +480,8 @@ export function ReservationsView() {
         isLoading={isLoading}
         onSelectFilter={handleFilterChange}
         onSelectToday={() => {
-          setStartDate(TODAY_ISO);
-          setEndDate(TODAY_ISO);
+          setStartDate(todayIso());
+          setEndDate(todayIso());
         }}
       />
 
@@ -480,6 +515,9 @@ export function ReservationsView() {
             unitSingular={labels.unitSingular}
             hasActiveFilters={hasActiveFilters}
             onResetFilters={handleResetFilters}
+            statusFilter={filter}
+            onStatusFilterChange={handleFilterChange}
+            counts={counts}
           />
 
           {/* Data Presentation */}
@@ -497,14 +535,27 @@ export function ReservationsView() {
             />
           ) : filtered.length === 0 ? (
             <EmptyState
-              title="Hech qanday bron topilmadi"
-              description="Qidiruv, sana oralig'i yoki status filtrini o'zgartirib ko'ring."
+              title={
+                hasActiveFilters
+                  ? "Filtr bo'yicha bron topilmadi"
+                  : "Hozircha hech qanday bron mavjud emas"
+              }
+              description={
+                hasActiveFilters
+                  ? "Qidiruv, sana oralig'i yoki status filtrini tozalab ko'ring."
+                  : "Yangi bronlarni qabul qiling yoki mehmon uchun to'g'ridan-to'g'ri yangi bron yarating."
+              }
               action={
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={handleResetFilters}>
                     Filtrlarni tozalash
                   </Button>
-                ) : undefined
+                ) : (
+                  <Button size="sm" onClick={() => setWalkInOpen(true)}>
+                    <CalendarPlus className="h-4 w-4 mr-1.5" />
+                    <span>{labels.walkInTitle}</span>
+                  </Button>
+                )
               }
             />
           ) : viewMode === "table" ? (
@@ -521,6 +572,7 @@ export function ReservationsView() {
               onReject={(r) => setRejectTarget(r)}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              onAssignRoom={handleAssignRoom}
               selectedIds={selectedReservationIds}
               onToggleSelect={handleToggleSelectReservation}
               onToggleSelectAll={handleToggleSelectAllReservations}
@@ -534,8 +586,10 @@ export function ReservationsView() {
               onReject={(r) => setRejectTarget(r)}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              onAssignRoom={handleAssignRoom}
               selectedIds={selectedReservationIds}
               onToggleSelect={handleToggleSelectReservation}
+              onToggleSelectAll={handleToggleSelectAllReservations}
             />
           )}
         </section>
@@ -559,6 +613,10 @@ export function ReservationsView() {
           setSelectedReservationId(null);
           handleCheckOut(r);
         }}
+        onAssignRoom={(r) => {
+          setSelectedReservationId(null);
+          handleAssignRoom(r);
+        }}
       />
 
       {/* 5. Dialogs */}
@@ -578,6 +636,28 @@ export function ReservationsView() {
           }
         }}
       />
+
+      {hasBeds(partnerType) ? (
+        <AssignBedDialog
+          open={Boolean(roomAssignTarget)}
+          onClose={() => setRoomAssignTarget(null)}
+          reservation={roomAssignTarget}
+          onAssigned={() => {
+            void refetch();
+            setRoomAssignTarget(null);
+          }}
+        />
+      ) : (
+        <AssignRoomDialog
+          open={Boolean(roomAssignTarget)}
+          onClose={() => setRoomAssignTarget(null)}
+          reservation={roomAssignTarget}
+          onAssigned={() => {
+            void refetch();
+            setRoomAssignTarget(null);
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(rejectTarget)}

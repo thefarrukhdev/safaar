@@ -11,11 +11,13 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { Badge, type BadgeTone } from "../../_components/ui/badge";
 import { Card, CardBody } from "../../_components/ui/card";
 import { Skeleton } from "../../_components/ui/skeleton";
 import { useBeds } from "../../_hooks/use-beds";
 import { cn } from "../../_lib/utils/cn";
 import type { PartnerLabels } from "../../_lib/utils/partner-labels";
+import type { ReservationView } from "../../_lib/domain/types";
 import type { Task, FrontDeskStatsData } from "./types";
 
 interface FrontDeskQuickActionsProps {
@@ -25,6 +27,7 @@ interface FrontDeskQuickActionsProps {
   labels: PartnerLabels;
   dacha: boolean;
   restaurant?: boolean;
+  onViewDetails?: (reservation: ReservationView) => void;
 }
 
 export function FrontDeskQuickActions({
@@ -34,6 +37,7 @@ export function FrontDeskQuickActions({
   labels,
   dacha,
   restaurant,
+  onViewDetails,
 }: FrontDeskQuickActionsProps) {
   const vacantRooms = Math.max(0, stats.totalRooms - stats.occupiedRooms);
 
@@ -75,6 +79,7 @@ export function FrontDeskQuickActions({
               labels={labels}
               dacha={dacha}
               restaurant={restaurant}
+              onViewDetails={onViewDetails}
             />
           ) : (
             <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/50 p-4 text-center text-xs text-[var(--muted-foreground)]">
@@ -160,11 +165,13 @@ function NextTaskPreview({
   labels,
   dacha,
   restaurant,
+  onViewDetails,
 }: {
   task: Task;
   labels: PartnerLabels;
   dacha: boolean;
   restaurant?: boolean;
+  onViewDetails?: (reservation: ReservationView) => void;
 }) {
   const { data: beds = [] } = useBeds();
   const bed = task.reservation.bedId ? beds.find((b) => b.id === task.reservation.bedId) : undefined;
@@ -175,18 +182,22 @@ function NextTaskPreview({
         ? labels.checkInLabel
         : labels.checkOutLabel;
 
-  return (
-    <Link
-      href={`/reservations/${task.reservation.id}`}
-      className="group flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 transition-all duration-150 hover:border-brand-300 hover:bg-brand-50/40 dark:hover:border-brand-800 dark:hover:bg-brand-950/20"
-    >
+  const badgeTone: BadgeTone =
+    task.kind === "pending"
+      ? "amber"
+      : task.kind === "arrival"
+        ? "emerald"
+        : "blue";
+
+  const content = (
+    <>
       <div className="flex items-center justify-between">
         <span className="font-semibold text-sm text-[var(--foreground)] group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate">
           {task.reservation.guest.fullName}
         </span>
-        <span className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 px-2 py-0.5 rounded-full shrink-0">
+        <Badge variant="subtle" tone={badgeTone} className="shrink-0">
           {kindLabel}
-        </span>
+        </Badge>
       </div>
 
       {!dacha && task.reservation.roomTypeName && (
@@ -204,6 +215,30 @@ function NextTaskPreview({
         <span>Batafsil ko&apos;rish</span>
         <ChevronRight className="h-3 w-3 ml-0.5" />
       </div>
+    </>
+  );
+
+  const containerClassName =
+    "group flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 transition-all duration-150 hover:border-brand-300 hover:bg-brand-50/40 dark:hover:border-brand-800 dark:hover:bg-brand-950/20 text-left w-full";
+
+  if (onViewDetails) {
+    return (
+      <button
+        type="button"
+        onClick={() => onViewDetails(task.reservation)}
+        className={containerClassName}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={`/reservations/${task.reservation.id}`}
+      className={containerClassName}
+    >
+      {content}
     </Link>
   );
 }

@@ -4,14 +4,28 @@ import {
   AlertCircle,
   BedDouble,
   CalendarDays,
+  Copy,
+  ExternalLink,
   LogIn,
   LogOut,
+  MoreVertical,
   Phone,
   UtensilsCrossed,
   Wallet,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "../../_components/ui/button";
+import { Badge, type BadgeTone } from "../../_components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../_components/ui/dropdown-menu";
 import { Skeleton } from "../../_components/ui/skeleton";
 import { Tooltip } from "../../_components/ui/tooltip";
 import { SourceBadge } from "../../_components/domain/source-badge";
@@ -32,6 +46,7 @@ interface FrontDeskTaskCardProps {
   onCheckOut: () => void;
   onConfirm: () => void;
   onReject: () => void;
+  onViewDetails?: () => void;
 }
 
 const TASK_META: Record<
@@ -40,22 +55,26 @@ const TASK_META: Record<
     icon: typeof AlertCircle;
     iconClass: string;
     bgClass: string;
+    badgeTone: BadgeTone;
   }
 > = {
   pending: {
     icon: AlertCircle,
     iconClass: "text-amber-600 dark:text-amber-400",
     bgClass: "bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200/60 dark:ring-amber-900/40",
+    badgeTone: "amber",
   },
   arrival: {
     icon: LogIn,
     iconClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-200/60 dark:ring-emerald-900/40",
+    badgeTone: "emerald",
   },
   departure: {
     icon: LogOut,
     iconClass: "text-blue-600 dark:text-blue-400",
     bgClass: "bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-200/60 dark:ring-blue-900/40",
+    badgeTone: "blue",
   },
 };
 
@@ -69,6 +88,7 @@ export function FrontDeskTaskCard({
   onCheckOut,
   onConfirm,
   onReject,
+  onViewDetails,
 }: FrontDeskTaskCardProps) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const meta = TASK_META[kind];
@@ -82,6 +102,26 @@ export function FrontDeskTaskCard({
       : kind === "arrival"
         ? labels.checkInLabel
         : labels.checkOutLabel;
+
+  // Sanitized phone link
+  const rawPhone = reservation.guest.phone ?? "";
+  const cleanPhone = rawPhone.replace(/[^\d+]/g, "");
+  const telHref = cleanPhone
+    ? cleanPhone.startsWith("+")
+      ? `tel:${cleanPhone}`
+      : `tel:+${cleanPhone}`
+    : null;
+
+  const handleCopyPhone = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!rawPhone || rawPhone === "Kiritilmagan") {
+      toast.error("Telefon raqami mavjud emas");
+      return;
+    }
+    void navigator.clipboard.writeText(rawPhone).then(() => {
+      toast.success("Telefon raqami nusxalandi: " + rawPhone);
+    });
+  };
 
   return (
     <article
@@ -113,15 +153,27 @@ export function FrontDeskTaskCard({
           >
             <IconComponent className="h-4 w-4" />
           </div>
-          <Link
-            href={`/reservations/${reservation.id}`}
-            className="text-base font-semibold text-[var(--foreground)] hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
-          >
-            {reservation.guest.fullName}
-          </Link>
-          <span className="rounded-full bg-[var(--surface-muted)] border border-[var(--border)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">
+
+          {onViewDetails ? (
+            <button
+              type="button"
+              onClick={onViewDetails}
+              className="text-left text-base font-semibold text-[var(--foreground)] hover:text-brand-600 dark:hover:text-brand-400 transition-colors focus-visible:outline-none focus-visible:underline"
+            >
+              {reservation.guest.fullName}
+            </button>
+          ) : (
+            <Link
+              href={`/reservations/${reservation.id}`}
+              className="text-base font-semibold text-[var(--foreground)] hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+            >
+              {reservation.guest.fullName}
+            </Link>
+          )}
+
+          <Badge variant="subtle" tone={meta.badgeTone}>
             {kindLabel}
-          </span>
+          </Badge>
           <SourceBadge source={reservation.source} />
         </div>
 
@@ -155,7 +207,10 @@ export function FrontDeskTaskCard({
 
           {/* Duration */}
           <div className="flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+            <CalendarDays
+              className="h-4 w-4 text-[var(--muted-foreground)]"
+              aria-hidden="true"
+            />
             <span className="tabular-nums">
               {restaurant && reservation.slotTime
                 ? `${formatDate(reservation.checkIn)} · ${reservation.slotTime}`
@@ -165,7 +220,10 @@ export function FrontDeskTaskCard({
 
           {/* Price & Balance */}
           <div className="flex items-center gap-1.5 font-medium tabular-nums">
-            <Wallet className="h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+            <Wallet
+              className="h-4 w-4 text-[var(--muted-foreground)]"
+              aria-hidden="true"
+            />
             {kind === "departure" ? (
               balance > 0 ? (
                 <span className="text-red-600 dark:text-red-400 font-semibold">
@@ -186,31 +244,43 @@ export function FrontDeskTaskCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2.5 pt-3 border-t border-[var(--border)] md:pt-0 md:border-t-0 md:pl-4 md:border-l">
-        <Tooltip content={`${labels.guestLabel}ga qo'ng'iroq`} side="top">
-          <a
-            href={`tel:+${reservation.guest.phone}`}
-            aria-label={`${reservation.guest.fullName}ga qo'ng'iroq qilish`}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors border border-[var(--border)] hover:border-brand-200"
+      <div className="flex items-center gap-2 pt-3 border-t border-[var(--border)] md:pt-0 md:border-t-0 md:pl-4 md:border-l">
+        {/* WCAG 44px minimum phone action */}
+        {telHref ? (
+          <Tooltip content={`${labels.guestLabel}ga qo'ng'iroq`} side="top">
+            <a
+              href={telHref}
+              aria-label={`${reservation.guest.fullName}ga qo'ng'iroq qilish`}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] hover:text-brand-600 hover:bg-brand-50 hover:border-brand-200 dark:hover:bg-brand-950/40 dark:hover:border-brand-800 transition-colors border border-[var(--border)] min-h-[44px] min-w-[44px]"
+            >
+              <Phone className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </Tooltip>
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-label="Telefon raqami ko'rsatilmagan"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)]/40 border border-[var(--border)] opacity-50 cursor-not-allowed min-h-[44px] min-w-[44px]"
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
-          </a>
-        </Tooltip>
+          </button>
+        )}
 
-        <div className="flex-1 flex justify-end gap-2">
+        <div className="flex-1 flex justify-end items-center gap-2">
           {kind === "pending" && (
             <>
               <Button
                 variant="outline"
                 size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-950/40"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-950/40 min-h-[44px] sm:min-h-[36px]"
                 onClick={onReject}
               >
                 Rad etish
               </Button>
               <Button
                 size="sm"
-                className="bg-brand-600 hover:bg-brand-700 text-white"
+                className="bg-brand-600 hover:bg-brand-700 text-white min-h-[44px] sm:min-h-[36px]"
                 onClick={onConfirm}
               >
                 Tasdiqlash
@@ -221,10 +291,10 @@ export function FrontDeskTaskCard({
           {kind === "arrival" && (
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm min-h-[44px] sm:min-h-[36px]"
               onClick={onCheckIn}
             >
-              <LogIn className="h-4 w-4" aria-hidden="true" />
+              <LogIn className="h-4 w-4 mr-1.5" aria-hidden="true" />
               <span>{labels.checkInLabel}</span>
             </Button>
           )}
@@ -234,12 +304,77 @@ export function FrontDeskTaskCard({
               variant="outline"
               size="sm"
               onClick={onCheckOut}
-              className="hover:bg-[var(--surface-muted)]"
+              className="hover:bg-[var(--surface-muted)] border-[var(--border)] min-h-[44px] sm:min-h-[36px]"
             >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <LogOut className="h-4 w-4 mr-1.5" aria-hidden="true" />
               <span>{labels.checkOutLabel}</span>
             </Button>
           )}
+
+          {/* Staff Overflow Dropdown Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Qo'shimcha amallar"
+                className="h-11 w-11 min-h-[44px] min-w-[44px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] border border-transparent hover:border-[var(--border)]"
+              >
+                <MoreVertical className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="bottom" className="w-56">
+              <DropdownMenuLabel>Bron amallari</DropdownMenuLabel>
+              {onViewDetails ? (
+                <DropdownMenuItem onClick={onViewDetails}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <span>Tezkor ko&apos;rish</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem asChild>
+                  <Link href={`/reservations/${reservation.id}`}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <span>Batafsil sahifa</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem onClick={handleCopyPhone}>
+                <Copy className="h-4 w-4 mr-2" />
+                <span>Raqamni nusxalash</span>
+              </DropdownMenuItem>
+
+              {telHref && (
+                <DropdownMenuItem asChild>
+                  <a href={telHref}>
+                    <Phone className="h-4 w-4 mr-2" />
+                    <span>Qo&apos;ng&apos;iroq qilish</span>
+                  </a>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
+
+              {kind === "arrival" && (
+                <DropdownMenuItem onClick={onCheckIn}>
+                  <LogIn className="h-4 w-4 mr-2 text-emerald-600" />
+                  <span>{labels.checkInLabel}</span>
+                </DropdownMenuItem>
+              )}
+
+              {kind === "departure" && (
+                <DropdownMenuItem onClick={onCheckOut}>
+                  <LogOut className="h-4 w-4 mr-2 text-blue-600" />
+                  <span>{labels.checkOutLabel}</span>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem destructive onClick={onReject}>
+                <XCircle className="h-4 w-4 mr-2 text-red-600" />
+                <span>Bekor qilish / Rad etish</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </article>
@@ -265,8 +400,8 @@ export function TaskCardSkeleton() {
         </div>
       </div>
       <div className="flex items-center gap-2 pt-3 md:pt-0">
-        <Skeleton className="h-10 w-10 rounded-xl" />
-        <Skeleton className="h-10 w-28 rounded-xl" />
+        <Skeleton className="h-11 w-11 rounded-xl" />
+        <Skeleton className="h-11 w-28 rounded-xl" />
       </div>
     </div>
   );

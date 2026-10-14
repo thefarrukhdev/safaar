@@ -16,3 +16,9 @@ export interface FrontDeskStatsData {
   departuresToday: number;
   monthRevenue: number;
 }
+
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+

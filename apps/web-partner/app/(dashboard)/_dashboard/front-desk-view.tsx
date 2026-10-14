@@ -9,6 +9,7 @@ import { ConfirmDialog } from "../../_components/ui/dialog";
 import { CheckInDialog } from "../../_components/domain/check-in-dialog";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { OnboardingWizard } from "../../_components/domain/onboarding-wizard";
+import { ReservationQuickDrawer } from "../reservations/reservation-quick-drawer";
 import { useBeds } from "../../_hooks/use-beds";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useFrontDeskStats } from "../../_hooks/use-dashboard";
@@ -28,9 +29,9 @@ import { FrontDeskHeader } from "./front-desk-header";
 import { FrontDeskStats } from "./front-desk-stats";
 import { FrontDeskTasks } from "./front-desk-tasks";
 import { FrontDeskQuickActions } from "./front-desk-quick-actions";
-import type { FilterKey, FrontDeskStatsData, Task, TaskKind } from "./types";
+import type { DateRange, FilterKey, FrontDeskStatsData, Task, TaskKind } from "./types";
 
-// "IN_HOUSE" — frontend'da faol joylashgan mehmonlar uchun holat
+// "IN_HOUSE" — backend'da BookingStatus enum'da yo'q, lekin frontend adapter'da faol mehmonlar uchun qo'yiladi
 const IN_HOUSE = "IN_HOUSE" as const;
 
 const TASK_ORDER: Record<TaskKind, number> = {
@@ -69,6 +70,15 @@ export function FrontDeskView() {
     staleTime: 60_000,
   });
 
+  // Sana oralig'i (standart: bugun)
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: TODAY_ISO,
+    endDate: TODAY_ISO,
+  });
+
+  const isCustomDateRange =
+    dateRange.startDate !== TODAY_ISO || dateRange.endDate !== TODAY_ISO;
+
   // Dialog & Interaction State
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [confirmReject, setConfirmReject] = useState<{
@@ -79,24 +89,34 @@ export function FrontDeskView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [assignReservation, setAssignReservation] =
     useState<ReservationView | null>(null);
+  const [drawerReservation, setDrawerReservation] =
+    useState<ReservationView | null>(null);
 
   // Mantiqiy navbatdagi vazifalar
   const tasks: Task[] = useMemo(() => {
     const list: Task[] = [];
+    const start = dateRange.startDate;
+    const end = dateRange.endDate;
+
     for (const r of reservations.data) {
       if (r.status === BookingStatus.PENDING) {
         list.push({ kind: "pending", reservation: r });
       } else if (
-        r.checkIn === TODAY_ISO &&
+        r.checkIn >= start &&
+        r.checkIn <= end &&
         r.status === BookingStatus.CONFIRMED
       ) {
         list.push({ kind: "arrival", reservation: r });
-      } else if (r.checkOut === TODAY_ISO && r.status === IN_HOUSE) {
+      } else if (
+        r.checkOut >= start &&
+        r.checkOut <= end &&
+        (r.status === IN_HOUSE || r.status === BookingStatus.CONFIRMED)
+      ) {
         list.push({ kind: "departure", reservation: r });
       }
     }
     return list.sort((a, b) => TASK_ORDER[a.kind] - TASK_ORDER[b.kind]);
-  }, [reservations.data]);
+  }, [reservations.data, dateRange]);
 
   // Hisoblagichlar
   const counts: Record<FilterKey, number> = useMemo(() => {
@@ -115,26 +135,59 @@ export function FrontDeskView() {
   // Statistik ko'rsatkichlar (Backend + fallback local cache)
   const stats: FrontDeskStatsData = useMemo(() => {
     const backend = frontDeskStats.data;
+    const totalRooms =
+      backend?.totalRooms > 0
+        ? backend.totalRooms
+        : localStats.totalRooms > 0
+          ? localStats.totalRooms
+          : rooms.length;
+    const occupiedRooms = backend?.occupiedRooms ?? localStats.occupiedRooms;
+    const occupancyPercent =
+      totalRooms > 0
+        ? Math.round((occupiedRooms / totalRooms) * 100)
+        : (backend?.occupancyPercent ?? localStats.occupancyPercent ?? 0);
+    const arrivalsToday =
+      isCustomDateRange
+        ? counts.arrival
+        : (backend?.arrivalsToday ?? counts.arrival ?? localStats.arrivalsToday);
+    const departuresToday = counts.departure;
+    const monthRevenue =
+      backend?.monthRevenue ?? localStats.monthRevenue ?? 0;
+
     return {
-      occupancyPercent: backend.occupancyPercent || localStats.occupancyPercent,
-      occupiedRooms: backend.occupiedRooms || localStats.occupiedRooms,
-      totalRooms: backend.totalRooms || localStats.totalRooms,
-      arrivalsToday: backend.arrivalsToday || counts.arrival || localStats.arrivalsToday,
-      departuresToday: backend.departuresToday || counts.departure || localStats.departuresToday,
-      monthRevenue: backend.monthRevenue || localStats.monthRevenue,
+      occupancyPercent,
+      occupiedRooms,
+      totalRooms,
+      arrivalsToday,
+      departuresToday,
+      monthRevenue,
     };
-  }, [frontDeskStats.data, localStats, counts.arrival, counts.departure]);
+  }, [
+    frontDeskStats.data,
+    localStats,
+    rooms.length,
+    counts.arrival,
+    counts.departure,
+    isCustomDateRange,
+  ]);
 
   const isStatsLoading = frontDeskStats.isLoading && reservations.isLoading;
 
-  // Qidiruv va filtr bo'yicha saralangan ro'yxat
+  // Qidiruv va filtr bo'yicha saralangan ro'yxat (raqamlar normalizatsiyasi bilan)
   const filteredTasks = useMemo(() => {
     let list =
       filter === "all" ? tasks : tasks.filter((task) => task.kind === filter);
     const q = searchQuery.trim().toLowerCase();
     if (q) {
-      list = list.filter(({ reservation }) =>
-        [
+      const queryDigits = q.replace(/\D/g, "");
+      list = list.filter(({ reservation }) => {
+        const guestPhoneDigits = (reservation.guest.phone || "").replace(
+          /\D/g,
+          "",
+        );
+        const matchDigits =
+          queryDigits.length >= 3 && guestPhoneDigits.includes(queryDigits);
+        const textBlock = [
           reservation.id,
           reservation.guest.fullName,
           reservation.guest.phone,
@@ -143,9 +196,10 @@ export function FrontDeskView() {
         ]
           .filter(Boolean)
           .join(" ")
-          .toLowerCase()
-          .includes(q),
-      );
+          .toLowerCase();
+
+        return matchDigits || textBlock.includes(q);
+      });
     }
     return list;
   }, [filter, searchQuery, tasks]);
@@ -161,6 +215,9 @@ export function FrontDeskView() {
     checkOut.mutate(reservation.id, {
       onSuccess: () => {
         toast.success(`${labels.checkOutLabel}: ${reservation.guest.fullName}`);
+        if (drawerReservation?.id === reservation.id) {
+          setDrawerReservation(null);
+        }
       },
       onError: (error) => {
         toast.error(error instanceof Error ? error.message : "Xato yuz berdi");
@@ -171,7 +228,12 @@ export function FrontDeskView() {
   const handleConfirm = (reservation: ReservationView) => {
     confirmReservation.mutate(reservation.id, {
       onSuccess: () => {
-        toast.success(`${labels.reservationLabel} tasdiqlandi: #${reservation.id}`);
+        toast.success(
+          `${labels.reservationLabel} tasdiqlandi: #${reservation.id}`,
+        );
+        if (drawerReservation?.id === reservation.id) {
+          setDrawerReservation(null);
+        }
       },
       onError: (error) => {
         toast.error(error instanceof Error ? error.message : "Xato yuz berdi");
@@ -195,6 +257,9 @@ export function FrontDeskView() {
           toast.success(
             `${labels.reservationLabel} rad etildi: #${confirmReject.id}`,
           );
+          if (drawerReservation?.id === confirmReject.id) {
+            setDrawerReservation(null);
+          }
         },
         onError: (error) => {
           toast.error(
@@ -223,7 +288,7 @@ export function FrontDeskView() {
 
       {/* 3. Asosiy operatsion qism: Vazifalar ro'yxati va Tezkor yordamchi panel */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        {/* Chap ustun: Vazifalar, filtrlar va qidiruv */}
+        {/* Chap ustun: Vazifalar, tablar, sana filtri va qidiruv */}
         <FrontDeskTasks
           tasks={tasks}
           filteredTasks={filteredTasks}
@@ -232,7 +297,15 @@ export function FrontDeskView() {
           onFilterChange={setFilter}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          isCustomDateRange={isCustomDateRange}
+          onResetDateToToday={() =>
+            setDateRange({ startDate: TODAY_ISO, endDate: TODAY_ISO })
+          }
           isLoading={reservations.isLoading}
+          isError={reservations.isError}
+          onRetry={() => void reservations.refetch()}
           labels={labels}
           dacha={dacha}
           restaurant={restaurant}
@@ -240,6 +313,7 @@ export function FrontDeskView() {
           onCheckOut={handleCheckOut}
           onConfirm={handleConfirm}
           onReject={handleRejectClick}
+          onViewDetails={(res) => setDrawerReservation(res)}
         />
 
         {/* O'ng ustun: Shoshilinch vazifa va tezkor yo'nalishlar */}
@@ -250,8 +324,20 @@ export function FrontDeskView() {
           labels={labels}
           dacha={dacha}
           restaurant={restaurant}
+          onViewDetails={(res) => setDrawerReservation(res)}
         />
       </div>
+
+      {/* Slide-over Quick Drawer */}
+      <ReservationQuickDrawer
+        open={Boolean(drawerReservation)}
+        onClose={() => setDrawerReservation(null)}
+        reservation={drawerReservation}
+        onCheckIn={handleCheckIn}
+        onCheckOut={handleCheckOut}
+        onConfirm={handleConfirm}
+        onReject={handleRejectClick}
+      />
 
       {/* Dialogni boshqarish */}
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />

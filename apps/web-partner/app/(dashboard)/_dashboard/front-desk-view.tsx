@@ -863,7 +863,7 @@ function OccupancyCard({
           </div>
         </div>
         <div className="mt-3">
-          <OccupancyMeter percent={percent} className="h-2" />
+          <OccupancyMeter percent={percent} size="md" showTicks showGlow />
         </div>
       </div>
       <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">

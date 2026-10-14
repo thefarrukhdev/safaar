@@ -1,6 +1,12 @@
 "use client";
 
-import { ImageIcon } from "lucide-react";
+import {
+  Building2,
+  Coins,
+  ImageIcon,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -11,6 +17,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCreateRoomType, useUpdateRoomType } from "@/hooks/use-room-types";
 import { useCreateRoom, useUpdateRoom, useRooms } from "@/hooks/use-rooms";
@@ -69,12 +77,12 @@ const HOTEL_ROOM_TYPES = [
 ];
 
 const BED_TYPES = [
-  { value: "Single Bed", label: "Single Bed" },
-  { value: "Twin Beds", label: "Twin Beds" },
-  { value: "Double Bed", label: "Double Bed" },
-  { value: "Queen Bed", label: "Queen Bed" },
-  { value: "King Bed", label: "King Bed" },
-  { value: "Bunk Bed", label: "Bunk Bed" },
+  { value: "Single Bed", label: "Single Bed — bir kishilik karavot" },
+  { value: "Twin Beds", label: "Twin Beds — 2 ta alohida karavot" },
+  { value: "Double Bed", label: "Double Bed — katta ikki kishilik karavot" },
+  { value: "Queen Bed", label: "Queen Bed — keng karavot" },
+  { value: "King Bed", label: "King Bed — eng katta karavot" },
+  { value: "Bunk Bed", label: "Bunk Bed — ikki qavatli karavot" },
 ];
 
 // Mode: 'room' — xonalar bo'limidan, 'type-only' — listing/e'lon bo'limidan (faqat tur tahrirlash)
@@ -88,7 +96,7 @@ const schema = z.object({
   bedType: z.string().max(60).optional(),
   sizeSqm: z.number().min(0).max(500).optional(),
   basePrice: z.number().min(0, "Narx 0 dan kichik bo'lmasin"),
-  capacity: z.number().int().min(1).max(50),
+  capacity: z.number().int().min(1, "Kamida 1 kishi").max(50, "Ko'pi bilan 50 kishi"),
   amenities: z.array(z.string()),
   // Physical room fields (xona ma'lumotlari)
   roomNumber: z.string().optional(),
@@ -105,7 +113,13 @@ interface Props {
   editingPhysicalRoom?: Room | null; // physical room being edited
 }
 
-export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editingPhysicalRoom }: Props) {
+export function UnifiedRoomDialog({
+  open,
+  onClose,
+  mode = "room",
+  editing,
+  editingPhysicalRoom,
+}: Props) {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const createRoomType = useCreateRoomType();
@@ -113,7 +127,8 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
   const createRoom = useCreateRoom();
   const updateRoom = useUpdateRoom();
   const generateBeds = useGenerateBeds();
-  const { data: activeRooms } = useRooms();
+  const { data: activeRooms = [] } = useRooms();
+
   const isHostel = hasBeds(partnerType);
   const isBus = hasBuses(partnerType);
   const restaurant = isRestaurant(partnerType);
@@ -121,6 +136,7 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
   const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
   const amenityOptions = isBus ? BUS_AMENITY_OPTIONS : restaurant ? TABLE_AMENITY_OPTIONS : ROOM_AMENITY_OPTIONS;
 
+  const [activeTab, setActiveTab] = useState<string>("general");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -151,7 +167,7 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
           sizeSqm: editing.sizeSqm,
           basePrice: editing.basePrice,
           capacity: editing.capacity,
-          amenities: editing.amenities as string[],
+          amenities: (editing.amenities as string[]) || [],
           roomNumber: editingPhysicalRoom?.number || "",
           floor: editingPhysicalRoom?.floor || 1,
         });
@@ -174,13 +190,15 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
 
   const selectedAmenities = useWatch({ control: form.control, name: "amenities" }) ?? [];
   const imageUrl = useWatch({ control: form.control, name: "imageUrl" }) ?? "";
+  const nameValue = useWatch({ control: form.control, name: "name" }) ?? "";
+  const bedTypeValue = useWatch({ control: form.control, name: "bedType" }) ?? "";
 
   const toggleAmenity = (value: string) => {
-    const current = form.getValues("amenities");
+    const current = form.getValues("amenities") || [];
     if (current.includes(value)) {
-      form.setValue("amenities", current.filter((a) => a !== value));
+      form.setValue("amenities", current.filter((a) => a !== value), { shouldDirty: true });
     } else {
-      form.setValue("amenities", [...current, value]);
+      form.setValue("amenities", [...current, value], { shouldDirty: true });
     }
   };
 
@@ -189,11 +207,22 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
     try {
       const uploaded = await partners.uploadImage(file, accessToken);
       form.setValue("imageUrl", uploaded.url, { shouldDirty: true, shouldValidate: true });
-      toast.success("Rasm yuklandi");
+      toast.success("Rasm muvaffaqiyatli yuklandi");
     } catch {
       toast.error("Rasmni yuklab bo'lmadi");
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  // Smart tab switcher on invalid form errors
+  const handleFormError = (errors: typeof form.formState.errors) => {
+    if (errors.name || errors.capacity || errors.roomNumber || errors.floor) {
+      setActiveTab("general");
+    } else if (errors.basePrice || errors.sizeSqm || errors.bedType) {
+      setActiveTab("pricing");
+    } else if (errors.amenities || errors.imageUrl) {
+      setActiveTab("amenities");
     }
   };
 
@@ -203,6 +232,7 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
       if (editingPhysicalRoom) {
         if (!values.roomNumber?.trim()) {
           toast.error("Xona raqami kiritilishi majburiy");
+          setActiveTab("general");
           setSubmitting(false);
           return;
         }
@@ -218,7 +248,7 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
             roomTypeId: editing?.id,
             isListed: editingPhysicalRoom.isListed,
             status: editingPhysicalRoom.status,
-          } as any
+          } as any,
         });
         toast.success(`Xona va tur ma'lumotlari yangilandi`);
         onClose();
@@ -228,14 +258,17 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
       if (editing && mode === "type-only") {
         // Faqat tur tahrirlash (Listing sahifasidagi "Tahrirlash" tugmasi)
         await updateRoomType.mutateAsync({ id: editing.id, values });
-        toast.success(`"${values.name}" yangilandi`);
+        toast.success(`"${values.name}" muvaffaqiyatli yangilandi`);
         onClose();
         return;
       }
 
       // Yangi tur yaratish
-      const roomTypeName = values.name || 
-        (restaurant ? `${values.capacity} kishilik stol` : `${unitCap} ${values.roomNumber || values.capacity + " kishilik"}`);
+      const roomTypeName =
+        values.name ||
+        (restaurant
+          ? `${values.capacity} kishilik stol`
+          : `${unitCap} ${values.roomNumber || values.capacity + " kishilik"}`);
 
       const newRoomType = await createRoomType.mutateAsync({
         name: roomTypeName,
@@ -251,9 +284,10 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
       // Agar xona raqami kiritilgan bo'lsa (room mode) — fizik xona ham qo'shish
       if (mode === "room" && values.roomNumber) {
         // Avval bir xil raqamdagi active xona borligini tekshiramiz
-        const duplicate = activeRooms.find(r => r.number === values.roomNumber);
+        const duplicate = activeRooms.find((r) => r.number === values.roomNumber);
         if (duplicate) {
           toast.error(`${unitCap} ${values.roomNumber} allaqachon mavjud. Boshqa raqam kiriting.`);
+          setActiveTab("general");
           setSubmitting(false);
           return;
         }
@@ -262,7 +296,7 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
           number: values.roomNumber,
           floor: values.floor ?? 1,
           status: RoomStatus.VACANT_CLEAN,
-          isListed: true, // to'g'ridan to'g'ri e'londa!
+          isListed: true,
           roomTypeId: newRoomType.id,
         } as any);
 
@@ -272,8 +306,9 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
 
         toast.success(`"${roomTypeName}" va ${unitCap} ${values.roomNumber} e'longa chiqarildi!`);
       } else {
-        // Faqat tur yaratildi (listing sahifasidan "yangi variant")
-        toast.success(`"${roomTypeName}" varianti qo'shildi. Xonalar bo'limidan xona raqamlarini qo'shishingiz mumkin.`);
+        toast.success(
+          `"${roomTypeName}" varianti qo'shildi. Xonalar bo'limidan xona raqamlarini qo'shishingiz mumkin.`,
+        );
       }
 
       onClose();
@@ -282,13 +317,13 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
     } finally {
       setSubmitting(false);
     }
-  });
+  }, handleFormError);
 
   const err = form.formState.errors;
   const isLoading = submitting || uploadingImage;
 
-  const title = editingPhysicalRoom 
-    ? `${unitCap} ${editingPhysicalRoom.number} va uning turini tahrirlash`
+  const title = editingPhysicalRoom
+    ? `${unitCap} ${editingPhysicalRoom.number} ni tahrirlash`
     : editing
       ? `${labels.unitTypeLabel}ni tahrirlash`
       : mode === "room"
@@ -296,238 +331,342 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
         : `Yangi ${labels.unitTypeLabel.toLowerCase()}`;
 
   const description = editingPhysicalRoom
-    ? `Diqqat: Xona turi o'zgartirilsa, shunga o'xshash boshqa xonalarning ham turi o'zgaradi.`
+    ? `Xona raqami va tegishli parametrlarini yangilang.`
     : editing
       ? `${labels.unitTypeLabel} ma'lumotlarini tahrirlash`
-    : mode === "room"
-      ? `${unitCap} ma'lumotlari va e'lon uchun to'liq ma'lumot kiriting. Xona darhol e'longa chiqariladi.`
-      : isBus ? "Masalan: Sedan, SUV, Miniven, Biznes klass"
-        : restaurant ? "Masalan: 2 kishilik, Terrasa, VIP xona"
-          : "Masalan: Standart, Lyuks, Family Suite";
+      : mode === "room"
+        ? `${unitCap} parametrlari va e'lon ma'lumotlarini to'ldiring.`
+        : `Yangi tur va narx parametrlarini kiriting.`;
+
+  const handleClose = () => {
+    setActiveTab("general");
+    onClose();
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} title={title} description={description} size="lg">
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
-        <fieldset disabled={isLoading} className="flex flex-col gap-5 group-disabled:opacity-70">
-        {/* ─── E'LON MA'LUMOTLARI ─── */}
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)]/40 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
-            E'lon ma'lumotlari (turistlar ko'radi)
-          </p>
-          <div className="grid gap-4 md:grid-cols-[1fr_160px]">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ur-name">
-                  {isBus ? "Avtomobil modeli" : restaurant ? "Stol nomi" : "Xona turi nomi"}
-                </Label>
-                {isBus || restaurant ? (
-                  <Input
-                    id="ur-name"
-                    placeholder={isBus ? "Sedan, Miniven..." : "2 kishilik, VIP..."}
-                    aria-invalid={Boolean(err.name)}
-                    {...form.register("name")}
-                  />
-                ) : (
-                  <select
-                    id="ur-name"
-                    className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all duration-150 hover:border-[var(--border-strong)] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    aria-invalid={Boolean(err.name)}
-                    {...form.register("name")}
-                  >
-                    <option value="" disabled>Xona turini tanlang</option>
-                    {HOTEL_ROOM_TYPES.map(rt => (
-                      <option key={rt.value} value={rt.value}>{rt.label}</option>
-                    ))}
-                  </select>
+    <Dialog open={open} onClose={handleClose} title={title} description={description} size="lg">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <fieldset disabled={isLoading} className="flex flex-col gap-4 group-disabled:opacity-70">
+          {/* Apple/Linear Segments Tabs Navigation */}
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            variant="segmented"
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3 p-1">
+              <TabsTrigger value="general" className="gap-2">
+                <Building2 className="h-4 w-4" aria-hidden />
+                <span>Asosiy</span>
+                {(err.name || err.capacity || err.roomNumber || err.floor) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                 )}
-                {err.name && <p className="text-xs text-red-600">{err.name.message}</p>}
-              </div>
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="gap-2">
+                <Coins className="h-4 w-4" aria-hidden />
+                <span>Narx & Parametrlar</span>
+                {(err.basePrice || err.sizeSqm || err.bedType) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="amenities" className="gap-2">
+                <Sparkles className="h-4 w-4" aria-hidden />
+                <span>Qulaylik & Rasm</span>
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ur-capacity">
-                  {isBus ? "O'rindiqlar soni" : "Sig'imi (necha kishi)"}
-                </Label>
-                <Input
-                  id="ur-capacity"
-                  type="number"
-                  min={1}
-                  max={50}
-                  {...form.register("capacity", { valueAsNumber: true })}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <Label htmlFor="ur-desc">Qisqa tavsif (ixtiyoriy)</Label>
-                <Input
-                  id="ur-desc"
-                  placeholder={isBus ? "Qulay, tejamkor..." : "Keng, balkonli..."}
-                  {...form.register("description")}
-                />
-              </div>
-
-              {!restaurant && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="ur-bed">{isBus ? "Uzatma (KPP)" : "Karavot turi"}</Label>
-                    {isBus ? (
-                      <Input
-                        id="ur-bed"
-                        placeholder="Avtomat"
-                        {...form.register("bedType")}
-                      />
-                    ) : (
-                      <select
-                        id="ur-bed"
-                        className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all duration-150 hover:border-[var(--border-strong)] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                        {...form.register("bedType")}
-                      >
-                        <option value="">Tanlang (ixtiyoriy)</option>
-                        {BED_TYPES.map(bt => (
-                          <option key={bt.value} value={bt.value}>{bt.label}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="ur-size">{isBus ? "Bagaj hajmi (L)" : "Maydon (m²)"}</Label>
-                    <Input
-                      id="ur-size"
-                      type="number"
-                      min={0}
-                      max={500}
-                      {...form.register("sizeSqm", {
-                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                      })}
-                    />
-                  </div>
-                </>
-              )}
-
-              {!restaurant && (
-                <div className="flex flex-col gap-1.5 md:col-span-2">
-                  <Label htmlFor="ur-price">
-                    {isBus ? "1 kunlik ijara narxi (so'm)" : "Bir kechalik narx (so'm)"}
+            {/* ─── TAB 1: ASOSIY MA'LUMOTLAR ─── */}
+            <TabsContent value="general" className="mt-3 flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Tur / Model nomi */}
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <Label htmlFor="ur-name">
+                    {isBus ? "Avtomobil modeli" : restaurant ? "Stol nomi" : "Xona turi nomi"}
                   </Label>
-                  <MoneyInput
-                    id="ur-price"
-                    placeholder="400000"
-                    aria-invalid={Boolean(err.basePrice)}
-                    {...form.register("basePrice", { valueAsNumber: true })}
-                  />
-                  {err.basePrice && <p className="text-xs text-red-600">{err.basePrice.message}</p>}
-                </div>
-              )}
-            </div>
-
-            {/* Rasm */}
-            <div className="flex flex-col gap-2">
-              <Label>Rasm</Label>
-              <label className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-card border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] transition-colors hover:border-brand-500">
-                {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imageUrl} alt="" className="h-full w-full object-cover transition-opacity group-hover:opacity-80" />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--muted-foreground)]">
-                    <ImageIcon className="h-8 w-8" aria-hidden />
-                    <span className="text-xs font-medium text-center px-2">Rasm tanlash</span>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handleImageUpload(file);
-                  }}
-                />
-              </label>
-              {uploadingImage && <p className="text-xs text-[var(--muted-foreground)]">Yuklanmoqda...</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* ─── QULAYLIKLAR ─── */}
-        <div className="flex flex-col gap-2">
-          <Label>Qulayliklar</Label>
-          <div className="flex flex-wrap gap-2">
-            {amenityOptions.map((a) => {
-              const checked = selectedAmenities.includes(a.value);
-              return (
-                <Button
-                  key={a.value}
-                  type="button"
-                  variant={checked ? "subtle" : "outline"}
-                  size="sm"
-                  onClick={() => toggleAmenity(a.value)}
-                  aria-pressed={checked}
-                  className={cn(
-                    "rounded-full h-7 min-h-0 px-3 text-xs font-medium",
-                    checked &&
-                      "border-brand-600 bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200",
+                  {isBus || restaurant ? (
+                    <Input
+                      id="ur-name"
+                      placeholder={isBus ? "Sedan, Miniven, SUV..." : "2 kishilik, VIP, Terrasa..."}
+                      aria-invalid={Boolean(err.name)}
+                      {...form.register("name")}
+                    />
+                  ) : (
+                    <Select
+                      id="ur-name"
+                      placeholder="Xona turini tanlang"
+                      value={nameValue}
+                      error={Boolean(err.name)}
+                      onChange={(e) =>
+                        form.setValue("name", e.target.value, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        })
+                      }
+                      options={HOTEL_ROOM_TYPES.map((rt) => ({
+                        value: rt.value,
+                        label: rt.label,
+                      }))}
+                    />
                   )}
-                >
-                  {a.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+                  {err.name && <p className="text-xs text-red-600 dark:text-red-400">{err.name.message}</p>}
+                </div>
 
-        {/* ─── FIZIK XONA MA'LUMOTLARI (faqat room mode da) ─── */}
-        {mode === "room" && (!editing || editingPhysicalRoom) && (
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)]/40 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-              Xona raqami va joylashuvi (ichki boshqaruv)
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ur-number">
-                  {isBus ? "Davlat raqami / ID" : restaurant ? "Stol raqami" : "Xona raqami"}
-                </Label>
-                <Input
-                  id="ur-number"
-                  placeholder={isBus ? "01A-234-BC" : restaurant ? "1, 2A, VIP-1..." : "101, 202, A1..."}
-                  {...form.register("roomNumber")}
-                />
-                <p className="text-[11px] text-[var(--muted-foreground)]">
-                  Bo'sh qoldirsangiz faqat e'lon varianti yaratiladi
-                </p>
-              </div>
-              {!isBus && (
+                {/* Sig'im */}
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="ur-floor">{labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1)}</Label>
+                  <Label htmlFor="ur-capacity">
+                    {isBus ? "O'rindiqlar soni" : "Sig'imi (kishi)"}
+                  </Label>
                   <Input
-                    id="ur-floor"
+                    id="ur-capacity"
                     type="number"
                     min={1}
                     max={50}
-                    {...form.register("floor", { valueAsNumber: true })}
+                    aria-invalid={Boolean(err.capacity)}
+                    {...form.register("capacity", { valueAsNumber: true })}
+                  />
+                  {err.capacity && (
+                    <p className="text-xs text-red-600 dark:text-red-400">{err.capacity.message}</p>
+                  )}
+                </div>
+
+                {/* Qisqa tavsif */}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="ur-desc">Qisqa tavsif (ixtiyoriy)</Label>
+                  <Input
+                    id="ur-desc"
+                    placeholder={isBus ? "Tejamkor, konditsioner..." : "Keng, dengiz manzarali..."}
+                    {...form.register("description")}
                   />
                 </div>
+              </div>
+
+              {/* Fizik xona ma'lumotlari (faqat room rejimida) */}
+              {mode === "room" && (!editing || editingPhysicalRoom) && (
+                <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Xona raqami va joylashuvi
+                    </span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      Darhol faollashadi
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="ur-number">
+                        {isBus ? "Davlat raqami / Bort ID" : restaurant ? "Stol raqami" : "Xona raqami"}
+                      </Label>
+                      <Input
+                        id="ur-number"
+                        placeholder={
+                          isBus ? "01 A 777 AA" : restaurant ? "Stol-12, VIP-1" : "101, 204, 302..."
+                        }
+                        {...form.register("roomNumber")}
+                      />
+                      <p className="text-[11px] text-[var(--muted-foreground)]">
+                        Bo'sh qoldirilsa faqat e'lon varianti saqlanadi
+                      </p>
+                    </div>
+
+                    {!isBus && (
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="ur-floor">
+                          {labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1)}
+                        </Label>
+                        <Input
+                          id="ur-floor"
+                          type="number"
+                          min={1}
+                          max={50}
+                          {...form.register("floor", { valueAsNumber: true })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
+            </TabsContent>
+
+            {/* ─── TAB 2: NARX & PARAMETRLAR ─── */}
+            <TabsContent value="pricing" className="mt-3 flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {!restaurant && (
+                  <div className="flex flex-col gap-1.5 sm:col-span-2">
+                    <Label htmlFor="ur-price">
+                      {isBus ? "1 kunlik ijara narxi (so'm)" : "Bir kechalik narx (so'm)"}
+                    </Label>
+                    <MoneyInput
+                      id="ur-price"
+                      placeholder="400000"
+                      aria-invalid={Boolean(err.basePrice)}
+                      {...form.register("basePrice", { valueAsNumber: true })}
+                    />
+                    {err.basePrice && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{err.basePrice.message}</p>
+                    )}
+                  </div>
+                )}
+
+                {!restaurant && (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="ur-bed">
+                        {isBus ? "Uzatma qutisi (KPP)" : "Karavot turi"}
+                      </Label>
+                      {isBus ? (
+                        <Input
+                          id="ur-bed"
+                          placeholder="Avtomat / Mexanika"
+                          {...form.register("bedType")}
+                        />
+                      ) : (
+                        <Select
+                          id="ur-bed"
+                          placeholder="Karavot turini tanlang (ixtiyoriy)"
+                          value={bedTypeValue}
+                          onChange={(e) =>
+                            form.setValue("bedType", e.target.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                          options={BED_TYPES.map((bt) => ({
+                            value: bt.value,
+                            label: bt.label,
+                          }))}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="ur-size">
+                        {isBus ? "Bagaj hajmi (litr)" : "Xona maydoni (m²)"}
+                      </Label>
+                      <Input
+                        id="ur-size"
+                        type="number"
+                        min={0}
+                        max={500}
+                        placeholder={isBus ? "450" : "28"}
+                        {...form.register("sizeSqm", {
+                          setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                        })}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* ─── TAB 3: QULAYLIKLAR & RASM ─── */}
+            <TabsContent value="amenities" className="mt-3 flex flex-col gap-4">
+              {/* Rasm Yuklash / Ko'rish */}
+              <div className="flex flex-col gap-2">
+                <Label>Rasm (turistlarga ko'rinadi)</Label>
+                <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
+                  <label className="group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 transition-all hover:border-brand-500">
+                    {imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl}
+                        alt="Xona rasmi"
+                        className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-85"
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-1.5 p-3 text-center text-zinc-400">
+                        <ImageIcon className="h-7 w-7 text-zinc-400 group-hover:text-brand-500 transition-colors" aria-hidden />
+                        <span className="text-xs font-medium">Rasm tanlash</span>
+                        <span className="text-[10px] text-zinc-400">JPG, PNG, WebP</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleImageUpload(file);
+                      }}
+                    />
+                  </label>
+
+                  <div className="flex flex-col justify-between py-1">
+                    <div className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                      Sifatli va yorug' fotosurat xona e'lonining bron qilinish ehtimolini bir necha barobarga oshiradi.
+                    </div>
+                    {imageUrl && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => form.setValue("imageUrl", "", { shouldDirty: true })}
+                          className="h-8 text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" />
+                          Rasmni o'chirish
+                        </Button>
+                      </div>
+                    )}
+                    {uploadingImage && (
+                      <p className="text-xs font-medium text-brand-600 dark:text-brand-400 animate-pulse">
+                        Rasm yuklanmoqda...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Qulayliklar Chips */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <Label>Qulayliklar va jihozlar</Label>
+                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1">
+                  {amenityOptions.map((a) => {
+                    const checked = selectedAmenities.includes(a.value);
+                    return (
+                      <Button
+                        key={a.value}
+                        type="button"
+                        variant={checked ? "subtle" : "outline"}
+                        size="sm"
+                        onClick={() => toggleAmenity(a.value)}
+                        aria-pressed={checked}
+                        className={cn(
+                          "rounded-full h-7 px-3 text-xs font-medium transition-all duration-150",
+                          checked
+                            ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm dark:bg-brand-950/60 dark:text-brand-300 dark:border-brand-500/80"
+                            : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white",
+                        )}
+                      >
+                        {a.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Form Actions Footer */}
+          <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-2">
+            <div className="text-xs text-[var(--muted-foreground)]">
+              {activeTab === "general" ? "1 / 3 qadam" : activeTab === "pricing" ? "2 / 3 qadam" : "3 / 3 qadam"}
             </div>
-            <div className="mt-3 rounded-md bg-green-50 px-3 py-2 text-xs text-green-800 dark:bg-green-950/30 dark:text-green-200">
-              ✅ Xona raqami kiritilsa, u <strong>darhol e'longa chiqariladi</strong> — turistlar bron qila oladi.
+
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
+                Bekor qilish
+              </Button>
+              <Button type="submit" variant="primary" disabled={isLoading} loading={isLoading}>
+                {editing
+                  ? "Saqlash"
+                  : mode === "room"
+                    ? "Qo'shish va e'longa chiqarish"
+                    : "Variant qo'shish"}
+              </Button>
             </div>
           </div>
-        )}
-
-        {/* ─── TUGMALAR ─── */}
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-            Bekor qilish
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading
-              ? "Saqlanmoqda..."
-              : editing
-                ? "Saqlash"
-                : mode === "room"
-                  ? "Qo'shish va e'longa chiqarish"
-                  : "Variant qo'shish"}
-          </Button>
-        </div>
         </fieldset>
       </form>
     </Dialog>

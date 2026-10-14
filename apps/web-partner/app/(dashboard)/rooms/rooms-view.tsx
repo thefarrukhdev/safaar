@@ -9,6 +9,9 @@ import {
   Trash2,
   Pencil,
   Search,
+  MoreVertical,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +26,14 @@ import { UnifiedRoomDialog } from "./_dialogs/unified-room-dialog";
 import { BedManagementDialog } from "./_dialogs/bed-management-dialog";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Button } from "../../_components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../_components/ui/dropdown-menu";
 import { useConfirm } from "../../_components/ui/confirm-dialog";
 import { BulkActionBar } from "../../_components/domain/bulk-action-bar";
 import { formatMoney } from "../../_lib/utils/format";
@@ -705,7 +716,7 @@ function RoomCard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -716,16 +727,75 @@ function RoomCard({
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDelete}
-            className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-400"
-            title="O'chirish"
-            aria-label="O'chirish"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 data-[state=open]:bg-zinc-100 dark:data-[state=open]:bg-zinc-800"
+                title="Boshqa amallar"
+                aria-label="Boshqa amallar"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-52">
+              <DropdownMenuLabel>Amallar</DropdownMenuLabel>
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-3.5 w-3.5 text-zinc-500" />
+                <span>Tahrirlash</span>
+              </DropdownMenuItem>
+
+              {beds && onManageBeds && (
+                <DropdownMenuItem onClick={onManageBeds}>
+                  <BedSingle className="h-3.5 w-3.5 text-zinc-500" />
+                  <span>Joylarni boshqarish</span>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem
+                onClick={() => {
+                  updateRoom(
+                    {
+                      id: room.id,
+                      values: {
+                        isListed: !room.isListed,
+                      },
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success(
+                          !room.isListed
+                            ? `${room.number} sotuvga chiqarildi`
+                            : `${room.number} sotuvdan yashirildi`,
+                        );
+                      },
+                    },
+                  );
+                }}
+              >
+                {room.isListed ? (
+                  <>
+                    <EyeOff className="h-3.5 w-3.5 text-zinc-500" />
+                    <span>Sotuvdan yashirish</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3.5 w-3.5 text-brand-600" />
+                    <span>Sotuvga chiqarish</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem destructive onClick={onDelete}>
+                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                <span>O'chirish</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

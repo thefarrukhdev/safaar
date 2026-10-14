@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -9,6 +9,13 @@ import {
 } from "lucide-react";
 import { cn } from "../../_lib/utils/cn";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 export interface BulkActionItem {
   label: string;
@@ -54,26 +61,7 @@ export function BulkActionBar({
   className,
   isProcessing = false,
 }: BulkActionBarProps) {
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const statusMenuRef = useRef<HTMLDivElement>(null);
-
-  // Tashqariga bosilganda status menyuni yopish
-  useEffect(() => {
-    if (!showStatusMenu) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        statusMenuRef.current &&
-        !statusMenuRef.current.contains(e.target as Node)
-      ) {
-        setShowStatusMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showStatusMenu]);
 
   // Esc bosilganda tanlovni tozalash
   useEffect(() => {
@@ -81,17 +69,13 @@ export function BulkActionBar({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showStatusMenu) {
-          setShowStatusMenu(false);
-        } else {
-          onClear();
-        }
+        onClear();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCount, onClear, showStatusMenu]);
+  }, [selectedCount, onClear]);
 
   if (selectedCount === 0) {
     return null;
@@ -108,7 +92,6 @@ export function BulkActionBar({
   };
 
   const handleStatusSelect = async (statusVal: string) => {
-    setShowStatusMenu(false);
     if (!onChangeStatus) return;
     try {
       setLoadingAction("status");
@@ -164,58 +147,48 @@ export function BulkActionBar({
         )}
 
         {/* Action: Holatini o'zgartirish */}
-        {onChangeStatus && (
-          <div ref={statusMenuRef} className="relative">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={isProcessing}
-              loading={loadingAction === "status"}
-              onClick={() => setShowStatusMenu((prev) => !prev)}
-              className={cn(
-                "bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 min-h-[38px]",
-                showStatusMenu && "bg-slate-700 ring-2 ring-brand-400",
-              )}
-            >
-              <SlidersHorizontal className="h-4 w-4 text-slate-300" />
-              <span>Holatini o'zgartirish</span>
-            </Button>
-
-            {/* Status Dropdown Menu */}
-            {showStatusMenu && statusOptions && statusOptions.length > 0 && (
-              <div
-                role="menu"
-                className={cn(
-                  "absolute bottom-full mb-2 left-0 min-w-[200px] p-1.5 rounded-xl shadow-2xl",
-                  "bg-slate-900/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-700/80 dark:border-zinc-700/80",
-                  "flex flex-col gap-1 z-50",
-                  "animate-in fade-in slide-in-from-bottom-2 duration-150",
-                )}
+        {onChangeStatus && statusOptions && statusOptions.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={isProcessing}
+                loading={loadingAction === "status"}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 min-h-[38px] data-[state=open]:bg-slate-700 data-[state=open]:ring-2 data-[state=open]:ring-brand-400"
               >
-                <div className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1 mb-1">
-                  Yangi holatni tanlang
-                </div>
-                {statusOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => handleStatusSelect(opt.value)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-200 hover:text-white hover:bg-white/10 transition-colors text-left min-h-[36px]"
-                  >
-                    <span>{opt.label}</span>
-                    {opt.color && (
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: opt.color }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+                <SlidersHorizontal className="h-4 w-4 text-slate-300" />
+                <span>Holatini o'zgartirish</span>
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              sideOffset={8}
+              className="min-w-[210px] p-1.5 bg-slate-900/95 dark:bg-zinc-900/95 border-slate-700/80 dark:border-zinc-700/80"
+            >
+              <DropdownMenuLabel className="text-slate-400 border-b border-slate-800/80 pb-1.5 mb-1">
+                Yangi holatni tanlang
+              </DropdownMenuLabel>
+              {statusOptions.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => handleStatusSelect(opt.value)}
+                  className="flex items-center justify-between text-slate-200 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 focus:bg-white/10 focus:text-white min-h-[36px]"
+                >
+                  <span>{opt.label}</span>
+                  {opt.color && (
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: opt.color }}
+                    />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Custom Actions */}

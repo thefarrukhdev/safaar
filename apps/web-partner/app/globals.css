@@ -45,6 +45,7 @@
   --surface-hover: #edf4fb;
   --border: #dfe5ec;
   --border-strong: #c4ceda;
+  --border-light: rgba(223, 229, 236, 0.85);
   --muted-foreground: #5f6f82;
   --panel-gradient: #ffffff;
   --page-gradient: #f7f9fc;
@@ -59,6 +60,7 @@
   --surface-hover: #263241;
   --border: #2a3441;
   --border-strong: #445063;
+  --border-light: rgba(42, 52, 65, 0.85);
   --muted-foreground: #9aa8b8;
   --panel-gradient: #151b23;
   --page-gradient: #0d1117;

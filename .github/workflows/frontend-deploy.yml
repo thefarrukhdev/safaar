@@ -162,7 +162,7 @@ jobs:
         run: npm install --global vercel@latest
       - name: Vercel loyihasini ulash va Production Deploy
         run: |
-          vercel link --yes --project=web-user --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          vercel link --yes --project=safaar-uz --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
       - name: Xulosa
         run: |

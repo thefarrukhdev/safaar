@@ -350,17 +350,19 @@ export function LocationEditor({
                 aria-label="Manzil qidirish"
               />
               {query && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setQuery('');
                     setResults([]);
                   }}
                   aria-label="Tozalash"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:bg-[var(--surface-hover)] hover:text-zinc-700"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-700"
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
               )}
 
               {showResults && (searching || results.length > 0) && (

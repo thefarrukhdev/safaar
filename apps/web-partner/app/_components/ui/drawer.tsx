@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "../../_hooks/use-body-scroll-lock";
 import { useMounted } from "../../_hooks/use-mounted";
 import { cn } from "../../_lib/utils/cn";
+import { Button } from "./button";
 
 interface DrawerProps {
   open: boolean;
@@ -139,14 +140,16 @@ export function Drawer({
               </p>
             )}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             aria-label="Yopish"
-            className="-mr-2 rounded-md p-1.5 text-zinc-500 transition-all hover:-translate-y-px hover:bg-[var(--surface)] hover:text-zinc-900 hover:shadow-sm dark:hover:text-white"
+            className="h-8 w-8 min-h-0 min-w-0 p-0 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+            <X className="h-5 w-5" aria-hidden="true" />
+          </Button>
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>

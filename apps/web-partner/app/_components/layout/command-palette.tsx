@@ -18,6 +18,7 @@ import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 import { getNavGroups } from "./sidebar-nav";
 import { cn } from "../../_lib/utils/cn";
 import { formatPhone } from "../../_lib/utils/format";
+import { Button } from "../ui/button";
 
 interface ResultItem {
   id: string;
@@ -308,17 +309,19 @@ export function CommandPalette() {
 
 function TriggerButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       onClick={onClick}
-      className="hidden items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 lg:inline-flex"
+      className="hidden items-center gap-2 px-3 py-1.5 text-sm text-[var(--muted-foreground)] bg-[var(--surface-muted)] hover:bg-[var(--surface)] lg:inline-flex min-h-0"
       aria-label="Qidiruv ochish"
     >
-      <Search className="h-4 w-4" aria-hidden />
+      <Search className="h-4 w-4" aria-hidden="true" />
       <span>Qidirish...</span>
       <kbd className="ml-2 inline-flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5 text-[10px]">
-        <CommandIcon className="h-2.5 w-2.5" aria-hidden />K
+        <CommandIcon className="h-2.5 w-2.5" aria-hidden="true" />K
       </kbd>
-    </button>
+    </Button>
   );
 }

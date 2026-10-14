@@ -705,20 +705,26 @@ function RoomCard({
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onEdit}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900/40 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            className="h-8 w-8 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             title="Tahrirlash"
+            aria-label="Tahrirlash"
           >
             <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onDelete}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
+            className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-400"
             title="O'chirish"
+            aria-label="O'chirish"
           >
             <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -732,19 +738,22 @@ function RoomCard({
             )}>
               {room.status === RoomStatus.OUT_OF_SERVICE ? 'Faol emas' : 'Faol'}
             </span>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleToggleBusStatus}
               disabled={isUpdating}
+              loading={isUpdating}
               className={cn(
-                "rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors",
+                "h-6 px-2 py-0 text-[11px] font-medium",
                 room.status === RoomStatus.OUT_OF_SERVICE
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
                   : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
               )}
             >
-              {isUpdating ? "Kuting..." : (room.status === RoomStatus.OUT_OF_SERVICE ? 'Faollashtirish' : "O'chirish")}
-            </button>
+              {room.status === RoomStatus.OUT_OF_SERVICE ? 'Faollashtirish' : "O'chirish"}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-1">
@@ -807,17 +816,19 @@ function RoomCard({
 
         <div className="flex items-center gap-2 ml-auto">
           {beds && onManageBeds && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onManageBeds();
               }}
-              className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[11px] font-medium text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300"
+              className="h-7 px-2 py-0 text-[11px] font-medium gap-1 text-zinc-600 dark:text-zinc-300"
             >
               <BedSingle className="h-3 w-3" aria-hidden />
               {freeBeds}/{beds.length} bo'sh
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -5,6 +5,7 @@ import { FileText, Upload, CheckCircle2, AlertCircle, Clock } from "lucide-react
 import { toast } from "sonner";
 import { PartnerDocument, listDocuments, uploadDocumentFile } from "@/lib/api/endpoints/partners";
 import { formatDate } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
 
 export default function DocumentsSettingsPage() {
   const [documents, setDocuments] = useState<PartnerDocument[]>([]);
@@ -95,18 +96,16 @@ export default function DocumentsSettingsPage() {
                 accept=".pdf,.jpg,.jpeg,.png"
               />
               
-              <button
+              <Button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="mt-2 w-full flex items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-50"
+                loading={uploading}
+                variant="primary"
+                size="md"
+                className="mt-2 w-full"
               >
-                {uploading ? "Yuklanmoqda..." : (
-                  <>
-                    <Upload size={16} />
-                    Fayl tanlash va yuklash
-                  </>
-                )}
-              </button>
+                <Upload size={16} className="mr-2" />
+                Fayl tanlash va yuklash
+              </Button>
               <p className="text-[10px] text-[var(--muted-foreground)] text-center mt-1">
                 Qabul qilinadigan formatlar: PDF, JPG, PNG. Maksimal hajm: 5MB.
               </p>

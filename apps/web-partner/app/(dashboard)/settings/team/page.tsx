@@ -5,6 +5,7 @@ import { Users, UserPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PartnerTeamMember, listTeamMembers, inviteTeamMember, deleteTeamMember, updateTeamMember } from "@/lib/api/endpoints/partners";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function TeamSettingsPage() {
   const confirm = useConfirm();
@@ -106,13 +107,15 @@ export default function TeamSettingsPage() {
             Biznesingizni birgalikda boshqarish uchun xodimlarni taklif qiling.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90"
+          size="sm"
+          variant="primary"
+          className="gap-2"
         >
           <UserPlus size={16} />
           Xodim qo'shish
-        </button>
+        </Button>
       </div>
 
       <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
@@ -161,9 +164,15 @@ export default function TeamSettingsPage() {
                   )}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button onClick={() => handleRemove(m.id)} className="text-[var(--destructive)] hover:bg-[var(--destructive)]/10 p-1.5 rounded transition-colors" title="O'chirish">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemove(m.id)}
+                    className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    title="O'chirish"
+                  >
                     <Trash2 size={16} />
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -218,20 +227,22 @@ export default function TeamSettingsPage() {
               </div>
 
               <div className="mt-4 flex items-center justify-end gap-3 border-t border-[var(--border)] pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="md"
                   onClick={() => setShowInviteModal(false)}
-                  className="rounded-md px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
                 >
                   Bekor qilish
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={submitting}
-                  className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary)]/90 transition-colors disabled:opacity-50"
+                  variant="primary"
+                  size="md"
+                  loading={submitting}
                 >
-                  {submitting ? "Yuborilmoqda..." : "Taklif yuborish"}
-                </button>
+                  Taklif yuborish
+                </Button>
               </div>
             </form>
           </div>

@@ -284,19 +284,20 @@ function AssignRoomDialogContent({
             />
           </div>
 
-          <button
+          <Button
             type="button"
+            variant={filterOnlyAvailable ? "subtle" : "outline"}
+            size="sm"
             onClick={() => setFilterOnlyAvailable((prev) => !prev)}
             className={cn(
-              "flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors select-none",
-              filterOnlyAvailable
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800",
+              "h-9 px-3 text-xs font-medium",
+              filterOnlyAvailable &&
+                "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
             )}
           >
-            <Filter className="h-3.5 w-3.5" />
+            <Filter className="h-3.5 w-3.5 mr-1" />
             <span>Faqat bo'sh {labels.unitPlural.toLowerCase()}</span>
-          </button>
+          </Button>
         </div>
 
         {/* Rooms Grid Grouped by Floor */}

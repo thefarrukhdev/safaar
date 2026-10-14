@@ -19,6 +19,7 @@ import {
   Card,
   CardBody,
 } from "../../_components/ui/card";
+import { Button } from "../../_components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../_components/ui/tabs";
 import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { PageHeader } from "../../_components/layout/page-header";
@@ -392,9 +393,14 @@ export function ReportsView() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
                   <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Pul yechish tarixi</h2>
-                  <button className="text-sm font-medium text-[var(--primary)] hover:underline flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary)] gap-1.5"
+                    onClick={() => toast.info("Balans hisoboti yuklab olinmoqda...")}
+                  >
                     <Download size={14} /> Balans hisoboti
-                  </button>
+                  </Button>
                 </div>
 
                 {financeLoading ? (
@@ -402,13 +408,15 @@ export function ReportsView() {
                 ) : financeError ? (
                   <div className="py-12 text-center text-sm text-red-500">
                     Pul yechish tarixini yuklashda xatolik yuz berdi.
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => refetchWithdrawals()}
-                      className="ml-2 text-brand-600 underline font-medium"
+                      className="ml-2 text-brand-600 underline font-medium h-auto p-0 hover:bg-transparent"
                     >
                       Qayta urinish
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -496,13 +504,14 @@ export function ReportsView() {
                       className="w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                     />
                   </div>
-                  <button
+                  <Button
                     type="submit"
+                    loading={isSubmitting}
                     disabled={isSubmitting}
-                    className="mt-2 w-full flex items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+                    className="mt-2 w-full"
                   >
-                    {isSubmitting ? "Yuborilmoqda..." : "So'rov yuborish"}
-                  </button>
+                    So'rov yuborish
+                  </Button>
                   <p className="text-[10px] text-zinc-500 mt-1 text-center">
                     Pul yechish jarayoni 1-3 ish kunigacha vaqt olishi mumkin.
                   </p>
@@ -532,14 +541,14 @@ export function ReportsView() {
                     }}
                     placeholder="Sana bo'yicha filter"
                   />
-                  <button
+                  <Button
                     onClick={() => {
                       toast.success("Hisobot admin panelga yuborildi!");
                     }}
-                    className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+                    className="gap-2"
                   >
                     <Download size={16} /> Adminga yuborish
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -624,17 +633,19 @@ function formatShortDate(isoDate: string) {
 
 function TimeTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
-    <button
+    <Button
+      variant={active ? "secondary" : "ghost"}
+      size="sm"
       onClick={onClick}
       className={cn(
-        "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap",
+        "rounded-lg text-sm font-semibold whitespace-nowrap",
         active 
           ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700/50" 
           : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/30 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/30"
       )}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 

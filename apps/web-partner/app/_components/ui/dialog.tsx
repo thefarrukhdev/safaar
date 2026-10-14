@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "../../_hooks/use-body-scroll-lock";
 import { useMounted } from "../../_hooks/use-mounted";
 import { cn } from "../../_lib/utils/cn";
+import { Button } from "./button";
 
 interface DialogProps {
   open: boolean;
@@ -87,14 +88,16 @@ export function Dialog({
               </p>
             )}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             aria-label="Yopish"
-            className="-mr-1 rounded-md p-1 text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] hover:text-zinc-900 dark:hover:text-white"
+            className="h-8 w-8 min-h-0 min-w-0 p-0 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </header>
 
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>

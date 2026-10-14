@@ -16,6 +16,7 @@ import {
 import { formatDate } from "@/lib/utils/format";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export default function DeveloperSettingsPage() {
   const confirm = useConfirm();
@@ -167,12 +168,13 @@ export default function DeveloperSettingsPage() {
                 <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Shaxsiy API Kalitlar</h4>
                 <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">O'z tizimingiz bilan integratsiya qilish uchun kalit yarating.</p>
               </div>
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setShowKeyModal(true)}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Yangi kalit
-              </button>
+              </Button>
             </div>
 
             <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
@@ -194,9 +196,15 @@ export default function DeveloperSettingsPage() {
                       <td className="px-5 py-4 font-mono text-xs text-[var(--muted-foreground)]">{k.keyPrefix}••••••••</td>
                       <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(k.createdAt)}</td>
                       <td className="px-5 py-4">
-                        <button onClick={() => handleDeleteKey(k.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteKey(k.id)}
+                          className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          title="O'chirish"
+                        >
                           <Trash2 size={16} />
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -213,12 +221,13 @@ export default function DeveloperSettingsPage() {
                 <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Webhook Integratsiya</h4>
                 <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Yangi bronlar bo'yicha tezkor xabarnomalar olish uchun Webhook sozlang.</p>
               </div>
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setShowWebhookModal(true)}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
               >
                 Webhook qo'shish
-              </button>
+              </Button>
             </div>
 
             <div className="rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] overflow-hidden">
@@ -246,9 +255,15 @@ export default function DeveloperSettingsPage() {
                       </td>
                       <td className="px-5 py-4 text-xs text-[var(--muted-foreground)]">{formatDate(w.createdAt)}</td>
                       <td className="px-5 py-4">
-                        <button onClick={() => handleDeleteWebhook(w.id)} className="text-[var(--destructive)] p-1 hover:bg-[var(--destructive)]/10 rounded">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteWebhook(w.id)}
+                          className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          title="O'chirish"
+                        >
                           <Trash2 size={16} />
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -272,16 +287,24 @@ export default function DeveloperSettingsPage() {
                 </p>
                 <div className="bg-[var(--muted)] p-3 rounded-lg flex items-center justify-between gap-2 border border-[var(--border)]">
                   <code className="text-xs break-all text-left">{newKeyString}</code>
-                  <button onClick={() => copyToClipboard(newKeyString)} className="p-2 hover:bg-white rounded text-[var(--primary)]">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(newKeyString)}
+                    className="h-8 w-8 min-h-0 min-w-0 p-0 text-[var(--primary)]"
+                    title="Nusxalash"
+                  >
                     <Copy size={16} />
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
+                  variant="primary"
+                  size="md"
                   onClick={() => { setShowKeyModal(false); setNewKeyString(null); }}
-                  className="mt-2 w-full rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  className="mt-2 w-full"
                 >
                   Yopish
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -299,8 +322,22 @@ export default function DeveloperSettingsPage() {
                     />
                   </div>
                   <div className="mt-4 flex justify-end gap-3">
-                    <button type="button" onClick={() => setShowKeyModal(false)} className="px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] rounded-md">Bekor qilish</button>
-                    <button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-md disabled:opacity-50">Yaratish</button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      onClick={() => setShowKeyModal(false)}
+                    >
+                      Bekor qilish
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      loading={submitting}
+                    >
+                      Yaratish
+                    </Button>
                   </div>
                 </form>
               </>
@@ -326,8 +363,22 @@ export default function DeveloperSettingsPage() {
                 />
               </div>
               <div className="mt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowWebhookModal(false)} className="px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] rounded-md">Bekor qilish</button>
-                <button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-md disabled:opacity-50">Qo'shish</button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setShowWebhookModal(false)}
+                >
+                  Bekor qilish
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  loading={submitting}
+                >
+                  Qo'shish
+                </Button>
               </div>
             </form>
           </div>

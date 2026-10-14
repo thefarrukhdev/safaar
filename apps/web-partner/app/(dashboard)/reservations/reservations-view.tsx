@@ -657,11 +657,13 @@ export function ReservationsView() {
                 aria-label="Ko'rinish rejimi"
                 className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-1"
               >
-                <button
+                <Button
                   type="button"
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  size="sm"
                   onClick={() => setUserViewMode("table")}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                    "h-8 px-2.5 text-xs font-medium gap-1.5",
                     viewMode === "table"
                       ? "bg-[var(--surface)] text-[var(--foreground)] shadow-xs"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
@@ -671,12 +673,14 @@ export function ReservationsView() {
                 >
                   <List className="h-4 w-4" aria-hidden />
                   <span className="hidden sm:inline">Jadval</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant={viewMode === "card" ? "secondary" : "ghost"}
+                  size="sm"
                   onClick={() => setUserViewMode("card")}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                    "h-8 px-2.5 text-xs font-medium gap-1.5",
                     viewMode === "card"
                       ? "bg-[var(--surface)] text-[var(--foreground)] shadow-xs"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
@@ -686,7 +690,7 @@ export function ReservationsView() {
                 >
                   <LayoutGrid className="h-4 w-4" aria-hidden />
                   <span className="hidden sm:inline">Kartochka</span>
-                </button>
+                </Button>
               </div>
 
               <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] whitespace-nowrap">

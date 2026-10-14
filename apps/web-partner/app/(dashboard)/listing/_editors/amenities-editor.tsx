@@ -78,9 +78,11 @@ export function AmenitiesEditor({
               {group.items.map((item: any) => {
                 const isOn = selected.has(item.id);
                 return (
-                  <button
+                  <Button
                     key={item.id}
                     type="button"
+                    variant={isOn ? "secondary" : "ghost"}
+                    size="sm"
                     onClick={() => {
                       const next = isOn
                         ? data.amenities.filter((id) => id !== item.id)
@@ -98,7 +100,7 @@ export function AmenitiesEditor({
                     disabled={updateAmenities.isPending}
                     aria-pressed={isOn}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all",
+                      "flex items-center justify-start gap-2 h-auto py-2 px-3 text-left text-sm border font-normal",
                       isOn
                         ? "border-brand-500 bg-brand-50 text-brand-900 dark:bg-brand-900/40 dark:text-brand-100"
                         : "border-[var(--border)] bg-[var(--surface)] text-zinc-700 hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)] dark:text-zinc-300",
@@ -121,7 +123,7 @@ export function AmenitiesEditor({
                       )}
                     </span>
                     <span className="flex-1 truncate">{item.label}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>

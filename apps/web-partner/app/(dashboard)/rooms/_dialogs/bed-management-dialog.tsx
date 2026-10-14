@@ -131,15 +131,17 @@ export function BedManagementDialog({ open, onClose, room }: Props) {
                   />
                   Sotuvda
                 </label>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDelete(bed.id, bed.label)}
                   disabled={submitting || bed.status === RoomStatus.OCCUPIED}
                   aria-label={`${bed.label} ni o'chirish`}
-                  className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed dark:hover:bg-red-950/30"
+                  className="h-8 w-8 min-h-0 min-w-0 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                 >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                </button>
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
               </div>
             </div>
           ))}

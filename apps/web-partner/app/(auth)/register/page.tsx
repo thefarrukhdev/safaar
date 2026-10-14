@@ -345,15 +345,17 @@ export default function RegisterPage() {
                   {String(countdown % 60).padStart(2, '0')}
                 </span>
               ) : (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleResendOtp}
-                  disabled={otpRequest.isPending}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
+                  loading={otpRequest.isPending}
+                  className="h-6 px-1.5 text-[11px] font-semibold text-blue-600 hover:text-blue-700"
                 >
-                  <RotateCw className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  <RotateCw className="h-3 w-3 mr-1" aria-hidden="true" />
                   Kodni qayta yuborish
-                </button>
+                </Button>
               )}
             </div>
 
@@ -394,23 +396,25 @@ export default function RegisterPage() {
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleCopyDevCode(challenge.devCode!)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-white hover:bg-emerald-100/80 border border-emerald-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+                  className="h-6 px-2 text-[11px] font-semibold text-emerald-800 bg-white hover:bg-emerald-100/80 border border-emerald-300"
                 >
                   {copiedCode ? (
                     <>
-                      <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+                      <Check className="h-3 w-3 text-emerald-600 mr-1" aria-hidden="true" />
                       Kiritildi
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3 text-emerald-700" aria-hidden="true" />
+                      <Copy className="h-3 w-3 text-emerald-700 mr-1" aria-hidden="true" />
                       To'ldirish
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             )}
           </div>

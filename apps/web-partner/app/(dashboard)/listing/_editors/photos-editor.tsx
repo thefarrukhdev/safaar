@@ -177,31 +177,37 @@ export function PhotosEditor({
                   </div>
                   <div className="flex items-center gap-1">
                     <Tooltip content="Yuqoriga">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => void handleReorder(photo.id, "up")}
                         disabled={idx === 0 || busy}
                         aria-label="Yuqoriga"
-                        className="rounded-md bg-white/90 p-1.5 text-zinc-800 backdrop-blur transition-colors hover:bg-white disabled:opacity-40"
+                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-zinc-800 hover:bg-white"
                       >
-                        <ArrowUp className="h-3.5 w-3.5" aria-hidden />
-                      </button>
+                        <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
                     </Tooltip>
                     <Tooltip content="Pastga">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => void handleReorder(photo.id, "down")}
                         disabled={idx === sortedPhotos.length - 1 || busy}
                         aria-label="Pastga"
-                        className="rounded-md bg-white/90 p-1.5 text-zinc-800 backdrop-blur transition-colors hover:bg-white disabled:opacity-40"
+                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-zinc-800 hover:bg-white"
                       >
-                        <ArrowDown className="h-3.5 w-3.5" aria-hidden />
-                      </button>
+                        <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
                     </Tooltip>
                     {!photo.isCover && (
                       <Tooltip content="Asosiy qilish">
-                        <button
+                        <Button
                           type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => {
                             updatePhoto.mutate(
                               { imageId: photo.id, values: { isCover: true } },
@@ -219,15 +225,17 @@ export function PhotosEditor({
                             );
                           }}
                           aria-label="Asosiy qilish"
-                          className="rounded-md bg-white/90 p-1.5 text-amber-600 backdrop-blur transition-colors hover:bg-white"
+                          className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-amber-600 hover:bg-white"
                         >
-                          <Star className="h-3.5 w-3.5" aria-hidden />
-                        </button>
+                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                        </Button>
                       </Tooltip>
                     )}
                     <Tooltip content="O'chirish">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => {
                           deletePhoto.mutate(photo.id, {
                             onSuccess: () => toast.success("Rasm o'chirildi"),
@@ -242,10 +250,10 @@ export function PhotosEditor({
                         }}
                         disabled={busy}
                         aria-label="O'chirish"
-                        className="rounded-md bg-white/90 p-1.5 text-red-600 backdrop-blur transition-colors hover:bg-white"
+                        className="h-8 w-8 min-h-0 min-w-0 p-0 bg-white/90 text-red-600 hover:bg-white"
                       >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                      </button>
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
                     </Tooltip>
                   </div>
                 </div>

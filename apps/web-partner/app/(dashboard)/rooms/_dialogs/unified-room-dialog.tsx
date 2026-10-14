@@ -16,6 +16,7 @@ import { useCreateRoomType, useUpdateRoomType } from "@/hooks/use-room-types";
 import { useCreateRoom, useUpdateRoom, useRooms } from "@/hooks/use-rooms";
 import { useGenerateBeds } from "@/hooks/use-beds";
 import { partners } from "@/lib/api";
+import { cn } from "@/lib/utils/cn";
 import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "@/lib/utils/partner-labels";
 import { RoomStatus, type RoomType, type Room } from "@/lib/domain/types";
 
@@ -453,19 +454,21 @@ export function UnifiedRoomDialog({ open, onClose, mode = "room", editing, editi
             {amenityOptions.map((a) => {
               const checked = selectedAmenities.includes(a.value);
               return (
-                <button
+                <Button
                   key={a.value}
                   type="button"
+                  variant={checked ? "subtle" : "outline"}
+                  size="sm"
                   onClick={() => toggleAmenity(a.value)}
                   aria-pressed={checked}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                    checked
-                      ? "border-brand-600 bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200"
-                      : "border-[var(--border)] bg-[var(--surface)] text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300"
-                  }`}
+                  className={cn(
+                    "rounded-full h-7 min-h-0 px-3 text-xs font-medium",
+                    checked &&
+                      "border-brand-600 bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200",
+                  )}
                 >
                   {a.label}
-                </button>
+                </Button>
               );
             })}
           </div>

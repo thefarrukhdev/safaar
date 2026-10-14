@@ -9,6 +9,7 @@ import React, {
 import { useQueryClient } from "@tanstack/react-query";
 import { WifiOff, Wifi, RefreshCw, X } from "lucide-react";
 import { cn } from "../../_lib/utils/cn";
+import { Button } from "../ui/button";
 
 function subscribe(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -77,32 +78,29 @@ function OfflineAlert({ onRetry }: { onRetry: () => Promise<unknown> }) {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={handleManualRetry}
-          disabled={isRetrying}
-          className={cn(
-            "flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold",
-            "bg-white/20 hover:bg-white/30 text-white transition-colors min-h-[32px]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
-            isRetrying && "opacity-75 cursor-wait",
-          )}
+          loading={isRetrying}
+          className="h-8 min-h-0 px-2.5 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border border-white/20"
         >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5", isRetrying && "animate-spin")}
-          />
+          <RefreshCw className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
           <span>Tekshirish</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setIsDismissed(true)}
-          className="p-1 rounded-md text-amber-200 hover:text-white hover:bg-white/10 transition-colors"
+          className="h-8 w-8 min-h-0 min-w-0 p-0 text-amber-200 hover:text-white hover:bg-white/10"
           title="Bannerni yopish"
           aria-label="Bannerni yopish"
         >
-          <X className="h-4 w-4" />
-        </button>
+          <X className="h-4 w-4" aria-hidden="true" />
+        </Button>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "../../_hooks/use-body-scroll-lock";
 import { useMounted } from "../../_hooks/use-mounted";
 import { cn } from "../../_lib/utils/cn";
+import { Button } from "./button";
 
 export interface ConfirmOptions {
   title: string;
@@ -336,39 +337,38 @@ function ConfirmDialogView({
             )}
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             aria-label="Yopish"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="h-8 w-8 min-h-0 min-w-0 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Action Buttons: 44px minimum touch targets for WCAG a11y */}
         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-          <button
+          <Button
             ref={cancelBtnRef}
             type="button"
+            variant="secondary"
+            size="md"
             onClick={onClose}
-            className="inline-flex min-h-[44px] h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             {cancelBtnText}
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmBtnRef}
             type="button"
+            variant={isDestructive ? "danger" : "primary"}
+            size="md"
             onClick={onConfirm}
-            className={cn(
-              "inline-flex min-h-[44px] h-11 items-center justify-center rounded-xl px-5 py-2 text-sm font-semibold text-white transition-all shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2",
-              isDestructive
-                ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-rose-600/25 focus-visible:ring-rose-500"
-                : "bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 shadow-brand-600/25 focus-visible:ring-brand-500",
-            )}
           >
             {confirmBtnText}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

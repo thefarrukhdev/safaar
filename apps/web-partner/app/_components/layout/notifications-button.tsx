@@ -8,6 +8,7 @@ import { useReservations } from "../../_hooks/use-reservations";
 import { TODAY_ISO } from "../../_lib/utils/date";
 import { formatDate, formatPhone } from "../../_lib/utils/format";
 import { Tooltip } from "../ui/tooltip";
+import { Button } from "../ui/button";
 
 /**
  * Bell tugmasi: kutilayotgan bronlar va bugun keladigan mehmonlarni
@@ -49,24 +50,26 @@ export function NotificationsButton() {
   return (
     <div ref={ref} className="relative">
       <Tooltip content="Bildirishnomalar" side="bottom">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setOpen((v) => !v)}
           aria-label={`Bildirishnomalar (${total})`}
           aria-haspopup="menu"
           aria-expanded={open}
-          className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          className="relative h-9 w-9 min-h-0 min-w-0 p-0 text-zinc-500 hover:bg-[var(--surface-hover)]"
         >
-          <Bell className="h-5 w-5" aria-hidden />
+          <Bell className="h-5 w-5" aria-hidden="true" />
           {total > 0 && (
             <span
               className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
-              aria-hidden
+              aria-hidden="true"
             >
               {total > 9 ? "9+" : total}
             </span>
           )}
-        </button>
+        </Button>
       </Tooltip>
 
       {open && (

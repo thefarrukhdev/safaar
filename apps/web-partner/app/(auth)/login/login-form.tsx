@@ -100,23 +100,25 @@ function DevCodeBanner({
           </span>
         </div>
       </div>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={onCopy}
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer"
+        className="h-6 px-2 text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200"
       >
         {copied ? (
           <>
-            <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+            <Check className="h-3 w-3 text-emerald-600 mr-1" aria-hidden="true" />
             Nusxalandi
           </>
         ) : (
           <>
-            <Copy className="h-3 w-3 text-slate-500" aria-hidden="true" />
+            <Copy className="h-3 w-3 text-slate-500 mr-1" aria-hidden="true" />
             To&apos;ldirish
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -307,14 +309,16 @@ export function LoginForm() {
                 : 'Yangi parol kiriting'}
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={resetToLogin}
-            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+            className="h-7 px-2 text-xs font-medium text-slate-500 hover:text-slate-900 gap-1"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Kirishga qaytish
-          </button>
+          </Button>
         </div>
       )}
 
@@ -372,17 +376,19 @@ export function LoginForm() {
             <Label htmlFor="password" className="text-xs font-medium text-slate-700">
               Parol
             </Label>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setMode('reset_request');
                 setServerError(null);
                 form.clearErrors();
               }}
-              className="text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors font-normal cursor-pointer"
+              className="h-auto p-0 text-xs text-blue-600 hover:text-blue-700 hover:underline hover:bg-transparent font-normal"
             >
               Parolni unutdingizmi?
-            </button>
+            </Button>
           </div>
           <div className="relative">
             <Lock
@@ -428,18 +434,17 @@ export function LoginForm() {
                   {String(countdown % 60).padStart(2, '0')}
                 </span>
               ) : (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleResendOtp}
-                  disabled={otpRequest.isPending}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
+                  loading={otpRequest.isPending}
+                  className="h-6 px-1.5 text-xs text-blue-600 hover:text-blue-700"
                 >
-                  <RotateCw
-                    className={`h-3 w-3 ${otpRequest.isPending ? 'animate-spin' : ''}`}
-                    aria-hidden="true"
-                  />
+                  <RotateCw className="h-3 w-3 mr-1" aria-hidden="true" />
                   Qayta yuborish
-                </button>
+                </Button>
               )}
             </div>
 

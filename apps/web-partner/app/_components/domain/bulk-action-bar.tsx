@@ -6,9 +6,9 @@ import {
   XCircle,
   SlidersHorizontal,
   X,
-  Loader2,
 } from "lucide-react";
 import { cn } from "../../_lib/utils/cn";
+import { Button } from "../ui/button";
 
 export interface BulkActionItem {
   label: string;
@@ -149,48 +149,38 @@ export function BulkActionBar({
 
         {/* Action: Ommaviy tasdiqlash */}
         {onConfirmAll && (
-          <button
+          <Button
             type="button"
-            disabled={isProcessing || loadingAction !== null}
+            size="sm"
+            variant="primary"
+            disabled={isProcessing}
+            loading={loadingAction === "confirm"}
             onClick={() => handleAction("confirm", onConfirmAll)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all min-h-[38px]",
-              "bg-emerald-600/90 hover:bg-emerald-600 text-white shadow-sm hover:shadow",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
-              "disabled:opacity-50 disabled:pointer-events-none",
-            )}
+            className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-white min-h-[38px]"
           >
-            {loadingAction === "confirm" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 text-emerald-200" />
-            )}
+            <CheckCircle2 className="h-4 w-4 text-emerald-200 mr-1.5" />
             <span>Ommaviy tasdiqlash</span>
-          </button>
+          </Button>
         )}
 
         {/* Action: Holatini o'zgartirish */}
         {onChangeStatus && (
           <div ref={statusMenuRef} className="relative">
-            <button
+            <Button
               type="button"
-              disabled={isProcessing || loadingAction !== null}
+              size="sm"
+              variant="secondary"
+              disabled={isProcessing}
+              loading={loadingAction === "status"}
               onClick={() => setShowStatusMenu((prev) => !prev)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all min-h-[38px]",
-                "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700/80",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400",
-                "disabled:opacity-50 disabled:pointer-events-none",
+                "bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 min-h-[38px]",
                 showStatusMenu && "bg-slate-700 ring-2 ring-brand-400",
               )}
             >
-              {loadingAction === "status" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <SlidersHorizontal className="h-4 w-4 text-slate-300" />
-              )}
+              <SlidersHorizontal className="h-4 w-4 text-slate-300 mr-1.5" />
               <span>Holatini o'zgartirish</span>
-            </button>
+            </Button>
 
             {/* Status Dropdown Menu */}
             {showStatusMenu && statusOptions && statusOptions.length > 0 && (
@@ -230,63 +220,55 @@ export function BulkActionBar({
 
         {/* Custom Actions */}
         {actions.map((act, idx) => (
-          <button
+          <Button
             key={idx}
             type="button"
-            disabled={isProcessing || act.disabled || loadingAction !== null}
-            onClick={() => handleAction(`act-${idx}`, act.onClick)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all min-h-[38px]",
+            size="sm"
+            variant={
               act.variant === "destructive"
-                ? "bg-red-600/90 hover:bg-red-600 text-white"
+                ? "danger"
                 : act.variant === "secondary"
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-100"
-                  : "bg-brand-600/90 hover:bg-brand-600 text-white",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400",
-              "disabled:opacity-50 disabled:pointer-events-none",
-            )}
+                  ? "secondary"
+                  : "primary"
+            }
+            disabled={isProcessing || act.disabled}
+            loading={loadingAction === `act-${idx}`}
+            onClick={() => handleAction(`act-${idx}`, act.onClick)}
+            className="min-h-[38px]"
           >
-            {loadingAction === `act-${idx}` ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              act.icon
-            )}
+            {act.icon}
             <span>{act.label}</span>
-          </button>
+          </Button>
         ))}
 
         {/* Action: Bekor qilish */}
         {onCancelAll && (
-          <button
+          <Button
             type="button"
-            disabled={isProcessing || loadingAction !== null}
+            size="sm"
+            variant="danger"
+            disabled={isProcessing}
+            loading={loadingAction === "cancel"}
             onClick={() => handleAction("cancel", onCancelAll)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all min-h-[38px]",
-              "bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/30",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400",
-              "disabled:opacity-50 disabled:pointer-events-none",
-            )}
+            className="min-h-[38px]"
           >
-            {loadingAction === "cancel" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-300" />
-            )}
+            <XCircle className="h-4 w-4 text-rose-200 mr-1.5" />
             <span>Bekor qilish</span>
-          </button>
+          </Button>
         )}
 
         {/* Action: Tanlovni tozalash */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onClear}
           title="Tanlovni tozalash (Esc)"
-          className="flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-colors ml-1 min-h-[38px]"
+          className="text-slate-400 hover:text-white hover:bg-white/10 min-h-[38px] p-1.5 sm:px-2"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 mr-1" />
           <span className="hidden md:inline">Tozalash</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

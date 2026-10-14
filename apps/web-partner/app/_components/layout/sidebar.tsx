@@ -9,6 +9,7 @@ import { cn } from "../../_lib/utils/cn";
 import { useUiStore } from "../../_stores/ui-store";
 import { useAuthStore } from "../../_stores/auth-store";
 import { Tooltip } from "../ui/tooltip";
+import { Button } from "../ui/button";
 import { getNavGroups } from "./sidebar-nav";
 
 function isActive(pathname: string, href: string): boolean {
@@ -116,12 +117,14 @@ export function Sidebar() {
 
           {/* Desktop yig'ish/ochish tugmasi */}
           <Tooltip content={collapsed ? "Panel ochish" : "Panel yopish"}>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={toggle}
               aria-label={collapsed ? "Panel ochish" : "Panel yopish"}
               className={cn(
-                "hidden shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] md:inline-flex",
+                "hidden shrink-0 p-0 text-zinc-500 hover:bg-[var(--surface-muted)] md:inline-flex min-h-0 min-w-0",
                 collapsed && !mobileOpen ? "h-7 w-7" : "h-8 w-8",
               )}
             >
@@ -130,20 +133,22 @@ export function Sidebar() {
                   "h-4 w-4 transition-transform",
                   collapsed && "rotate-180",
                 )}
-                aria-hidden
+                aria-hidden="true"
               />
-            </button>
+            </Button>
           </Tooltip>
 
           {/* Mobile yopish tugmasi */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={closeMobile}
             aria-label="Menyu yopish"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] md:hidden"
+            className="h-8 w-8 min-h-0 min-w-0 p-0 text-zinc-500 hover:bg-[var(--surface-muted)] md:hidden"
           >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
 
         {/* Nav */}

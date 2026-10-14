@@ -503,27 +503,31 @@ export function WalkInDialog({
               {restaurant ? "Kishilar soni" : "Kattalar"}
             </Label>
             <div className="flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-2 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => form.setValue("adults", Math.max(1, watchedAdults - 1))}
                 disabled={watchedAdults <= 1}
-                className="flex h-8 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="h-8 w-9 min-h-0 min-w-0 p-0"
                 aria-label="Kattalar sonini kamaytirish"
               >
                 <Minus className="h-4 w-4" />
-              </button>
+              </Button>
               <span className="font-semibold text-sm text-slate-900 dark:text-zinc-100">
                 {watchedAdults} kishi
               </span>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => form.setValue("adults", Math.min(10, watchedAdults + 1))}
                 disabled={watchedAdults >= 10}
-                className="flex h-8 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="h-8 w-9 min-h-0 min-w-0 p-0"
                 aria-label="Kattalar sonini oshirish"
               >
                 <Plus className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -534,27 +538,31 @@ export function WalkInDialog({
                 Bolalar
               </Label>
               <div className="flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white/80 px-2 dark:border-zinc-800 dark:bg-zinc-900/80">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => form.setValue("children", Math.max(0, watchedChildren - 1))}
                   disabled={watchedChildren <= 0}
-                  className="flex h-8 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="h-8 w-9 min-h-0 min-w-0 p-0"
                   aria-label="Bolalar sonini kamaytirish"
                 >
                   <Minus className="h-4 w-4" />
-                </button>
+                </Button>
                 <span className="font-semibold text-sm text-slate-900 dark:text-zinc-100">
                   {watchedChildren} bola
                 </span>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => form.setValue("children", Math.min(10, watchedChildren + 1))}
                   disabled={watchedChildren >= 10}
-                  className="flex h-8 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="h-8 w-9 min-h-0 min-w-0 p-0"
                   aria-label="Bolalar sonini oshirish"
                 >
                   <Plus className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

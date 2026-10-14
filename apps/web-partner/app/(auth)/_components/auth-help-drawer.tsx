@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Drawer } from "../../_components/ui/drawer";
+import { Button } from "../../_components/ui/button";
 
 export function AuthHelpDrawer() {
   const [open, setOpen] = useState(false);
@@ -20,16 +21,18 @@ export function AuthHelpDrawer() {
     <>
       {/* Floating Trigger Button (Bottom-Right, Accessible 44px Touch Target with Safe-Area Offset) */}
       <aside aria-label="Yordam va qo'llab-quvvatlash">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="icon"
           onClick={() => setOpen(true)}
           title="Yordam & Yo'riqnoma"
           aria-label="Hamkorlik bo'yicha yordam va yo'riqnoma"
           style={{ bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
-          className="fixed right-4 z-40 flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200/90 bg-white/90 text-slate-500 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-blue-600 hover:shadow-xs active:scale-95 cursor-pointer dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400 dark:hover:text-blue-400 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+          className="fixed right-4 z-40 rounded-full bg-white/90 backdrop-blur-md bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] shadow-md hover:text-blue-600 dark:hover:text-blue-400"
         >
           <HelpCircle className="h-5 w-5" aria-hidden="true" />
-        </button>
+        </Button>
       </aside>
 
       {/* Slide-over Right Drawer */}

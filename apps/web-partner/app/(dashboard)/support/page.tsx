@@ -193,13 +193,15 @@ export default function SupportPage() {
                 Murojaatlar ({tickets.length})
               </span>
             </div>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setNewTicketOpen(true)}
-              className="text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+              className="h-7 min-h-0 px-2 text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400"
             >
               + Yangi
-            </button>
+            </Button>
           </div>
 
           <div className="custom-scrollbar flex-1 overflow-y-auto p-2">
@@ -274,14 +276,16 @@ export default function SupportPage() {
               {/* Chat Header */}
               <div className="flex items-center justify-between border-b border-[var(--border)] p-4">
                 <div className="flex items-center gap-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowMobileChat(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 md:hidden"
+                    className="h-8 w-8 min-h-0 min-w-0 p-0 md:hidden"
                     aria-label="Orqaga"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                  </button>
+                  </Button>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
                     <Headset className="h-5 w-5" />
                   </div>

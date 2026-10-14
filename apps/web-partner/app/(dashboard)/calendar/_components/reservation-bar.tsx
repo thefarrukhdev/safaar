@@ -63,10 +63,14 @@ export function ReservationBar({
         : "To'langan";
   const paymentClass =
     reservation.paidAmount <= 0
-      ? "bg-red-100 text-red-700"
+      ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
       : balance > 0
-        ? "bg-white/80 text-amber-800"
-        : "bg-white/80 text-accent-700";
+        ? "bg-white/80 text-amber-800 dark:bg-amber-950/70 dark:text-amber-200"
+        : "bg-white/80 text-accent-700 dark:bg-emerald-950/70 dark:text-emerald-200";
+
+  const reservationTitle = restaurant
+    ? `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} ${reservation.slotTime ?? ""}`
+    : `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`;
 
   return (
     <div
@@ -86,19 +90,17 @@ export function ReservationBar({
             router.push(`/reservations/${reservation.id}`);
           }
         }}
-        title={
-          restaurant
-            ? `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} ${reservation.slotTime ?? ""}`
-            : `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`
-        }
+        title={reservationTitle}
+        aria-label={`${reservationTitle}. Holati: ${reservation.status}. Tafsilotlarni ochish uchun bosing`}
         className={cn(
-          "flex h-full w-full min-w-0 items-center gap-1.5 px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
+          "flex h-full w-full min-w-0 items-center gap-1.5 px-2 text-xs font-semibold shadow-xs transition-all duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
           statusClasses(reservation.status),
           truncatedStart ? "rounded-l-none" : "rounded-l-md",
           truncatedEnd ? "rounded-r-none" : "rounded-r-md",
         )}
       >
-        <span className="min-w-0 flex-1 truncate">
+        <span className="min-w-0 flex-1 truncate font-medium">
           {reservation.guest.fullName}
         </span>
         {spanCols >= 2 && !(reservation.status === BookingStatus.COMPLETED && reservation.totalPrice === 0) && (
@@ -114,8 +116,8 @@ export function ReservationBar({
       </button>
 
       {/* Rich tooltip — hover'da */}
-      <div className="pointer-events-none absolute left-1/2 bottom-full z-50 mb-1.5 hidden -translate-x-1/2 min-w-[240px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-xs shadow-2xl group-hover:block group-focus-within:block">
-        <p className="font-semibold">{reservation.guest.fullName}</p>
+      <div className="pointer-events-none absolute left-1/2 bottom-full z-50 mb-1.5 hidden -translate-x-1/2 min-w-[240px] rounded-lg border border-[var(--border)] bg-[var(--surface)] dark:bg-zinc-900 p-3 text-left text-xs text-[var(--foreground)] shadow-2xl group-hover:block group-focus-within:block">
+        <p className="font-semibold text-sm">{reservation.guest.fullName}</p>
         <p className="text-[var(--muted-foreground)]">
           {formatPhone(reservation.guest.phone)}
         </p>
@@ -141,7 +143,7 @@ export function ReservationBar({
           <span className="text-[var(--muted-foreground)]">{unitCap}: </span>
           {reservation.roomTypeName}
           {reservation.roomNumber && (
-            <span className="font-mono text-brand-700 dark:text-brand-300">
+            <span className="font-mono font-bold text-brand-700 dark:text-brand-300">
               {" "}
               · {reservation.roomNumber}
             </span>
@@ -162,14 +164,14 @@ export function ReservationBar({
               </span>
             </p>
             {balance > 0 && (
-              <p className="text-red-600">
+              <p className="text-red-600 dark:text-red-400 font-semibold">
                 Qoldiq: {formatMoney(balance)}
               </p>
             )}
           </>
         )}
-        <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-          Tafsilot uchun bosing
+        <p className="mt-1.5 pt-1 border-t border-[var(--border)]/50 text-[10px] text-[var(--muted-foreground)] font-medium">
+          Tafsilot va boshqarish uchun bosing
         </p>
       </div>
     </div>

@@ -1,15 +1,43 @@
 "use client";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Info, Plus } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  CalendarCheck2,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Info,
+  Lock,
+  Plus,
+  RefreshCw,
+  Search,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
+import { toast } from "sonner";
 import { Button } from "../../../_components/ui/button";
 import { Card, CardBody } from "../../../_components/ui/card";
-import { EmptyState } from "../../../_components/ui/empty-state";
+import { EmptyState, ErrorState } from "../../../_components/ui/empty-state";
+import { Input } from "../../../_components/ui/input";
 import { PageHeader } from "../../../_components/layout/page-header";
+import { StatCard } from "../../../_components/ui/stat-card";
+import { Skeleton } from "../../../_components/ui/skeleton";
+import { Tooltip } from "../../../_components/ui/tooltip";
 import { WalkInDialog, type WalkInInitial } from "../../../_components/domain/walk-in-dialog";
+import { BlackoutDialog } from "../../../_components/domain/blackout-dialog";
+import { ReservationQuickDrawer } from "../../reservations/reservation-quick-drawer";
 import { useRooms } from "../../../_hooks/use-rooms";
-import { useReservations } from "../../../_hooks/use-reservations";
+import {
+  useReservations,
+  useConfirmReservation,
+  useRejectReservation,
+  useCheckIn,
+  useCheckOut,
+} from "../../../_hooks/use-reservations";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useListing } from "../../../_hooks/use-listing";
 import { useAuthStore } from "../../../_stores/auth-store";
@@ -43,26 +71,50 @@ interface TableRow {
   roomNumber: string;
 }
 
-/** Restoran uchun kunlik vaqt-slot jadvali — kalendar o'rniga ishlatiladi. */
+/** Restoran uchun kunlik stollar va vaqt-slotlar jadvali */
 export function RestaurantScheduleView() {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
 
-  const { data: rooms } = useRooms();
-  const { data: reservations } = useReservations();
-  const { data: roomTypes } = useRoomTypes();
-  const { data: listing } = useListing();
+  const {
+    data: rooms = [],
+    isLoading: roomsLoading,
+    isError: roomsError,
+    refetch: refetchRooms,
+  } = useRooms();
+
+  const {
+    data: reservations = [],
+    isLoading: reservationsLoading,
+    isError: reservationsError,
+    refetch: refetchReservations,
+  } = useReservations();
+
+  const { data: roomTypes = [] } = useRoomTypes();
+  const { data: listing, isLoading: listingLoading } = useListing();
+
+  const confirmReservation = useConfirmReservation();
+  const rejectReservation = useRejectReservation();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
+
+  const [selectedReservationForDrawer, setSelectedReservationForDrawer] =
+    useState<ReservationView | null>(null);
 
   const [dayOffset, setDayOffset] = useState(0);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInInitial, setWalkInInitial] = useState<WalkInInitial>({});
+  const [blackoutOpen, setBlackoutOpen] = useState(false);
 
   const scheduleDate = addDays(TODAY_ISO, dayOffset);
+
   const slots = useMemo(() => {
     const generatedSlots = buildTimeSlots(listing.checkInTime, listing.checkOutTime);
     return generatedSlots.length > 0 ? generatedSlots : buildTimeSlots("09:00", "23:59");
   }, [listing.checkInTime, listing.checkOutTime]);
+
   const spanSlots = Math.max(1, Math.round(DEFAULT_SLOT_DURATION_MINUTES / SLOT_STEP_MINUTES));
 
   const allRows = useMemo<TableRow[]>(
@@ -79,15 +131,26 @@ export function RestaurantScheduleView() {
     [rooms],
   );
 
+  const filteredRows = useMemo(() => {
+    return allRows.filter((r) => {
+      if (typeFilter !== "all" && r.roomTypeId !== typeFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchNumber = r.roomNumber.toLowerCase().includes(q);
+        const matchType = r.secondaryLabel.toLowerCase().includes(q);
+        if (!matchNumber && !matchType) return false;
+      }
+      return true;
+    });
+  }, [allRows, typeFilter, searchQuery]);
+
   const sortedRows = useMemo(() => {
-    const filtered =
-      typeFilter === "all" ? allRows : allRows.filter((r) => r.roomTypeId === typeFilter);
-    return [...filtered].sort(
+    return [...filteredRows].sort(
       (a, b) =>
-        Number(a.roomNumber) - Number(b.roomNumber) ||
+        a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true, sensitivity: "base" }) ||
         a.primaryLabel.localeCompare(b.primaryLabel),
     );
-  }, [allRows, typeFilter]);
+  }, [filteredRows]);
 
   const handleEmptyClick = (row: TableRow, slotTime: string) => {
     setWalkInInitial({
@@ -163,6 +226,7 @@ export function RestaurantScheduleView() {
       bookings: visible.length,
       total,
       paid,
+      balance: total - paid,
       listedRows: sortedRows.filter((r) => r.isListed).length,
     };
   })();
@@ -170,153 +234,301 @@ export function RestaurantScheduleView() {
   const dateLabel = (() => {
     const d = new Date(scheduleDate);
     const months = [
-      "Yan", "Fev", "Mar", "Apr", "May", "Iyn",
-      "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek",
+      "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+      "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
     ];
     const weekdays = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
     return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
   })();
 
-  const colWidth = 72;
-  const roomColWidth = 156;
-  const rowHeight = 58;
-  const headerHeight = 56;
+  const colWidth = 76;
+  const roomColWidth = 168;
+  const rowHeight = 60;
+  const headerHeight = 58;
+
+  const isLoading = roomsLoading || reservationsLoading || listingLoading;
+  const isError = roomsError || reservationsError;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          eyebrow="Operatsion"
+          title={labels.calendarTitle}
+          description={labels.calendarDescription}
+        />
+        <ErrorState
+          title="Restoran jadvalini yuklashda xatolik yuz berdi"
+          description="Internet aloqasini tekshiring yoki qayta urinib ko'ring."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                refetchRooms();
+                refetchReservations();
+              }}
+            >
+              Qayta urinish
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Sarlavha va harakatlar */}
       <PageHeader
         eyebrow="Operatsion"
         title={labels.calendarTitle}
         description={labels.calendarDescription}
         actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setWalkInInitial({});
-              setWalkInOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            {labels.newBookingLabel}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Tooltip content="Jadvalni yangilash">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  refetchRooms();
+                  refetchReservations();
+                }}
+                aria-label="Ma'lumotlarni yangilash"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Tooltip>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBlackoutOpen(true)}
+              className="hidden sm:inline-flex"
+            >
+              <Lock className="h-4 w-4 mr-1.5" aria-hidden="true" />
+              Stolni yopish
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setWalkInInitial({ checkIn: scheduleDate, checkOut: scheduleDate });
+                setWalkInOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" />
+              {labels.newBookingLabel}
+            </Button>
+          </div>
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <CalendarMetric
+      {/* KPI Ko'rsatkichlar */}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Restoran kunlik statistikasi">
+        <StatCard
           label={labels.availabilityLabel}
           value={`${dayStats.listedRows} / ${sortedRows.length}`}
-          hint="turistlarga sotuvda"
+          hint="turistlarga sotuvda ochiq"
+          icon={<UtensilsCrossed className="h-5 w-5" aria-hidden="true" />}
+          tone="brand"
+          isLoading={isLoading}
         />
-        <CalendarMetric
-          label="Bugungi bronlar"
+        <StatCard
+          label="Bugungi buyurtmalar"
           value={dayStats.bookings.toString()}
           hint={dateLabel}
+          icon={<CalendarCheck2 className="h-5 w-5" aria-hidden="true" />}
+          tone="emerald"
+          isLoading={isLoading}
         />
-        <CalendarMetric
+        <StatCard
           label="Oldindan to'langan"
           value={formatMoney(dayStats.paid)}
-          hint={`Jami: ${formatMoney(dayStats.total)}`}
+          hint={`Jami tushum: ${formatMoney(dayStats.total)}`}
+          icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
+          tone="blue"
+          isLoading={isLoading}
         />
-        <CalendarMetric
-          label="Ochiq vaqtlar"
+        <StatCard
+          label="Ochiq ish soatlari"
           value={`${slots[0] ?? "—"} – ${slots.length ? toHHMM(toMinutes(slots[slots.length - 1]) + SLOT_STEP_MINUTES) : "—"}`}
-          hint="Sozlamalar → Qoidalardan o'zgartiring"
+          hint="Sozlamalar → Qoidalar orqali o'zgartiriladi"
+          icon={<Clock className="h-5 w-5" aria-hidden="true" />}
+          tone="neutral"
+          isLoading={isLoading}
         />
       </section>
 
-      {/* Boshqaruv lentasi */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-[var(--border)] bg-[var(--surface)] p-3">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setDayOffset((v) => v - 1)}
-            aria-label="Oldingi kun"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDayOffset(0)}
-            disabled={dayOffset === 0}
-          >
-            <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-            Bugun
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setDayOffset((v) => v + 1)}
-            aria-label="Keyingi kun"
-          >
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </Button>
-          <span className="ml-3 text-sm font-medium text-[var(--muted-foreground)]">
-            {dateLabel}
-          </span>
-        </div>
+      {/* Boshqaruv paneli: Sana va filtrlar */}
+      <div className="flex flex-col gap-3 rounded-card border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Sana navigatsiyasi */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setDayOffset((v) => v - 1)}
+              aria-label="Oldingi kun"
+              className="h-9 w-9"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant={dayOffset === 0 ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setDayOffset(0)}
+              className="h-9 text-xs font-semibold gap-1.5"
+            >
+              <CalendarDays className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
+              Bugun
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setDayOffset((v) => v + 1)}
+              aria-label="Keyingi kun"
+              className="h-9 w-9"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
 
-        <select
-          aria-label={labels.unitTypeLabel}
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
-        >
-          <option value="all">Barcha {labels.unitTypeLabel.toLowerCase()}lari</option>
-          {roomTypes.map((rt) => (
-            <option key={rt.id} value={rt.id}>
-              {rt.name}
-            </option>
-          ))}
-        </select>
+            {/* Direct date jump input */}
+            <div className="relative flex items-center">
+              <label htmlFor="restaurant-jump-date" className="sr-only">
+                Sanaga o'tish
+              </label>
+              <div className="relative flex items-center">
+                <CalendarIcon className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)]" aria-hidden="true" />
+                <input
+                  id="restaurant-jump-date"
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const diff = Math.round(
+                        (new Date(e.target.value).getTime() - new Date(TODAY_ISO).getTime()) /
+                          (24 * 60 * 60 * 1000),
+                      );
+                      setDayOffset(diff);
+                    }
+                  }}
+                  className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)]/70 pl-8 pr-2 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface-muted)] focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
+                  title="Istalgan sanaga to'g'ridan-to'g'ri o'tish"
+                />
+              </div>
+            </div>
+
+            <span className="ml-1 text-xs font-bold text-brand-800 dark:text-brand-200 bg-brand-50/70 dark:bg-brand-950/40 px-2.5 py-1.5 rounded-lg">
+              {dateLabel}
+            </span>
+          </div>
+
+          {/* Qidiruv va stol turi filtri */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[160px] sm:w-48">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Stol raqami..."
+                className="h-9 pl-8 pr-8 text-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  aria-label="Qidiruvni tozalash"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
+            <select
+              aria-label={labels.unitTypeLabel}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--foreground)] focus:border-brand-600 focus:outline-none"
+            >
+              <option value="all">Barcha {labels.unitTypeLabel.toLowerCase()}lari</option>
+              {roomTypes.map((rt) => (
+                <option key={rt.id} value={rt.id}>
+                  {rt.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)]">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-brand-500" aria-hidden />
-          Tasdiqlangan
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-accent-500" aria-hidden />
-          Band (ichkarida)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-amber-400" aria-hidden />
-          Tasdiq kutmoqda
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-zinc-400" aria-hidden />
-          Yakunlangan
-        </span>
-        <span className="ml-auto inline-flex items-center gap-1 text-[10px]">
-          <Info className="h-3 w-3" aria-hidden />
-          Bo'sh katakka bosib bron yarating
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--muted-foreground)] px-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="h-3 w-3 rounded-sm bg-brand-500 shadow-xs" aria-hidden="true" />
+            Tasdiqlangan
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="h-3 w-3 rounded-sm bg-accent-500 shadow-xs" aria-hidden="true" />
+            Band (ichkarida)
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="h-3 w-3 rounded-sm bg-amber-400 shadow-xs" aria-hidden="true" />
+            Tasdiq kutmoqda
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="h-3 w-3 rounded-sm bg-zinc-400 shadow-xs" aria-hidden="true" />
+            Yakunlangan
+          </span>
+        </div>
+        <span className="inline-flex items-center gap-1 text-[11px]">
+          <Info className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
+          Vaqt katagiga bosib buyurtma yarating, mavjud bron ustiga bosib boshqaring
         </span>
       </div>
 
-      {sortedRows.length === 0 ? (
+      {/* Asosiy vaqt jadvali */}
+      {isLoading ? (
+        <div className="rounded-card border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xs animate-pulse">
+          <div className="flex gap-2 border-b border-[var(--border)] pb-3">
+            <Skeleton className="h-10 w-40 shrink-0" />
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 flex-1" />
+            ))}
+          </div>
+          <div className="mt-3 flex flex-col gap-2.5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Skeleton className="h-14 w-40 shrink-0" />
+                {Array.from({ length: 10 }).map((_, j) => (
+                  <Skeleton key={j} className="h-14 flex-1" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : sortedRows.length === 0 ? (
         <Card>
-          <CardBody>
+          <CardBody className="py-12">
             <EmptyState
-              icon={<CalendarDays className="h-10 w-10" aria-hidden />}
-              title={`${labels.unitPlural.charAt(0).toUpperCase()}${labels.unitPlural.slice(1)} yo'q`}
-              description={`Avval ${labels.unitsPageTitle} bo'limidan qo'shing.`}
+              icon={<UtensilsCrossed className="h-10 w-10 text-[var(--muted-foreground)]" aria-hidden="true" />}
+              title={`${labels.unitPlural.charAt(0).toUpperCase()}${labels.unitPlural.slice(1)} topilmadi`}
+              description={`Avval ${labels.unitsPageTitle} bo'limidan stollarni qo'shing yoki filtrlarni o'zgartiring.`}
             />
           </CardBody>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-card border border-[var(--border)] bg-[var(--surface)]">
+        <div className="overflow-x-auto rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-xs">
           <div
             className="relative"
             style={{
               display: "grid",
               gridTemplateColumns: `${roomColWidth}px repeat(${slots.length}, ${colWidth}px)`,
               gridAutoRows: `${rowHeight}px`,
+              width: "max-content",
             }}
           >
+            {/* Chap burchak (sticky) */}
             <div
               style={{
                 gridRow: 1,
@@ -327,12 +539,18 @@ export function RestaurantScheduleView() {
                 left: 0,
                 zIndex: 30,
               }}
-              className="flex items-center justify-center border-b border-r border-[var(--border)] bg-[var(--surface-muted)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]"
+              className="flex items-center justify-between border-b border-r border-[var(--border)] bg-[var(--surface-muted)] px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
             >
-              {labels.unitSingular.charAt(0).toUpperCase()}
-              {labels.unitSingular.slice(1)}
+              <span>
+                {labels.unitSingular.charAt(0).toUpperCase()}
+                {labels.unitSingular.slice(1)}
+              </span>
+              <span className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">
+                ({sortedRows.length})
+              </span>
             </div>
 
+            {/* Vaqt-slotlar sarlavhalari (sticky) */}
             {slots.map((slot, i) => (
               <div
                 key={slot}
@@ -344,17 +562,18 @@ export function RestaurantScheduleView() {
                   top: 0,
                   zIndex: 20,
                 }}
-                className="flex items-center justify-center border-b border-r border-[var(--border)] bg-[var(--surface-muted)] text-[11px] font-medium"
+                className="flex items-center justify-center border-b border-r border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold text-[var(--muted-foreground)]"
               >
                 {slot}
               </div>
             ))}
 
+            {/* Stollar qatorlari */}
             {sortedRows.map((row, rIdx) => {
               const gridRow = rIdx + 2;
               const bars = reservationsByRow.get(row.key) ?? [];
               return (
-                <TableRow
+                <RestaurantTableRow
                   key={row.key}
                   primaryLabel={row.primaryLabel}
                   secondaryLabel={row.secondaryLabel}
@@ -364,6 +583,7 @@ export function RestaurantScheduleView() {
                   slots={slots}
                   bars={bars}
                   onEmptyClick={(slot) => handleEmptyClick(row, slot)}
+                  onSelectReservation={setSelectedReservationForDrawer}
                 />
               );
             })}
@@ -371,16 +591,70 @@ export function RestaurantScheduleView() {
         </div>
       )}
 
+      {/* Tezkor Bron Boshqaruvi Tortmasi (Drawer) */}
+      <ReservationQuickDrawer
+        reservation={selectedReservationForDrawer}
+        open={Boolean(selectedReservationForDrawer)}
+        onClose={() => setSelectedReservationForDrawer(null)}
+        onConfirm={(r) => {
+          confirmReservation.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Buyurtma muvaffaqiyatli tasdiqlandi");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: BookingStatus.CONFIRMED } : null,
+              );
+            },
+          });
+        }}
+        onCheckIn={(r) => {
+          checkIn.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Mehmon stolga o'tqazildi (Check-in)");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: "IN_HOUSE" as any } : null,
+              );
+            },
+          });
+        }}
+        onCheckOut={(r) => {
+          checkOut.mutate(r.id, {
+            onSuccess: () => {
+              toast.success("Buyurtma yakunlandi (Check-out)");
+              setSelectedReservationForDrawer((prev) =>
+                prev ? { ...prev, status: BookingStatus.COMPLETED } : null,
+              );
+            },
+          });
+        }}
+        onReject={(r) => {
+          rejectReservation.mutate(
+            { id: r.id, reason: "Restoran tomonidan bekor qilindi" },
+            {
+              onSuccess: () => {
+                toast.success("Buyurtma bekor qilindi");
+                setSelectedReservationForDrawer(null);
+              },
+            },
+          );
+        }}
+      />
+
       <WalkInDialog
         open={walkInOpen}
         onClose={() => setWalkInOpen(false)}
         initialValues={walkInInitial}
       />
+
+      <BlackoutDialog
+        open={blackoutOpen}
+        onClose={() => setBlackoutOpen(false)}
+        hotelId={useAuthStore.getState().user?.organizationId}
+      />
     </div>
   );
 }
 
-interface TableRowProps {
+interface RestaurantTableRowProps {
   primaryLabel: string;
   secondaryLabel: string;
   isListed: boolean;
@@ -395,9 +669,10 @@ interface TableRowProps {
     truncatedEnd: boolean;
   }>;
   onEmptyClick: (slot: string) => void;
+  onSelectReservation: (reservation: ReservationView) => void;
 }
 
-function TableRow({
+function RestaurantTableRow({
   primaryLabel,
   secondaryLabel,
   isListed,
@@ -406,7 +681,8 @@ function TableRow({
   slots,
   bars,
   onEmptyClick,
-}: TableRowProps) {
+  onSelectReservation,
+}: RestaurantTableRowProps) {
   return (
     <>
       <div
@@ -417,24 +693,26 @@ function TableRow({
           left: 0,
           zIndex: 15,
         }}
-        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3"
+        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
       >
-        <div className="flex w-full items-center justify-between gap-2">
-          <span className="font-mono text-sm font-bold leading-none">{primaryLabel}</span>
+        <div className="flex w-full items-center justify-between gap-1.5">
+          <span className="font-mono text-sm font-bold leading-none text-[var(--foreground)] truncate">
+            {primaryLabel}
+          </span>
           <span
             className={cn(
-              "rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
+              "rounded-full px-1.5 py-0.5 text-[9px] font-semibold shrink-0",
               isListed
-                ? "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200"
-                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
+                ? "bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 border border-accent-200/60 dark:border-accent-900/60"
+                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700",
             )}
           >
             {isListed ? "E'londa" : "Yopiq"}
           </span>
         </div>
-        <span className="mt-1 truncate text-[10px] text-[var(--muted-foreground)]">
-          {secondaryLabel}
-          {nightlyPrice ? ` · ${formatMoney(nightlyPrice)}` : ""}
+        <span className="mt-1 flex w-full items-center justify-between gap-1 truncate text-[10px] text-[var(--muted-foreground)]">
+          <span className="truncate">{secondaryLabel}</span>
+          {nightlyPrice ? <span>{formatMoney(nightlyPrice)}</span> : null}
         </span>
       </div>
 
@@ -443,10 +721,16 @@ function TableRow({
           key={slot}
           type="button"
           onClick={() => onEmptyClick(slot)}
-          aria-label={`${primaryLabel}, ${slot} uchun bron yaratish`}
+          aria-label={`${primaryLabel}, ${slot} uchun buyurtma yaratish`}
+          title={`${primaryLabel} · ${slot} (Bo'sh) — buyurtma yaratish uchun bosing`}
           style={{ gridRow, gridColumn: i + 2 }}
-          className="border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50 dark:hover:bg-brand-900/20"
-        />
+          className="group relative border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50/70 dark:hover:bg-brand-900/25 flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+        >
+          <Plus
+            className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400 opacity-0 transition-opacity group-hover:opacity-100"
+            aria-hidden="true"
+          />
+        </button>
       ))}
 
       {bars.map((b) => (
@@ -458,26 +742,9 @@ function TableRow({
           spanCols={b.spanCols}
           truncatedStart={b.truncatedStart}
           truncatedEnd={b.truncatedEnd}
+          onSelect={onSelectReservation}
         />
       ))}
     </>
-  );
-}
-
-function CalendarMetric({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="rounded-card border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-      <p className="text-xs font-medium text-[var(--muted-foreground)]">{label}</p>
-      <p className="mt-1 truncate text-lg font-semibold text-[var(--foreground)]">{value}</p>
-      <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">{hint}</p>
-    </div>
   );
 }

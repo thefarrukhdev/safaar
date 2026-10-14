@@ -24,6 +24,7 @@ import { BedManagementDialog } from "./_dialogs/bed-management-dialog";
 import { EmptyState, LoadingState, ErrorState } from "../../_components/ui/empty-state";
 import { Button } from "../../_components/ui/button";
 import { useConfirm } from "../../_components/ui/confirm-dialog";
+import { BulkActionBar } from "../../_components/domain/bulk-action-bar";
 import { formatMoney } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels, hasBeds, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
@@ -42,11 +43,14 @@ export function RoomsView() {
   const isBus = hasBuses(partnerType);
 
   const { mutate: deleteRoom } = useDeleteRoom();
+  const { mutateAsync: updateRoomAsync } = useUpdateRoom();
   const confirm = useConfirm();
 
   const [addingRoom, setAddingRoom] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [managingBedsFor, setManagingBedsFor] = useState<Room | null>(null);
+  const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(new Set());
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // Qidiruv va filtrlash holatlari
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +58,22 @@ export function RoomsView() {
   const [selectedType, setSelectedType] = useState<string | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<RoomStatus | "all">("all");
   const [sortBy, setSortBy] = useState<"number" | "status">("number");
+
+  const handleToggleRoom = (id: string) => {
+    setSelectedRoomIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedRoomIds(new Set());
+  };
 
   useEffect(() => {
     if (isDachaType) router.replace("/listing");
@@ -124,6 +144,115 @@ export function RoomsView() {
 
     return sortedFloors;
   }, [filteredRooms, sortBy]);
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    const ids = Array.from(selectedRoomIds);
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(
+        ids.map((id) => {
+          const r = rooms.find((room) => room.id === id);
+          if (!r) return Promise.resolve();
+          return updateRoomAsync({
+            id: r.id,
+            values: {
+              number: r.number,
+              floor: r.floor,
+              roomTypeId: r.roomTypeId,
+              status: newStatus as RoomStatus,
+              isListed: r.isListed,
+            },
+          });
+        }),
+      );
+      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} holati yangilandi`);
+      setSelectedRoomIds(new Set());
+      refetch();
+    } catch {
+      toast.error("Guruhli yangilashda xatolik yuz berdi");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkConfirmAll = async () => {
+    const ids = Array.from(selectedRoomIds);
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(
+        ids.map((id) => {
+          const r = rooms.find((room) => room.id === id);
+          if (!r) return Promise.resolve();
+          return updateRoomAsync({
+            id: r.id,
+            values: {
+              number: r.number,
+              floor: r.floor,
+              roomTypeId: r.roomTypeId,
+              status: RoomStatus.VACANT_CLEAN,
+              isListed: true,
+            },
+          });
+        }),
+      );
+      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} toza holatga o'tkazildi`);
+      setSelectedRoomIds(new Set());
+      refetch();
+    } catch {
+      toast.error("Ommaviy tasdiqlashda xatolik");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkCancelAll = async () => {
+    const ok = await confirm({
+      title: `${labels.unitPlural}ni ta'mirga olish`,
+      description: `Tanlangan ${selectedRoomIds.size} ta ${labels.unitSingular.toLowerCase()}ni ta'mir / xizmat ko'rsatilmaydi holatiga o'tkazmoqchimisiz?`,
+      confirmText: "O'tkazish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const ids = Array.from(selectedRoomIds);
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(
+        ids.map((id) => {
+          const r = rooms.find((room) => room.id === id);
+          if (!r) return Promise.resolve();
+          return updateRoomAsync({
+            id: r.id,
+            values: {
+              number: r.number,
+              floor: r.floor,
+              roomTypeId: r.roomTypeId,
+              status: RoomStatus.OUT_OF_SERVICE,
+              isListed: r.isListed,
+            },
+          });
+        }),
+      );
+      toast.success(`${ids.length} ta ${labels.unitSingular.toLowerCase()} ta'mirga olindi`);
+      setSelectedRoomIds(new Set());
+      refetch();
+    } catch {
+      toast.error("Xatolik yuz berdi");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const roomStatusOptions = useMemo(
+    () => [
+      { label: "Toza (Vacant Clean)", value: RoomStatus.VACANT_CLEAN, color: "#10b981" },
+      { label: "Nopok (Vacant Dirty)", value: RoomStatus.VACANT_DIRTY, color: "#f59e0b" },
+      { label: "Band (Occupied)", value: RoomStatus.OCCUPIED, color: "#3b82f6" },
+      { label: "Ta'mirda (Out of Service)", value: RoomStatus.OUT_OF_SERVICE, color: "#ef4444" },
+    ],
+    [],
+  );
 
   if (isDachaType) return null;
 
@@ -392,6 +521,8 @@ export function RoomsView() {
                       }}
                       onManageBeds={isHostel ? () => setManagingBedsFor(room) : undefined}
                       labels={labels}
+                      isSelected={selectedRoomIds.has(room.id)}
+                      onToggleSelect={() => handleToggleRoom(room.id)}
                     />
                   );
                 })}
@@ -420,6 +551,17 @@ export function RoomsView() {
         onClose={() => setManagingBedsFor(null)}
         room={managingBedsFor}
       />
+
+      <BulkActionBar
+        selectedCount={selectedRoomIds.size}
+        onClear={handleClearSelection}
+        entityName={`${labels.unitSingular.toLowerCase()} tanlandi`}
+        onConfirmAll={handleBulkConfirmAll}
+        onCancelAll={handleBulkCancelAll}
+        onChangeStatus={handleBulkStatusChange}
+        statusOptions={roomStatusOptions}
+        isProcessing={isBulkProcessing}
+      />
     </div>
   );
 }
@@ -434,6 +576,8 @@ function RoomCard({
   onDelete,
   onManageBeds,
   labels,
+  isSelected,
+  onToggleSelect,
 }: {
   room: Room;
   roomType?: RoomType;
@@ -444,6 +588,8 @@ function RoomCard({
   onDelete: () => void;
   onManageBeds?: () => void;
   labels: any;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const freeBeds = beds?.filter((b) => b.status === RoomStatus.VACANT_CLEAN).length ?? 0;
   const { mutate: updateRoom, isPending: isUpdating } = useUpdateRoom();
@@ -498,11 +644,19 @@ function RoomCard({
       className={cn(
         "relative flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md dark:border-zinc-800 dark:bg-[var(--surface-muted)]",
         !room.isListed && "opacity-60 bg-zinc-50 dark:bg-zinc-900/50 grayscale-[40%]",
-        room.status === RoomStatus.OUT_OF_SERVICE && "border-red-200/80 dark:border-red-900/40"
+        room.status === RoomStatus.OUT_OF_SERVICE && "border-red-200/80 dark:border-red-900/40",
+        isSelected && "ring-2 ring-brand-500 border-brand-500 bg-brand-50/20 dark:bg-brand-950/20",
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <input
+            type="checkbox"
+            checked={!!isSelected}
+            onChange={onToggleSelect}
+            aria-label={`${room.number} tanlash`}
+            className="h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+          />
           <button 
             type="button" 
             onClick={onEdit}

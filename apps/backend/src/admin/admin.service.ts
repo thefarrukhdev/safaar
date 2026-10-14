@@ -4754,7 +4754,7 @@ export class AdminService {
         wr.created_at as request_date,
         wr.created_at,
         wr.updated_at,
-        coalesce(po.tax_id, po.id::text) as bank_account
+        coalesce(po.account_number, po.tax_id, po.id::text) as bank_account
       from withdrawal_requests wr
       left join partner_organizations po on po.id = wr.organization_id
       order by wr.created_at desc
@@ -4775,7 +4775,7 @@ export class AdminService {
           wr.created_at as request_date,
           wr.created_at,
           wr.updated_at,
-          coalesce(po.tax_id, po.id::text) as bank_account
+          coalesce(po.account_number, po.tax_id, po.id::text) as bank_account
         from withdrawal_requests wr
         left join partner_organizations po on po.id = wr.organization_id
         where wr.id = $1::uuid
@@ -4822,7 +4822,7 @@ export class AdminService {
           wr.created_at as request_date,
           wr.created_at,
           wr.updated_at,
-          coalesce(po.tax_id, po.id::text) as bank_account
+          coalesce(po.account_number, po.tax_id, po.id::text) as bank_account
       `,
       [id, nextStatus, fromStatuses],
     );

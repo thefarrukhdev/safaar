@@ -229,8 +229,13 @@ export class PartnersService {
       String(org['account_number'] ?? org['accountNumber'] ?? '').trim(),
     );
 
+    const cleanOrg = { ...org };
+    delete cleanOrg['tax_id'];
+
     return {
-      ...org,
+      ...cleanOrg,
+      taxId: null,
+      tax_id: null,
       accountNumber: org['account_number'] ?? org['accountNumber'],
       companyName: org['brand_name'] ?? org['legal_name'],
       requiresCompanyDetails: false,
@@ -272,7 +277,6 @@ export class PartnersService {
     const address = body.address
       ? String(body.address)
       : String(organization['address'] ?? '');
-    const taxId = body.tax_id ?? body.taxId ?? organization['tax_id'];
     const accountNumberRaw =
       body.account_number ?? body.accountNumber ?? body.bank_account;
     const accountNumber =
@@ -300,8 +304,8 @@ export class PartnersService {
     const result = await this.pg.query(
       `UPDATE partner_organizations
        SET brand_name = $1, legal_name = $2, phone = $3, email = $4, address = $5,
-           tax_id = $6, account_number = $7, mfo = $8, updated_at = $9
-       WHERE id = $10
+           tax_id = null, account_number = $6, mfo = $7, updated_at = $8
+       WHERE id = $9
        RETURNING *`,
       [
         brandName,
@@ -309,7 +313,6 @@ export class PartnersService {
         phone,
         email,
         address,
-        taxId,
         accountNumber,
         mfo,
         now,
@@ -324,8 +327,12 @@ export class PartnersService {
     const hasAccountNumber = Boolean(
       String(row['account_number'] ?? row['accountNumber'] ?? '').trim(),
     );
+    const cleanRow = { ...row };
+    delete cleanRow['tax_id'];
     return {
-      ...row,
+      ...cleanRow,
+      taxId: null,
+      tax_id: null,
       accountNumber: row['account_number'] ?? row['accountNumber'],
       companyName: row['brand_name'] ?? row['legal_name'],
       requiresCompanyDetails: false,
@@ -559,7 +566,6 @@ export class PartnersService {
     const contactPerson = this.optionalString(
       body.contactPerson ?? body.contact_person,
     );
-    const taxId = this.normalizeTaxId(body.taxId ?? body.tax_id);
     const accountNumber = this.optionalString(
       body.accountNumber ?? body.account_number ?? body.bank_account,
     );
@@ -579,9 +585,6 @@ export class PartnersService {
     }
     if (email && !this.isValidEmail(email)) {
       fieldErrors.email = "Email noto'g'ri formatda";
-    }
-    if (taxId && !/^\d{9}$/.test(taxId)) {
-      fieldErrors.taxId = "STIR 9 ta raqamdan iborat bo'lishi kerak";
     }
     if (accountNumber && !/^\d{20}$/.test(accountNumber.replace(/\s/g, ''))) {
       fieldErrors.accountNumber =
@@ -632,16 +635,14 @@ export class PartnersService {
       `
         select id::text,
                regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g') as phone_match,
-               ($2::text <> '' and lower(coalesce(email, '')) = lower($2)) as email_match,
-               ($3::text <> '' and tax_id = $3) as tax_id_match
+               ($2::text <> '' and lower(coalesce(email, '')) = lower($2)) as email_match
         from partner_organizations
         where regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
            or ($2::text <> '' and lower(coalesce(email, '')) = lower($2))
-           or ($3::text <> '' and tax_id = $3)
         order by created_at desc
         limit 10
       `,
-      [phone, email ?? '', taxId ?? ''],
+      [phone, email ?? ''],
     );
 
     const duplicateErrors: Record<string, string> = {};
@@ -652,9 +653,6 @@ export class PartnersService {
       }
       if (email && duplicate['email_match']) {
         duplicateErrors.email = 'Bu email bilan ariza yoki hamkor mavjud';
-      }
-      if (taxId && duplicate['tax_id_match']) {
-        duplicateErrors.taxId = 'Bu STIR bilan ariza yoki hamkor mavjud';
       }
     }
 
@@ -704,7 +702,7 @@ export class PartnersService {
           legalName,
           brandName,
           contactPerson,
-          taxId,
+          null,
           phone,
           email,
           cityId,
@@ -740,7 +738,7 @@ export class PartnersService {
             legalName,
             brandName,
             contactPerson,
-            taxId,
+            null,
             phone,
             fallbackEmail,
             cityId,
@@ -771,7 +769,7 @@ export class PartnersService {
               legalName,
               brandName,
               contactPerson,
-              taxId,
+              null,
               phone,
               email,
               cityId,
@@ -805,7 +803,7 @@ export class PartnersService {
                 legalName,
                 brandName,
                 contactPerson,
-                taxId,
+                null,
                 phone,
                 fallbackEmail,
                 cityId,
@@ -5869,10 +5867,6 @@ export class PartnersService {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
-  private normalizeTaxId(value: unknown): string {
-    return String(value ?? '').replace(/\D/g, '');
-  }
-
   private optionalString(value: unknown): string | null {
     const text = String(value ?? '').trim();
     return text.length > 0 ? text : null;
@@ -6135,7 +6129,7 @@ export class PartnersService {
       email: String(row['email'] ?? ''),
       city: String(row['city'] ?? row['city_id'] ?? ''),
       address: String(row['address'] ?? ''),
-      taxId: row['tax_id'] ? String(row['tax_id']) : undefined,
+      taxId: undefined,
       accountNumber: row['account_number']
         ? String(row['account_number'])
         : undefined,

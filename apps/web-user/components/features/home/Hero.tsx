@@ -51,16 +51,8 @@ export function Hero({
 
   return (
     <section className="relative flex min-h-[560px] md:min-h-[640px] lg:min-h-[700px] w-full flex-col items-center justify-center pb-12 -mt-14 md:-mt-16">
-      {/* Background image with slow zoom animation and smooth mask transition to page canvas */}
-      <div
-        className="absolute inset-0 z-0 overflow-hidden bg-slate-900"
-        style={{
-          maskImage:
-            "linear-gradient(to bottom, black 45%, rgba(0, 0, 0, 0.9) 65%, rgba(0, 0, 0, 0.35) 85%, transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, black 45%, rgba(0, 0, 0, 0.9) 65%, rgba(0, 0, 0, 0.35) 85%, transparent 100%)",
-        }}
-      >
+      {/* Background image with slow zoom animation */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-slate-900">
         <Image
           src={finalImageUrl}
           alt="Safaar — O'zbekiston"
@@ -76,8 +68,8 @@ export function Hero({
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         {/* Qatlam 3: Markaziy matn himoyasi — faqat matn bo'lagida (qorong'i EMAS, nozik) */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50" />
-        {/* Qatlam 4: Pastki nozik qoraytirish — SearchBar ostida matn va fon muvozanati */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent pointer-events-none" />
+        {/* Qatlam 4: Pastki nozik o'tish — rasmning pastki qismi sahifa foniga (slate-50) ohista singishi uchun */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-50 via-slate-50/60 to-transparent pointer-events-none" />
       </div>
 
       {/* Hero Text */}

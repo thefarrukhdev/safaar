@@ -1,8 +1,13 @@
 import { Body, Controller, Get, Header, Param, Post } from '@nestjs/common';
+import { IsOptional, IsString } from 'class-validator';
 import { I18nService } from './i18n.service';
 
 export class TranslateTextDto {
+  @IsString()
   text!: string;
+
+  @IsOptional()
+  @IsString()
   sourceLang?: string;
 }
 

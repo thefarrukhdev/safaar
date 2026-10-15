@@ -7,6 +7,7 @@ import { hotelsService } from "./services/hotels";
 import { promosService } from "./services/promos";
 import { reviewsService } from "./services/reviews";
 import { supportService } from "./services/support";
+import { translationsService } from "./services/translations";
 import { usersService } from "./services/users";
 
 export const api = {
@@ -20,6 +21,7 @@ export const api = {
   promos: promosService,
   reviews: reviewsService,
   support: supportService,
+  translations: translationsService,
   users: usersService,
 };
 
@@ -37,4 +39,5 @@ export * from "./services/hotels";
 export * from "./services/promos";
 export * from "./services/reviews";
 export * from "./services/support";
+export * from "./services/translations";
 export * from "./services/users";

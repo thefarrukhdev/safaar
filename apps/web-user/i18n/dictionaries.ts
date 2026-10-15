@@ -96,10 +96,32 @@ export type RestaurantsDict = Dict<"restaurants">;
 export type AttractionsDict = Dict<"attractions">;
 export type TransportDict = Dict<"transport">;
 
+const API_BASE =
+  process.env.INTERNAL_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:4000/v1";
+
 export async function getDictionary<NS extends Namespace>(
   locale: Locale,
   namespace: NS,
 ): Promise<Dict<NS>> {
+  try {
+    const baseUrl = API_BASE.replace(/\/v1\/?$/, "");
+    const res = await fetch(`${baseUrl}/v1/translations/${locale}/${namespace}`, {
+      next: { revalidate: 3600, tags: [`i18n-${locale}-${namespace}`] },
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const data = json.data ?? json;
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+        return data as Dict<NS>;
+      }
+    }
+  } catch {
+    // Lokal zaxira fallback'ga o'tish (build yoki oflayn rejim uchun)
+  }
+
   const mod = await loaders[locale][namespace]();
   return ("default" in mod ? mod.default : mod) as Dict<NS>;
 }

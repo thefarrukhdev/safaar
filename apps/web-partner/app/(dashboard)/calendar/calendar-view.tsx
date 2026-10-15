@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../_components/ui/button";
 import { ErrorState } from "../../_components/ui/empty-state";
 import { PageHeader } from "../../_components/layout/page-header";
 import { WalkInDialog, type WalkInInitial } from "../../_components/domain/walk-in-dialog";
 import { BlackoutDialog } from "../../_components/domain/blackout-dialog";
+import { CheckInDialog } from "../../_components/domain/check-in-dialog";
 import { ReservationQuickDrawer } from "../reservations/reservation-quick-drawer";
 import { useBeds } from "../../_hooks/use-beds";
 import { useRooms } from "../../_hooks/use-rooms";
@@ -21,7 +23,7 @@ import {
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
-import { TODAY_ISO } from "../../_lib/utils/date";
+import { TODAY_ISO, addDays, dayDiff, toDateOnly } from "../../_lib/utils/date";
 import {
   getPartnerLabels,
   hasBeds,
@@ -45,21 +47,10 @@ import { CalendarSkeleton } from "./calendar-skeleton";
 import { DachaAvailabilityView } from "./_components/dacha-availability-view";
 import { RestaurantScheduleView } from "./_components/restaurant-schedule-view";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const MONTH_LABEL = [
   "Yan", "Fev", "Mar", "Apr", "May", "Iyn",
   "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek",
 ];
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function dayDiff(a: string, b: string): number {
-  return Math.round((new Date(a).getTime() - new Date(b).getTime()) / DAY_MS);
-}
 
 export function CalendarView() {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
@@ -114,6 +105,7 @@ export function CalendarView() {
 
   const [selectedReservationForDrawer, setSelectedReservationForDrawer] =
     useState<ReservationView | null>(null);
+  const [assignTarget, setAssignTarget] = useState<ReservationView | null>(null);
 
   // Filtrlar va ko'rinish sozlamalari
   const [viewMode, setViewMode] = useState<ViewMode>(14);
@@ -149,9 +141,11 @@ export function CalendarView() {
       return beds.map((bed) => {
         const room = rooms.find((r) => r.id === bed.roomId);
         const matches = (r: ReservationView) => r.bedId === bed.id;
-        const isOccupiedToday = activeReservations.some(
-          (r) => r.checkIn <= TODAY_ISO && r.checkOut > TODAY_ISO && matches(r),
-        );
+        const isOccupiedToday = activeReservations.some((r) => {
+          const ci = toDateOnly(r.checkIn);
+          const co = toDateOnly(r.checkOut);
+          return ci <= TODAY_ISO && TODAY_ISO < co && matches(r);
+        });
 
         return {
           key: bed.id,
@@ -170,9 +164,11 @@ export function CalendarView() {
 
     return rooms.map((room) => {
       const matches = (r: ReservationView) => !r.bedId && r.roomNumber === room.number;
-      const isOccupiedToday = activeReservations.some(
-        (r) => r.checkIn <= TODAY_ISO && r.checkOut > TODAY_ISO && matches(r),
-      );
+      const isOccupiedToday = activeReservations.some((r) => {
+        const ci = toDateOnly(r.checkIn);
+        const co = toDateOnly(r.checkOut);
+        return ci <= TODAY_ISO && TODAY_ISO < co && matches(r);
+      });
 
       return {
         key: room.id,
@@ -243,7 +239,7 @@ export function CalendarView() {
 
     for (const row of sortedRows) {
       for (const r of activeReservations) {
-        if (!r.roomNumber || !row.matches(r)) {
+        if (!row.matches(r)) {
           continue;
         }
 
@@ -279,14 +275,19 @@ export function CalendarView() {
   // Davr sarlavhasi
   const periodLabel = useMemo(() => {
     const last = addDays(startDate, viewMode - 1);
-    const sDate = new Date(startDate);
-    const eDate = new Date(last);
-    return `${sDate.getDate()} ${MONTH_LABEL[sDate.getMonth()]} → ${eDate.getDate()} ${MONTH_LABEL[eDate.getMonth()]}`;
+    const [sY, sM, sD] = startDate.split("-").map(Number);
+    const [eY, eM, eD] = last.split("-").map(Number);
+    const yearDiff = sY !== eY ? ` ${sY}` : "";
+    return `${sD} ${MONTH_LABEL[sM - 1]}${yearDiff} → ${eD} ${MONTH_LABEL[eM - 1]} ${eY}`;
   }, [startDate, viewMode]);
 
-  // Davr statistikasi
+  // Davr statistikasi — faqat ko'rinayotgan va filtrlangan qatorlarga tegishli
   const periodStats = useMemo<CalendarPeriodStats>(() => {
-    const visibleReservations = activeReservations.filter((r) => {
+    const matchingReservations = activeReservations.filter((r) =>
+      sortedRows.some((row) => row.matches(r)),
+    );
+
+    const visibleReservations = matchingReservations.filter((r) => {
       const ciOffset = dayDiff(r.checkIn, startDate);
       let coOffset = dayDiff(r.checkOut, startDate);
       if (coOffset <= ciOffset) {
@@ -308,19 +309,39 @@ export function CalendarView() {
       }
     }
 
-    const totalRoomNights = (sortedRows.length || 1) * viewMode;
-    const occupancyRate = Math.min(100, Math.round((occupiedNights / totalRoomNights) * 100));
+    const totalRoomNights = sortedRows.length * viewMode;
+    const occupancyRate =
+      totalRoomNights > 0
+        ? Math.min(100, Math.round((occupiedNights / totalRoomNights) * 100))
+        : 0;
 
     return {
       bookings: visibleReservations.length,
       total,
       paid,
-      balance: total - paid,
+      balance: Math.max(0, total - paid),
       listedRows: sortedRows.filter((row) => row.isListed).length,
       totalRows: sortedRows.length,
       occupancyRate,
     };
   }, [activeReservations, sortedRows, startDate, viewMode]);
+
+  // Xona biriktirilmagan faol bronlar
+  const unassignedReservations = useMemo(() => {
+    return activeReservations.filter((r) => {
+      if (isHostel) return !r.bedId;
+      return !r.roomNumber;
+    });
+  }, [activeReservations, isHostel]);
+
+  const visibleUnassigned = useMemo(() => {
+    const endPeriodDate = addDays(startDate, viewMode);
+    return unassignedReservations.filter((r) => {
+      const ci = toDateOnly(r.checkIn);
+      const co = toDateOnly(r.checkOut);
+      return co > startDate && ci < endPeriodDate;
+    });
+  }, [unassignedReservations, startDate, viewMode]);
 
   // Bo'sh katakka klik — Walk-in ochish
   const handleEmptyClick = (row: CalendarRow, dateIso: string) => {
@@ -439,9 +460,32 @@ export function CalendarView() {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         unitTypeLabel={labels.unitTypeLabel}
+        searchPlaceholder={`${labels.unitSingular} raqami yoki turi...`}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={handleResetFilters}
       />
+
+      {/* Xona biriktirilmagan bronlar haqida ogohlantirish */}
+      {visibleUnassigned.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              Tanlangan davrda <strong>{visibleUnassigned.length} ta bronga</strong> {labels.unitSingular.toLowerCase()} biriktirilmagan.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-amber-300 bg-white/70 hover:bg-white text-amber-950 dark:border-amber-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-amber-100"
+            onClick={() => {
+              setSelectedReservationForDrawer(visibleUnassigned[0]);
+            }}
+          >
+            Birinchisini biriktirish
+          </Button>
+        </div>
+      )}
 
       {/* Rangli Legend va Foydalanish bo'yicha maslahatlar */}
       <CalendarLegend />
@@ -474,11 +518,26 @@ export function CalendarView() {
         hotelId={useAuthStore.getState().user?.organizationId}
       />
 
+      {/* Xona biriktirish dialogi */}
+      <CheckInDialog
+        open={Boolean(assignTarget)}
+        onClose={() => setAssignTarget(null)}
+        reservation={assignTarget}
+        onAssigned={() => {
+          refetchReservations();
+          setAssignTarget(null);
+        }}
+      />
+
       {/* Tezkor Bron Boshqaruvi Tortmasi (Drawer) */}
       <ReservationQuickDrawer
         reservation={selectedReservationForDrawer}
         open={Boolean(selectedReservationForDrawer)}
         onClose={() => setSelectedReservationForDrawer(null)}
+        onAssignRoom={(r) => {
+          setSelectedReservationForDrawer(null);
+          setAssignTarget(r);
+        }}
         onConfirm={(r) => {
           confirmReservation.mutate(r.id, {
             onSuccess: () => {

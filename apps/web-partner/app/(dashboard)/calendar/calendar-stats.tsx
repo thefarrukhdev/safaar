@@ -50,9 +50,11 @@ export function CalendarStats({
         label="Qoldiq to'lov"
         value={formatMoney(stats.balance)}
         hint={
-          stats.balance > 0
-            ? "Kelganda yoki chiqishda undiriladi"
-            : "Barcha to'lovlar to'liq qoplangan"
+          stats.bookings === 0
+            ? "Bu davrda bronlar yo'q"
+            : stats.balance > 0
+              ? "Kelganda yoki chiqishda undiriladi"
+              : "Barcha to'lovlar to'liq qoplangan"
         }
         icon={<Wallet className="h-5 w-5" aria-hidden="true" />}
         tone={stats.balance > 0 ? "amber" : "neutral"}

@@ -44,7 +44,7 @@ export function CalendarRoomRow({
           left: 0,
           zIndex: 15,
         }}
-        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
+        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]"
       >
         <div className="flex w-full items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5 min-w-0">

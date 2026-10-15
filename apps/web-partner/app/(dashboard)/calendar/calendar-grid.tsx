@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { ArrowLeft, ArrowRight, CalendarDays, SearchX } from "lucide-react";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
@@ -77,6 +78,13 @@ export function CalendarGrid({
               icon={<CalendarDays className="h-10 w-10 text-[var(--muted-foreground)]" aria-hidden="true" />}
               title={`${unitPlural.charAt(0).toUpperCase()}${unitPlural.slice(1)} mavjud emas`}
               description="Kalendarda ko'rish uchun avval Xonalar fondi bo'limidan xonalarni qo'shing."
+              action={
+                <Button size="sm" asChild>
+                  <Link href="/rooms">
+                    {unitPlural.charAt(0).toUpperCase() + unitPlural.slice(1)} bo'limiga o'tish
+                  </Link>
+                </Button>
+              }
             />
           )}
         </CardBody>
@@ -141,7 +149,7 @@ export function CalendarGrid({
               left: 0,
               zIndex: 30,
             }}
-            className="flex items-center justify-between border-b border-r border-[var(--border)] bg-[var(--surface-muted)] px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:bg-zinc-900"
+            className="flex items-center justify-between border-b border-r border-[var(--border)] bg-[var(--surface-muted)] px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]"
           >
             <span>
               {unitSingular.charAt(0).toUpperCase()}

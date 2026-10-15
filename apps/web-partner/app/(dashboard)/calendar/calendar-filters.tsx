@@ -38,6 +38,7 @@ interface CalendarFiltersProps {
   statusFilter: "all" | "occupied" | "vacant";
   onStatusFilterChange: (status: "all" | "occupied" | "vacant") => void;
   unitTypeLabel: string;
+  searchPlaceholder?: string;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
 }
@@ -60,6 +61,7 @@ export function CalendarFilters({
   statusFilter,
   onStatusFilterChange,
   unitTypeLabel,
+  searchPlaceholder,
   hasActiveFilters,
   onResetFilters,
 }: CalendarFiltersProps) {
@@ -161,7 +163,7 @@ export function CalendarFilters({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Xona raqami yoki turi..."
+            placeholder={searchPlaceholder || "Xona raqami yoki turi..."}
             className="h-9 pl-8 pr-8 text-xs placeholder:text-zinc-400"
           />
           {searchQuery && (

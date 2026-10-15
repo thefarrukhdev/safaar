@@ -78,7 +78,7 @@ export function ReservationBar({
         gridRow,
         gridColumn: `${startCol} / span ${spanCols}`,
       }}
-      className="group relative my-1 mx-0.5 flex"
+      className="group relative my-1 mx-0.5 flex z-10"
     >
       <button
         type="button"
@@ -115,8 +115,18 @@ export function ReservationBar({
         )}
       </button>
 
-      {/* Rich tooltip — hover'da */}
-      <div className="pointer-events-none absolute left-1/2 bottom-full z-50 mb-1.5 hidden -translate-x-1/2 min-w-[240px] rounded-lg border border-[var(--border)] bg-[var(--surface)] dark:bg-zinc-900 p-3 text-left text-xs text-[var(--foreground)] shadow-2xl group-hover:block group-focus-within:block">
+      {/* Rich tooltip — hover'da (overflow va chegaralarga moslashuvchan) */}
+      <div
+        className={cn(
+          "pointer-events-none absolute z-50 hidden min-w-[240px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-xs text-[var(--foreground)] shadow-2xl group-hover:block group-focus-within:block",
+          gridRow <= 2 ? "top-full mt-1.5" : "bottom-full mb-1.5",
+          startCol <= 3
+            ? "left-0"
+            : truncatedEnd
+              ? "right-0"
+              : "left-1/2 -translate-x-1/2",
+        )}
+      >
         <p className="font-semibold text-sm">{reservation.guest.fullName}</p>
         <p className="text-[var(--muted-foreground)]">
           {formatPhone(reservation.guest.phone)}

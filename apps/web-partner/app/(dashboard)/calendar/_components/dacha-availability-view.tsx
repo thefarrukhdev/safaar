@@ -9,9 +9,11 @@ import {
   Home,
   Lock,
   Plus,
+  RefreshCw,
   Sun,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
 import { toast } from "sonner";
@@ -20,6 +22,7 @@ import { EmptyState, ErrorState } from "../../../_components/ui/empty-state";
 import { PageHeader } from "../../../_components/layout/page-header";
 import { StatCard } from "../../../_components/ui/stat-card";
 import { Skeleton } from "../../../_components/ui/skeleton";
+import { Tooltip } from "../../../_components/ui/tooltip";
 import { WalkInDialog, type WalkInInitial } from "../../../_components/domain/walk-in-dialog";
 import { BlackoutDialog } from "../../../_components/domain/blackout-dialog";
 import { ReservationQuickDrawer } from "../../reservations/reservation-quick-drawer";
@@ -33,7 +36,7 @@ import {
 import { useRooms } from "../../../_hooks/use-rooms";
 import { getPartnerLabels } from "../../../_lib/utils/partner-labels";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { TODAY_ISO } from "../../../_lib/utils/date";
+import { TODAY_ISO, addDays, toDateOnly } from "../../../_lib/utils/date";
 import { formatMoney } from "../../../_lib/utils/format";
 import { cn } from "../../../_lib/utils/cn";
 import type { ReservationView } from "../../../_lib/domain/types";
@@ -46,12 +49,6 @@ const MONTH_UZ = [
 
 function toIso(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function daysInMonth(year: number, month: number): number {
@@ -94,6 +91,16 @@ export function DachaAvailabilityView() {
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInInitial, setWalkInInitial] = useState<WalkInInitial>({});
   const [blackoutOpen, setBlackoutOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchRooms(), refetchReservations()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const prevMonth = () => {
     if (month === 0) {
@@ -144,7 +151,9 @@ export function DachaAvailabilityView() {
   const bookedDaysMap = useMemo(() => {
     const map = new Map<string, ReservationView>();
     for (const r of activeReservations) {
-      for (let d = r.checkIn; d < r.checkOut; d = addDays(d, 1)) {
+      const start = toDateOnly(r.checkIn);
+      const end = toDateOnly(r.checkOut);
+      for (let d = start; d < end; d = addDays(d, 1)) {
         map.set(d, r);
       }
     }
@@ -159,14 +168,26 @@ export function DachaAvailabilityView() {
   const freeCount = totalDays - bookedCount;
   const occupancyPercent = totalDays > 0 ? Math.round((bookedCount / totalDays) * 100) : 0;
 
-  // Shu oydagi jami tushum
-  const monthRevenue = useMemo(() => {
+  // Tanlangan oyga tegishli bronlar
+  const monthReservations = useMemo(() => {
     const startMonth = toIso(year, month, 1);
     const endMonth = toIso(year, month, totalDays);
-    return activeReservations
-      .filter((r) => r.checkIn <= endMonth && r.checkOut >= startMonth)
-      .reduce((sum, r) => sum + r.totalPrice, 0);
+    return activeReservations.filter((r) => {
+      const ci = toDateOnly(r.checkIn);
+      const co = toDateOnly(r.checkOut);
+      return ci <= endMonth && co >= startMonth;
+    });
   }, [activeReservations, year, month, totalDays]);
+
+  // Shu oydagi jami tushum
+  const monthRevenue = useMemo(() => {
+    return monthReservations.reduce((sum, r) => sum + r.totalPrice, 0);
+  }, [monthReservations]);
+
+  // Shu oydagi jami mehmonlar soni
+  const monthGuests = useMemo(() => {
+    return monthReservations.reduce((sum, r) => sum + r.adults + r.children, 0);
+  }, [monthReservations]);
 
   const handleDayClick = (iso: string) => {
     const existing = bookedDaysMap.get(iso);
@@ -226,6 +247,20 @@ export function DachaAvailabilityView() {
         description={labels.calendarDescription}
         actions={
           <div className="flex items-center gap-2">
+            <Tooltip content="Ma'lumotlarni qayta yangilash">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Ma'lumotlarni yangilash"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isRefreshing ? "animate-spin text-brand-600" : ""}`}
+                  aria-hidden="true"
+                />
+              </Button>
+            </Tooltip>
             <Button
               size="sm"
               variant="outline"
@@ -273,15 +308,15 @@ export function DachaAvailabilityView() {
         <StatCard
           label="Oylik tushum"
           value={formatMoney(monthRevenue)}
-          hint={`${activeReservations.length} ta faol buyurtma`}
+          hint={`${monthReservations.length} ta faol buyurtma`}
           icon={<DollarSign className="h-5 w-5" aria-hidden="true" />}
           tone="blue"
           isLoading={isLoading}
         />
         <StatCard
           label="Faol mehmonlar"
-          value={`${activeReservations.reduce((sum, r) => sum + r.adults + r.children, 0)} kishi`}
-          hint="Joriy davrdagi barcha mehmonlar"
+          value={`${monthGuests} kishi`}
+          hint="Shu oydagi bronlar bo'yicha"
           icon={<Users className="h-5 w-5" aria-hidden="true" />}
           tone="neutral"
           isLoading={isLoading}
@@ -385,6 +420,13 @@ export function DachaAvailabilityView() {
             icon={<Home className="h-10 w-10 text-[var(--muted-foreground)]" aria-hidden="true" />}
             title="Dacha ob'ekti topilmadi"
             description="Bandlik kalendarini ko'rish uchun avval Sozlamalar bo'limidan dachani qo'shing."
+            action={
+              <Button size="sm" asChild>
+                <Link href="/rooms">
+                  Dacha qo'shish
+                </Link>
+              </Button>
+            }
           />
         </div>
       ) : (
@@ -486,6 +528,17 @@ export function DachaAvailabilityView() {
                 </button>
               );
             })}
+
+            {/* Oy oxiridagi bo'sh kataklar (to'liq to'r shakli uchun) */}
+            {Array.from(
+              { length: (7 - ((firstDow + totalDays) % 7)) % 7 },
+              (_, i) => (
+                <div
+                  key={`trailing-${i}`}
+                  className="min-h-[80px] sm:min-h-[96px] border-b border-r border-[var(--border)] bg-[var(--surface-muted)]/20"
+                />
+              ),
+            )}
           </div>
         </div>
       )}

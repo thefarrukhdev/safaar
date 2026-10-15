@@ -159,9 +159,9 @@ export function SpotlightBackground({
         onPointerLeave={handlePointerLeave}
         className={cn(
           "relative min-h-screen w-full flex flex-col items-center justify-center overflow-x-hidden",
-          "bg-slate-50 text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100",
+          "bg-slate-50 text-slate-900",
           "px-4 py-8 sm:py-12 selection:bg-blue-500/20",
-          "[--spotlight-glow:rgba(37,99,235,0.14)] dark:[--spotlight-glow:rgba(59,130,246,0.18)]",
+          "[--spotlight-glow:rgba(37,99,235,0.14)]",
           "[--spotlight-opacity:1]",
           className
         )}
@@ -172,8 +172,7 @@ export function SpotlightBackground({
           className={cn(
             "pointer-events-none absolute inset-0 z-0",
             "[background-size:24px_24px]",
-            "[background-image:radial-gradient(rgba(148,163,184,0.35)_1px,transparent_1px)]",
-            "dark:[background-image:radial-gradient(rgba(148,163,184,0.18)_1px,transparent_1px)]"
+            "[background-image:radial-gradient(rgba(148,163,184,0.35)_1px,transparent_1px)]"
           )}
           style={{
             maskImage:
@@ -189,8 +188,7 @@ export function SpotlightBackground({
           className={cn(
             "pointer-events-none absolute inset-0 z-0 transition-opacity duration-300",
             "[background-size:24px_24px]",
-            "[background-image:radial-gradient(rgba(37,99,235,0.75)_1.3px,transparent_1.3px)]",
-            "dark:[background-image:radial-gradient(rgba(96,165,250,0.85)_1.3px,transparent_1.3px)]"
+            "[background-image:radial-gradient(rgba(37,99,235,0.75)_1.3px,transparent_1.3px)]"
           )}
           style={{
             opacity: "var(--spotlight-opacity, 1)",
@@ -206,8 +204,7 @@ export function SpotlightBackground({
           aria-hidden="true"
           className={cn(
             "pointer-events-none absolute inset-0 z-0",
-            "bg-[radial-gradient(circle_520px_at_50%_42%,rgba(37,99,235,0.08),transparent_80%)]",
-            "dark:bg-[radial-gradient(circle_520px_at_50%_42%,rgba(59,130,246,0.12),transparent_80%)]"
+            "bg-[radial-gradient(circle_520px_at_50%_42%,rgba(37,99,235,0.08),transparent_80%)]"
           )}
         />
 
@@ -265,8 +262,8 @@ export function SpotlightCard({
       className={cn(
         "group/card relative w-full rounded-2xl p-[1px] transition-shadow duration-300",
         "shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_0_rgba(15,23,42,0.04)] hover:shadow-xl",
-        "[--card-beam:rgba(37,99,235,0.65)] dark:[--card-beam:rgba(96,165,250,0.75)]",
-        "[--card-border:rgba(226,232,240,0.95)] dark:[--card-border:rgba(51,65,85,0.7)]",
+        "[--card-beam:rgba(37,99,235,0.65)]",
+        "[--card-border:rgba(226,232,240,0.95)]",
         className
       )}
       style={{
@@ -292,7 +289,7 @@ export function SpotlightCard({
       />
 
       {/* Card Content Surface */}
-      <div className="relative rounded-[15px] bg-white dark:bg-slate-900 p-7 sm:p-9">
+      <div className="relative rounded-[15px] bg-white p-7 sm:p-9">
         {children}
       </div>
     </div>

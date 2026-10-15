@@ -6,10 +6,12 @@ import {
   SpotlightCard,
 } from "./_components/spotlight-background";
 import { AuthHelpDrawer } from "./_components/auth-help-drawer";
+import { AuthThemeLock } from "./_components/auth-theme-lock";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <SpotlightBackground>
+      <AuthThemeLock />
       {/* Brand Header */}
       <div className="mb-6 flex flex-col items-center text-center">
         <Link
@@ -24,11 +26,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             priority
             className="h-8 w-auto object-contain"
           />
-          <span className="rounded-md border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-700 shadow-2xs">
+          <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-700 shadow-2xs">
             Partner
           </span>
         </Link>
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <p className="mt-2 text-xs text-slate-500 font-medium">
           Hamkorlar Boshqaruv Portali
         </p>
       </div>
@@ -39,7 +41,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
+      <footer className="mt-8 text-center text-xs text-slate-400">
         © {new Date().getFullYear()} Safaar.uz · Barcha huquqlar himoyalangan
       </footer>
 

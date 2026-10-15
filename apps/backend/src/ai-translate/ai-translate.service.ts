@@ -34,8 +34,116 @@ interface GeminiGenerateContentResponse {
 export class AiTranslateService {
   private readonly logger = new Logger(AiTranslateService.name);
 
+  getApiKey(): string | undefined {
+    return (
+      process.env.AI_TRANSLATE_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY
+    );
+  }
+
+  detectLanguage(text: string): SupportedLanguage {
+    const trimmed = text.trim();
+    if (!trimmed) return 'uz';
+    const cyrillicMatch = trimmed.match(/[\u0400-\u04FF]/g);
+    const cyrillicCount = cyrillicMatch ? cyrillicMatch.length : 0;
+    const latinMatch = trimmed.match(/[a-zA-Z]/g);
+    const latinCount = latinMatch ? latinMatch.length : 0;
+    if (cyrillicCount > latinCount && cyrillicCount >= 3) {
+      return 'ru';
+    }
+    return 'uz';
+  }
+
+  async autoTranslateMultilingualField(
+    input:
+      | { uz?: string | null; ru?: string | null; en?: string | null }
+      | string
+      | undefined
+      | null,
+    fallbackSource?: SupportedLanguage,
+  ): Promise<{ uz: string; ru: string; en: string }> {
+    let uz = '';
+    let ru = '';
+    let en = '';
+
+    if (typeof input === 'string') {
+      const text = input.trim();
+      if (!text) {
+        return { uz: '', ru: '', en: '' };
+      }
+      const detected = fallbackSource || this.detectLanguage(text);
+      if (detected === 'ru') ru = text;
+      else if (detected === 'en') en = text;
+      else uz = text;
+    } else if (input && typeof input === 'object') {
+      uz = (input.uz ?? '').trim();
+      ru = (input.ru ?? '').trim();
+      en = (input.en ?? '').trim();
+    }
+
+    const available = [
+      { lang: 'uz' as const, text: uz },
+      { lang: 'ru' as const, text: ru },
+      { lang: 'en' as const, text: en },
+    ].filter((item) => Boolean(item.text));
+
+    if (available.length === 0) {
+      return { uz: '', ru: '', en: '' };
+    }
+
+    if (uz && ru && en && uz !== ru && ru !== en) {
+      return { uz, ru, en };
+    }
+
+    const primary =
+      available.find((item) =>
+        fallbackSource ? item.lang === fallbackSource : true,
+      ) || available[0];
+
+    const sourceLang = primary.lang;
+    const sourceText = primary.text;
+    const apiKey = this.getApiKey();
+
+    const result = {
+      uz: uz || sourceText,
+      ru: ru || sourceText,
+      en: en || sourceText,
+    };
+
+    if (!apiKey) {
+      return result;
+    }
+
+    const targets: SupportedLanguage[] = [];
+    if (!uz || (uz === sourceText && sourceLang !== 'uz')) targets.push('uz');
+    if (!ru || (ru === sourceText && sourceLang !== 'ru')) targets.push('ru');
+    if (!en || (en === sourceText && sourceLang !== 'en')) targets.push('en');
+
+    if (targets.length === 0) {
+      return result;
+    }
+
+    try {
+      const translated = await this.translate({
+        text: sourceText,
+        source: sourceLang,
+        targets,
+      });
+      if (translated.uz) result.uz = translated.uz;
+      if (translated.ru) result.ru = translated.ru;
+      if (translated.en) result.en = translated.en;
+    } catch (error) {
+      this.logger.warn(
+        `autoTranslateMultilingualField tarjima o'tkazib yuborildi: ${(error as Error)?.message}`,
+      );
+    }
+
+    return result;
+  }
+
   async translate(dto: TranslateTextDto): Promise<Record<string, string>> {
-    const apiKey = process.env.AI_TRANSLATE_API_KEY;
+    const apiKey = this.getApiKey();
     if (!apiKey) {
       throw new ServiceUnavailableException({
         code: 'AI_TRANSLATE_NOT_CONFIGURED',

@@ -4553,4 +4553,91 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
       ).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('PartnersService auto-translation job dispatch', () => {
+    let query: jest.Mock;
+    let pg: { query: jest.Mock };
+    let jobs: { add: jest.Mock };
+    let service: PartnersService;
+
+    const partnerActor = {
+      id: '00000000-0000-2001-0000-000000000001',
+      actorType: 'user' as const,
+      role: Role.PARTNER,
+      roles: [Role.PARTNER],
+      organizationId: '00000000-0000-1001-0000-000000000001',
+    };
+
+    beforeEach(() => {
+      query = jest.fn();
+      pg = { query };
+      jobs = { add: jest.fn().mockResolvedValue({}) };
+      service = new PartnersService(
+        pg as unknown as PostgresService,
+        jobs as unknown as JobQueueService,
+      );
+    });
+
+    it('enqueues entity-auto-translate when createHotel is called without ru/en', async () => {
+      query
+        .mockResolvedValueOnce([
+          {
+            type: 'hotel',
+            brand_name: 'Brand',
+            legal_name: 'Legal',
+            address: 'Toshkent',
+            city_id: '00000000-0000-3001-0000-000000000001',
+          },
+        ]) // partner_organizations query
+        .mockResolvedValueOnce([]) // INSERT INTO hotels
+        .mockResolvedValueOnce([]) // INSERT INTO hotel_translations
+        .mockResolvedValueOnce([{ id: 'hotel-123' }]); // SELECT * FROM hotels
+
+      await service.createHotel(partnerActor, {
+        name_uz: 'Bogbon mehmonxona',
+      });
+
+      expect(jobs.add).toHaveBeenCalledWith(
+        'entity-auto-translate',
+        expect.objectContaining({
+          entityType: 'hotel',
+          sourceLang: 'uz',
+          fields: { name: 'Bogbon mehmonxona' },
+        }),
+      );
+    });
+
+    it('enqueues entity-auto-translate when createRoomType is called without ru/en', async () => {
+      query
+        .mockResolvedValueOnce([
+          {
+            id: 'hotel-123',
+            partner_organization_id: partnerActor.organizationId,
+          },
+        ]) // assertHotel
+        .mockResolvedValueOnce([]) // check existing code
+        .mockResolvedValueOnce([
+          {
+            id: 'type-1',
+            name: { uz: 'Oddiy xona', ru: 'Oddiy xona', en: 'Oddiy xona' },
+          },
+        ]); // INSERT INTO room_types
+
+      await service.createRoomType(partnerActor, 'hotel-123', {
+        code: 'STD-1',
+        name: 'Oddiy xona',
+        basePrice: 500000,
+        capacity: 2,
+      });
+
+      expect(jobs.add).toHaveBeenCalledWith(
+        'entity-auto-translate',
+        expect.objectContaining({
+          entityType: 'room_type',
+          sourceLang: 'uz',
+          fields: expect.objectContaining({ name: 'Oddiy xona' }),
+        }),
+      );
+    });
+  });
 });

@@ -1052,6 +1052,18 @@ export class PartnersService {
       [hotelId, nameUz, now, now, nameRu, nameEn],
     );
 
+    if (
+      !this.optionalString(body.name_ru) ||
+      !this.optionalString(body.name_en)
+    ) {
+      void this.jobs.add('entity-auto-translate', {
+        entityType: 'hotel',
+        entityId: hotelId,
+        fields: { name: nameUz },
+        sourceLang: 'uz',
+      });
+    }
+
     // Return the created hotel
     const hotels = await this.pg.query(`SELECT * FROM hotels WHERE id = $1`, [
       hotelId,
@@ -1934,6 +1946,17 @@ export class PartnersService {
         now,
       ],
     );
+    if (!body.name_ru || !body.name_en) {
+      void this.jobs.add('entity-auto-translate', {
+        entityType: 'room_type',
+        entityId: roomTypeId,
+        fields: {
+          name: name.uz || name.ru || name.en,
+          description: this.optionalString(body.description),
+        },
+        sourceLang: 'uz',
+      });
+    }
     return roomType;
   }
 
@@ -2087,6 +2110,23 @@ export class PartnersService {
         message: 'Xona turi topilmadi',
       });
     }
+
+    if (
+      (body.name !== undefined || body.name_uz !== undefined) &&
+      (!body.name_ru || !body.name_en)
+    ) {
+      const parsedName = localizedText(body, 'name');
+      void this.jobs.add('entity-auto-translate', {
+        entityType: 'room_type',
+        entityId: roomTypeId,
+        fields: {
+          name: parsedName.uz,
+          description: this.optionalString(body.description),
+        },
+        sourceLang: 'uz',
+      });
+    }
+
     return rows[0];
   }
 
@@ -2883,6 +2923,27 @@ export class PartnersService {
         `UPDATE hotels SET stars = $1, updated_at = $2 WHERE id = $3`,
         [stars, now, id],
       );
+    }
+
+    const needsTranslation =
+      (Boolean(nameUz) &&
+        (!nameRu || nameRu === nameUz || !nameEn || nameEn === nameUz)) ||
+      (Boolean(descUz) &&
+        (!descRu || descRu === descUz || !descEn || descEn === descUz)) ||
+      (Boolean(shortUz) &&
+        (!shortRu || shortRu === shortUz || !shortEn || shortEn === shortUz));
+
+    if (needsTranslation) {
+      void this.jobs.add('entity-auto-translate', {
+        entityType: 'hotel',
+        entityId: id,
+        fields: {
+          name: nameUz || nameRu || nameEn,
+          description: descUz || descRu || descEn,
+          short_description: shortUz || shortRu || shortEn,
+        },
+        sourceLang: nameUz ? 'uz' : nameRu ? 'ru' : 'en',
+      });
     }
 
     await this.touchHotel(id, now);

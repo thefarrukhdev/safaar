@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { redisConnection } from '../infrastructure/job-queue.service';
+import { AiTranslateModule } from '../ai-translate/ai-translate.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ExportDataService } from './export-data.service';
 import { JobsProcessor } from './jobs.processor';
@@ -17,6 +18,7 @@ import { WebhookDeliveryService } from './webhook-delivery.service';
 @Module({
   imports: [
     UploadsModule,
+    AiTranslateModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

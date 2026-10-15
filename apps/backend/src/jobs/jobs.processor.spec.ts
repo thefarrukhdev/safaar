@@ -1,4 +1,5 @@
 import type { Job } from 'bullmq';
+import { AiTranslateService } from '../ai-translate/ai-translate.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { ExportDataService } from './export-data.service';
@@ -15,17 +16,29 @@ describe('JobsProcessor', () => {
   let exportData: { resolve: jest.Mock };
   let uploads: { uploadDocument: jest.Mock };
   let webhooks: { deliver: jest.Mock };
+  let aiTranslate: { autoTranslateMultilingualField: jest.Mock };
 
   beforeEach(() => {
-    pg = { query: jest.fn() };
+    pg = { query: jest.fn().mockResolvedValue([]) };
     exportData = { resolve: jest.fn() };
     uploads = { uploadDocument: jest.fn() };
     webhooks = { deliver: jest.fn() };
+    aiTranslate = {
+      autoTranslateMultilingualField: jest.fn().mockImplementation((text) =>
+        Promise.resolve({
+          uz: typeof text === 'string' ? text : text?.uz || '',
+          ru: 'Перевод ' + (typeof text === 'string' ? text : text?.uz || ''),
+          en:
+            'Translated ' + (typeof text === 'string' ? text : text?.uz || ''),
+        }),
+      ),
+    };
     processor = new JobsProcessor(
       pg as unknown as PostgresService,
       exportData as unknown as ExportDataService,
       uploads as unknown as UploadsService,
       webhooks as unknown as WebhookDeliveryService,
+      aiTranslate as unknown as AiTranslateService,
     );
   });
 
@@ -106,6 +119,76 @@ describe('JobsProcessor', () => {
       pg.query.mockResolvedValueOnce([]);
       await processor.process(job('export', { export_id: 'gone' }));
       expect(exportData.resolve).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('entity-auto-translate jobs', () => {
+    it('auto-translates hotel name and description into ru/en and updates hotel_translations', async () => {
+      await processor.process(
+        job('entity-auto-translate', {
+          entityType: 'hotel',
+          entityId: '00000000-0000-0000-0000-000000000001',
+          sourceLang: 'uz',
+          fields: {
+            name: 'Oq Saroy',
+            description: 'Toshkentdagi mehmonxona',
+          },
+        }),
+      );
+
+      expect(aiTranslate.autoTranslateMultilingualField).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(pg.query).toHaveBeenCalledTimes(4);
+      expect(pg.query.mock.calls[0]?.[0]).toContain(
+        'INSERT INTO hotel_translations',
+      );
+      expect(pg.query.mock.calls[3]?.[0]).toContain(
+        'UPDATE hotels SET updated_at',
+      );
+    });
+
+    it('auto-translates room_type and updates room_types.name JSONB', async () => {
+      await processor.process(
+        job('entity-auto-translate', {
+          entityType: 'room_type',
+          entityId: '00000000-0000-0000-0000-000000000002',
+          sourceLang: 'uz',
+          fields: {
+            name: 'Lyuks xona',
+          },
+        }),
+      );
+
+      expect(aiTranslate.autoTranslateMultilingualField).toHaveBeenCalledWith(
+        'Lyuks xona',
+        'uz',
+      );
+      expect(pg.query).toHaveBeenCalledTimes(1);
+      expect(pg.query.mock.calls[0]?.[0]).toContain('UPDATE room_types');
+      expect(pg.query.mock.calls[0]?.[1]?.[1]).toContain('Перевод Lyuks xona');
+    });
+
+    it('auto-translates custom room name and updates hotel_room_translations', async () => {
+      await processor.process(
+        job('entity-auto-translate', {
+          entityType: 'room',
+          entityId: '00000000-0000-0000-0000-000000000003',
+          sourceLang: 'uz',
+          fields: {
+            name: 'Baland qavatdagi xona',
+          },
+        }),
+      );
+
+      expect(aiTranslate.autoTranslateMultilingualField).toHaveBeenCalledWith(
+        'Baland qavatdagi xona',
+        'uz',
+      );
+      expect(pg.query).toHaveBeenCalledTimes(3);
+      expect(pg.query.mock.calls[0]?.[0]).toContain(
+        'INSERT INTO hotel_room_translations',
+      );
     });
   });
 });

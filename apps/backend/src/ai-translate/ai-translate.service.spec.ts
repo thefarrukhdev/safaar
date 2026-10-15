@@ -128,4 +128,61 @@ describe('AiTranslateService', () => {
       }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
+
+  describe('detectLanguage', () => {
+    it('detects Russian from predominantly Cyrillic text', () => {
+      expect(service.detectLanguage('Привет, как дела?')).toBe('ru');
+    });
+
+    it('defaults to Uzbek for Latin text', () => {
+      expect(
+        service.detectLanguage('Toshkent shahar markazidagi mehmonxona'),
+      ).toBe('uz');
+    });
+  });
+
+  describe('autoTranslateMultilingualField', () => {
+    it('returns all 3 languages when input is string and Gemini is available', async () => {
+      process.env.AI_TRANSLATE_API_KEY = 'test-key';
+      fetchMock.mockImplementation((url: string, opts: { body: string }) => {
+        const parsed = JSON.parse(opts.body);
+        const prompt = parsed.contents[0].parts[0].text;
+        const target = prompt.includes('Russian')
+          ? 'Отель Сарой'
+          : 'Saroy Hotel';
+        return Promise.resolve(geminiResponse(target));
+      });
+
+      const result = await service.autoTranslateMultilingualField(
+        'Saroy mehmonxonasi',
+        'uz',
+      );
+      expect(result).toEqual({
+        uz: 'Saroy mehmonxonasi',
+        ru: 'Отель Сарой',
+        en: 'Saroy Hotel',
+      });
+    });
+
+    it('gracefully falls back to copying source text if no API key is configured', async () => {
+      delete process.env.AI_TRANSLATE_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GOOGLE_API_KEY;
+
+      const result = await service.autoTranslateMultilingualField(
+        'Shinam xona',
+        'uz',
+      );
+      expect(result).toEqual({
+        uz: 'Shinam xona',
+        ru: 'Shinam xona',
+        en: 'Shinam xona',
+      });
+    });
+
+    it('returns empty fields if input is empty', async () => {
+      const result = await service.autoTranslateMultilingualField('');
+      expect(result).toEqual({ uz: '', ru: '', en: '' });
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
 import {
@@ -29,7 +30,8 @@ describe('AnalyticsService and Controllers', () => {
       const actor: RequestActor = {
         id: '11111111-1111-1111-1111-111111111111',
         actorType: 'user',
-        roles: [],
+        role: Role.USER,
+        roles: [Role.USER],
       };
 
       const result = await service.ingest(
@@ -261,7 +263,7 @@ describe('AnalyticsService and Controllers', () => {
 
     it('AnalyticsController delegates events to ingest', async () => {
       const ingestSpy = jest.spyOn(service, 'ingest').mockResolvedValueOnce({
-        id: 'ev-1',
+        id: '00000000-0000-0000-0000-000000000001',
         accepted: true,
         eventName: 'test',
         userId: null,

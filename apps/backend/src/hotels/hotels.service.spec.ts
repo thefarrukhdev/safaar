@@ -1084,4 +1084,42 @@ describe('HotelsService.rooms (public GET /hotels/:id/rooms)', () => {
       discount_percent: 17,
     });
   });
+
+  it('includes room_types image_url in room images for user panel', async () => {
+    const cache = { getOrSet: jest.fn() } as unknown as AppCacheService;
+    const pg = { query: jest.fn() } as unknown as jest.Mocked<PostgresService>;
+    const service = new HotelsService(cache, pg);
+
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-1',
+          code: 'STD-1',
+          base_occupancy: 2,
+          max_adults: 2,
+          max_children: 1,
+          total_inventory: 5,
+          base_price: 450000,
+          status: 'active',
+          room_type_name: { uz: 'Standard' },
+          room_type_image_url:
+            'https://cdn.safaar.uz/images/room-standard.webp',
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const rooms = await service.rooms('hotel-1');
+
+    expect(rooms).toHaveLength(1);
+    expect(rooms[0].image_url).toBe(
+      'https://cdn.safaar.uz/images/room-standard.webp',
+    );
+    expect(rooms[0].images).toEqual([
+      'https://cdn.safaar.uz/images/room-standard.webp',
+    ]);
+  });
 });

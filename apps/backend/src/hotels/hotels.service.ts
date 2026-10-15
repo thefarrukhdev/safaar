@@ -549,7 +549,7 @@ export class HotelsService {
       `SELECT hr.id::text, hr.hotel_id::text, hr.room_type_id::text, hr.code,
         hr.base_occupancy, hr.max_adults, hr.max_children,
         hr.total_inventory, hr.base_price::float8, hr.status::text,
-        rt.name AS room_type_name
+        rt.name AS room_type_name, rt.image_url AS room_type_image_url
       FROM hotel_rooms hr
       JOIN room_types rt ON rt.id = hr.room_type_id
       WHERE hr.hotel_id = $1 AND hr.status = 'active'`,
@@ -604,6 +604,22 @@ export class HotelsService {
             end_date: activePromotion.end_date,
           }
         : null;
+      const roomTypeImageUrl = r.room_type_image_url
+        ? String(r.room_type_image_url)
+        : null;
+      const mediaImages = [
+        ...(roomMediaMap.get(String(r.id)) || []),
+        ...(roomMediaMap.get(String(r.room_type_id)) || []),
+      ];
+      const allImages = Array.from(
+        new Set(
+          [
+            ...(roomTypeImageUrl ? [roomTypeImageUrl] : []),
+            ...mediaImages,
+          ].filter(Boolean),
+        ),
+      );
+
       return {
         id: r.id,
         hotel_id: r.hotel_id,
@@ -623,12 +639,8 @@ export class HotelsService {
         status: r.status,
         available: Number(r.total_inventory),
         promotion,
-        images: Array.from(
-          new Set([
-            ...(roomMediaMap.get(String(r.id)) || []),
-            ...(roomMediaMap.get(String(r.room_type_id)) || []),
-          ]),
-        ),
+        image_url: roomTypeImageUrl ?? mediaImages[0] ?? null,
+        images: allImages,
       };
     });
   }

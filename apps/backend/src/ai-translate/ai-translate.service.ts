@@ -8,7 +8,7 @@ import type {
   TranslateTextDto,
 } from './dto/ai-translate.dto';
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 
 const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
   uz: 'Uzbek',

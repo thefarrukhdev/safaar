@@ -238,6 +238,46 @@ export function useUpdateListingStatus() {
   });
 }
 
+export function useAddListingPhotos() {
+  const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      files,
+      caption,
+      category,
+    }: {
+      files: File[];
+      caption?: string;
+      category?: string;
+    }) => {
+      const hotel = await getPrimaryHotel(accessToken);
+
+      // 1. Rasmlarni batch yuklash
+      const uploadRes = await partners.uploadImagesBatch(files, accessToken);
+      const fileIds = uploadRes.items.map((it) => it.id);
+
+      // 2. Mehmonxonaga biriktirish (kategoriyasiz / ixtiyoriy)
+      await partners.addHotelImages(
+        hotel.id,
+        {
+          fileIds,
+          caption: caption?.trim() || undefined,
+          category: category || undefined,
+        },
+        accessToken,
+      );
+
+      return toListing(await partners.getHotel(hotel.id, accessToken));
+    },
+    onSuccess: (listing) => {
+      queryClient.setQueryData(listingQueryKey, listing);
+      void queryClient.invalidateQueries({ queryKey: listingQueryKey });
+    },
+  });
+}
+
 export function useAddListingPhoto() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const queryClient = useQueryClient();

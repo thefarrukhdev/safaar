@@ -127,6 +127,34 @@ export function addHotelImage(
   );
 }
 
+export function addHotelImages(
+  hotelId: string,
+  payload: {
+    fileIds?: string[];
+    fileId?: string;
+    file_ids?: string[];
+    file_id?: string;
+    caption?: string;
+    category?: string;
+  },
+  token?: string | null,
+) {
+  return request<{
+    hotel_id: string;
+    image_id?: string;
+    image_url?: string;
+    count?: number;
+    images?: Array<{ image_id: string; image_url: string }>;
+  }>(
+    `/partners/hotels/${encodeURIComponent(hotelId)}/images`,
+    {
+      method: 'POST',
+      body: payload,
+      token,
+    },
+  );
+}
+
 export function deleteHotelImage(
   hotelId: string,
   imageId: string,
@@ -200,6 +228,17 @@ export function uploadImage(file: File, token?: string | null) {
       token,
     },
   );
+}
+
+export async function uploadImagesBatch(files: File[], token?: string | null) {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  return requestFormData<{
+    items: Array<{ id: string; url: string }>;
+    count: number;
+  }>('/uploads/images/batch', formData, { token });
 }
 
 export function listRooms(hotelId: string, token?: string | null) {

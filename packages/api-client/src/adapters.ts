@@ -120,6 +120,8 @@ interface RawRoom {
   totalInventory?: number;
   available?: number;
   promotion?: RawRoomPromotion | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
   images?: string[];
 }
 
@@ -185,6 +187,17 @@ function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
   const priceSum = effective !== undefined ? Number(effective) : basePriceSum;
   const discountAmount = basePriceSum - priceSum;
 
+  const rawImages =
+    raw.images && raw.images.length > 0
+      ? raw.images
+      : raw.imageUrl || raw.image_url
+        ? [String(raw.imageUrl ?? raw.image_url)]
+        : undefined;
+  const imageUrl =
+    (raw.imageUrl ? String(raw.imageUrl) : undefined) ??
+    (raw.image_url ? String(raw.image_url) : undefined) ??
+    rawImages?.[0];
+
   return {
     id: raw.id,
     name: pickLocale(raw.name, locale),
@@ -202,7 +215,8 @@ function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
           },
         }
       : {}),
-    ...(raw.images && raw.images.length > 0 ? { images: raw.images } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(rawImages && rawImages.length > 0 ? { images: rawImages } : {}),
   };
 }
 

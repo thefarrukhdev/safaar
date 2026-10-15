@@ -48,6 +48,7 @@ export interface RoomTypeView {
   capacity: number;
   available: number;
   promotion?: RoomPromotionView;
+  imageUrl?: string;
   images?: string[];
 }
 

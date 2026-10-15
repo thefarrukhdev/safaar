@@ -35,7 +35,7 @@ export interface ListingPhoto {
   id: string;
   url: string;
   caption?: string;
-  category: PhotoCategory;
+  category?: PhotoCategory | string | null;
   isCover: boolean;
   order: number;
 }

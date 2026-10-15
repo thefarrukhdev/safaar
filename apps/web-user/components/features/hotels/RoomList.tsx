@@ -50,11 +50,11 @@ export function RoomList({
             data-testid="room-card"
             className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-colors duration-200 ease-out hover:border-slate-300 sm:flex-row"
           >
-            {room.images && room.images.length > 0 && (
+            {(room.imageUrl || (room.images && room.images.length > 0)) && (
               <div className="relative h-48 w-full shrink-0 border-b border-slate-200 sm:h-auto sm:w-56 sm:border-b-0 sm:border-r">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={room.images[0]}
+                  src={room.imageUrl || room.images?.[0]}
                   alt={room.name}
                   className="h-full w-full object-cover"
                   loading="lazy"

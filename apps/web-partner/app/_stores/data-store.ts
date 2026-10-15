@@ -124,7 +124,7 @@ export interface ListingRulesDraft {
 export interface PhotoDraft {
   url: string;
   caption?: string;
-  category: PhotoCategory;
+  category?: PhotoCategory | string | null;
 }
 
 export interface ListingLocationDraft {

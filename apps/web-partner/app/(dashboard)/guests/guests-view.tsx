@@ -1,40 +1,48 @@
 "use client";
 
-import { ArrowUpDown, ChevronLeft, ChevronRight, Crown, Phone, Search, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { BookingStatus } from "@safaar/types";
-import { Badge } from "../../_components/ui/badge";
 import { Button } from "../../_components/ui/button";
 import { EmptyState } from "../../_components/ui/empty-state";
-import { Input } from "../../_components/ui/input";
-import { PageHeader } from "../../_components/layout/page-header";
+import { WalkInDialog, type WalkInInitial } from "../../_components/domain/walk-in-dialog";
 import { useGuests } from "../../_hooks/use-guests";
 import { useReservations } from "../../_hooks/use-reservations";
-import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels, hasBuses } from "../../_lib/utils/partner-labels";
-
-type SortOption = "name-asc" | "name-desc" | "stays-desc" | "spent-desc" | "last-stay-desc";
+import type { GuestProfile } from "../../_lib/domain/types";
+import { exportGuestsToCsv } from "./export-csv";
+import { GuestsHeader } from "./guests-header";
+import { GuestsStats } from "./guests-stats";
+import { GuestsFilters } from "./guests-filters";
+import { GuestsTable } from "./guests-table";
+import type { GuestCalculatedStats, GuestStatsData, SortOption } from "./types";
 
 export function GuestsView() {
-  const { data } = useGuests();
-  const { data: reservations } = useReservations();
+  const { data = [], isLoading: isGuestsLoading } = useGuests();
+  const { data: reservations = [], isLoading: isReservationsLoading } = useReservations();
   const router = useRouter();
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
-  
+  const isBus = hasBuses(partnerType);
+  const guestPlural = isBus ? "Ijarachilar" : "Mijozlar";
+
   const [query, setQuery] = useState("");
   const [vipOnly, setVipOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("stays-desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Walk-in modal holati va prefill ma'lumotlari
+  const [walkInOpen, setWalkInOpen] = useState(false);
+  const [walkInInitial, setWalkInInitial] = useState<WalkInInitial | undefined>(undefined);
+
   /**
-   * Jonli hisoblangan mijoz statistikasi
+   * Jonli hisoblangan har bir mijoz statistikasi
    */
   const guestStats = useMemo(() => {
-    const map = new Map<string, { totalStays: number; totalSpent: number; lastStay?: string; rejectedStays: number }>();
+    const map = new Map<string, GuestCalculatedStats>();
     for (const g of data) {
       const bookings = reservations.filter(
         (r) => r.guest.id === g.id || r.guest.phone === g.phone,
@@ -48,6 +56,7 @@ export function GuestsView() {
       const completed = [...bookings]
         .filter((b) => b.status === BookingStatus.COMPLETED)
         .sort((a, b) => (b.checkIn > a.checkIn ? 1 : -1));
+
       map.set(g.id, {
         totalStays: active.length,
         totalSpent: active.reduce((sum, b) => sum + b.paidAmount, 0),
@@ -58,6 +67,34 @@ export function GuestsView() {
     return map;
   }, [data, reservations]);
 
+  /**
+   * Umumiy CRM agregatlari (StatCard'lar uchun)
+   */
+  const overallStats = useMemo<GuestStatsData>(() => {
+    const totalGuests = data.length;
+    const vipGuests = data.filter((g) => g.isVip).length;
+
+    let totalStaysSum = 0;
+    let totalRevenue = 0;
+
+    for (const stats of guestStats.values()) {
+      totalStaysSum += stats.totalStays;
+      totalRevenue += stats.totalSpent;
+    }
+
+    const avgStays = totalGuests > 0 ? totalStaysSum / totalGuests : 0;
+
+    return {
+      totalGuests,
+      vipGuests,
+      avgStays,
+      totalRevenue,
+    };
+  }, [data, guestStats]);
+
+  /**
+   * Filtrlash
+   */
   const filtered = useMemo(() => {
     let list = data;
     if (vipOnly) list = list.filter((g) => g.isVip);
@@ -70,6 +107,9 @@ export function GuestsView() {
     return list;
   }, [data, query, vipOnly]);
 
+  /**
+   * Saralash
+   */
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       const statsA = guestStats.get(a.id) ?? { totalStays: 0, totalSpent: 0, lastStay: undefined, rejectedStays: 0 };
@@ -103,10 +143,6 @@ export function GuestsView() {
     return sorted.slice(start, start + pageSize);
   }, [sorted, currentPage, pageSize]);
 
-  const vipCount = data.filter((g) => g.isVip).length;
-  const isBus = hasBuses(partnerType);
-  const guestPlural = isBus ? "Ijarachilar" : "Mijozlar";
-
   const handleQueryChange = (val: string) => {
     setQuery(val);
     setPage(1);
@@ -127,69 +163,68 @@ export function GuestsView() {
     setPage(1);
   };
 
+  const handleResetFilters = () => {
+    setQuery("");
+    setVipOnly(false);
+    setPage(1);
+  };
+
+  const handleExportCsv = () => {
+    exportGuestsToCsv(sorted, guestStats, isBus);
+  };
+
+  const handleOpenNewBooking = () => {
+    setWalkInInitial(undefined);
+    setWalkInOpen(true);
+  };
+
+  const handleNewBookingForGuest = (guest: GuestProfile) => {
+    setWalkInInitial({
+      fullName: guest.fullName,
+      phone: guest.phone,
+    });
+    setWalkInOpen(true);
+  };
+
+  const handleRowClick = (guest: GuestProfile) => {
+    router.push(`/guests/${guest.id}`);
+  };
+
+  const isInitialLoading = isGuestsLoading || isReservationsLoading;
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow={labels.guestLabel}
-        title={guestPlural}
-        description={`${labels.guestLabel} profili, ijaralar va xaridlar tarixi.`}
+      {/* 1. Header & Actions */}
+      <GuestsHeader
+        labels={labels}
+        guestPlural={guestPlural}
+        totalGuests={data.length}
+        onExportCsv={handleExportCsv}
+        onNewBooking={handleOpenNewBooking}
       />
 
-      {/* Qidiruv, saralash va filtr boshqaruv paneli */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-[var(--border)] bg-[var(--surface)] p-3">
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
-          <div className="relative max-w-sm flex-1">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-              aria-hidden
-            />
-            <Input
-              type="search"
-              placeholder="Ism yoki telefon bo'yicha qidirish..."
-              className="pl-9 h-9 text-sm"
-              value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
-              aria-label={`${guestPlural} ichidan qidirish`}
-            />
-          </div>
+      {/* 2. CRM KPI Stats */}
+      <GuestsStats
+        stats={overallStats}
+        vipOnly={vipOnly}
+        onToggleVip={handleVipToggle}
+        isLoading={isInitialLoading}
+      />
 
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--surface-muted)] transition-colors">
-            <input
-              type="checkbox"
-              checked={vipOnly}
-              onChange={(e) => handleVipToggle(e.target.checked)}
-              className="h-3.5 w-3.5 accent-brand-700 rounded"
-            />
-            <Crown className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-            <span>Faqat VIP</span>
-            {vipCount > 0 && (
-              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                {vipCount}
-              </span>
-            )}
-          </label>
-        </div>
+      {/* 3. Filtrlash va saralash */}
+      <GuestsFilters
+        query={query}
+        onQueryChange={handleQueryChange}
+        vipOnly={vipOnly}
+        onVipToggle={handleVipToggle}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        vipCount={overallStats.vipGuests}
+        guestPlural={guestPlural}
+        onReset={handleResetFilters}
+      />
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
-            <ArrowUpDown className="h-3.5 w-3.5" aria-hidden />
-            <span>Saralash:</span>
-          </div>
-          <select
-            aria-label="Mijozlarni saralash"
-            value={sortBy}
-            onChange={(e) => handleSortChange(e.target.value as SortOption)}
-            className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-xs font-medium focus:border-brand-600 focus:outline-none"
-          >
-            <option value="stays-desc">Tashriflar soni (ko'pdan kamga)</option>
-            <option value="spent-desc">Sarflangan summa (yuqoridan pastga)</option>
-            <option value="last-stay-desc">Oxirgi tashrif (yaqindan uzoqqa)</option>
-            <option value="name-asc">Ism (A → Z)</option>
-            <option value="name-desc">Ism (Z → A)</option>
-          </select>
-        </div>
-      </div>
-
+      {/* 4. Jadval yoki bo'sh holat */}
       {sorted.length === 0 ? (
         <EmptyState
           icon={<Users className="h-10 w-10" aria-hidden />}
@@ -200,15 +235,11 @@ export function GuestsView() {
               : `${labels.guestLabel}lar bron qilganda shu yerda avtomatik paydo bo'ladi.`
           }
           action={
-            (vipOnly || query) ? (
+            vipOnly || query ? (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setQuery("");
-                  setVipOnly(false);
-                  setPage(1);
-                }}
+                onClick={handleResetFilters}
               >
                 Filtrlarni tozalash
               </Button>
@@ -216,157 +247,31 @@ export function GuestsView() {
           }
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="overflow-x-auto rounded-card border border-[var(--border)] bg-[var(--surface)]">
-            <table className="w-full text-sm whitespace-nowrap">
-              <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
-                <tr>
-                  <th className="px-4 py-3">{labels.guestLabel}</th>
-                  <th className="px-4 py-3">Aloqa</th>
-                  <th className="px-4 py-3">{isBus ? "Ijaralar" : "Tashriflar"}</th>
-                  <th className="px-4 py-3">Sarflagan</th>
-                  <th className="px-4 py-3">{isBus ? "Oxirgi ijara" : "Oxirgi tashrif"}</th>
-                  <th className="px-4 py-3">Belgilar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.map((g) => {
-                  const stats = guestStats.get(g.id) ?? { totalStays: 0, totalSpent: 0, lastStay: undefined, rejectedStays: 0 };
-                  return (
-                    <tr
-                      key={g.id}
-                      onClick={() => router.push(`/guests/${g.id}`)}
-                      className="cursor-pointer border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-sm font-bold text-brand-700 dark:from-brand-900/60 dark:to-brand-800/40 dark:text-brand-300">
-                            {g.fullName
-                              .trim()
-                              .split(/\s+/)
-                              .filter(Boolean)
-                              .map((w) => w[0])
-                              .slice(0, 2)
-                              .join("")}
-                          </span>
-                          <div className="flex min-w-0 flex-col">
-                            <span className="flex items-center gap-1.5 truncate font-medium">
-                              {g.fullName}
-                              {g.isVip && (
-                                <Crown
-                                  className="h-3.5 w-3.5 shrink-0 text-amber-500"
-                                  aria-label="VIP"
-                                />
-                              )}
-                            </span>
-                            {g.email && (
-                              <span className="truncate text-xs text-[var(--muted-foreground)]">
-                                {g.email}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <a
-                          href={g.phone.startsWith("+") ? `tel:${g.phone}` : `tel:+${g.phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-brand-700 hover:underline dark:text-brand-300"
-                        >
-                          <Phone className="h-3 w-3" aria-hidden />
-                          {formatPhone(g.phone)}
-                        </a>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-semibold">{stats.totalStays}</span>
-                        <span className="ml-1 text-xs text-[var(--muted-foreground)]">
-                          marta
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {formatMoney(stats.totalSpent)}
-                      </td>
-                      <td className="px-4 py-3 text-[var(--muted-foreground)]">
-                        {stats.lastStay ? formatDate(stats.lastStay) : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {stats.rejectedStays > 0 && (
-                            <Badge tone="danger">
-                              {stats.rejectedStays} ta rad etilgan
-                            </Badge>
-                          )}
-                          {g.tags.map((t) => (
-                            <Badge key={t} tone="brand">
-                              {t}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Sahifalash (Pagination) boshqaruvi */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-2 text-xs text-[var(--muted-foreground)]">
-            <div>
-              Jami {sorted.length} ta natijadan{" "}
-              <span className="font-semibold text-[var(--foreground)]">
-                {(currentPage - 1) * pageSize + 1}-
-                {Math.min(currentPage * pageSize, sorted.length)}
-              </span>{" "}
-              ko'rsatilmoqda
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span>Sahifada:</span>
-                <select
-                  aria-label="Sahifadagi qatorlar soni"
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs focus:outline-none"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage(Math.max(1, currentPage - 1))}
-                  aria-label="Oldingi sahifa"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="px-2 font-medium text-[var(--foreground)]">
-                  {currentPage} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-                  aria-label="Keyingi sahifa"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <GuestsTable
+          guests={paginated}
+          guestStats={guestStats}
+          isBus={isBus}
+          guestLabel={labels.guestLabel}
+          totalFilteredCount={sorted.length}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          onRowClick={handleRowClick}
+          onNewBookingForGuest={handleNewBookingForGuest}
+        />
       )}
+
+      {/* 5. Walk-in Dialog (Yangi bron yaratish) */}
+      <WalkInDialog
+        open={walkInOpen}
+        onClose={() => {
+          setWalkInOpen(false);
+          setWalkInInitial(undefined);
+        }}
+        initialValues={walkInInitial}
+      />
     </div>
   );
 }

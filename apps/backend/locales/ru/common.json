@@ -1,0 +1,111 @@
+{
+  "brand": "Safaar",
+  "promo": "🔥 Летняя скидка! 20% на первое бронирование — промокод SAFAAR20",
+  "nav": {
+    "home": "Главная",
+    "all": "Все",
+    "hotels": "Отели",
+    "dachas": "Дачи",
+    "sanatoriums": "Санатории",
+    "resorts": "Курорты",
+    "restaurants": "Рестораны",
+    "attractions": "Экскурсии",
+    "transport": "Транспорт",
+    "carRent": "Аренда авто",
+    "transfers": "Трансфер",
+    "vipTaxi": "VIP Такси",
+    "about": "О нас",
+    "help": "Помощь",
+    "terms": "Публичная Оферта",
+    "search": "Поиск",
+    "favorites": "Избранное",
+    "bookings": "Мои брони",
+    "profile": "Профиль",
+    "mobileNavAria": "Мобильная навигация",
+    "menu": "Меню",
+    "language": "Язык"
+  },
+  "actions": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "logout": "Выйти",
+    "search": "Поиск",
+    "account": "Кабинет",
+    "details": "Подробнее",
+    "close": "Закрыть",
+    "back": "Назад",
+    "previous": "Предыдущий",
+    "next": "Следующий",
+    "clearAll": "Очистить все",
+    "favorite": "В избранное",
+    "cancel": "Отмена"
+  },
+  "language": "Язык",
+  "propertyTypes": {
+    "hotel": "Отель",
+    "dacha": "Дача",
+    "sanatorium": "Санаторий",
+    "resort": "Курорт"
+  },
+  "search": {
+    "hotelsTab": "Отель",
+    "city": "Город",
+    "cityPlaceholder": "Выберите город",
+    "checkIn": "Заезд",
+    "checkOut": "Выезд",
+    "guests": "Гости",
+    "submit": "Поиск",
+    "guestsSuffix": "гостей",
+    "selectDate": "Выберите дату",
+    "checkInCheckOut": "Заезд — Отъезд",
+    "decreaseGuests": "Уменьшить количество гостей",
+    "increaseGuests": "Увеличить количество гостей"
+  },
+  "chat": {
+    "supportAria": "Служба поддержки Safaar",
+    "loginRequired": "Войдите в аккаунт для отправки сообщений.",
+    "loginNeeded": "Требуется вход",
+    "newTicket": "Новое обращение",
+    "refreshAria": "Обновить",
+    "closeAria": "Закрыть",
+    "loadingTickets": "Загрузка тикетов...",
+    "emptyTicketPrompt": "Напишите ваш вопрос для создания нового обращения.",
+    "loginBtn": "Войти",
+    "inputPlaceholder": "Напишите сообщение...",
+    "sendAria": "Отправить",
+    "sendError": "Произошла ошибка при отправке сообщения.",
+    "guestPrompt": "Мы получили ваше сообщение! Пожалуйста, введите ваше имя и номер телефона, чтобы наши специалисты могли связаться с вами.",
+    "guestSuccess": "Спасибо! Ваши данные получены. Мы скоро свяжемся с вами.",
+    "nameLabel": "Ваше имя",
+    "phoneLabel": "Ваш номер телефона",
+    "submitDetails": "Отправить"
+  },
+  "pwa": {
+    "installTitle": "Установите приложение Safaar",
+    "installSubtitle": "Быстрый доступ и автономный режим",
+    "installButton": "Установить",
+    "retryConnection": "Повторить подключение",
+    "connectionRestored": "Интернет-соединение восстановлено"
+  },
+  "footer": {
+    "tagline": "Бронирование отелей и зон отдыха по всему Узбекистану.",
+    "rights": "Все права защищены.",
+    "phone": "+998 90 449 08 93",
+    "email": "info@safaar.uz",
+    "address": "г. Самарканд",
+    "supportLabel": "(Поддержка)",
+    "secureBooking": "Безопасное и гарантированное бронирование",
+    "securePayments": "Безопасные способы оплаты",
+    "partner": "Партнёры",
+    "sections": {
+      "platform": "Платформа",
+      "company": "Компания",
+      "partners": "Партнёрство",
+      "contact": "Контакты"
+    }
+  },
+  "currency": "сум",
+  "card": {
+    "noImage": "Нет фото"
+  }
+}

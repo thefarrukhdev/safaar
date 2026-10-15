@@ -1,0 +1,41 @@
+{
+  "restaurants": {
+    "badge": "National & International Cuisine",
+    "title": "Restaurants & National Dishes",
+    "subtitle": "Top rated restaurants, national eateries, and cozy teahouses across Uzbekistan.",
+    "searchPlaceholder": "Search by restaurant name or cuisine...",
+    "allCities": "All Cities",
+    "avgCheck": "Avg check"
+  },
+  "attractions": {
+    "badge": "Travel & Heritage",
+    "title": "Attractions & Sightseeing",
+    "subtitle": "Gems of the Silk Road, ancient architectural monuments, and scenic mountain views.",
+    "searchPlaceholder": "Search by attraction or city...",
+    "allPlaces": "All Places",
+    "categories": {
+      "all": "All Places",
+      "historical": "Historical Site",
+      "unesco": "UNESCO Heritage",
+      "nature": "Nature & Leisure"
+    },
+    "bestTime": "Best time:"
+  },
+  "transport": {
+    "badge": "Transport & Transfers",
+    "title": "Car Rentals & Airport Transfers",
+    "subtitle": "Car rental services, VIP taxis, and airport transfers for comfortable travel across Uzbekistan.",
+    "searchPlaceholder": "Search by car brand or city...",
+    "allTypes": "All Types",
+    "categories": {
+      "all": "All Types",
+      "rent": "Car Rental (Rent a Car)",
+      "transfer": "Airport Transfer",
+      "vip": "VIP & Business Taxi"
+    },
+    "perDay": "per day",
+    "driverIncluded": "With Driver",
+    "withoutDriver": "Self-drive",
+    "seats": "seats"
+  }
+}

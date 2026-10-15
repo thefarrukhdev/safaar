@@ -1,0 +1,87 @@
+{
+  "error": "Не удалось загрузить данные. Проверьте, запущен ли backend.",
+  "about": "Описание",
+  "address": "Адрес",
+  "amenities": {
+    "title": "Удобства",
+    "showAll": "Показать все {count} удобств"
+  },
+  "checkIn": "Заезд",
+  "checkOut": "Выезд",
+  "rooms": {
+    "title": "Номера",
+    "noRoomsFound": "Других номеров не найдено."
+  },
+  "perNight": "ночь",
+  "capacity": "Вместимость",
+  "guests": "гостей",
+  "available": "свободно",
+  "soldOut": "Нет свободных номеров",
+  "discountUntil": "до {date}",
+  "book": "Забронировать",
+  "reviews": "Отзывы",
+  "noReviews": "Пока нет отзывов.",
+  "ratingSummary": "На основе {count} отзывов",
+  "from": "от",
+  "selectRoom": "Выбрать номер",
+  "bookingBox": "Бронирование",
+  "locationTitle": "Расположение",
+  "highlights": {
+    "centralLocationTitle": "Центральное расположение",
+    "centralLocationDesc": "Высоко оценено недавними гостями",
+    "freeCancellationTitle": "Бесплатная отмена",
+    "freeCancellationDesc": "Отмена в любое время до заезда",
+    "superbRatingTitle": "Превосходный рейтинг",
+    "superbRatingDesc": "Гости высоко оценили чистоту"
+  },
+  "nav": {
+    "photos": "Фото",
+    "amenities": "Удобства",
+    "rules": "Правила",
+    "rooms": "Номера",
+    "reviews": "Отзывы",
+    "location": "Расположение"
+  },
+  "booking": {
+    "checkIn": "Заезд",
+    "checkOut": "Выезд",
+    "addDate": "Добавить дату",
+    "guests": "Гости",
+    "oneGuest": "1 гость",
+    "checkAvailability": "Проверить наличие",
+    "noChargeNotice": "Списание пока не производится",
+    "nightsCount": "{count} ночей",
+    "serviceFee": "Сервисный сбор",
+    "total": "Итого"
+  },
+  "location": {
+    "noCoordinates": "Точные координаты расположения отсутствуют",
+    "openInMaps": "Открыть в Google Maps"
+  },
+  "gallery": {
+    "mainViewAlt": "Основной вид",
+    "photoCountSuffix": "фото",
+    "allPhotos": "Все фотографии"
+  },
+  "rulesSection": {
+    "title": "Правила отеля",
+    "checkIn": "Время заезда (Check-in)",
+    "checkInFrom": "с {time}",
+    "checkOut": "Время выезда (Check-out)",
+    "checkOutUntil": "до {time}",
+    "cancellation": "Правила отмены",
+    "cancellation_FLEXIBLE": "Гибкие (Полный возврат)",
+    "cancellation_MODERATE": "Умеренные (При определенных условиях)",
+    "cancellation_STRICT": "Строгие (Без возврата или частично)",
+    "cancellation_NON_REFUNDABLE": "Невозвратный (Без возврата)",
+    "smoking": "Курение",
+    "smokingAllowed": "Курение разрешено",
+    "smokingNotAllowed": "Курение запрещено",
+    "pets": "Питомцы",
+    "petsAllowed": "Можно с питомцами",
+    "petsNotAllowed": "Без питомцев",
+    "children": "Дети",
+    "childrenAllowed": "Можно с детьми",
+    "childrenNotAllowed": "Только для взрослых"
+  }
+}

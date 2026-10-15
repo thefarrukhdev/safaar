@@ -1,0 +1,99 @@
+{
+  "title": "Детали брони",
+  "number": "Номер брони",
+  "status": "Статус",
+  "total": "Итоговая сумма",
+  "payment": "Оплата",
+  "pay": "Перейти к оплате",
+  "voucher": "Скачать ваучер",
+  "backHome": "На главную",
+  "error": "Не удалось загрузить данные брони.",
+  "confirmedTitle": "Бронь подтверждена!",
+  "confirmedSubtitle": "Поздравляем! Ваша бронь успешно подтверждена.",
+  "failedTitle": "Оплата не прошла",
+  "failedSubtitle": "Произошла ошибка при оплате. Попробуйте снова.",
+  "awaitingCashTitle": "Ожидается наличная оплата",
+  "awaitingCashSubtitle": "Оплатите наличными при прибытии.",
+  "receiptSummary": "Сводка чека",
+  "createdAt": "Дата брони",
+  "actions": {
+    "printVoucher": "Распечатать ваучер",
+    "cancelBooking": "Отменить",
+    "myBookings": "Мои брони",
+    "backHome": "На главную",
+    "error": "Произошла ошибка",
+    "userCancelledReason": "Отменено пользователем"
+  },
+  "cancelModal": {
+    "title": "Отмена брони",
+    "calculating": "Вычисляется...",
+    "rulesIntro": "Условия отмены:",
+    "paidAmount": "Оплаченная сумма:",
+    "refundAmount": "Сумма возврата:",
+    "penalty": "Штраф:",
+    "penaltyAmount": "Размер штрафа:",
+    "policyLabel": "Правило:",
+    "cancelling": "Отменяется...",
+    "confirm": "Подтвердить",
+    "confirmCancel": "Подтвердить отмену",
+    "cancel": "Назад"
+  },
+  "chat": {
+    "title": "Чат с отелем",
+    "empty": "Сообщений пока нет...",
+    "placeholder": "Напишите сообщение...",
+    "loading": "Загрузка сообщений...",
+    "send": "Отправить"
+  },
+  "statuses": {
+    "PENDING": "Ожидание",
+    "AWAITING_PAYMENT": "Ожидает оплаты",
+    "AWAITING_PARTNER_CONFIRMATION": "Ожидает подтверждения партнёра",
+    "CONFIRMED": "Подтверждено",
+    "CANCELLED": "Отменено",
+    "COMPLETED": "Завершено",
+    "EXPIRED": "Истекло"
+  },
+  "paymentStatuses": {
+    "pending": "Ожидание",
+    "awaiting_cash": "Ожидает наличной оплаты",
+    "processing": "В обработке",
+    "paid": "Оплачено",
+    "failed": "Неуспешно",
+    "refunded": "Возвращено",
+    "reversed": "Отменено банком"
+  },
+  "missing": {
+    "BronSummasi": "Сумма брони",
+    "TolovHaqi": "комиссия (",
+    "JamiTolanadigan": "Итого к оплате",
+    "SizAvvalBoshlagan": "Оплата через",
+    "OrqaliTolovHali": "все еще ожидается. Завершите ее сначала (через кнопку ниже) или повторите попытку через несколько минут."
+  },
+  "refundedTitle": "Платеж возвращен",
+  "refundedSubtitle": "Запрошенный возврат выполнен. Средства будут возвращены на вашу карту.",
+  "refundedReversedSubtitle": "Платеж отменен банком, и средства возвращены.",
+  "processingTitle": "Платеж проверяется",
+  "processingSubtitle": "Ожидается подтверждение платежа провайдером. Это может занять несколько минут — обновите страницу, чтобы проверить статус.",
+  "cancelledTitle": "Бронирование отменено",
+  "cancelledSubtitle": "Это бронирование отменено, и инвентарь освобожден.",
+  "reselectPaymentMethod": "Выберите способ оплаты снова",
+  "selectPaymentMethod": "Выберите способ оплаты",
+  "refreshStatus": "Обновить статус",
+  "paymentInstructions": "Оплатите через Click, Payme, Uzcard, Humo, Visa или Mastercard. Комиссия (fee) за оплату картой рассчитывается автоматически.",
+  "retryForm": {
+    "payNow": "Продолжить",
+    "toBePaid": "К оплате",
+    "cardFee": "Комиссия карты (fee):",
+    "totalDeducted": "Итого к списанию:"
+  },
+  "paymentErrors": {
+    "AUTH_TOKEN_INVALID": "Сессия истекла. Пожалуйста, войдите снова.",
+    "AUTH_SESSION_REVOKED": "Сессия отозвана. Пожалуйста, войдите снова.",
+    "BOOKING_FORBIDDEN": "Это бронирование вам не принадлежит.",
+    "BOOKING_EXPIRED": "Бронирование не найдено или истек срок.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "Способ оплаты недоступен. Выберите другой.",
+    "INVALID_BOOKING": "Бронирование не найдено.",
+    "ERROR": "Ошибка при оплате. Попробуйте еще раз."
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "title": "Shaxsiy kabinet",
+  "nav": {
+    "profile": "Profil",
+    "bookings": "Bronlarim",
+    "favorites": "Sevimlilar",
+    "bonuses": "Bonuslar",
+    "refunds": "Qaytarishlar",
+    "ariaLabel": "Kabinet bo'limlari"
+  },
+  "profile": {
+    "title": "Profil ma'lumotlari",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "email": "Email",
+    "phone": "Telefon",
+    "phoneHint": "Telefon raqamni o'zgartirib bo'lmaydi.",
+    "memberSince": "Ro'yxatdan o'tgan",
+    "save": "Saqlash",
+    "saved": "Ma'lumotlar saqlandi.",
+    "error": "Saqlashda xatolik yuz berdi."
+  },
+  "bookings": {
+    "title": "Mening bronlarim",
+    "empty": "Hozircha bronlaringiz yo'q.",
+    "emptyDescription": "Sizda hali tasdiqlangan bronlar mavjud emas. Ajoyib mehmonxonalarni, restoranlarni yoki avtomobillarni band qiling!",
+    "emptyAction": "Bron qilishni boshlash",
+    "number": "Bron raqami",
+    "status": "Holat",
+    "total": "Summa",
+    "type": "Tur",
+    "hotel": "Mehmonxona",
+    "bus": "Mashina ijarasi",
+    "restaurant": "Restoran",
+    "view": "Ko'rish",
+    "statuses": {
+      "PENDING": "Kutilmoqda",
+      "AWAITING_PAYMENT": "To'lov kutilmoqda",
+      "AWAITING_PARTNER_CONFIRMATION": "Hamkor tasdig'i kutilmoqda",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan",
+      "COMPLETED": "Yakunlangan",
+      "EXPIRED": "Muddati o'tgan"
+    }
+  },
+  "favorites": {
+    "title": "Sevimlilar",
+    "empty": "Sevimlilar ro'yxati bo'sh.",
+    "hotel": "Mehmonxona",
+    "view": "Ko'rish"
+  },
+  "bonuses": {
+    "title": "Bonuslar",
+    "balance": "Bonus balansi",
+    "empty": "Bonus tarixi hozircha bo'sh.",
+    "history": "Tarix",
+    "disclaimer": "*Safarlar va bron qilishlar uchun to'plangan bonus balingiz."
+  },
+  "settings": {
+    "updated": "Sozlamalar yangilandi!",
+    "updateFailed": "Yangilashda xatolik yuz berdi",
+    "exportRequested": "Ma'lumotlarni yuklab olish so'rovi yuborildi!",
+    "exportFailed": "So'rov yuborishda xatolik",
+    "deleteConfirm": "Rostdan ham akkauntni o'chirishni so'raysizmi?",
+    "deleteRequested": "Akkauntni o'chirish so'rovi yuborildi!",
+    "deleteFailed": "O'chirish so'rovida xatolik yuz berdi",
+    "notificationPrefs": "Bildirishnoma sozlamalari",
+    "emailAlerts": "Email xabarnomalari",
+    "smsAlerts": "SMS xabarnomalari",
+    "savePrefs": "Sozlamalarni saqlash",
+    "dataManagement": "Ma'lumotlarni boshqarish",
+    "requestExport": "Ma'lumotlarni yuklab olish",
+    "requestDeletion": "Akkauntni o'chirishni so'rash"
+  },
+  "avatar": {
+    "upload": "Yuklash",
+    "delete": "O'chirish",
+    "confirmDelete": "Profil rasmini o'chirishni xohlaysizmi?",
+    "uploadFailed": "Rasmni yuklashda xatolik",
+    "deleteFailed": "Rasmni o'chirishda xatolik"
+  },
+  "refunds": {
+    "title": "Mening qaytarishlarim",
+    "empty": "Hozircha qaytarishlar yo'q.",
+    "reason": "Sabab",
+    "status": "Holat"
+  }
+}

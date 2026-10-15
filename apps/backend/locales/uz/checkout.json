@@ -1,0 +1,117 @@
+{
+  "title": "Bron qilish",
+  "guestDetails": "Mehmon ma'lumotlari",
+  "fullName": "To'liq ism",
+  "fullNamePlaceholder": "Ism Familiya",
+  "firstName": "Ism",
+  "lastName": "Familiya",
+  "email": "Elektron pochta",
+  "phone": "Telefon raqami",
+  "checkIn": "Kirish sanasi",
+  "checkOut": "Chiqish sanasi",
+  "guests": "Mehmonlar",
+  "paymentMethod": "To'lov usuli",
+  "methods": {
+    "click": "Click",
+    "payme": "Payme",
+    "uzcard": "Uzcard",
+    "humo": "Humo",
+    "cash": "Naqd to'lov"
+  },
+  "summary": "Buyurtma xulosasi",
+  "nights": "kecha",
+  "perNight": "kecha",
+  "total": "Jami",
+  "confirm": "Bronni tasdiqlash",
+  "needDates": "Davom etish uchun kirish va chiqish sanasini tanlang.",
+  "error": "Bron qilishda xatolik yuz berdi. Qayta urinib ko'ring.",
+  "specialRequests": "Maxsus so'rovlar (ixtiyoriy)",
+  "specialRequestsPlaceholder": "Mehmonxonaga qo'shimcha iltimoslaringiz bo'lsa yozing...",
+  "promoCode": "Promokod (agar bo'lsa)",
+  "applyPromo": "Qo'llash",
+  "promoApplied": "Chegirma qo'llanildi:",
+  "agreeTermsPrefix": "Men ",
+  "termsLink": "Ommaviy Oferta",
+  "agreeTermsSuffix": " shartlariga roziman.",
+  "payButton": "To'lash",
+  "paymentMethods": {
+    "click": {
+      "title": "Click Pass / Evolution",
+      "desc": "Click Evolution ilovasi yoki *880# USSD orqali zudlik bilan to'lash",
+      "badges": [
+        "1-click to'lov",
+        "Instant confirmation"
+      ]
+    },
+    "payme": {
+      "title": "Payme",
+      "desc": "Payme ilovasi yoki rasmiy sayti orqali xavfsiz va tezkor to'lov",
+      "badges": [
+        "0% komissiya",
+        "Zudlik bilan tasdiqlash"
+      ]
+    },
+    "card": {
+      "title": "Uzcard / Humo (Plastik karta)",
+      "desc": "Barcha milliy Uzcard va Humo plastik kartalari orqali to'g'ridan-to'g'ri to'lov",
+      "badges": [
+        "Milliy karta"
+      ]
+    },
+    "cash": {
+      "title": "Joyida to'lash",
+      "desc": "Oldindan to'lov talab qilinmaydi. Mehmonxonaga kelganda qabulxonada to'lanadi",
+      "badges": ["0% to'lov haqi", "Oldindan to'lovsiz"]
+    },
+    "local_card": {
+      "title": "Karta orqali to'lash",
+      "desc": "Uzcard, Humo, Visa va Mastercard orqali xavfsiz to'lov",
+      "badges": ["3D-Secure", "Onlayn to'lov"]
+    },
+    "intl_card": {
+      "title": "Xalqaro kartalar",
+      "desc": "Visa, Mastercard orqali xavfsiz to'lov",
+      "badges": ["3D-Secure"]
+    }
+  },
+  "errors": {
+    "ROOM_ALREADY_BOOKED": "Tanlangan xona ushbu sanalarda allaqachon band qilingan.",
+    "VEHICLE_ALREADY_BOOKED": "Tanlangan avtomobil ushbu sanalarda allaqachon band qilingan.",
+    "BOOKING_DATES_INVALID": "Bron qilish sanalari noto'g'ri tanlangan.",
+    "GUEST_DETAILS_REQUIRED": "Mehmon ma'lumotlari kiritilishi shart.",
+    "PROMO_INVALID": "Promokod noto'g'ri yoki muddati o'tgan.",
+    "PROMO_LIMIT_REACHED": "Promokoddan foydalanish limiti tugagan.",
+    "TERMS_NOT_ACCEPTED": "Davom etish uchun Ommaviy Oferta shartlariga rozilik bering.",
+    "PHONE_REQUIRED": "Naqd pul bilan to'lash uchun telefon raqamingizni kiritishingiz shart.",
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Kechirasiz, ushbu telefon raqami avvalgi kelmaganlik tufayli naqd to'lovdan vaqtincha cheklangan. Iltimos, onlayn karta orqali to'lang.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "Bu to'lov usuli hozircha mavjud emas, boshqasini tanlang."
+  },
+  "otp": {
+    "title": "SMS orqali tasdiqlash",
+    "description": "{phone} raqamiga yuborilgan 6 xonali kodni kiriting",
+    "inputPlaceholder": "------",
+    "timerLabel": "Amal qilish vaqti:",
+    "resendButton": "Kodni qayta yuborish",
+    "verifyButton": "Tasdiqlash",
+    "cancelButton": "Bekor qilish",
+    "verifying": "Tekshirilmoqda...",
+    "verified": "Tasdiqlandi!",
+    "resending": "Yuborilmoqda...",
+    "errors": {
+      "INVALID_OTP": "SMS kod noto'g'ri kiritildi. Qaytadan urinib ko'ring.",
+      "OTP_EXPIRED": "SMS kodning amal qilish muddati tugadi. Iltimos, yangi kod so'rang.",
+      "TOO_MANY_ATTEMPTS": "Urinishlar soni oshib ketdi. Iltimos, yangi kod so'rang.",
+      "RESEND_COOLDOWN": "Yangi kod so'rash uchun biroz kuting.",
+      "BOOKING_CANCELLED": "Ushbu bron bekor qilingan.",
+      "INCOMPLETE_CODE": "Iltimos, 6 xonali SMS kodni to'liq kiriting.",
+      "UNKNOWN": "Xatolik yuz berdi. Qayta urinib ko'ring."
+    }
+  },
+  "secureCardNotice": "Karta ma'lumotlarini keyingi qadamda to'lov provayderining o'z xavfsiz sahifasida kiritasiz — SAFAAR karta raqamingizni so'ramaydi va saqlamaydi.",
+  "baseAmount": "Asosiy summa",
+  "paymentFee": "To'lov komissiyasi",
+  "optional": "(ixtiyoriy)",
+  "bookingSuccess": "Muvaffaqiyatli!",
+  "bookingIdLabel": "Bron ID",
+  "restaurantCashNotice": "Stol band qilinadi. To'lov restoranga yetib kelganingizda amalga oshiriladi."
+}

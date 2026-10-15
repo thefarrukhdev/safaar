@@ -1,0 +1,120 @@
+{
+  "title": "Checkout",
+  "guestDetails": "Guest details",
+  "fullName": "Full name",
+  "fullNamePlaceholder": "First Last",
+  "firstName": "First name",
+  "lastName": "Last name",
+  "email": "Email",
+  "phone": "Phone number",
+  "checkIn": "Check-in date",
+  "checkOut": "Check-out date",
+  "guests": "Guests",
+  "paymentMethod": "Payment method",
+  "methods": {
+    "click": "Click",
+    "payme": "Payme",
+    "uzcard": "Uzcard",
+    "humo": "Humo",
+    "cash": "Cash"
+  },
+  "summary": "Order summary",
+  "nights": "nights",
+  "perNight": "night",
+  "total": "Total",
+  "confirm": "Confirm booking",
+  "needDates": "Select check-in and check-out dates to continue.",
+  "error": "Booking failed. Please try again.",
+  "specialRequests": "Special requests (optional)",
+  "specialRequestsPlaceholder": "Write any special requests or preferences for the hotel...",
+  "promoCode": "Promo code (if any)",
+  "applyPromo": "Apply",
+  "promoApplied": "Discount applied:",
+  "agreeTermsPrefix": "I agree to the ",
+  "termsLink": "Public Offer",
+  "agreeTermsSuffix": " terms.",
+  "payButton": "Pay",
+  "paymentMethods": {
+    "click": {
+      "title": "Click Pass / Evolution",
+      "desc": "Instant payment via Click Evolution app or USSD *880#",
+      "badges": [
+        "1-click payment",
+        "Instant confirmation"
+      ]
+    },
+    "payme": {
+      "title": "Payme",
+      "desc": "Secure and fast payment via Payme app or website",
+      "badges": [
+        "0% commission",
+        "Instant confirmation"
+      ]
+    },
+    "card": {
+      "title": "Uzcard / Humo (Bank card)",
+      "desc": "Direct payment via all national Uzcard and Humo cards",
+      "badges": [
+        "3D-Secure protection",
+        "National card"
+      ]
+    },
+    "cash": {
+      "title": "Pay on site",
+      "desc": "No prepayment required. Pay at the front desk upon arrival",
+      "badges": ["0% fee", "No prepayment"]
+    },
+    "local_card": {
+      "title": "Pay with Card",
+      "desc": "Secure payment via Uzcard, Humo, Visa and Mastercard",
+      "badges": ["3D-Secure", "Online payment"]
+    },
+    "intl_card": {
+      "title": "International cards",
+      "desc": "Secure payment via Visa, Mastercard",
+      "badges": [
+        "3D-Secure safe"
+      ]
+    }
+  },
+  "errors": {
+    "ROOM_ALREADY_BOOKED": "The selected room is already booked for these dates.",
+    "VEHICLE_ALREADY_BOOKED": "The selected vehicle is already booked for these dates.",
+    "BOOKING_DATES_INVALID": "Invalid booking dates.",
+    "GUEST_DETAILS_REQUIRED": "Guest details are required.",
+    "PROMO_INVALID": "Promo code is invalid or expired.",
+    "PROMO_LIMIT_REACHED": "Promo code usage limit reached.",
+    "TERMS_NOT_ACCEPTED": "Please agree to the Public Offer to continue.",
+    "PHONE_REQUIRED": "A phone number is required for cash payment.",
+    "CUSTOMER_BLOCKED_FROM_CASH_BOOKING": "Sorry, this phone number is temporarily restricted from cash payment due to a previous no-show. Please pay online with a card.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "This payment method is currently unavailable, please choose another."
+  },
+  "otp": {
+    "title": "SMS Verification",
+    "description": "Enter the 6-digit code sent to {phone}",
+    "inputPlaceholder": "------",
+    "timerLabel": "Valid for:",
+    "resendButton": "Resend code",
+    "verifyButton": "Verify",
+    "cancelButton": "Cancel",
+    "verifying": "Verifying...",
+    "verified": "Verified!",
+    "resending": "Sending...",
+    "errors": {
+      "INVALID_OTP": "Incorrect code. Please try again.",
+      "OTP_EXPIRED": "The code has expired. Please request a new one.",
+      "TOO_MANY_ATTEMPTS": "Too many attempts. Please request a new code.",
+      "RESEND_COOLDOWN": "Please wait before requesting a new code.",
+      "BOOKING_CANCELLED": "This booking has been cancelled.",
+      "INCOMPLETE_CODE": "Please enter the full 6-digit SMS code.",
+      "UNKNOWN": "An error occurred. Please try again."
+    }
+  },
+  "secureCardNotice": "You'll enter your card details on the next step, on the payment provider's own secure page — SAFAAR never asks for or stores your card number.",
+  "baseAmount": "Base amount",
+  "paymentFee": "Payment fee",
+  "optional": "(optional)",
+  "bookingSuccess": "Success!",
+  "bookingIdLabel": "Booking ID",
+  "restaurantCashNotice": "Table is reserved. Payment will be made upon arrival at the restaurant."
+}

@@ -1,0 +1,99 @@
+{
+  "title": "Booking details",
+  "number": "Booking number",
+  "status": "Status",
+  "total": "Total amount",
+  "payment": "Payment",
+  "pay": "Proceed to payment",
+  "voucher": "Download voucher",
+  "backHome": "Back home",
+  "error": "Failed to load booking details.",
+  "confirmedTitle": "Booking Confirmed!",
+  "confirmedSubtitle": "Congratulations! Your booking has been successfully confirmed.",
+  "failedTitle": "Payment Failed",
+  "failedSubtitle": "An error occurred during payment. Please try again.",
+  "awaitingCashTitle": "Awaiting Cash Payment",
+  "awaitingCashSubtitle": "Please pay in cash upon arrival.",
+  "receiptSummary": "Receipt Summary",
+  "createdAt": "Booking Date",
+  "actions": {
+    "printVoucher": "Print Voucher",
+    "cancelBooking": "Cancel Booking",
+    "myBookings": "My Bookings",
+    "backHome": "Back Home",
+    "error": "An error occurred",
+    "userCancelledReason": "Cancelled by user"
+  },
+  "cancelModal": {
+    "title": "Cancel Booking",
+    "calculating": "Calculating...",
+    "rulesIntro": "Cancellation terms:",
+    "paidAmount": "Paid amount:",
+    "refundAmount": "Refund amount:",
+    "penalty": "Penalty:",
+    "penaltyAmount": "Penalty amount:",
+    "policyLabel": "Policy:",
+    "cancelling": "Cancelling...",
+    "confirm": "Confirm",
+    "confirmCancel": "Confirm Cancellation",
+    "cancel": "Go Back"
+  },
+  "chat": {
+    "title": "Chat with Hotel",
+    "empty": "No messages yet...",
+    "placeholder": "Write a message...",
+    "loading": "Loading messages...",
+    "send": "Send"
+  },
+  "statuses": {
+    "PENDING": "Pending",
+    "AWAITING_PAYMENT": "Awaiting payment",
+    "AWAITING_PARTNER_CONFIRMATION": "Awaiting partner confirmation",
+    "CONFIRMED": "Confirmed",
+    "CANCELLED": "Cancelled",
+    "COMPLETED": "Completed",
+    "EXPIRED": "Expired"
+  },
+  "paymentStatuses": {
+    "pending": "Pending",
+    "awaiting_cash": "Awaiting cash payment",
+    "processing": "Processing",
+    "paid": "Paid",
+    "failed": "Failed",
+    "refunded": "Refunded",
+    "reversed": "Reversed by bank"
+  },
+  "missing": {
+    "BronSummasi": "Booking amount",
+    "TolovHaqi": "payment fee (",
+    "JamiTolanadigan": "Total to pay",
+    "SizAvvalBoshlagan": "The payment via",
+    "OrqaliTolovHali": "is still pending. Please complete it first (using the button below) or try again in a few minutes."
+  },
+  "refundedTitle": "Payment refunded",
+  "refundedSubtitle": "The requested refund was processed. Funds will be returned to your card.",
+  "refundedReversedSubtitle": "The payment was reversed by the bank and funds were returned.",
+  "processingTitle": "Payment processing",
+  "processingSubtitle": "Waiting for payment confirmation from the provider. This may take a few minutes — please refresh the page to check the status.",
+  "cancelledTitle": "Booking cancelled",
+  "cancelledSubtitle": "This booking has been cancelled and the inventory is released.",
+  "reselectPaymentMethod": "Reselect payment method",
+  "selectPaymentMethod": "Select payment method",
+  "refreshStatus": "Refresh status",
+  "paymentInstructions": "Pay via Click, Payme, Uzcard, Humo, Visa or Mastercard. The card payment fee is automatically calculated and shown below.",
+  "retryForm": {
+    "payNow": "Continue",
+    "toBePaid": "To be paid",
+    "cardFee": "Card fee:",
+    "totalDeducted": "Total deducted:"
+  },
+  "paymentErrors": {
+    "AUTH_TOKEN_INVALID": "Session expired. Please log in again.",
+    "AUTH_SESSION_REVOKED": "Session revoked. Please log in again.",
+    "BOOKING_FORBIDDEN": "This booking does not belong to you.",
+    "BOOKING_EXPIRED": "Booking not found or expired.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "Payment method unavailable. Please choose another.",
+    "INVALID_BOOKING": "Booking not found.",
+    "ERROR": "Payment error. Please try again."
+  }
+}

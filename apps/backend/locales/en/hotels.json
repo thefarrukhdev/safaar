@@ -1,0 +1,92 @@
+{
+  "title": "Hotels",
+  "resultsCount": "{count} hotels found",
+  "empty": "Nothing found.",
+  "emptyHint": "Try clearing or changing the filters.",
+  "clearFilters": "Clear filters",
+  "error": "Failed to load data. Check that the backend is running.",
+  "retry": "Try again",
+  "perNight": "/ night",
+  "reviews": "review",
+  "viewDetails": "View details",
+  "removeFilter": "Remove filter",
+  "bannerTitle": "Search for Hotels across Uzbekistan",
+  "bannerSubtitle": "Discover comfortable and suitable hotels at the best prices.",
+  "filters": {
+    "title": "Filters",
+    "toggle": "Filters",
+    "searchName": "Search by name",
+    "searchPlaceholder": "E.g. Hilton",
+    "stars": "Stars",
+    "anyStars": "All",
+    "starsValue": "{n}+ stars",
+    "priceMin": "Min price",
+    "priceMax": "Max price",
+    "currency": "UZS",
+    "apply": "Apply",
+    "reset": "Reset",
+    "pricePerNight": "Price (1 night)",
+    "propertyType": "Property type",
+    "amenities": "Amenities",
+    "paymentType": "Payment type"
+  },
+  "starOptions": {
+    "five": "5 stars",
+    "fourPlus": "4 and above",
+    "threePlus": "3 and above"
+  },
+  "types": {
+    "hotels": "Hotels",
+    "dachas": "Dachas",
+    "sanatoriums": "Sanatoriums",
+    "resorts": "Resorts"
+  },
+  "amenityOptions": {
+    "wifi": "Wi-Fi",
+    "pool": "Pool",
+    "sauna": "Sauna",
+    "breakfast": "Breakfast",
+    "parking": "Parking",
+    "gym": "Gym"
+  },
+  "paymentOptions": {
+    "online": "Online payment (Card)",
+    "atProperty": "Pay at property (Cash)"
+  },
+  "sort": {
+    "label": "Sort",
+    "default": "Recommended",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "rating": "By rating"
+  },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "{page} / {total}"
+  },
+  "mapView": "Map",
+  "gridView": "Grid",
+  "banners": {
+    "all": {
+      "title": "Search for all accommodations",
+      "subtitle": "Discover comfortable accommodations across Uzbekistan at affordable prices."
+    },
+    "hotels": {
+      "title": "Search for Hotels across Uzbekistan",
+      "subtitle": "Discover comfortable and suitable hotels at the best prices."
+    },
+    "dachas": {
+      "title": "Search for Dachas across Uzbekistan",
+      "subtitle": "Discover the best dachas for your relaxing getaway."
+    },
+    "sanatoriums": {
+      "title": "Search for Sanatoriums across Uzbekistan",
+      "subtitle": "Discover the best places for wellness and relaxation."
+    },
+    "resorts": {
+      "title": "Search for Resorts across Uzbekistan",
+      "subtitle": "Discover the best nature resorts and retreats."
+    }
+  }
+}

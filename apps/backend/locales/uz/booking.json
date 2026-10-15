@@ -1,0 +1,99 @@
+{
+  "title": "Bron tafsilotlari",
+  "number": "Bron raqami",
+  "status": "Holat",
+  "total": "Jami summa",
+  "payment": "To'lov",
+  "pay": "To'lovni amalga oshirish",
+  "voucher": "Vaucherni yuklab olish",
+  "backHome": "Bosh sahifaga",
+  "error": "Bron ma'lumotini yuklab bo'lmadi.",
+  "confirmedTitle": "Bron tasdiqlandi!",
+  "confirmedSubtitle": "Tabriklaymiz! Broningiz muvaffaqiyatli tasdiqlandi.",
+  "failedTitle": "To'lov amalga oshmadi",
+  "failedSubtitle": "To'lovda xatolik yuz berdi. Qayta urinib ko'ring.",
+  "awaitingCashTitle": "Naqd to'lov kutilmoqda",
+  "awaitingCashSubtitle": "Joyga kelganingizda naqd to'lov qiling.",
+  "receiptSummary": "Chek xulosasi",
+  "createdAt": "Bron sanasi",
+  "actions": {
+    "printVoucher": "Vaucherni chop etish",
+    "cancelBooking": "Bekor qilish",
+    "myBookings": "Mening bronlarim",
+    "backHome": "Bosh sahifaga",
+    "error": "Xatolik yuz berdi",
+    "userCancelledReason": "Foydalanuvchi bekor qildi"
+  },
+  "cancelModal": {
+    "title": "Bronni bekor qilish",
+    "calculating": "Hisoblanmoqda...",
+    "rulesIntro": "Bekor qilish shartlari:",
+    "paidAmount": "To'langan summa:",
+    "refundAmount": "Qaytariladigan summa:",
+    "penalty": "Jarima:",
+    "penaltyAmount": "Jarima summasi:",
+    "policyLabel": "Qoida:",
+    "cancelling": "Bekor qilinmoqda...",
+    "confirm": "Tasdiqlash",
+    "confirmCancel": "Bekor qilishni tasdiqlash",
+    "cancel": "Ortga"
+  },
+  "chat": {
+    "title": "Mehmonxona bilan chat",
+    "empty": "Hozircha xabarlar yo'q...",
+    "placeholder": "Xabar yozing...",
+    "loading": "Xabarlar yuklanmoqda...",
+    "send": "Yuborish"
+  },
+  "statuses": {
+    "PENDING": "Kutilmoqda",
+    "AWAITING_PAYMENT": "To'lov kutilmoqda",
+    "AWAITING_PARTNER_CONFIRMATION": "Hamkor tasdig'i kutilmoqda",
+    "CONFIRMED": "Tasdiqlangan",
+    "CANCELLED": "Bekor qilingan",
+    "COMPLETED": "Yakunlangan",
+    "EXPIRED": "Muddati o'tgan"
+  },
+  "paymentStatuses": {
+    "pending": "Kutilmoqda",
+    "awaiting_cash": "Naqd to'lov kutilmoqda",
+    "processing": "Jarayonda",
+    "paid": "To'langan",
+    "failed": "Muvaffaqiyatsiz",
+    "refunded": "Qaytarilgan",
+    "reversed": "Bank tomonidan bekor qilingan"
+  },
+  "missing": {
+    "BronSummasi": "Bron summasi",
+    "TolovHaqi": "to'lov haqi (",
+    "JamiTolanadigan": "Jami to'lanadigan summa",
+    "SizAvvalBoshlagan": "Siz avval boshlagan",
+    "OrqaliTolovHali": "orqali to'lov hali kutilmoqda. Avval o'shani yakunlang (pastdagi tugma orqali) yoki bir necha daqiqadan so'ng qayta urinib ko'ring."
+  },
+  "refundedTitle": "To'lov qaytarildi",
+  "refundedSubtitle": "So'ralgan qaytarish amalga oshirildi. Mablag' bank kartangizga qaytariladi.",
+  "refundedReversedSubtitle": "To'lov bank tomonidan bekor qilindi va mablag' qaytarildi.",
+  "processingTitle": "To'lov tekshirilmoqda",
+  "processingSubtitle": "To'lovingiz provayder tomonidan tasdiqlanishi kutilmoqda. Bu bir necha daqiqa vaqt olishi mumkin — sahifani yangilab holatni qayta tekshiring.",
+  "cancelledTitle": "Bron bekor qilingan",
+  "cancelledSubtitle": "Ushbu bron bekor qilingan va inventar ozod etilgan.",
+  "reselectPaymentMethod": "To'lovni qayta tanlang",
+  "selectPaymentMethod": "To'lov usulini tanlang",
+  "refreshStatus": "Holatni yangilash",
+  "paymentInstructions": "Click, Payme, Uzcard, Humo, Visa yoki Mastercard orqali to'lovni amalga oshiring. Karta to'lovlari uchun komissiya (fee) avtomatik hisoblanadi va quyida ko'rsatiladi.",
+  "retryForm": {
+    "payNow": "Davom etish",
+    "toBePaid": "To'lanishi kerak",
+    "cardFee": "Karta komissiyasi (fee):",
+    "totalDeducted": "Jami yechib olinadi:"
+  },
+  "paymentErrors": {
+    "AUTH_TOKEN_INVALID": "Sessiyangiz tugagan. Iltimos, qayta kiring.",
+    "AUTH_SESSION_REVOKED": "Sessiya bekor qilingan. Iltimos, qayta kiring.",
+    "BOOKING_FORBIDDEN": "Bu bron sizga tegishli emas.",
+    "BOOKING_EXPIRED": "Bron topilmadi yoki muddati tugagan.",
+    "PAYMENT_PROVIDER_NOT_CONFIGURED": "To'lov usuli hozircha mavjud emas. Boshqa usulni tanlang.",
+    "INVALID_BOOKING": "Bron topilmadi.",
+    "ERROR": "To'lovda xatolik yuz berdi. Qayta urinib ko'ring."
+  }
+}

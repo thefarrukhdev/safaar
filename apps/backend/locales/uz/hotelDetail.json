@@ -1,0 +1,87 @@
+{
+  "error": "Ma'lumotni yuklab bo'lmadi. Backend ishga tushganini tekshiring.",
+  "about": "Tavsif",
+  "address": "Manzil",
+  "amenities": {
+    "title": "Qulayliklar",
+    "showAll": "Barcha {count} ta qulaylikni ko'rsatish"
+  },
+  "checkIn": "Kirish vaqti",
+  "checkOut": "Chiqish vaqti",
+  "rooms": {
+    "title": "Xonalar",
+    "noRoomsFound": "Boshqa xonalar topilmadi."
+  },
+  "perNight": "kecha",
+  "capacity": "Sig'imi",
+  "guests": "mehmon",
+  "available": "ta bo'sh",
+  "soldOut": "Bo'sh xona yo'q",
+  "discountUntil": "{date} gacha",
+  "book": "Bron qilish",
+  "reviews": "Sharhlar",
+  "noReviews": "Hozircha sharhlar yo'q.",
+  "ratingSummary": "{count} ta sharh asosida",
+  "from": "dan boshlab",
+  "selectRoom": "Xonani tanlash",
+  "bookingBox": "Bron qilish",
+  "locationTitle": "Joylashuv",
+  "highlights": {
+    "centralLocationTitle": "Markaziy joylashuv",
+    "centralLocationDesc": "Yaqinda tashrif buyurgan mehmonlar tomonidan yuqori baholangan",
+    "freeCancellationTitle": "Bepul bekor qilish",
+    "freeCancellationDesc": "Kirishdan oldin istalgan vaqtda bekor qilish mumkin",
+    "superbRatingTitle": "A'lo darajadagi reyting",
+    "superbRatingDesc": "Mehmonlarga tozalik juda yoqdi"
+  },
+  "nav": {
+    "photos": "Rasmlar",
+    "amenities": "Qulayliklar",
+    "rules": "Qoidalar",
+    "rooms": "Xonalar",
+    "reviews": "Sharhlar",
+    "location": "Joylashuv"
+  },
+  "booking": {
+    "checkIn": "Kirish",
+    "checkOut": "Chiqish",
+    "addDate": "Sana qo'shish",
+    "guests": "Mehmonlar",
+    "oneGuest": "1 mehmon",
+    "checkAvailability": "Mavjudligini tekshirish",
+    "noChargeNotice": "Sizdan hali mablag' yechilmaydi",
+    "nightsCount": "{count} kecha",
+    "serviceFee": "Xizmat haqi",
+    "total": "Jami"
+  },
+  "location": {
+    "noCoordinates": "Aniq joylashuv koordinatalari mavjud emas",
+    "openInMaps": "Google Maps'da ochish"
+  },
+  "gallery": {
+    "mainViewAlt": "Asosiy ko'rinish",
+    "photoCountSuffix": "ta rasm",
+    "allPhotos": "Barcha rasmlar"
+  },
+  "rulesSection": {
+    "title": "Mehmonxona qoidalari",
+    "checkIn": "Kirish vaqti (Check-in)",
+    "checkInFrom": "{time} dan boshlab",
+    "checkOut": "Chiqish vaqti (Check-out)",
+    "checkOutUntil": "{time} gacha",
+    "cancellation": "Bekor qilish qoidasi",
+    "cancellation_FLEXIBLE": "Moslashuvchan (Pulni to'liq qaytarish mumkin)",
+    "cancellation_MODERATE": "O'rtacha (Ma'lum shartlar asosida)",
+    "cancellation_STRICT": "Qat'iy (Pul qaytarilmaydi yoki qisman)",
+    "cancellation_NON_REFUNDABLE": "Qaytarilmaydigan (Pul umuman qaytarilmaydi)",
+    "smoking": "Chekish",
+    "smokingAllowed": "Chekishga ruxsat berilgan",
+    "smokingNotAllowed": "Chekish mumkin emas",
+    "pets": "Uy hayvonlari",
+    "petsAllowed": "Uy hayvonlari bilan kelish mumkin",
+    "petsNotAllowed": "Uy hayvonlariga ruxsat berilmagan",
+    "children": "Bolalar",
+    "childrenAllowed": "Bolalar bilan kelish mumkin",
+    "childrenNotAllowed": "Faqat kattalar uchun"
+  }
+}

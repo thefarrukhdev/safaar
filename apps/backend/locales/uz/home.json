@@ -1,0 +1,110 @@
+{
+  "hero": {
+    "title": "Sayohat uchun kerakli hamma narsa — {yagona} platformada",
+    "subtitle": "Mehmonxonalar, dacha, transport va chiptalar. Oson izlang va tezkor bron qiling.",
+    "trustChip1": "Tezkor tasdiq",
+    "trustChip2": "Eng yaxshi narxlar"
+  },
+  "popularCities": {
+    "title": "Mashhur yo'nalishlar",
+    "subtitle": "Sayohatchilar eng ko'p tanlagan shaharlar",
+    "empty": "Ma'lumotlar yuklanmoqda yoxud hozircha ro'yxat bo'sh.",
+    "hotels": "mehmonxona",
+    "emptyDesc": "Ayni paytda mashhur shaharlar ro'yxati shakllanmoqda."
+  },
+  "trust": {
+    "hotels": "12,000+",
+    "hotelsLabel": "mehmonxona",
+    "cities": "50+",
+    "citiesLabel": "shahar",
+    "rating": "4.8★",
+    "ratingLabel": "o'rtacha baho",
+    "support": "24/7",
+    "supportLabel": "yordam xizmati",
+    "paymentMethodsLabel": "To'lov turlari:"
+  },
+  "featured": {
+    "title": "Mashhur takliflar",
+    "subtitle": "Yuqori baholangan mehmonxonalar",
+    "empty": "Hozircha takliflar yo'q.",
+    "perNight": "kecha",
+    "reviews": "sharh",
+    "excellent": "A'lo",
+    "good": "Yaxshi",
+    "all": "Barchasi",
+    "emptyDesc": "Ayni paytda tavsiya etilgan joylar mavjud emas. Tez orada yangilanadi."
+  },
+  "deals": {
+    "title": "Chegirmadagi takliflar",
+    "subtitle": "Eng yaxshi narxlardagi maxsus takliflar",
+    "empty": "Hozircha chegirmalar yo'q, tez orada qo'shiladi",
+    "badge": "Chegirma",
+    "oldPrice": "dan",
+    "perNight": "/ kecha",
+    "book": "Bron qilish",
+    "endsIn": "Tugashiga",
+    "days": "kun",
+    "emptyDesc": "Ushbu sahifada tez orada foydali chegirmalar paydo bo'ladi."
+  },
+  "reviews": {
+    "title": "Mijozlar fikrlari",
+    "items": [
+      {
+        "name": "Shaxnoza Rahimova",
+        "city": "Toshkent",
+        "rating": 5,
+        "text": "Safaar orqali birinchi marta bron qildim. Juda qulay va tez! Mehmonxona ajoyib edi."
+      },
+      {
+        "name": "Jasurbek Aliyev",
+        "city": "Samarqand",
+        "rating": 5,
+        "text": "Samarqandga sayohatni Safaar orqali rejalashtirdim. Narxlar boshqa saytlardan arzonroq chiqdi."
+      },
+      {
+        "name": "Malika Karimova",
+        "city": "Buxoro",
+        "rating": 4,
+        "text": "Toshkentdagi mehmonxonani bron qildim. Suratlar haqiqatga to'liq mos keldi. Tashkillashtirish mukammal."
+      },
+      {
+        "name": "Bobur Hamidov",
+        "city": "Farg'ona",
+        "rating": 5,
+        "text": "Mehmonxona bron qilishni ham shu yerda qildim. Hammasi bir joyda — juda qulay. Barchaga tavsiya qilaman!"
+      }
+    ]
+  },
+  "partners": {
+    "title": "Ishonchli hamkorlar",
+    "subtitle": "500+ mehmonxonalar bilan hamkorlikda"
+  },
+  "why": {
+    "title": "Nega Safaar?",
+    "items": {
+      "instant": {
+        "title": "Soniyalarda tasdiq",
+        "text": "Bron darhol tasdiqlanadi — kutib o'tirmaysiz."
+      },
+      "secure": {
+        "title": "Xavfsiz to'lov",
+        "text": "Click, Payme, Uzcard, Humo — himoyalangan to'lov."
+      },
+      "support": {
+        "title": "24/7 qo'llab-quvvatlash",
+        "text": "O'zbek tilida doimiy yordam xizmati."
+      }
+    }
+  },
+  "error": {
+    "loadFailed": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring."
+  },
+  "promos": {
+    "title": "Promo-kodlar",
+    "subtitle": "Bron qilishda ushbu kodlardan foydalanib chegirma oling",
+    "clickToCopy": "Bosib nusxalang",
+    "copied": "Nusxalandi!",
+    "copySuccess": "Promo kod nusxalandi!",
+    "copyError": "Nusxalashda xatolik yuz berdi."
+  }
+}

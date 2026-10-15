@@ -1,0 +1,24 @@
+{
+  "title": "Отзывы",
+  "empty": "Пока нет отзывов. Будьте первым!",
+  "anonymous": "Пользователь",
+  "writeReview": "Оставить отзыв",
+  "submitError": "Произошла ошибка при отправке отзыва",
+  "exceptional": "Превосходно",
+  "ratingLabel": "Оценка (1-5)",
+  "starsLabel": "{num} звёзд",
+  "reviewTextLabel": "Текст отзыва",
+  "reviewTextPlaceholder": "Поделитесь вашими впечатлениями...",
+  "photosOptional": "Фотографии (необязательно)",
+  "submitting": "Отправка...",
+  "submitReview": "Отправить отзыв",
+  "anonymousGuest": "Гость",
+  "ownerReplyLabel": "Ответ партнёра",
+  "pendingReviewNotice": "Ваш отзыв принят. Он появится для других после проверки модератором.",
+  "categories": {
+    "cleanliness": "Чистота",
+    "staff": "Обслуживание",
+    "location": "Расположение",
+    "valueForMoney": "Цена/качество"
+  }
+}

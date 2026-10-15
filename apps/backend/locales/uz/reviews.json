@@ -1,0 +1,24 @@
+{
+  "title": "Sharhlar",
+  "empty": "Hozircha sharhlar yo'q. Birinchi bo'lib fikr bildiring!",
+  "anonymous": "Foydalanuvchi",
+  "writeReview": "Sharh qoldirish",
+  "submitError": "Sharh qoldirishda xatolik yuz berdi",
+  "exceptional": "A'lo darajada",
+  "ratingLabel": "Baholash (1-5)",
+  "starsLabel": "{num} yulduz",
+  "reviewTextLabel": "Sharh matni",
+  "reviewTextPlaceholder": "O'z taassurotlaringiz bilan o'rtoqlashing...",
+  "photosOptional": "Rasmlar (ixtiyoriy)",
+  "submitting": "Yuborilmoqda...",
+  "submitReview": "Sharhni yuborish",
+  "anonymousGuest": "Mehmon",
+  "ownerReplyLabel": "Hamkorning javobi",
+  "pendingReviewNotice": "Sharhingiz qabul qilindi. Moderatsiyadan so'ng boshqalarga ko'rinadi.",
+  "categories": {
+    "cleanliness": "Tozalik",
+    "staff": "Xizmat",
+    "location": "Joylashuv",
+    "valueForMoney": "Narx/sifat"
+  }
+}

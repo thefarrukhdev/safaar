@@ -1,0 +1,41 @@
+{
+  "restaurants": {
+    "badge": "Milliy va Xalqaro Oshxona",
+    "title": "Restoranlar va Milliy Taomlar",
+    "subtitle": "O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.",
+    "searchPlaceholder": "Restoran nomi yoki taom turi bo'yicha qidiruv...",
+    "allCities": "Barcha shaharlar",
+    "avgCheck": "Chek"
+  },
+  "attractions": {
+    "badge": "Sayohat va Ziyorat",
+    "title": "Attraksionlar va Diqqatga Sazovor Joylar",
+    "subtitle": "Buyuk Ipak Yo'li durdonalari, ko'hna me'moriy ansambllar va bahavo tog' manzaralari.",
+    "searchPlaceholder": "Obida nomi yoki shahar bo'yicha qidiruv...",
+    "allPlaces": "Barcha joylar",
+    "categories": {
+      "all": "Barcha joylar",
+      "historical": "Tarixiy Obida",
+      "unesco": "UNESCO Merosi",
+      "nature": "Tabiat & Hordiq"
+    },
+    "bestTime": "Ziyorat:"
+  },
+  "transport": {
+    "badge": "Avtotransport & Transfer",
+    "title": "Avto Ijarasi va Transfer Xizmatlari",
+    "subtitle": "O'zbekiston bo'ylab qulay sayohat qilish uchun avtomobil ijarasi, VIP taksi va aeroport transferlari.",
+    "searchPlaceholder": "Avto rusumi yoki shahar bo'yicha qidiruv...",
+    "allTypes": "Barcha turlar",
+    "categories": {
+      "all": "Barcha turlar",
+      "rent": "Avto Ijarasi (Rent a Car)",
+      "transfer": "Aeroport Transfer",
+      "vip": "VIP & Biznes Taksi"
+    },
+    "perDay": "kuniga",
+    "driverIncluded": "Haydovchi bilan",
+    "withoutDriver": "Haydovchisiz",
+    "seats": "o'rin"
+  }
+}

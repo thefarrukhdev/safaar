@@ -1,0 +1,88 @@
+{
+  "title": "My account",
+  "nav": {
+    "profile": "Profile",
+    "bookings": "My bookings",
+    "favorites": "Favorites",
+    "bonuses": "Bonuses",
+    "refunds": "Refunds",
+    "ariaLabel": "Account sections"
+  },
+  "profile": {
+    "title": "Profile details",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "phoneHint": "Phone number cannot be changed.",
+    "memberSince": "Member since",
+    "save": "Save",
+    "saved": "Changes saved.",
+    "error": "Failed to save changes."
+  },
+  "bookings": {
+    "title": "My bookings",
+    "empty": "You have no bookings yet.",
+    "emptyDescription": "You don't have any confirmed bookings yet. Book great hotels, restaurants, or rental cars!",
+    "emptyAction": "Start booking",
+    "number": "Booking number",
+    "status": "Status",
+    "total": "Total",
+    "type": "Type",
+    "hotel": "Hotel",
+    "bus": "Car Rental",
+    "restaurant": "Restaurant",
+    "view": "View",
+    "statuses": {
+      "PENDING": "Pending",
+      "AWAITING_PAYMENT": "Awaiting payment",
+      "AWAITING_PARTNER_CONFIRMATION": "Awaiting partner confirmation",
+      "CONFIRMED": "Confirmed",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed",
+      "EXPIRED": "Expired"
+    }
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "Your favorites list is empty.",
+    "hotel": "Hotel",
+    "view": "View"
+  },
+  "bonuses": {
+    "title": "Bonuses",
+    "balance": "Bonus balance",
+    "empty": "No bonus history yet.",
+    "history": "History",
+    "disclaimer": "*Your bonus points earned for trips and bookings."
+  },
+  "settings": {
+    "updated": "Preferences updated!",
+    "updateFailed": "Update failed",
+    "exportRequested": "Data export requested!",
+    "exportFailed": "Export request failed",
+    "deleteConfirm": "Are you sure you want to request account deletion?",
+    "deleteRequested": "Account deletion requested!",
+    "deleteFailed": "Deletion request failed",
+    "notificationPrefs": "Notification Preferences",
+    "emailAlerts": "Email Alerts",
+    "smsAlerts": "SMS Alerts",
+    "savePrefs": "Save Preferences",
+    "dataManagement": "Data Management",
+    "requestExport": "Request Data Export",
+    "requestDeletion": "Request Account Deletion"
+  },
+  "avatar": {
+    "upload": "Upload",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete your profile photo?",
+    "uploadFailed": "Failed to upload photo",
+    "deleteFailed": "Failed to delete photo"
+  },
+  "refunds": {
+    "title": "My Refunds",
+    "empty": "No refunds yet.",
+    "reason": "Reason",
+    "status": "Status"
+  }
+}

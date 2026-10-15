@@ -1,0 +1,26 @@
+{
+  "badge": "Travel & Heritage",
+  "title": "Attractions & Sightseeing",
+  "subtitle": "Gems of the Silk Road, ancient architectural monuments, and scenic mountain views.",
+  "searchPlaceholder": "Search by attraction or city...",
+  "allPlaces": "All Places",
+  "categories": {
+    "all": "All Places",
+    "historical": "Historical Site",
+    "unesco": "UNESCO Heritage",
+    "nature": "Nature & Leisure"
+  },
+  "bestTime": "Best time:",
+  "viewDetails": "Details",
+  "empty": {
+    "title": "No data found"
+  },
+  "map": {
+    "title": "Interactive map",
+    "soon": "Coming soon",
+    "show": "Show on map"
+  },
+  "filters": {
+    "title": "Filters"
+  }
+}

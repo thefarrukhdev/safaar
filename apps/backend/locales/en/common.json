@@ -1,0 +1,111 @@
+{
+  "brand": "Safaar",
+  "promo": "🔥 Summer deal! 20% off your first booking — use code SAFAAR20",
+  "nav": {
+    "home": "Home",
+    "all": "All",
+    "hotels": "Hotels",
+    "dachas": "Dachas",
+    "sanatoriums": "Sanatoriums",
+    "resorts": "Resorts",
+    "restaurants": "Restaurants",
+    "attractions": "Attractions",
+    "transport": "Transport",
+    "carRent": "Car Rental",
+    "transfers": "Transfers",
+    "vipTaxi": "VIP Taxi",
+    "about": "About us",
+    "help": "Help",
+    "terms": "Public Offer",
+    "search": "Search",
+    "favorites": "Favorites",
+    "bookings": "Bookings",
+    "profile": "Profile",
+    "mobileNavAria": "Mobile navigation",
+    "menu": "Menu",
+    "language": "Language"
+  },
+  "actions": {
+    "login": "Sign in",
+    "register": "Register",
+    "logout": "Sign out",
+    "search": "Search",
+    "account": "Account",
+    "details": "Details",
+    "close": "Close",
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "clearAll": "Clear all",
+    "favorite": "Add to favorites",
+    "cancel": "Cancel"
+  },
+  "language": "Language",
+  "propertyTypes": {
+    "hotel": "Hotel",
+    "dacha": "Dacha",
+    "sanatorium": "Sanatorium",
+    "resort": "Resort"
+  },
+  "search": {
+    "hotelsTab": "Hotel",
+    "city": "City",
+    "cityPlaceholder": "Select a city",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "submit": "Search",
+    "guestsSuffix": "guests",
+    "selectDate": "Select date",
+    "checkInCheckOut": "Check-in — Check-out",
+    "decreaseGuests": "Decrease guests",
+    "increaseGuests": "Increase guests"
+  },
+  "chat": {
+    "supportAria": "Safaar Support",
+    "loginRequired": "Please log in to send a message.",
+    "loginNeeded": "Login required",
+    "newTicket": "New ticket",
+    "refreshAria": "Refresh",
+    "closeAria": "Close",
+    "loadingTickets": "Loading tickets...",
+    "emptyTicketPrompt": "Type your message to start a new support request.",
+    "loginBtn": "Login",
+    "inputPlaceholder": "Type your message...",
+    "sendAria": "Send",
+    "sendError": "Failed to send message.",
+    "guestPrompt": "We have received your message! Please enter your name and phone number so our specialists can contact you.",
+    "guestSuccess": "Thank you! Your details have been received. We will contact you shortly.",
+    "nameLabel": "Your Name",
+    "phoneLabel": "Your Phone Number",
+    "submitDetails": "Submit"
+  },
+  "pwa": {
+    "installTitle": "Install Safaar App",
+    "installSubtitle": "Fast access and offline mode",
+    "installButton": "Install",
+    "retryConnection": "Retry connection",
+    "connectionRestored": "Internet connection restored"
+  },
+  "footer": {
+    "tagline": "Book hotels and resort stays across Uzbekistan.",
+    "rights": "All rights reserved.",
+    "phone": "+998 90 449 08 93",
+    "email": "info@safaar.uz",
+    "address": "Samarkand",
+    "supportLabel": "(Support)",
+    "secureBooking": "Secure and guaranteed booking",
+    "securePayments": "Secure payment methods",
+    "partner": "Partners",
+    "sections": {
+      "platform": "Platform",
+      "company": "Company",
+      "partners": "Partnership",
+      "contact": "Contact"
+    }
+  },
+  "currency": "UZS",
+  "card": {
+    "noImage": "No image"
+  }
+}

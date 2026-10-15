@@ -70,8 +70,11 @@ export function exportReservationsToCsv(
     .map((row) =>
       row
         .map((cell) => {
-          const s = String(cell ?? "");
-          if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+          let s = String(cell ?? "");
+          if (/^[=+\-@\t\r]/.test(s)) {
+            s = `'${s}`;
+          }
+          if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
             return `"${s.replace(/"/g, '""')}"`;
           }
           return s;

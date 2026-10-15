@@ -17,6 +17,7 @@ import { EmptyState } from "../../../_components/ui/empty-state";
 import { Input } from "../../../_components/ui/input";
 import { Label } from "../../../_components/ui/label";
 import { Tooltip } from "../../../_components/ui/tooltip";
+import { useConfirm } from "../../../_components/ui/confirm-dialog";
 import {
   useAddListingPhoto,
   useDeleteListingPhoto,
@@ -70,6 +71,7 @@ export function PhotosEditor({
   onClose: () => void;
 }) {
   const { data } = useListing();
+  const confirm = useConfirm();
   const deletePhoto = useDeleteListingPhoto();
   const updatePhoto = useUpdateListingPhoto();
   const [addOpen, setAddOpen] = useState(false);
@@ -79,6 +81,28 @@ export function PhotosEditor({
 
   const sortedPhotos = [...data.photos].sort((a, b) => a.order - b.order);
   const busy = deletePhoto.isPending || updatePhoto.isPending;
+
+  const handleDeletePhoto = async (photoId: string) => {
+    const ok = await confirm({
+      title: "Rasmni o'chirish",
+      description: "Ushbu rasmni rostdan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
+      confirmText: "O'chirish",
+      cancelText: "Bekor qilish",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    deletePhoto.mutate(photoId, {
+      onSuccess: () => toast.success("Rasm o'chirildi"),
+      onError: (error) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Rasmni o'chirib bo'lmadi",
+        );
+      },
+    });
+  };
   const handleReorder = async (photoId: string, direction: "up" | "down") => {
     const idx = sortedPhotos.findIndex((photo) => photo.id === photoId);
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
@@ -236,18 +260,7 @@ export function PhotosEditor({
                         type="button"
                         variant="secondary"
                         size="icon"
-                        onClick={() => {
-                          deletePhoto.mutate(photo.id, {
-                            onSuccess: () => toast.success("Rasm o'chirildi"),
-                            onError: (error) => {
-                              toast.error(
-                                error instanceof Error
-                                      ? error.message
-                                      : "Rasmni o'chirib bo'lmadi",
-                              );
-                            },
-                          });
-                        }}
+                        onClick={() => void handleDeletePhoto(photo.id)}
                         disabled={busy}
                         aria-label="O'chirish"
                         className="h-8 w-8 bg-white/90 text-red-600 hover:bg-white"

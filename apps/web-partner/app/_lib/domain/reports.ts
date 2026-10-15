@@ -1,4 +1,5 @@
 import { BookingStatus } from '@safaar/types';
+import { addDays } from '../utils/date';
 import {
   ReservationSource,
   type ReservationView,
@@ -13,12 +14,6 @@ function isActive(r: ReservationView): boolean {
   return (
     r.status !== BookingStatus.CANCELLED && r.status !== BookingStatus.EXPIRED
   );
-}
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 export interface DailyStat {

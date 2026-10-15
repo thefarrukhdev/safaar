@@ -16,7 +16,7 @@ import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useDataStore } from "../../_stores/data-store";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels, hasBuses, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
-import { TODAY_ISO } from "../../_lib/utils/date";
+import { TODAY_ISO, dayDiff } from "../../_lib/utils/date";
 import { useWithdrawals, useCreateWithdrawal } from "../../_hooks/use-withdrawals";
 import type { DateRange } from "../../_components/ui/date-range-picker";
 import { ReportsStatsTab } from "./reports-stats-tab";
@@ -61,11 +61,9 @@ export function ReportsView() {
    */
   const { daysForRange, anchorDateIso } = useMemo(() => {
     if (timeRange === "custom" && customRange.startDate && customRange.endDate) {
-      const start = new Date(customRange.startDate).getTime();
-      const end = new Date(customRange.endDate).getTime();
       const diffDays = Math.max(
         1,
-        Math.min(365, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1),
+        Math.min(365, dayDiff(customRange.endDate, customRange.startDate) + 1),
       );
       return { daysForRange: diffDays, anchorDateIso: customRange.endDate };
     }

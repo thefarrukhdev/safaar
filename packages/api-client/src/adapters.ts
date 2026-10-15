@@ -170,6 +170,7 @@ function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
     imageUrl: raw.images?.[0],
     latitude: raw.latitude,
     longitude: raw.longitude,
+    amenities: raw.amenities ?? [],
   };
 }
 

@@ -42,6 +42,54 @@ const FALLBACK_FAVORITE_ERROR: Record<string, string> = {
   en: "Something went wrong. Please try again.",
 };
 
+const AMENITY_LABELS: Record<string, Record<string, string>> = {
+  uz: {
+    wifi: "Wi-Fi",
+    wifi_public: "Wi-Fi",
+    breakfast: "Nonushta",
+    parking: "Parking",
+    pool: "Hovuz",
+    spa: "Spa",
+    gym: "Sport zal",
+    restaurant: "Restoran",
+    bar: "Bar",
+    ac: "Konditsioner",
+    sauna: "Sauna",
+    kitchen: "Oshxona",
+    family_friendly: "Oilaviy",
+  },
+  ru: {
+    wifi: "Wi-Fi",
+    wifi_public: "Wi-Fi",
+    breakfast: "Завтрак",
+    parking: "Парковка",
+    pool: "Бассейн",
+    spa: "Спа",
+    gym: "Тренажерный зал",
+    restaurant: "Ресторан",
+    bar: "Бар",
+    ac: "Кондиционер",
+    sauna: "Сауна",
+    kitchen: "Кухня",
+    family_friendly: "Для семей",
+  },
+  en: {
+    wifi: "Wi-Fi",
+    wifi_public: "Wi-Fi",
+    breakfast: "Breakfast",
+    parking: "Parking",
+    pool: "Pool",
+    spa: "Spa",
+    gym: "Gym",
+    restaurant: "Restaurant",
+    bar: "Bar",
+    ac: "AC",
+    sauna: "Sauna",
+    kitchen: "Kitchen",
+    family_friendly: "Family friendly",
+  },
+};
+
 export function AccommodationCard({
   hotel,
   locale,
@@ -100,17 +148,10 @@ export function AccommodationCard({
     }
   }
 
-  const trans = {
-    uz: { breakfast: "Nonushta", parking: "Parking", restaurant: "Restoran", spa: "Spa" },
-    ru: { breakfast: "Завтрак", parking: "Парковка", restaurant: "Ресторан", spa: "Спа" },
-    en: { breakfast: "Breakfast", parking: "Parking", restaurant: "Restaurant", spa: "Spa" },
-  }[locale] || { breakfast: "Breakfast", parking: "Parking", restaurant: "Restaurant", spa: "Spa" };
-
-  const amenityPills = hotel.name.toLowerCase().includes("chimgan")
-    ? ["Wi-Fi", trans.breakfast, trans.parking]
-    : hotel.name.toLowerCase().includes("buxoro")
-    ? ["Wi-Fi", trans.breakfast, trans.restaurant]
-    : ["Wi-Fi", trans.breakfast, trans.spa];
+  const labelsMap = AMENITY_LABELS[locale] || AMENITY_LABELS.uz;
+  const amenityPills = (hotel.amenities && hotel.amenities.length > 0)
+    ? hotel.amenities.map((code) => labelsMap[code.toLowerCase()] || code).slice(0, 3)
+    : ["Wi-Fi"];
 
   const perNight = labels.perNight ?? DEFAULT_PER_NIGHT[locale] ?? "kecha";
   const price = hotel.minPriceSum > 0 ? hotel.minPriceSum : undefined;

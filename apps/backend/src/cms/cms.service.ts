@@ -3,6 +3,7 @@ import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { calculateRoomPrice } from '../common/room-pricing';
 import { calculateVehiclePrice } from '../common/vehicle-pricing';
+import { normalizeHeroImageUrl } from '../hero-backgrounds/hero-backgrounds.service';
 
 type CmsRow = Record<string, unknown>;
 
@@ -294,7 +295,7 @@ export class CmsService {
         );
         for (const bg of bgRows ?? []) {
           if (!heroBackgrounds[bg.page]) {
-            heroBackgrounds[bg.page] = bg.image_url;
+            heroBackgrounds[bg.page] = normalizeHeroImageUrl(bg.image_url);
           }
         }
       } catch {

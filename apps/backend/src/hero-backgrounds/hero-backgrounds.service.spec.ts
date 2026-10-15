@@ -8,7 +8,10 @@ import { HeroBackgroundQueryDto } from './dto/hero-background-query.dto';
 import { ReorderHeroBackgroundDto } from './dto/reorder-hero-background.dto';
 import { ToggleHeroBackgroundDto } from './dto/toggle-hero-background.dto';
 import { UpdateHeroBackgroundDto } from './dto/update-hero-background.dto';
-import { HeroBackgroundsService } from './hero-backgrounds.service';
+import {
+  HeroBackgroundsService,
+  normalizeHeroImageUrl,
+} from './hero-backgrounds.service';
 
 describe('HeroBackgroundsService', () => {
   let service: HeroBackgroundsService;
@@ -541,6 +544,32 @@ describe('HeroBackgroundsService', () => {
         forbidNonWhitelisted: true,
       });
       expect(errors).toHaveLength(0);
+    });
+  });
+
+  describe('normalizeHeroImageUrl', () => {
+    it('strips https://www.safaar.uz domain to relative path', () => {
+      expect(
+        normalizeHeroImageUrl('https://www.safaar.uz/registon-blue-sky.jpeg'),
+      ).toBe('/registon-blue-sky.jpeg');
+    });
+
+    it('strips https://safaar.uz domain to relative path', () => {
+      expect(
+        normalizeHeroImageUrl('https://safaar.uz/images/heroes/hero.png'),
+      ).toBe('/images/heroes/hero.png');
+    });
+
+    it('preserves existing relative path intact', () => {
+      expect(normalizeHeroImageUrl('/images/heroes/transport_hero.jpg')).toBe(
+        '/images/heroes/transport_hero.jpg',
+      );
+    });
+
+    it('handles empty or null values gracefully', () => {
+      expect(normalizeHeroImageUrl('')).toBe('');
+      expect(normalizeHeroImageUrl(null)).toBe('');
+      expect(normalizeHeroImageUrl(undefined)).toBe('');
     });
   });
 });

@@ -91,6 +91,17 @@ function normalizeJsonField(
   return null;
 }
 
+/**
+ * Hero fon rasmlari uchun URL manzilini normallashtirish:
+ * Agar mutlaq domen (masalan: https://www.safaar.uz/registon-blue-sky.jpeg)
+ * ko'rsatilgan bo'lsa, uni nisbiy yo'lga (/registon-blue-sky.jpeg) aylantiradi.
+ */
+export function normalizeHeroImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  return trimmed.replace(/^https?:\/\/(?:www\.)?safaar\.uz(?:\/|$)/i, '/');
+}
+
 function mapRowToDto(row: DbHeroRow): HeroBackgroundItem {
   const meta = objectOrNull(row.metadata) ?? {};
   const createdAtStr =
@@ -128,6 +139,7 @@ function mapRowToDto(row: DbHeroRow): HeroBackgroundItem {
 
   const titleText = localizedString(titleParsed, '');
   const subtitleText = localizedString(subtitleParsed, '');
+  const normalizedUrl = normalizeHeroImageUrl(row.image_url);
 
   return {
     id: row.id,
@@ -136,8 +148,8 @@ function mapRowToDto(row: DbHeroRow): HeroBackgroundItem {
     title_text: titleText,
     subtitle: subtitleParsed as Record<string, string> | string | null,
     subtitle_text: subtitleText,
-    imageUrl: row.image_url,
-    image_url: row.image_url,
+    imageUrl: normalizedUrl,
+    image_url: normalizedUrl,
     isActive: Boolean(row.is_active),
     is_active: Boolean(row.is_active),
     sortOrder: Number(row.sort_order ?? 0),
@@ -335,7 +347,7 @@ export class HeroBackgroundsService {
         message: 'imageUrl yoki image_url kiritilishi shart',
       });
     }
-    const imageUrl = rawImageUrl.trim();
+    const imageUrl = normalizeHeroImageUrl(rawImageUrl);
     const titleJson = normalizeJsonField(dto.title);
     const subtitleJson = normalizeJsonField(dto.subtitle);
     const isActive = dto.isActive ?? dto.is_active ?? true;
@@ -404,7 +416,9 @@ export class HeroBackgroundsService {
       });
     }
     const imageUrl =
-      rawImageUrl !== undefined ? rawImageUrl.trim() : existing.imageUrl;
+      rawImageUrl !== undefined
+        ? normalizeHeroImageUrl(rawImageUrl)
+        : normalizeHeroImageUrl(existing.imageUrl);
 
     const titleJson =
       dto.title !== undefined ? normalizeJsonField(dto.title) : existing.title;

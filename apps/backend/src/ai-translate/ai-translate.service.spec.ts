@@ -1,6 +1,11 @@
 import 'reflect-metadata';
 import { ServiceUnavailableException } from '@nestjs/common';
-import { AiTranslateService } from './ai-translate.service';
+import {
+  AiTranslateService,
+  cyrillicToLatinUzbek,
+  isEnglish,
+  isUzbekCyrillic,
+} from './ai-translate.service';
 
 function geminiResponse(translation: string) {
   return {
@@ -11,6 +16,26 @@ function geminiResponse(translation: string) {
           {
             content: {
               parts: [{ text: JSON.stringify({ translation }) }],
+            },
+          },
+        ],
+      }),
+  };
+}
+
+function geminiMultilingualResponse(multi: {
+  uz: string;
+  ru: string;
+  en: string;
+}) {
+  return {
+    ok: true,
+    json: () =>
+      Promise.resolve({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: JSON.stringify(multi) }],
             },
           },
         ],
@@ -129,12 +154,52 @@ describe('AiTranslateService', () => {
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
-  describe('detectLanguage', () => {
-    it('detects Russian from predominantly Cyrillic text', () => {
-      expect(service.detectLanguage('Привет, как дела?')).toBe('ru');
+  describe('Language detection and transliteration helpers', () => {
+    it('isUzbekCyrillic identifies Uzbek text written in Cyrillic', () => {
+      expect(isUzbekCyrillic('Меҳмонхона Самарқанд марказида жойлашган')).toBe(
+        true,
+      );
+      expect(isUzbekCyrillic('Қулайликлар ва шинам хоналар')).toBe(true);
+      expect(isUzbekCyrillic('Привет, это обычный русский текст')).toBe(false);
     });
 
-    it('defaults to Uzbek for Latin text', () => {
+    it('isEnglish identifies English text accurately', () => {
+      expect(isEnglish('Luxury hotel suite with balcony and pool view')).toBe(
+        true,
+      );
+      expect(isEnglish('Cozy room in city center with breakfast')).toBe(true);
+      expect(isEnglish('Toshkent shahar markazidagi mehmonxona')).toBe(false);
+      expect(isEnglish('Oromgoh va shinam dacha')).toBe(false);
+    });
+
+    it('cyrillicToLatinUzbek converts Uzbek Cyrillic text to Latin script', () => {
+      expect(cyrillicToLatinUzbek('Меҳмонхона марказда жойлашган')).toBe(
+        'Mehmonxona markazda joylashgan',
+      );
+      expect(cyrillicToLatinUzbek('Ўзбекистон')).toBe("O'zbekiston");
+      expect(cyrillicToLatinUzbek('Қулайликлар')).toBe('Qulayliklar');
+    });
+  });
+
+  describe('detectLanguage', () => {
+    it('detects Russian from standard Russian Cyrillic text', () => {
+      expect(service.detectLanguage('Привет, это отличный номер')).toBe('ru');
+    });
+
+    it('detects Uzbek when written in Cyrillic', () => {
+      expect(service.detectLanguage('Меҳмонхона марказда жойлашган')).toBe(
+        'uz',
+      );
+      expect(service.detectLanguage('Қулай ва шинам хоналар')).toBe('uz');
+    });
+
+    it('detects English when written in English', () => {
+      expect(
+        service.detectLanguage('Luxury room with king bed and city view'),
+      ).toBe('en');
+    });
+
+    it('defaults to Uzbek for Latin Uzbek text', () => {
       expect(
         service.detectLanguage('Toshkent shahar markazidagi mehmonxona'),
       ).toBe('uz');
@@ -142,7 +207,7 @@ describe('AiTranslateService', () => {
   });
 
   describe('autoTranslateMultilingualField', () => {
-    it('returns all 3 languages when input is string and Gemini is available', async () => {
+    it('returns all 3 languages when input is string and Gemini is available (fallback method)', async () => {
       process.env.AI_TRANSLATE_API_KEY = 'test-key';
       fetchMock.mockImplementation((url: string, opts: { body: string }) => {
         const parsed = JSON.parse(opts.body);
@@ -162,6 +227,35 @@ describe('AiTranslateService', () => {
         ru: 'Отель Сарой',
         en: 'Saroy Hotel',
       });
+    });
+
+    it('uses callGeminiMultilingual when Gemini returns full multilingual object', async () => {
+      process.env.AI_TRANSLATE_API_KEY = 'test-key';
+      fetchMock.mockResolvedValue(
+        geminiMultilingualResponse({
+          uz: 'Shinam mehmonxona',
+          ru: 'Уютный отель',
+          en: 'Cozy hotel',
+        }),
+      );
+
+      const result = await service.autoTranslateMultilingualField('Cozy hotel');
+      expect(result).toEqual({
+        uz: 'Shinam mehmonxona',
+        ru: 'Уютный отель',
+        en: 'Cozy hotel',
+      });
+    });
+
+    it('converts Uzbek Cyrillic into Latin in fallback mode when no API key', async () => {
+      delete process.env.AI_TRANSLATE_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GOOGLE_API_KEY;
+
+      const result = await service.autoTranslateMultilingualField(
+        'Меҳмонхона марказда жойлашган',
+      );
+      expect(result.uz).toBe('Mehmonxona markazda joylashgan');
     });
 
     it('gracefully falls back to copying source text if no API key is configured', async () => {

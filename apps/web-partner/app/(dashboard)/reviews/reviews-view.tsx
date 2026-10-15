@@ -1,75 +1,186 @@
 "use client";
 
-import { Star, MessageSquare, ThumbsUp, Clock, AlertCircle } from "lucide-react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "../../_components/layout/page-header";
-import { EmptyState } from "../../_components/ui/empty-state";
-import { StatCard } from "../../_components/ui/stat-card";
 import { useAuthStore } from "../../_stores/auth-store";
 import { getPartnerLabels } from "../../_lib/utils/partner-labels";
+import { useReviews, useReplyToReview } from "../../_hooks/use-reviews";
+import { ReviewsStats } from "./reviews-stats";
+import { ReviewsFilters } from "./reviews-filters";
+import { ReviewsList } from "./reviews-list";
+import { ReviewReplyDrawer } from "./review-reply-drawer";
+import type {
+  PartnerReviewExtended,
+  ReviewFilterKey,
+  ReviewSortOption,
+  ReviewStatsData,
+} from "./types";
 
-/**
- * Mijozlar sharhlari sahifasi.
- *
- * ⚠️ BACKEND TAYYORLANISHI KERAK:
- * Hozirda `GET /partners/reviews` endpointi mavjud emas.
- * Backend endpoint tayyor bo'lgach, bu sahifaga API integratsiyasini
- * qo'shing (pastdagi `TODO: BACKEND` belgisini qidiring).
- *
- * Backend dev uchun ko'rsatma: `apps/web-partner/app/_lib/api/endpoints/reviews.ts`
- */
 export function ReviewsView() {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
 
-  // TODO: BACKEND — listReviews() hook shu yerga qo'shiladi
-  // const { data: reviews, isLoading } = useReviews();
+  const { data: reviews = [], isLoading } = useReviews();
+  const replyMutation = useReplyToReview();
+
+  const [query, setQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ReviewFilterKey>("all");
+  const [sortBy, setSortBy] = useState<ReviewSortOption>("newest");
+
+  // Drawer holati
+  const [selectedReview, setSelectedReview] = useState<PartnerReviewExtended | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /**
+   * Hisoblangan statistika
+   */
+  const stats = useMemo<ReviewStatsData>(() => {
+    const total = reviews.length;
+    if (total === 0) {
+      return {
+        averageRating: 0,
+        totalReviews: 0,
+        positivePercentage: 0,
+        unansweredCount: 0,
+        starCounts: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      };
+    }
+
+    let sum = 0;
+    let positiveCount = 0;
+    let unansweredCount = 0;
+    const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+    for (const r of reviews) {
+      sum += r.rating;
+      if (r.rating >= 4) positiveCount += 1;
+      if (!r.reply?.text) unansweredCount += 1;
+      const rounded = Math.max(1, Math.min(5, Math.round(r.rating))) as 1 | 2 | 3 | 4 | 5;
+      starCounts[rounded] = (starCounts[rounded] || 0) + 1;
+    }
+
+    return {
+      averageRating: sum / total,
+      totalReviews: total,
+      positivePercentage: Math.round((positiveCount / total) * 100),
+      unansweredCount,
+      starCounts,
+    };
+  }, [reviews]);
+
+  /**
+   * Filtrlash
+   */
+  const filtered = useMemo(() => {
+    let list = reviews;
+
+    // Filter bo'yicha
+    switch (activeFilter) {
+      case "5star":
+        list = list.filter((r) => r.rating === 5);
+        break;
+      case "4star":
+        list = list.filter((r) => r.rating === 4);
+        break;
+      case "critical":
+        list = list.filter((r) => r.rating <= 3);
+        break;
+      case "unanswered":
+        list = list.filter((r) => !r.reply?.text);
+        break;
+      case "answered":
+        list = list.filter((r) => Boolean(r.reply?.text));
+        break;
+      case "all":
+      default:
+        break;
+    }
+
+    // Qidiruv bo'yicha
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.userName.toLowerCase().includes(q) ||
+          r.body.toLowerCase().includes(q) ||
+          (r.reply?.text && r.reply.text.toLowerCase().includes(q)),
+      );
+    }
+
+    // Saralash
+    return [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "highest":
+          return b.rating - a.rating;
+        case "lowest":
+          return a.rating - b.rating;
+        case "newest":
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [reviews, activeFilter, query, sortBy]);
+
+  const handleOpenReplyDrawer = (review: PartnerReviewExtended) => {
+    setSelectedReview(review);
+    setDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedReview(null);
+  };
+
+  const handleSubmitReply = async (reviewId: string, replyText: string) => {
+    await replyMutation.mutateAsync({ reviewId, reply: replyText });
+  };
+
+  const handleResetFilters = () => {
+    setQuery("");
+    setActiveFilter("all");
+    setSortBy("newest");
+  };
+
+  const isFiltered = Boolean(query.trim() || activeFilter !== "all");
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Hamkor paneli"
         title="Mijozlar sharhlari"
-        description={`${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} va xizmatlarga mijozlar tomonidan qoldirilgan sharhlar.`}
+        description={`${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} va xizmatlarga mijozlar tomonidan qoldirilgan fikr-mulohazalar va reyting.`}
       />
 
-      {/* Statistika kartalar — umumiy StatCard komponentidan foydalaniladi */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          icon={<Star className="h-5 w-5 text-yellow-500" />}
-          label="O'rtacha reyting"
-          value="—"
-          hint="Sharhlar kelgach hisoblanadi"
-        />
-        <StatCard
-          icon={<MessageSquare className="h-5 w-5 text-brand-500" />}
-          label="Jami sharhlar"
-          value="0"
-          hint="Mijozlar mulohazalari"
-        />
-        <StatCard
-          icon={<ThumbsUp className="h-5 w-5 text-emerald-500" />}
-          label="Ijobiy sharhlar"
-          value="—"
-          hint="4 va 5 yulduzli baholar"
-        />
-      </div>
+      {/* 1. Statistika kartalari */}
+      <ReviewsStats stats={stats} isLoading={isLoading} />
 
-      {/* Asosiy kontent */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>
-            <strong>Ishlanmoqda:</strong> Sharhlar tizimi tez orada ishga tushiriladi. Backend
-            jamoasi API endpointlarini tayyorlashda.
-          </span>
-        </div>
+      {/* 2. Filtrlash va saralash boshqaruvi */}
+      <ReviewsFilters
+        query={query}
+        onQueryChange={setQuery}
+        activeFilter={activeFilter}
+        onSelectFilter={setActiveFilter}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        stats={stats}
+        onReset={handleResetFilters}
+      />
 
-        <EmptyState
-          icon={<Clock className="h-10 w-10 text-[var(--muted-foreground)]" />}
-          title="Sharhlar hali mavjud emas"
-          description="Mijozlar sizning xizmatingiz haqida sharhlar qoldirgach, ular shu yerda ko'rinadi. Siz sharhlarga javob berishingiz va reytingingizni kuzatib borishingiz mumkin bo'ladi."
-        />
-      </div>
+      {/* 3. Sharhlar ro'yxati */}
+      <ReviewsList
+        reviews={filtered}
+        onOpenReply={handleOpenReplyDrawer}
+        onResetFilters={handleResetFilters}
+        isFiltered={isFiltered}
+      />
+
+      {/* 4. Javob qaytarish Draweri */}
+      <ReviewReplyDrawer
+        review={selectedReview}
+        open={drawerOpen}
+        onClose={handleCloseDrawer}
+        onSubmitReply={handleSubmitReply}
+      />
     </div>
   );
 }

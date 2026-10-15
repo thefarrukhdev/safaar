@@ -67,6 +67,10 @@ function addDaysIso(iso: string, days: number): string {
 }
 
 export interface WalkInInitial {
+  /** Mehmon ismi (CRM yoki mehmonlar profilidan ochilganda) */
+  fullName?: string;
+  /** Mehmon telefoni (CRM yoki mehmonlar profilidan ochilganda) */
+  phone?: string;
   checkIn?: string;
   checkOut?: string;
   roomTypeId?: string;
@@ -120,8 +124,8 @@ export function WalkInDialog({
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      fullName: "",
-      phone: "+998 ",
+      fullName: initialValues?.fullName ?? "",
+      phone: initialValues?.phone ?? "+998 ",
       roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
       roomNumber: initialValues?.vehicleId ?? initialValues?.roomNumber ?? "",
       checkIn: defaultCheckIn,
@@ -137,8 +141,8 @@ export function WalkInDialog({
     if (open) {
       const ci = initialValues?.checkIn ?? TODAY_ISO;
       form.reset({
-        fullName: "",
-        phone: "+998 ",
+        fullName: initialValues?.fullName ?? "",
+        phone: initialValues?.phone ?? "+998 ",
         roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
         roomNumber: initialValues?.vehicleId ?? initialValues?.roomNumber ?? "",
         checkIn: ci,

@@ -4,24 +4,17 @@ import {
   Baby,
   BedDouble,
   CarFront,
-  Camera,
-  CheckCircle2,
   Cigarette,
   Dog,
   Eye,
   EyeOff,
   FileText,
+  Gem,
   Image as ImageIcon,
   MapPin,
-  Pencil,
-  Plus,
   RotateCcw,
   Send,
-  Gem,
-  Star,
-  Trash2,
   UtensilsCrossed,
-  Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -29,6 +22,19 @@ import { Button } from '../../_components/ui/button';
 import { Card, CardBody } from '../../_components/ui/card';
 import { useConfirm } from '../../_components/ui/confirm-dialog';
 import { PreviewDrawer } from './_components/preview-drawer';
+import {
+  WorkflowStep,
+  type ListingSection,
+  type SectionId,
+} from './_components/workflow-step';
+import { LivePreview } from './_components/live-preview';
+import {
+  ChecklistItem,
+  RuleChip,
+  Signal,
+} from './_components/listing-checklist';
+import { RoomListingsPanel } from './_components/room-listings-panel';
+import { VehicleListingsPanel } from './_components/vehicle-listings-panel';
 
 import { GeneralEditor } from './_editors/general-editor';
 import { PhotosEditor } from './_editors/photos-editor';
@@ -36,13 +42,12 @@ import { AmenitiesEditor } from './_editors/amenities-editor';
 import { LocationEditor } from './_editors/location-editor';
 import { RulesEditor } from './_editors/rules-editor';
 import { UnifiedRoomDialog } from '../rooms/_dialogs/unified-room-dialog';
+import { VehicleDialog } from '../rooms/vehicles-view';
 
 import {
-  AMENITY_GROUPS,
   CANCELLATION_POLICY_INFO,
   LISTING_STATUS_INFO,
   ListingStatus,
-  RESTAURANT_AMENITY_GROUPS,
 } from '../../_lib/domain/listing';
 import {
   useListing,
@@ -50,8 +55,8 @@ import {
   useUpdateListingStatus,
 } from '../../_hooks/use-listing';
 import { useBeds } from '../../_hooks/use-beds';
-import { useRooms, useDeleteRoom, useUpdateRoom } from '../../_hooks/use-rooms';
-import { useRoomTypes, useDeleteRoomType, useUpdateRoomType } from '../../_hooks/use-room-types';
+import { useRooms } from '../../_hooks/use-rooms';
+import { useRoomTypes } from '../../_hooks/use-room-types';
 import { useAuthStore } from '../../_stores/auth-store';
 import {
   getPartnerLabels,
@@ -62,36 +67,10 @@ import {
   hasBuses,
 } from '../../_lib/utils/partner-labels';
 import { cn } from '../../_lib/utils/cn';
-import { formatMoney } from '../../_lib/utils/format';
 import { useAmenities } from '../../_hooks/use-catalog';
-import { useVehicles, useUpdateVehicle } from '../../_hooks/use-vehicles';
-import { VehicleDialog } from '../rooms/vehicles-view';
+import { useVehicles } from '../../_hooks/use-vehicles';
 
-const AMENITY_LABEL = new Map<string, string>();
-for (const group of [...AMENITY_GROUPS, ...RESTAURANT_AMENITY_GROUPS]) {
-  for (const item of group.items) AMENITY_LABEL.set(item.id, item.label);
-}
-
-type SectionId =
-  | 'general'
-  | 'photos'
-  | 'amenities'
-  | 'location'
-  | 'rules'
-  | 'roomTypes'
-  | 'rooms';
 type OpenEditor = Exclude<SectionId, 'roomTypes' | 'rooms'> | null;
-
-interface ListingSection {
-  id: SectionId;
-  title: string;
-  subtitle: string;
-  action: string;
-  complete: boolean;
-  summary: string;
-  icon: React.ReactNode;
-  missing?: string;
-}
 
 export function ListingOverview() {
   const { data: listing } = useListing();
@@ -113,7 +92,6 @@ export function ListingOverview() {
   const [openEditor, setOpenEditor] = useState<OpenEditor>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-
   const [roomTypeDialogOpen, setRoomTypeDialogOpen] = useState(false);
   const [editingRoomType, setEditingRoomType] = useState<
     import('../../_lib/domain/types').RoomType | null
@@ -126,7 +104,10 @@ export function ListingOverview() {
   const dynamicAmenityLabels = useMemo(() => {
     const map = new Map<string, string>();
     allAmenities.forEach((a: any) => {
-      map.set(a.code, typeof a.name === 'string' ? a.name : ((a.name as any)?.uz || a.code));
+      map.set(
+        a.code,
+        typeof a.name === 'string' ? a.name : ((a.name as any)?.uz || a.code),
+      );
     });
     return map;
   }, [allAmenities]);
@@ -138,35 +119,37 @@ export function ListingOverview() {
   const roomAds = roomTypes
     .filter((rt) => !rt.name.startsWith("DELETED_"))
     .map((roomType) => {
-    const relatedRooms = rooms.filter(
-      (room) => room.roomTypeId === roomType.id,
-    );
-    const listedCount = relatedRooms.filter((room) => room.isListed).length;
-    const relatedBeds = beds.filter((bed) =>
-      relatedRooms.some((room) => room.id === bed.roomId),
-    );
-    const listedBedCount = relatedBeds.filter((bed) => bed.isListed).length;
-    const prices = relatedRooms
-      .map((room) => room.nightlyPrice ?? roomType.basePrice)
-      .filter((price) => price > 0);
-    const minPrice =
-      prices.length > 0 ? Math.min(...prices) : roomType.basePrice;
-    return {
-      roomType,
-      relatedRooms,
-      listedCount,
-      minPrice,
-      totalBeds: relatedBeds.length,
-      listedBedCount,
-    };
-  });
+      const relatedRooms = rooms.filter(
+        (room) => room.roomTypeId === roomType.id,
+      );
+      const listedCount = relatedRooms.filter((room) => room.isListed).length;
+      const relatedBeds = beds.filter((bed) =>
+        relatedRooms.some((room) => room.id === bed.roomId),
+      );
+      const listedBedCount = relatedBeds.filter((bed) => bed.isListed).length;
+      const prices = relatedRooms
+        .map((room) => room.nightlyPrice ?? roomType.basePrice)
+        .filter((price) => price > 0);
+      const minPrice =
+        prices.length > 0 ? Math.min(...prices) : roomType.basePrice;
+      return {
+        roomType,
+        relatedRooms,
+        listedCount,
+        minPrice,
+        totalBeds: relatedBeds.length,
+        listedBedCount,
+      };
+    });
 
   const sections = useMemo<ListingSection[]>(() => {
     const generalComplete =
       listing.name.trim().length >= 3 &&
       listing.shortDescription.trim().length >= 20 &&
       listing.fullDescription.trim().length >= 100;
-    const photosComplete = isBus ? listing.photos.length >= 0 : listing.photos.length >= 3;
+    const photosComplete = isBus
+      ? listing.photos.length >= 0
+      : listing.photos.length >= 3;
     const amenitiesComplete = isBus ? true : listing.amenities.length >= 3;
     const locationComplete =
       Boolean(listing.address.trim()) &&
@@ -270,13 +253,15 @@ export function ListingOverview() {
           subtitle: `Mijozlar band qilishi uchun narx va sig'imni kiriting`,
           action: `Narx kiritish`,
           complete: roomAds.length > 0 && listedRooms.length > 0,
-          summary: roomAds.length > 0 && listedRooms.length > 0
-            ? `Narxlar va sig'im e'lon qilingan`
-            : `Hali narx belgilanmagan`,
+          summary:
+            roomAds.length > 0 && listedRooms.length > 0
+              ? `Narxlar va sig'im e'lon qilingan`
+              : `Hali narx belgilanmagan`,
           icon: <BedDouble className="h-4 w-4" aria-hidden />,
-          missing: roomAds.length === 0 || listedRooms.length === 0
-            ? `Dachangizning xona turini qo'shing va e'longa chiqaring.`
-            : undefined,
+          missing:
+            roomAds.length === 0 || listedRooms.length === 0
+              ? `Dachangizning xona turini qo'shing va e'longa chiqaring.`
+              : undefined,
         },
       ];
     }
@@ -290,13 +275,15 @@ export function ListingOverview() {
           subtitle: `Mijoz band qilishi mumkin bo'lgan stollar`,
           action: `Stol qo'shish`,
           complete: listedRooms.length > 0,
-          summary: listedRooms.length > 0
-            ? `${listedRooms.length} ta stol savdoda`
-            : `Hali stollar qo'shilmagan`,
+          summary:
+            listedRooms.length > 0
+              ? `${listedRooms.length} ta stol savdoda`
+              : `Hali stollar qo'shilmagan`,
           icon: <UtensilsCrossed className="h-4 w-4" aria-hidden />,
-          missing: listedRooms.length === 0
-            ? `Kamida bitta stol qo'shing va sotuvga chiqaring.`
-            : undefined,
+          missing:
+            listedRooms.length === 0
+              ? `Kamida bitta stol qo'shing va sotuvga chiqaring.`
+              : undefined,
         },
       ];
     }
@@ -309,12 +296,12 @@ export function ListingOverview() {
           title: 'Avtomobillar',
           subtitle: `Mijoz bron qilishi mumkin bo'lgan avtomobillar`,
           action: `Avto qo'shish`,
-          complete: vehicles.some(v => v.status === 'active'),
-          summary: vehicles.some(v => v.status === 'active')
-            ? `${vehicles.filter(v => v.status === 'active').length} ta avto sotuvda`
+          complete: vehicles.some((v) => v.status === 'active'),
+          summary: vehicles.some((v) => v.status === 'active')
+            ? `${vehicles.filter((v) => v.status === 'active').length} ta avto sotuvda`
             : `Hali avtomobillar qo'shilmagan`,
           icon: <CarFront className="h-4 w-4" aria-hidden />,
-          missing: !vehicles.some(v => v.status === 'active')
+          missing: !vehicles.some((v) => v.status === 'active')
             ? `Kamida bitta avtomobil qo'shing va sotuvga chiqaring.`
             : undefined,
         },
@@ -332,7 +319,9 @@ export function ListingOverview() {
 
   const openSection = (id: SectionId) => {
     if (id === 'roomTypes' || id === 'rooms') {
-      document.getElementById('room-listings-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById('room-listings-panel')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     setOpenEditor(id as OpenEditor);
@@ -348,8 +337,6 @@ export function ListingOverview() {
     neutral:
       'border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)]',
   }[statusInfo.tone];
-
-
 
   const handlePublishAction = () => {
     if (listing.status === ListingStatus.PUBLISHED) {
@@ -415,7 +402,6 @@ export function ListingOverview() {
     });
   };
 
-
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
       <section className="flex min-w-0 flex-col gap-5">
@@ -449,7 +435,6 @@ export function ListingOverview() {
 
                   {!isBus && (
                     <div className="flex flex-wrap gap-2">
-
                       <Button
                         variant="outline"
                         size="sm"
@@ -531,7 +516,7 @@ export function ListingOverview() {
                     <Signal
                       label="Avtomobillar"
                       value={`${vehicles.length} ta`}
-                      hint={`${vehicles.filter(v => v.status === 'active').length} ta sotuvda`}
+                      hint={`${vehicles.filter((v) => v.status === 'active').length} ta sotuvda`}
                     />
                   ) : (
                     <>
@@ -709,7 +694,13 @@ export function ListingOverview() {
               label={`${labels.checkInLabel}/${labels.checkOutLabel.toLowerCase()} va qoidalar`}
             />
             <ChecklistItem
-              done={isBus ? vehicles.some(v => v.status === 'active') : restaurant ? listedRooms.length > 0 : roomAds.length > 0 && listedRooms.length > 0}
+              done={
+                isBus
+                  ? vehicles.some((v) => v.status === 'active')
+                  : restaurant
+                    ? listedRooms.length > 0
+                    : roomAds.length > 0 && listedRooms.length > 0
+              }
               label={isBus ? 'Avtomobillar' : restaurant ? 'Stollar' : labels.unitTypesTitle}
             />
           </CardBody>
@@ -780,708 +771,6 @@ export function ListingOverview() {
         onClose={() => setVehicleDialogOpen(false)}
         editing={editingVehicle}
       />
-    </div>
-  );
-}
-
-function RoomListingsPanel({
-  roomAds,
-  labels,
-  isHostel,
-  restaurant,
-  isBus,
-  amenityLabels,
-  onAddRoomType,
-  onEditRoomType,
-}: {
-  roomAds: Array<{
-    roomType: import('../../_lib/domain/types').RoomType;
-    relatedRooms: import('../../_lib/domain/types').Room[];
-    listedCount: number;
-    minPrice: number;
-    totalBeds: number;
-    listedBedCount: number;
-  }>;
-  labels: import('../../_lib/utils/partner-labels').PartnerLabels;
-  isHostel: boolean;
-  restaurant: boolean;
-  isBus?: boolean;
-  amenityLabels: Map<string, string>;
-  onAddRoomType?: () => void;
-  onEditRoomType?: (roomType: import('../../_lib/domain/types').RoomType) => void;
-}) {
-  const deleteRoomType = useDeleteRoomType();
-  const updateRoomType = useUpdateRoomType();
-  const deleteRoom = useDeleteRoom();
-  const updateRoom = useUpdateRoom();
-  const confirm = useConfirm();
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async (roomType: import('../../_lib/domain/types').RoomType, relatedRooms: import('../../_lib/domain/types').Room[]) => {
-    const isCascade = relatedRooms.length > 0;
-    const ok = await confirm({
-      title: `"${roomType.name}" ni o'chirish`,
-      description: isCascade
-        ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta xona mavjud. Ushbu xona turini o'chirsangiz, ichidagi barcha xonalar ham qo'shib o'chiriladi. Rozimisiz?`
-        : `Rostdan ham "${roomType.name}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
-      confirmText: "O'chirish",
-      cancelText: "Bekor qilish",
-      destructive: true,
-    });
-      
-    if (ok) {
-      setIsDeleting(true);
-      try {
-        if (relatedRooms.length > 0) {
-          await Promise.all(relatedRooms.map(room => deleteRoom.mutateAsync(room.id)));
-        }
-        
-        try {
-          await deleteRoomType.mutateAsync(roomType.id);
-          toast.success("Muvaffaqiyatli o'chirildi");
-        } catch {
-          // BIZNES MANTIQ UCHUN FRONTEND-HACK: Backend o'chirishga ruxsat bermasa, 
-          // biz frontendda uning nomini o'zgartirib yashirib qo'yamiz
-          await updateRoomType.mutateAsync({
-            id: roomType.id,
-            values: { 
-              name: `DELETED_${roomType.id}`,
-              capacity: roomType.capacity,
-              basePrice: roomType.basePrice || 0,
-              amenities: roomType.amenities as string[] || [],
-              description: roomType.description,
-              bedType: roomType.bedType,
-              sizeSqm: roomType.sizeSqm
-            }
-          });
-          toast.success("Muvaffaqiyatli o'chirildi");
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Xatolik yuz berdi");
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-
-  return (
-    <Card>
-      <CardBody className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
-              {labels.unitTypesTitle}
-            </span>
-            <h2 className="mt-1 text-xl font-semibold">
-              Turist tanlaydigan {labels.unitSingular} variantlari
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
-              Web-userda turist sana, narx, sig'im va qulaylik filtrlarini
-              tanlaganda shu e'lonlar ichidan mos variantlarni ko'radi.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {onAddRoomType && roomAds.length > 0 && (
-              <Button size="sm" onClick={onAddRoomType} variant="outline">
-                + Yangi variant qo'shish
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {roomAds.length === 0 ? (
-          <div className="rounded-card border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center">
-            {isBus ? (
-              <CarFront
-                className="mx-auto h-8 w-8 text-[var(--muted-foreground)]"
-                aria-hidden
-              />
-            ) : restaurant ? (
-              <UtensilsCrossed
-                className="mx-auto h-8 w-8 text-[var(--muted-foreground)]"
-                aria-hidden
-              />
-            ) : (
-              <BedDouble
-                className="mx-auto h-8 w-8 text-[var(--muted-foreground)]"
-                aria-hidden
-              />
-            )}
-            <h3 className="mt-3 text-sm font-semibold">
-              Hali hech qanday variant yo'q
-            </h3>
-            <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-              Turistlar bron qila olishi uchun kamida bitta xona variantini qo'shing.
-            </p>
-            {onAddRoomType && (
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <Button onClick={onAddRoomType}>
-                  + Yangi variant qo'shish
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {roomAds.map(
-              ({
-                roomType,
-                relatedRooms,
-                listedCount,
-                minPrice,
-                totalBeds,
-                listedBedCount,
-              }) => (
-                <RoomAdCard
-                  key={roomType.id}
-                  name={roomType.name}
-                  capacity={roomType.capacity}
-                  description={roomType.description}
-                  imageUrl={roomType.imageUrl}
-                  bedType={roomType.bedType}
-                  sizeSqm={roomType.sizeSqm}
-                  amenities={roomType.amenities}
-                  minPrice={minPrice}
-                  unitLabel={labels.unitSingular}
-                  totalUnits={isHostel ? totalBeds : relatedRooms.length}
-                  listedUnits={isHostel ? listedBedCount : listedCount}
-                  restaurant={restaurant}
-                  isBus={isBus}
-                  amenityLabels={amenityLabels}
-                  relatedRooms={relatedRooms}
-                  onEdit={onEditRoomType ? () => onEditRoomType(roomType) : undefined}
-                  onDelete={() => handleDelete(roomType, relatedRooms)}
-                  onTogglePublish={async (publish) => {
-                    try {
-                      await Promise.all(
-                        relatedRooms.map(room =>
-                          updateRoom.mutateAsync({ id: room.id, values: { isListed: publish } })
-                        )
-                      );
-                      toast.success(publish ? `${labels.unitPlural} e'longa chiqarildi` : `${labels.unitPlural} yopildi`);
-                    } catch {
-                      toast.error('Xatolik yuz berdi');
-                    }
-                  }}
-                  isDeleting={isDeleting}
-                />
-              ),
-            )}
-          </div>
-        )}
-      </CardBody>
-    </Card>
-  );
-}
-
-function RoomAdCard({
-  name,
-  capacity,
-  description,
-  imageUrl,
-  bedType,
-  sizeSqm,
-  amenities,
-  minPrice,
-  unitLabel,
-  totalUnits,
-  listedUnits,
-  restaurant,
-  isBus,
-  amenityLabels,
-  relatedRooms,
-  onEdit,
-  onDelete,
-  onTogglePublish,
-  isDeleting,
-}: {
-  name: string;
-  capacity: number;
-  description?: string;
-  imageUrl?: string;
-  bedType?: string;
-  sizeSqm?: number;
-  amenities: string[];
-  minPrice: number;
-  unitLabel: string;
-  totalUnits: number;
-  listedUnits: number;
-  restaurant: boolean;
-  isBus?: boolean;
-  amenityLabels?: Map<string, string>;
-  relatedRooms?: { id: string; number: string; isListed: boolean }[];
-  onEdit?: () => void;
-  onDelete?: () => void;
-  onTogglePublish?: (publish: boolean) => Promise<void>;
-  isDeleting?: boolean;
-}) {
-  const [isToggling, setIsToggling] = useState(false);
-  return (
-    <div className="overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]">
-      <div className="grid gap-0 sm:grid-cols-[140px_minmax(0,1fr)]">
-        <div className="aspect-[4/3] bg-[var(--surface-muted)] sm:h-full sm:min-h-[180px] sm:aspect-auto">
-          {imageUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
-              <ImageIcon className="h-8 w-8" aria-hidden />
-            </div>
-          )}
-        </div>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-base font-semibold">{name}</h3>
-                <span
-                  className={cn(
-                    'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                    listedUnits > 0
-                      ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200'
-                      : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800',
-                  )}
-                >
-                  {listedUnits > 0 ? 'Sotuvda' : 'Yopiq'}
-                </span>
-              </div>
-              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)]">
-                <span className="inline-flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" aria-hidden />
-                  {capacity} {isBus ? "o'rindiq" : "kishi"}
-                </span>
-                {!restaurant && !isBus && bedType && <span>{bedType}</span>}
-                {!restaurant && typeof sizeSqm === 'number' && sizeSqm > 0 && (
-                  <span>{sizeSqm} m²</span>
-                )}
-                <span>
-                  {listedUnits}/{totalUnits} {unitLabel} e'londa
-                </span>
-              </p>
-              {description && (
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted-foreground)]">
-                  {description}
-                </p>
-              )}
-            </div>
-            <div className="shrink-0 text-right flex flex-col items-end gap-2">
-              <div>
-                <p className="text-[11px] text-[var(--muted-foreground)]">
-                  {restaurant ? 'narxi' : isBus ? '1 kunlik' : '1 kecha'}
-                </p>
-                <p className="text-base font-semibold text-brand-700 dark:text-brand-300">
-                  {formatMoney(minPrice)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {onEdit && (
-                  <Button size="sm" variant="outline" onClick={onEdit} className="h-7 text-xs px-2">
-                    <Pencil className="h-3 w-3 mr-1" aria-hidden />
-                    Tahrirlash
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button size="sm" variant="outline" onClick={onDelete} disabled={isDeleting} className="h-7 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
-                    <Trash2 className="h-3 w-3" aria-hidden />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {relatedRooms && relatedRooms.length > 0 && (
-              <div className="w-full mb-1">
-                <span className="text-[10px] uppercase font-semibold text-[var(--muted-foreground)] tracking-widest">Ichidagi {unitLabel}lar: </span>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {relatedRooms.map(room => (
-                    <span
-                      key={room.id}
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[10px] font-medium border",
-                        room.isListed
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400"
-                      )}
-                      title={room.isListed ? "Sotuvda" : "Yashirilgan"}
-                    >
-                      {room.number}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {amenities.slice(0, 5).map((amenity) => (
-              <span
-                key={amenity}
-                className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[11px]"
-              >
-                {amenityLabels?.get(amenity) ?? AMENITY_LABEL.get(amenity) ?? amenity}
-              </span>
-            ))}
-            {amenities.length > 5 && (
-              <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] text-[var(--muted-foreground)]">
-                +{amenities.length - 5}
-              </span>
-            )}
-          </div>
-
-          <div className="mt-3 border-t border-[var(--border)] pt-3 flex items-center justify-between gap-2">
-            <span className="text-xs text-[var(--muted-foreground)]">
-              {listedUnits > 0
-                ? `${listedUnits} ta ${unitLabel} turistlarga ko'rinadi`
-                : `Hozircha turistlarga ko'rinmaydi`}
-            </span>
-            {onTogglePublish && (
-              <Button
-                size="sm"
-                variant={listedUnits > 0 ? 'outline' : 'primary'}
-                disabled={isToggling || totalUnits === 0}
-                onClick={async () => {
-                  setIsToggling(true);
-                  try {
-                    await onTogglePublish(listedUnits === 0);
-                  } finally {
-                    setIsToggling(false);
-                  }
-                }}
-                className={cn(
-                  'h-7 text-xs px-3',
-                  listedUnits > 0
-                    ? 'text-zinc-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50'
-                    : ''
-                )}
-              >
-                {isToggling
-                  ? 'Saqlanmoqda...'
-                  : listedUnits > 0
-                    ? 'E\'longa yopish'
-                    : 'E\'longa chiqarish'}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VehicleListingsPanel({
-  vehicles,
-  onAdd,
-  onEdit,
-}: {
-  vehicles: any[];
-  onAdd: () => void;
-  onEdit: (vehicle: any) => void;
-}) {
-  const updateVehicle = useUpdateVehicle();
-
-  const toggleStatus = async (vehicle: any) => {
-    const newStatus = vehicle.status === 'active' ? 'inactive' : 'active';
-    await updateVehicle.mutateAsync({
-      id: vehicle.id,
-      values: { status: newStatus },
-    });
-  };
-
-  return (
-    <Card>
-      <CardBody className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
-              Avtomobillar
-            </span>
-            <h2 className="mt-1 text-xl font-semibold">
-              E'longa chiqarilgan avtomobillar
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
-              Mijozlar faqat "Faol" holatdagi avtomobillarni ko'radi va bron qila oladi.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {vehicles.length > 0 && (
-              <Button size="sm" onClick={onAdd}>
-                <CarFront className="mr-2 h-4 w-4" aria-hidden />
-                Avtomobil qo'shish
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {vehicles.length === 0 ? (
-          <div className="rounded-card border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center">
-            <CarFront
-              className="mx-auto h-8 w-8 text-[var(--muted-foreground)]"
-              aria-hidden
-            />
-            <h3 className="mt-3 text-sm font-semibold">
-              Hali avtomobil yo'q
-            </h3>
-            <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-              Mijozlarga ko'rinishi uchun avval avtomobillarni qo'shing.
-            </p>
-            <Button className="mt-4" onClick={onAdd}>
-              <Plus className="mr-2 h-4 w-4" aria-hidden />
-              Birinchi avtomobilni qo'shish
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {vehicles.map((vehicle) => (
-              <div key={vehicle.id} className="overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate text-base font-semibold">{vehicle.name}</h3>
-                      <span className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        vehicle.status === 'active' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
-                      )}>
-                        {vehicle.status === 'active' ? "E'londa (Faol)" : 'Yashirilgan'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-[var(--muted-foreground)]">{vehicle.plateNumber}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-[var(--muted-foreground)]">O'rindiqlar:</span>{' '}
-                        <span className="font-medium">{vehicle.seatsCount} kishi</span>
-                      </div>
-                      <div>
-                        <span className="text-[var(--muted-foreground)]">Kunlik narxi:</span>{' '}
-                        <span className="font-medium text-brand-600 dark:text-brand-400">{formatMoney(vehicle.pricePerDay)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center gap-2 border-t border-[var(--border)] pt-4">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => onEdit(vehicle)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
-                  </Button>
-                  <Button 
-                    variant={vehicle.status === 'active' ? 'outline' : 'primary'} 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => toggleStatus(vehicle)}
-                    disabled={updateVehicle.isPending}
-                  >
-                    {vehicle.status === 'active' ? "E'londan olish" : "E'longa chiqarish"}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardBody>
-    </Card>
-  );
-}
-
-function Signal({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-      <p className="text-[11px] font-medium text-[var(--muted-foreground)]">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-sm font-semibold">{value}</p>
-      <p className="truncate text-[11px] text-[var(--muted-foreground)]">
-        {hint}
-      </p>
-    </div>
-  );
-}
-
-function LivePreview({
-  cover,
-  name,
-  city,
-  stars,
-  showStars,
-  shortDescription,
-  photosCount,
-  onOpen,
-}: {
-  cover?: string;
-  name: string;
-  city: string;
-  stars: number;
-  showStars: boolean;
-  shortDescription: string;
-  photosCount: number;
-  onOpen: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group relative min-h-[260px] overflow-hidden bg-zinc-900 text-left text-white lg:min-h-full"
-    >
-      {cover ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={cover}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-80 transition-transform duration-500 group-hover:scale-[1.03]"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-brand-950">
-          <Camera className="h-12 w-12 text-white/30" aria-hidden />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
-      <div className="relative flex h-full min-h-[260px] flex-col justify-end p-4">
-        <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-md bg-black/45 px-2 py-1 text-xs font-medium backdrop-blur">
-          <Camera className="h-3.5 w-3.5" aria-hidden />
-          {photosCount} ta rasm
-        </span>
-        <h2 className="text-xl font-semibold">{name || 'Nomi kiritilmagan'}</h2>
-        <div className="mt-1 flex items-center gap-1 text-sm text-white/85">
-          {showStars &&
-            Array.from({ length: 5 }).map((_, index) => (
-              <Star
-                key={index}
-                className={cn(
-                  'h-3.5 w-3.5',
-                  index < stars
-                    ? 'fill-amber-400 stroke-amber-400'
-                    : 'stroke-white/45',
-                )}
-                aria-hidden
-              />
-            ))}
-          <span className={showStars ? 'ml-1' : ''}>{city}</span>
-        </div>
-        <p className="mt-2 line-clamp-2 text-sm leading-5 text-white/80">
-          {shortDescription || 'Qisqa tavsif hali kiritilmagan.'}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-function WorkflowStep({
-  index,
-  section,
-  active,
-  onEdit,
-}: {
-  index: number;
-  section: ListingSection;
-  active: boolean;
-  onEdit: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onEdit}
-      className={cn(
-        'grid gap-3 rounded-card border bg-[var(--surface)] p-4 text-left transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center',
-        section.complete
-          ? 'border-[var(--border)]'
-          : active
-            ? 'border-amber-300 dark:border-amber-800'
-            : 'border-[var(--border)]',
-      )}
-    >
-      <span
-        className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-md text-sm font-semibold',
-          section.complete
-            ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200'
-            : 'bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200',
-        )}
-      >
-        {section.complete ? (
-          <CheckCircle2 className="h-5 w-5" aria-hidden />
-        ) : (
-          index
-        )}
-      </span>
-
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold">{section.title}</h3>
-          {active && !section.complete && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-              keyingi
-            </span>
-          )}
-        </div>
-        <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-          {section.subtitle}
-        </p>
-        <p className="mt-2 truncate text-sm">{section.summary}</p>
-        {section.missing && (
-          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-            {section.missing}
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-2 sm:justify-end">
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 dark:text-brand-300">
-          {section.icon}
-          {section.action}
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function ChecklistItem({ done, label }: { done: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <CheckCircle2
-        className={cn(
-          'h-4 w-4 shrink-0',
-          done ? 'text-accent-600' : 'text-zinc-300 dark:text-zinc-700',
-        )}
-        aria-hidden
-      />
-      <span
-        className={cn(
-          done ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
-        )}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function RuleChip({
-  on,
-  icon,
-  label,
-}: {
-  on: boolean;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'flex items-center justify-between rounded-md px-3 py-2',
-        on
-          ? 'bg-accent-50 text-accent-800 dark:bg-accent-950/30 dark:text-accent-200'
-          : 'bg-[var(--surface-muted)] text-[var(--muted-foreground)]',
-      )}
-    >
-      <span className="inline-flex items-center gap-2">
-        <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
-        {label}
-      </span>
-      <span className="text-xs font-medium">{on ? 'Ruxsat' : "Yo'q"}</span>
     </div>
   );
 }

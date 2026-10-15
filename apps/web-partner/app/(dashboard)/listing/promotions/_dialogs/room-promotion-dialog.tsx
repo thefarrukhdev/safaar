@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -67,9 +67,9 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
     }
   });
 
-  const selectedEntityId = form.watch("entityId");
-  const oldPriceSum = form.watch("oldPriceSum");
-  const newPriceSum = form.watch("newPriceSum");
+  const selectedEntityId = useWatch({ control: form.control, name: "entityId" });
+  const oldPriceSum = useWatch({ control: form.control, name: "oldPriceSum" });
+  const newPriceSum = useWatch({ control: form.control, name: "newPriceSum" });
 
   useEffect(() => {
     if (selectedEntityId) {

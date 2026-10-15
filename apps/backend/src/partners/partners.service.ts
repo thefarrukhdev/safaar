@@ -42,6 +42,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { EventsService } from '../realtime/events.service';
 import { computeBookingReport } from '../reports/booking-reports.query';
+import { UploadsService, type UploadedFile } from '../uploads/uploads.service';
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -158,6 +159,7 @@ export class PartnersService {
     private readonly jobs: JobQueueService,
     @Optional() private readonly events?: EventsService,
     @Optional() private readonly cache?: AppCacheService,
+    @Optional() private readonly uploads?: UploadsService,
   ) {}
 
   /**
@@ -1277,79 +1279,150 @@ export class PartnersService {
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
+    files?: UploadedFile[],
   ) {
     await this.assertHotel(id, actor);
-    const uploadedFileId = this.optionalString(body.file_id ?? body.fileId);
+    if (!actor?.id) {
+      throw new ForbiddenException({
+        code: 'IMAGE_OWNER_REQUIRED',
+        message: 'Rasm egasi aniqlanmadi',
+      });
+    }
 
-    if (uploadedFileId) {
-      if (!actor?.id) {
-        throw new ForbiddenException({
-          code: 'IMAGE_OWNER_REQUIRED',
-          message: 'Rasm egasi aniqlanmadi',
-        });
+    const uploadedFileIds: string[] = [];
+    if (files && files.length > 0 && this.uploads) {
+      for (const file of files) {
+        const created = await this.uploads.create(
+          actor,
+          'image',
+          { caption: body.caption },
+          file,
+        );
+        const idStr = String(created['id'] ?? '');
+        if (idStr) uploadedFileIds.push(idStr);
       }
+    }
 
-      const [uploaded] = await this.pg.query<{
-        id: string;
-        url: string | null;
-      }>(
-        `SELECT id::text, url
-         FROM media_files
-         WHERE id = $1::uuid
-           AND owner_id = $2::uuid
-           AND deleted_at IS NULL`,
-        [uploadedFileId, actor.id],
-      );
-      if (!uploaded?.url) {
-        throw new BadRequestException({
-          code: 'IMAGE_UPLOAD_NOT_FOUND',
-          message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
-        });
+    const rawIds =
+      body.file_ids ??
+      body.fileIds ??
+      (Array.isArray(body.images) ? body.images : undefined);
+
+    let clientFileIds: string[] = [];
+    if (Array.isArray(rawIds)) {
+      clientFileIds = rawIds
+        .map((item: unknown) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && item !== null) {
+            const obj = item as Record<string, unknown>;
+            const val = obj.file_id ?? obj.fileId ?? obj.id;
+            return typeof val === 'string' ? val : undefined;
+          }
+          return undefined;
+        })
+        .filter((x): x is string => typeof x === 'string' && Boolean(x.trim()));
+    } else {
+      const singleId = this.optionalString(body.file_id ?? body.fileId);
+      if (singleId) {
+        clientFileIds = [singleId];
       }
+    }
 
-      const [order] = await this.pg.query<{
-        next_order: number;
-        image_count: number;
-      }>(
-        `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
-                count(*)::int as image_count
-         FROM media_files
-         WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL`,
-        [id],
-      );
+    const allFileIds = [...uploadedFileIds, ...clientFileIds];
+
+    if (allFileIds.length === 0) {
+      throw new BadRequestException({
+        code: 'IMAGE_UPLOAD_REQUIRED',
+        message: 'Rasmni avval serverga yuklash kerak',
+      });
+    }
+
+    const uploadedFiles = await this.pg.query<{
+      id: string;
+      url: string | null;
+    }>(
+      `SELECT id::text, url
+       FROM media_files
+       WHERE id = ANY($1::uuid[])
+         AND owner_id = $2::uuid
+         AND deleted_at IS NULL`,
+      [allFileIds, actor.id],
+    );
+
+    if (uploadedFiles.length === 0) {
+      throw new BadRequestException({
+        code: 'IMAGE_UPLOAD_NOT_FOUND',
+        message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
+      });
+    }
+
+    const uploadedMap = new Map(uploadedFiles.map((f) => [f.id, f]));
+
+    const [order] = await this.pg.query<{
+      next_order: number;
+      image_count: number;
+    }>(
+      `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
+              count(*)::int as image_count
+       FROM media_files
+       WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL`,
+      [id],
+    );
+
+    let nextOrder = order?.next_order ?? 0;
+    let imageCount = order?.image_count ?? 0;
+    const addedImages: Array<{ image_id: string; image_url: string }> = [];
+
+    const categoryVal =
+      body.category !== undefined &&
+      body.category !== null &&
+      String(body.category).trim() !== ''
+        ? String(body.category).trim()
+        : null;
+    const captionVal =
+      body.caption !== undefined &&
+      body.caption !== null &&
+      String(body.caption).trim() !== ''
+        ? String(body.caption).trim()
+        : null;
+
+    for (const fileId of allFileIds) {
+      const uploaded = uploadedMap.get(fileId);
+      if (!uploaded?.url) continue;
+
+      const isCover = imageCount === 0;
 
       await this.pg.query(
         `UPDATE media_files
          SET owner_type = 'hotel', owner_id = $1::uuid, bucket = 'image',
              visibility = 'public',
-             caption = nullif($3, ''),
-             category = nullif($4, ''),
+             caption = $3,
+             category = $4,
              sort_order = $5,
              is_cover = $6
          WHERE id = $2::uuid AND deleted_at IS NULL`,
-        [
-          id,
-          uploaded.id,
-          String(body.caption ?? ''),
-          String(body.category ?? ''),
-          order?.next_order ?? 0,
-          (order?.image_count ?? 0) === 0,
-        ],
+        [id, uploaded.id, captionVal, categoryVal, nextOrder, isCover],
       );
-      await this.touchHotel(id, new Date().toISOString());
-      this.notifyListingChanged(
-        { id, partner_organization_id: actor.organizationId },
-        actor,
-        'updated',
-        ['media'],
-      );
-      return { hotel_id: id, image_id: uploaded.id, image_url: uploaded.url };
+      nextOrder++;
+      imageCount++;
+      addedImages.push({ image_id: uploaded.id, image_url: uploaded.url });
     }
 
-    throw new BadRequestException({
-      code: 'IMAGE_UPLOAD_REQUIRED',
-      message: 'Rasmni avval serverga yuklash kerak',
-    });
+    await this.touchHotel(id, new Date().toISOString());
+    this.notifyListingChanged(
+      { id, partner_organization_id: actor.organizationId },
+      actor,
+      'updated',
+      ['media'],
+    );
+
+    return {
+      hotel_id: id,
+      image_id: addedImages[0]?.image_id,
+      image_url: addedImages[0]?.image_url,
+      images: addedImages,
+      count: addedImages.length,
+    };
   }
 
   async deleteHotelImage(
@@ -1479,84 +1552,151 @@ export class PartnersService {
     id: string,
     roomId: string,
     body: Record<string, unknown>,
+    files?: UploadedFile[],
   ) {
     await this.assertHotel(id, actor);
-    const uploadedFileId = this.optionalString(body.file_id ?? body.fileId);
+    if (!actor?.id) {
+      throw new ForbiddenException({
+        code: 'IMAGE_OWNER_REQUIRED',
+        message: 'Rasm egasi aniqlanmadi',
+      });
+    }
 
-    if (uploadedFileId) {
-      if (!actor?.id) {
-        throw new ForbiddenException({
-          code: 'IMAGE_OWNER_REQUIRED',
-          message: 'Rasm egasi aniqlanmadi',
-        });
+    const uploadedFileIds: string[] = [];
+    if (files && files.length > 0 && this.uploads) {
+      for (const file of files) {
+        const created = await this.uploads.create(
+          actor,
+          'image',
+          { caption: body.caption },
+          file,
+        );
+        const idStr = String(created['id'] ?? '');
+        if (idStr) uploadedFileIds.push(idStr);
       }
+    }
 
-      const [uploaded] = await this.pg.query<{
-        id: string;
-        url: string | null;
-      }>(
-        `SELECT id::text, url
-         FROM media_files
-         WHERE id = $1::uuid
-           AND owner_id = $2::uuid
-           AND deleted_at IS NULL`,
-        [uploadedFileId, actor.id],
-      );
-      if (!uploaded?.url) {
-        throw new BadRequestException({
-          code: 'IMAGE_UPLOAD_NOT_FOUND',
-          message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
-        });
+    const rawIds =
+      body.file_ids ??
+      body.fileIds ??
+      (Array.isArray(body.images) ? body.images : undefined);
+
+    let clientFileIds: string[] = [];
+    if (Array.isArray(rawIds)) {
+      clientFileIds = rawIds
+        .map((item: unknown) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && item !== null) {
+            const obj = item as Record<string, unknown>;
+            const val = obj.file_id ?? obj.fileId ?? obj.id;
+            return typeof val === 'string' ? val : undefined;
+          }
+          return undefined;
+        })
+        .filter((x): x is string => typeof x === 'string' && Boolean(x.trim()));
+    } else {
+      const singleId = this.optionalString(body.file_id ?? body.fileId);
+      if (singleId) {
+        clientFileIds = [singleId];
       }
+    }
 
-      const [order] = await this.pg.query<{
-        next_order: number;
-        image_count: number;
-      }>(
-        `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
-                count(*)::int as image_count
-         FROM media_files
-         WHERE owner_type = 'room' AND owner_id = $1::uuid AND deleted_at IS NULL`,
-        [roomId],
-      );
+    const allFileIds = [...uploadedFileIds, ...clientFileIds];
+
+    if (allFileIds.length === 0) {
+      throw new BadRequestException({
+        code: 'IMAGE_UPLOAD_REQUIRED',
+        message: 'Rasmni avval serverga yuklash kerak',
+      });
+    }
+
+    const uploadedFiles = await this.pg.query<{
+      id: string;
+      url: string | null;
+    }>(
+      `SELECT id::text, url
+       FROM media_files
+       WHERE id = ANY($1::uuid[])
+         AND owner_id = $2::uuid
+         AND deleted_at IS NULL`,
+      [allFileIds, actor.id],
+    );
+
+    if (uploadedFiles.length === 0) {
+      throw new BadRequestException({
+        code: 'IMAGE_UPLOAD_NOT_FOUND',
+        message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
+      });
+    }
+
+    const uploadedMap = new Map(uploadedFiles.map((f) => [f.id, f]));
+
+    const [order] = await this.pg.query<{
+      next_order: number;
+      image_count: number;
+    }>(
+      `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
+              count(*)::int as image_count
+       FROM media_files
+       WHERE owner_type = 'room' AND owner_id = $1::uuid AND deleted_at IS NULL`,
+      [roomId],
+    );
+
+    let nextOrder = order?.next_order ?? 0;
+    let imageCount = order?.image_count ?? 0;
+    const addedImages: Array<{ image_id: string; image_url: string }> = [];
+
+    const categoryVal =
+      body.category !== undefined &&
+      body.category !== null &&
+      String(body.category).trim() !== ''
+        ? String(body.category).trim()
+        : null;
+    const captionVal =
+      body.caption !== undefined &&
+      body.caption !== null &&
+      String(body.caption).trim() !== ''
+        ? String(body.caption).trim()
+        : null;
+
+    for (const fileId of allFileIds) {
+      const uploaded = uploadedMap.get(fileId);
+      if (!uploaded?.url) continue;
+
+      const isCover = imageCount === 0;
 
       await this.pg.query(
         `UPDATE media_files
          SET owner_type = 'room', owner_id = $1::uuid, bucket = 'image',
              visibility = 'public',
-             caption = nullif($3, ''),
-             category = nullif($4, ''),
+             caption = $3,
+             category = $4,
              sort_order = $5,
              is_cover = $6
          WHERE id = $2::uuid AND deleted_at IS NULL`,
-        [
-          roomId,
-          uploaded.id,
-          String(body.caption ?? ''),
-          String(body.category ?? ''),
-          order?.next_order ?? 0,
-          (order?.image_count ?? 0) === 0,
-        ],
+        [roomId, uploaded.id, captionVal, categoryVal, nextOrder, isCover],
       );
-      await this.touchHotel(id, new Date().toISOString());
-      this.notifyListingChanged(
-        { id, partner_organization_id: actor.organizationId },
-        actor,
-        'updated',
-        ['rooms'],
-      );
-      return {
-        hotel_id: id,
-        room_id: roomId,
-        image_id: uploaded.id,
-        image_url: uploaded.url,
-      };
+      nextOrder++;
+      imageCount++;
+      addedImages.push({ image_id: uploaded.id, image_url: uploaded.url });
     }
 
-    throw new BadRequestException({
-      code: 'IMAGE_UPLOAD_REQUIRED',
-      message: 'Rasmni avval serverga yuklash kerak',
-    });
+    await this.touchHotel(id, new Date().toISOString());
+    this.notifyListingChanged(
+      { id, partner_organization_id: actor.organizationId },
+      actor,
+      'updated',
+      ['rooms'],
+    );
+
+    return {
+      hotel_id: id,
+      room_id: roomId,
+      image_id: addedImages[0]?.image_id,
+      image_url: addedImages[0]?.image_url,
+      images: addedImages,
+      count: addedImages.length,
+    };
   }
 
   async deleteRoomImage(

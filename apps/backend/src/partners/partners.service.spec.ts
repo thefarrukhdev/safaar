@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { registrationVerificationStore } from '../auth/registration-verification-store';
@@ -4402,6 +4403,154 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
       id: 'promo-1',
       entityType: 'room',
       entityId: 'type-1',
+    });
+  });
+
+  describe('PartnersService.addHotelImage (bulk and optional category)', () => {
+    let query: jest.Mock;
+    let pg: { query: jest.Mock };
+    let service: PartnersService;
+
+    const hotelId = '00000000-0000-7001-0000-000000000001';
+    const partnerActor = {
+      id: '00000000-0000-2001-0000-000000000001',
+      actorType: 'user' as const,
+      role: Role.PARTNER,
+      roles: [Role.PARTNER],
+      organizationId: '00000000-0000-1001-0000-000000000001',
+    };
+
+    beforeEach(() => {
+      query = jest.fn();
+      pg = { query };
+      service = new PartnersService(
+        pg as unknown as PostgresService,
+        { add: jest.fn() } as unknown as JobQueueService,
+      );
+    });
+
+    it('attaches 1 image with single file_id without category (category is null)', async () => {
+      query
+        .mockResolvedValueOnce([
+          { id: hotelId, partner_organization_id: partnerActor.organizationId },
+        ]) // assertHotel
+        .mockResolvedValueOnce([
+          { id: 'img-1', url: 'https://cdn.safaar.uz/1.jpg' },
+        ]) // uploadedFiles check
+        .mockResolvedValueOnce([{ next_order: 0, image_count: 0 }]) // order check
+        .mockResolvedValueOnce([]) // UPDATE media_files
+        .mockResolvedValueOnce([]); // touchHotel
+
+      const result = await service.addHotelImage(partnerActor, hotelId, {
+        file_id: 'img-1',
+      });
+
+      expect(result).toMatchObject({
+        hotel_id: hotelId,
+        image_id: 'img-1',
+        image_url: 'https://cdn.safaar.uz/1.jpg',
+        count: 1,
+      });
+
+      const updateCall = query.mock.calls[3];
+      expect(updateCall?.[0]).toContain('UPDATE media_files');
+      expect(updateCall?.[1]).toEqual([hotelId, 'img-1', null, null, 0, true]);
+    });
+
+    it('attaches 3 images at once via file_ids and marks the first as cover when image_count is 0', async () => {
+      query
+        .mockResolvedValueOnce([
+          { id: hotelId, partner_organization_id: partnerActor.organizationId },
+        ]) // assertHotel
+        .mockResolvedValueOnce([
+          { id: 'img-1', url: 'https://cdn.safaar.uz/1.jpg' },
+          { id: 'img-2', url: 'https://cdn.safaar.uz/2.jpg' },
+          { id: 'img-3', url: 'https://cdn.safaar.uz/3.jpg' },
+        ]) // uploadedFiles check
+        .mockResolvedValueOnce([{ next_order: 0, image_count: 0 }]) // order check
+        .mockResolvedValueOnce([]) // UPDATE media_files 1
+        .mockResolvedValueOnce([]) // UPDATE media_files 2
+        .mockResolvedValueOnce([]) // UPDATE media_files 3
+        .mockResolvedValueOnce([]); // touchHotel
+
+      const result = await service.addHotelImage(partnerActor, hotelId, {
+        file_ids: ['img-1', 'img-2', 'img-3'],
+      });
+
+      expect(result).toMatchObject({
+        hotel_id: hotelId,
+        image_id: 'img-1',
+        image_url: 'https://cdn.safaar.uz/1.jpg',
+        count: 3,
+        images: [
+          { image_id: 'img-1', image_url: 'https://cdn.safaar.uz/1.jpg' },
+          { image_id: 'img-2', image_url: 'https://cdn.safaar.uz/2.jpg' },
+          { image_id: 'img-3', image_url: 'https://cdn.safaar.uz/3.jpg' },
+        ],
+      });
+
+      expect(query.mock.calls[3]?.[1]).toEqual([
+        hotelId,
+        'img-1',
+        null,
+        null,
+        0,
+        true,
+      ]);
+      expect(query.mock.calls[4]?.[1]).toEqual([
+        hotelId,
+        'img-2',
+        null,
+        null,
+        1,
+        false,
+      ]);
+      expect(query.mock.calls[5]?.[1]).toEqual([
+        hotelId,
+        'img-3',
+        null,
+        null,
+        2,
+        false,
+      ]);
+    });
+
+    it('attaches 3 images to a hotel that already has 2 images: all get is_cover=false and continuous sort_order', async () => {
+      query
+        .mockResolvedValueOnce([
+          { id: hotelId, partner_organization_id: partnerActor.organizationId },
+        ]) // assertHotel
+        .mockResolvedValueOnce([
+          { id: 'img-3', url: 'https://cdn.safaar.uz/3.jpg' },
+          { id: 'img-4', url: 'https://cdn.safaar.uz/4.jpg' },
+          { id: 'img-5', url: 'https://cdn.safaar.uz/5.jpg' },
+        ]) // uploadedFiles check
+        .mockResolvedValueOnce([{ next_order: 2, image_count: 2 }]) // already 2 images
+        .mockResolvedValueOnce([]) // UPDATE media_files 3
+        .mockResolvedValueOnce([]) // UPDATE media_files 4
+        .mockResolvedValueOnce([]) // UPDATE media_files 5
+        .mockResolvedValueOnce([]); // touchHotel
+
+      const result = await service.addHotelImage(partnerActor, hotelId, {
+        file_ids: ['img-3', 'img-4', 'img-5'],
+      });
+
+      expect(result.count).toBe(3);
+      expect(query.mock.calls[3]?.[1]?.[4]).toBe(2);
+      expect(query.mock.calls[3]?.[1]?.[5]).toBe(false);
+      expect(query.mock.calls[4]?.[1]?.[4]).toBe(3);
+      expect(query.mock.calls[4]?.[1]?.[5]).toBe(false);
+      expect(query.mock.calls[5]?.[1]?.[4]).toBe(4);
+      expect(query.mock.calls[5]?.[1]?.[5]).toBe(false);
+    });
+
+    it('throws BadRequestException when no image IDs or files are provided', async () => {
+      query.mockResolvedValueOnce([
+        { id: hotelId, partner_organization_id: partnerActor.organizationId },
+      ]);
+      await expect(
+        service.addHotelImage(partnerActor, hotelId, {}),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

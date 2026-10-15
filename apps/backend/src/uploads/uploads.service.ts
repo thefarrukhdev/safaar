@@ -100,6 +100,28 @@ export class UploadsService implements OnModuleInit {
     );
   }
 
+  async createMany(
+    actor: RequestActor | undefined,
+    type: 'image' | 'document',
+    files: UploadedFile[],
+    body: MediaInputFields = {},
+  ) {
+    const currentActor = this.requireActor(actor);
+    const results: Array<Record<string, unknown>> = [];
+
+    for (const file of files) {
+      const stored = await this.storeMedia(
+        currentActor.actorType,
+        currentActor.id,
+        type,
+        body,
+        file,
+      );
+      results.push(stored);
+    }
+    return results;
+  }
+
   async createForOwner(
     ownerType: string,
     ownerId: string,

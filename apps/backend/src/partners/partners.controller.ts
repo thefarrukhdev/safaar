@@ -8,13 +8,17 @@ import {
   Post,
   Put,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Role } from '@safaar/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { PartnersService } from './partners.service';
+import type { UploadedFile as UploadedFilePayload } from '../uploads/uploads.service';
 
 @Controller(['partner', 'partners'])
 @UseGuards(RolesGuard)
@@ -149,12 +153,16 @@ export class PartnersController {
   }
 
   @Post('hotels/:id/images')
+  @UseInterceptors(
+    AnyFilesInterceptor({ limits: { fileSize: 5 * 1024 * 1024, files: 10 } }),
+  )
   addHotelImage(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
+    @UploadedFiles() files?: UploadedFilePayload[],
   ) {
-    return this.partnersService.addHotelImage(actor, id, body);
+    return this.partnersService.addHotelImage(actor, id, body, files);
   }
 
   @Delete('hotels/:id/images/:imageId')
@@ -258,13 +266,17 @@ export class PartnersController {
   }
 
   @Post('hotels/:id/rooms/:roomId/images')
+  @UseInterceptors(
+    AnyFilesInterceptor({ limits: { fileSize: 5 * 1024 * 1024, files: 10 } }),
+  )
   addRoomImage(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Param('roomId') roomId: string,
     @Body() body: Record<string, unknown>,
+    @UploadedFiles() files?: UploadedFilePayload[],
   ) {
-    return this.partnersService.addRoomImage(actor, id, roomId, body);
+    return this.partnersService.addRoomImage(actor, id, roomId, body, files);
   }
 
   @Delete('hotels/:id/rooms/:roomId/images/:imageId')

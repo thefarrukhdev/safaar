@@ -70,8 +70,16 @@ jobs:
         run: npm install --global vercel@latest
       - name: Vercel loyihasini ulash va Production Deploy
         run: |
-          vercel link --yes --project=web-admin --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+          echo "=== Vercel Auth Diagnosis ==="
+          vercel whoami --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel teams ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel projects ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          echo "=== Linking Project ==="
+          vercel link --yes --project=web-admin --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} || \
+          vercel link --yes --project=web-admin --token=${{ secrets.VERCEL_TOKEN }}
+          echo "=== Deploying Project ==="
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes || \
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
       - name: Xulosa
         run: |
           echo "### 🚀 web-admin (staff.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
@@ -116,8 +124,16 @@ jobs:
         run: npm install --global vercel@latest
       - name: Vercel loyihasini ulash va Production Deploy
         run: |
-          vercel link --yes --project=web-partner --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+          echo "=== Vercel Auth Diagnosis ==="
+          vercel whoami --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel teams ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel projects ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          echo "=== Linking Project ==="
+          vercel link --yes --project=web-partner --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} || \
+          vercel link --yes --project=web-partner --token=${{ secrets.VERCEL_TOKEN }}
+          echo "=== Deploying Project ==="
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes || \
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
       - name: Xulosa
         run: |
           echo "### 🚀 web-partner (partner.safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY
@@ -162,8 +178,16 @@ jobs:
         run: npm install --global vercel@latest
       - name: Vercel loyihasini ulash va Production Deploy
         run: |
-          vercel link --yes --project=safaar-uz --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes
+          echo "=== Vercel Auth Diagnosis ==="
+          vercel whoami --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel teams ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          vercel projects ls --token=${{ secrets.VERCEL_TOKEN }} || true
+          echo "=== Linking Project ==="
+          vercel link --yes --project=safaar-uz --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} || \
+          vercel link --yes --project=safaar-uz --token=${{ secrets.VERCEL_TOKEN }}
+          echo "=== Deploying Project ==="
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --yes || \
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
       - name: Xulosa
         run: |
           echo "### 🚀 web-user (safaar.uz) Vercel Production'ga muvaffaqiyatli deploy qilindi!" >> $GITHUB_STEP_SUMMARY

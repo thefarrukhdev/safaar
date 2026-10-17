@@ -127,24 +127,30 @@ describe('CmsService pages', () => {
       expect(deal.listing_type).toBe('dachas');
     });
 
-    it("`listing_type` snake_case va camelCase metadata uchun qaytariladi, bo'lmasa bo'sh satr", async () => {
+    it("`listing_type` va `listingType` snake_case va camelCase metadata uchun qaytariladi, bo'lmasa bo'sh satr", async () => {
       postgres.query.mockResolvedValueOnce([
         offerRow({ listing_type: 'restaurants' }),
       ]);
       await expect(service.offers()).resolves.toEqual([
-        expect.objectContaining({ listing_type: 'restaurants' }),
+        expect.objectContaining({
+          listing_type: 'restaurants',
+          listingType: 'restaurants',
+        }),
       ]);
 
       postgres.query.mockResolvedValueOnce([
         offerRow({ listingType: 'transport' }),
       ]);
       await expect(service.offers()).resolves.toEqual([
-        expect.objectContaining({ listing_type: 'transport' }),
+        expect.objectContaining({
+          listing_type: 'transport',
+          listingType: 'transport',
+        }),
       ]);
 
       postgres.query.mockResolvedValueOnce([offerRow({ old_price: 10 })]);
       await expect(service.offers()).resolves.toEqual([
-        expect.objectContaining({ listing_type: '' }),
+        expect.objectContaining({ listing_type: '', listingType: '' }),
       ]);
     });
 
@@ -297,6 +303,8 @@ describe('CmsService pages', () => {
 
       expect(promoDeal).toMatchObject({
         slug: 'hotels/grand-hotel',
+        listingType: 'hotels',
+        listing_type: 'hotels',
         old_price: 500000,
         new_price: 350000,
         discount_percent: 30,
@@ -338,6 +346,8 @@ describe('CmsService pages', () => {
 
       expect(promoDeal).toMatchObject({
         slug: 'transport/veh-1',
+        listingType: 'transport',
+        listing_type: 'transport',
         old_price: 300000,
         new_price: 240000,
         discount_percent: 20,

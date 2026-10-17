@@ -6683,8 +6683,12 @@ export class PartnersService {
           [String(hotel['partner_organization_id'])],
         ),
       ]);
-    const isRestaurant =
-      String(partnerRows[0]?.type ?? '').toLowerCase() === 'restaurant';
+    const partnerType = String(partnerRows[0]?.type ?? '').toLowerCase();
+    const isRestaurant = partnerType === 'restaurant';
+    const isTransport =
+      partnerType === 'bus' ||
+      partnerType === 'rent_car' ||
+      partnerType === 'mixed';
 
     const hasName = translations.some(
       (row) => (row.name ?? '').trim().length >= 3,
@@ -6710,11 +6714,11 @@ export class PartnersService {
     const sections: Record<string, boolean> = {
       general: hasName && hasShortDescription && hasFullDescription,
       location: hasLocation,
-      media: Number(media[0]?.count ?? 0) >= 3,
-      amenities: Number(amenities[0]?.count ?? 0) >= 3,
+      media: isTransport ? true : Number(media[0]?.count ?? 0) >= 3,
+      amenities: isTransport ? true : Number(amenities[0]?.count ?? 0) >= 3,
       rules: hasRules,
     };
-    if (!isRestaurant) {
+    if (!isRestaurant && !isTransport) {
       sections.rooms = Number(rooms[0]?.count ?? 0) > 0;
     }
     const missing = Object.entries(sections)

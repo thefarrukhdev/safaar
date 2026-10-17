@@ -472,7 +472,8 @@ export class HotelsService {
         COALESCE(h.allows_cash, true) as allows_cash,
         COALESCE(h.allows_online_payment, true) as allows_online_payment,
         ht.name, ht.description,
-        c.name as city_name, c.region_id::text
+        c.name as city_name, c.region_id::text,
+        po.phone as contact_phone
       FROM hotels h
       JOIN partner_organizations po ON po.id = h.partner_organization_id
       LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
@@ -496,6 +497,35 @@ export class HotelsService {
     const listingData = await this.loadListingData([String(h.id)]);
     const rooms = await this.loadHotelRooms(String(h.id));
 
+    const hotelDesc =
+      listingData.descriptions.get(String(h.id))?.uz ??
+      (typeof h.description === 'string'
+        ? h.description
+        : (h.description as Record<string, string | null>)?.uz) ??
+      '';
+    const hotelNameUz =
+      listingData.names.get(String(h.id))?.uz ??
+      (typeof h.name === 'string'
+        ? h.name
+        : (h.name as Record<string, string | null>)?.uz) ??
+      'Mehmonxona';
+    const cityNameUz =
+      typeof h.city_name === 'object' && h.city_name
+        ? (h.city_name as Record<string, string | null>)?.uz || ''
+        : String(h.city_name ?? '');
+    const metaDescription = hotelDesc.trim()
+      ? hotelDesc.length > 160
+        ? hotelDesc.slice(0, 157) + '...'
+        : hotelDesc
+      : `${hotelNameUz} - ${cityNameUz} shahrida joylashgan qulay mehmonxona.`;
+    const metaKeywords = [
+      hotelNameUz,
+      cityNameUz,
+      'mehmonxona',
+      'hotel',
+      'safaar',
+    ].filter(Boolean);
+
     return {
       id: h.id,
       partner_organization_id: h.partner_organization_id,
@@ -508,8 +538,19 @@ export class HotelsService {
       rating_average: Number(h.rating_average),
       reviews_count: Number(h.reviews_count),
       status: h.status,
-      check_in_time: h.check_in_time,
-      check_out_time: h.check_out_time,
+      check_in_time: (h.check_in_time as string | null) || '14:00',
+      check_out_time: (h.check_out_time as string | null) || '12:00',
+      contact_phone: h.contact_phone ? String(h.contact_phone) : null,
+      policies: {
+        smoking_allowed: Boolean(h.smoking_allowed),
+        pets_allowed: Boolean(h.pets_allowed),
+        children_allowed: Boolean(h.children_allowed ?? true),
+        cancellation_policy_code: String(
+          h.cancellation_policy_code || 'MODERATE',
+        ),
+      },
+      meta_description: metaDescription,
+      meta_keywords: metaKeywords,
       created_at: h.created_at,
       updated_at: h.updated_at,
       name: listingData.names.get(String(h.id)) ?? localized(h.name),

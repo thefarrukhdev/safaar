@@ -353,6 +353,70 @@ describe('PartnersService frontend action endpoints', () => {
     ]);
   });
 
+  describe('PartnersService.submitHotelReview transport completeness validation', () => {
+    const validTransportHotel = {
+      ...hotelRow,
+      address: 'Toshkent sh., Transport ko‘chasi 1',
+      latitude: 41.31,
+      longitude: 69.28,
+      rules_completed_at: '2026-08-01T00:00:00Z',
+      check_in_time: '14:00',
+      check_out_time: '12:00',
+    };
+
+    const validTranslations = [
+      {
+        name: 'Sharq Avtobus',
+        short_description: 'Qulay va tez transport xizmati',
+        description:
+          'Butun O‘zbekiston bo‘ylab eng qulay va zamonaviy transport xizmatlarini taqdim etamiz. Xavfsiz va ishonchli.',
+      },
+    ];
+
+    it('allows transport partners (bus, rent_car, mixed) to submit without rooms, media, or amenities', async () => {
+      for (const transportType of ['bus', 'rent_car', 'mixed']) {
+        pgMock.query.mockReset();
+        pgMock.query
+          .mockResolvedValueOnce([validTransportHotel]) // assertHotel
+          .mockResolvedValueOnce(validTranslations) // translations
+          .mockResolvedValueOnce([{ count: 0 }]) // media count = 0
+          .mockResolvedValueOnce([{ count: 0 }]) // amenities count = 0
+          .mockResolvedValueOnce([{ count: 0 }]) // rooms count = 0
+          .mockResolvedValueOnce([{ type: transportType }]) // partner_organizations type
+          .mockResolvedValueOnce([
+            { ...validTransportHotel, status: 'pending_review' },
+          ]) // UPDATE hotels
+          .mockResolvedValueOnce([
+            { ...validTransportHotel, status: 'pending_review' },
+          ]); // hotel()
+
+        await expect(
+          service.submitHotelReview(actor, hotelId),
+        ).resolves.toBeDefined();
+      }
+    });
+
+    it('rejects hotel partner submission when rooms, media, or amenities are missing', async () => {
+      pgMock.query.mockReset();
+      pgMock.query
+        .mockResolvedValueOnce([validTransportHotel]) // assertHotel
+        .mockResolvedValueOnce(validTranslations) // translations
+        .mockResolvedValueOnce([{ count: 0 }]) // media count = 0
+        .mockResolvedValueOnce([{ count: 0 }]) // amenities count = 0
+        .mockResolvedValueOnce([{ count: 0 }]) // rooms count = 0
+        .mockResolvedValueOnce([{ type: 'hotel' }]); // partner_organizations type
+
+      await expect(
+        service.submitHotelReview(actor, hotelId),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'HOTEL_INCOMPLETE',
+          fields: expect.arrayContaining(['media', 'amenities', 'rooms']),
+        },
+      });
+    });
+  });
+
   describe('PartnersService.updateListingLocation (regression: PARTNERS-LOCATION-NULL-ISLAND — a raw `Number(body.latitude)`/`Number(body.longitude)` turned a blank/whitespace/null coordinate into `0` via `Number("")===0`, silently saving the listing at (0,0) "Null Island" instead of clearing it to NULL)', () => {
     const findLocationUpdate = () =>
       pgMock.query.mock.calls.find(

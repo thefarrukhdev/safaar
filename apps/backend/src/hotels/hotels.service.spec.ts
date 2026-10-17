@@ -577,9 +577,10 @@ describe('HotelsService.findOne', () => {
     roomRows: Record<string, unknown>[],
     roomTranslationRows: Record<string, unknown>[] = [],
     roomPromotionRows: Record<string, unknown>[] = [],
+    hotelRow: Record<string, unknown> = HOTEL_ROW,
   ) {
     pg.query
-      .mockResolvedValueOnce([HOTEL_ROW]) // hotel
+      .mockResolvedValueOnce([hotelRow]) // hotel
       .mockResolvedValueOnce([]) // hotel_translations
       .mockResolvedValueOnce([]) // media_files
       .mockResolvedValueOnce([]) // hotel_amenities
@@ -842,6 +843,60 @@ describe('HotelsService.findOne', () => {
     expect(result.rooms.find((r) => r.id === 'room-2')?.effective_price).toBe(
       820000,
     );
+  });
+
+  it('populates contact_phone, policies, default check-in/out times, and AIO meta fields', async () => {
+    const { service, pg } = makeService();
+    mockFindOneQueries(
+      pg,
+      [
+        {
+          id: 'room-1',
+          hotel_id: 'hotel-1',
+          room_type_id: 'type-std',
+          code: 'STD-1',
+          base_occupancy: 2,
+          max_adults: 2,
+          max_children: 1,
+          total_inventory: 5,
+          base_price: 550000,
+          status: 'active',
+          room_type_name: { uz: 'Standart' },
+        },
+      ],
+      [],
+      [],
+      {
+        ...HOTEL_ROW,
+        check_in_time: null,
+        check_out_time: null,
+        contact_phone: '+998901234567',
+        cancellation_policy_code: 'FLEXIBLE',
+        smoking_allowed: true,
+        pets_allowed: false,
+        children_allowed: true,
+      },
+    );
+
+    const result = await service.findOne('hotel-one');
+
+    expect(result.contact_phone).toBe('+998901234567');
+    expect(result.check_in_time).toBe('14:00');
+    expect(result.check_out_time).toBe('12:00');
+    expect(result.policies).toEqual({
+      smoking_allowed: true,
+      pets_allowed: false,
+      children_allowed: true,
+      cancellation_policy_code: 'FLEXIBLE',
+    });
+    expect(result.meta_description).toBe('Description');
+    expect(result.meta_keywords).toEqual([
+      'Hotel One',
+      'Toshkent',
+      'mehmonxona',
+      'hotel',
+      'safaar',
+    ]);
   });
 });
 

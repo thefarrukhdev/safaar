@@ -376,6 +376,11 @@ function listingCompleteness(
   roomSummary: { active_room_count: number },
 ) {
   const partnerType = String(row['partner_type'] ?? '').toLowerCase();
+  const isRestaurant = partnerType === 'restaurant';
+  const isTransport =
+    partnerType === 'bus' ||
+    partnerType === 'rent_car' ||
+    partnerType === 'mixed';
   const name = localizedObject(row['name']);
   const shortDescription = localizedObject(row['short_description']);
   const fullDescription = localizedObject(row['full_description']);
@@ -394,15 +399,15 @@ function listingCompleteness(
   const sections: Record<string, boolean> = {
     general: hasName && hasShortDescription && hasFullDescription,
     location: Boolean(String(row['address'] ?? '').trim()) && hasCoordinates,
-    media: media.length >= 3,
-    amenities: amenities.length >= 3,
+    media: isTransport ? true : media.length >= 3,
+    amenities: isTransport ? true : amenities.length >= 3,
     rules: Boolean(
       row['rules_completed_at'] &&
       row['check_in_time'] &&
       row['check_out_time'],
     ),
   };
-  if (partnerType !== 'restaurant') {
+  if (!isRestaurant && !isTransport) {
     sections.rooms = roomSummary.active_room_count > 0;
   }
   const completed = Object.values(sections).filter(Boolean).length;

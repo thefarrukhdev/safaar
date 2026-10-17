@@ -728,6 +728,65 @@ describe('AdminService frontend action endpoints', () => {
     );
   });
 
+  it('rejects publishing when listing completeness is_publishable is false (HOTEL_INCOMPLETE)', async () => {
+    const hotelId = '00000000-0000-0000-0000-000000000010';
+    jest.spyOn(service, 'hotel').mockResolvedValueOnce({
+      completeness: {
+        is_publishable: false,
+        missing_fields: ['media', 'amenities', 'rooms'],
+      },
+      name: { uz: 'Chala hotel' },
+    } as never);
+
+    await expect(
+      service.hotelStatus(actor, hotelId, 'published'),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'HOTEL_INCOMPLETE',
+        message: "E'lon to'liq to'ldirilmagan",
+        fields: ['media', 'amenities', 'rooms'],
+      },
+    });
+  });
+
+  it('listingCompleteness treats transport partners (bus, rent_car, mixed) as publishable without hotel rooms, media, or amenities', async () => {
+    const hotelId = '00000000-0000-0000-0000-000000000011';
+    for (const partnerType of ['bus', 'rent_car', 'mixed']) {
+      pgMock.query.mockReset();
+      pgMock.query
+        .mockResolvedValueOnce([
+          {
+            id: hotelId,
+            partner_type: partnerType,
+            name: { uz: 'Sharq Transport' },
+            short_description: { uz: 'Qulay avtobuslar xizmati' },
+            full_description: {
+              uz: 'Butun O‘zbekiston bo‘ylab eng qulay va zamonaviy transport xizmatlarini taqdim etamiz. Xavfsiz va ishonchli.',
+            },
+            address: 'Toshkent sh., Transport ko‘chasi 1',
+            latitude: 41.31,
+            longitude: 69.28,
+            rules_completed_at: '2026-08-01T00:00:00Z',
+            check_in_time: '14:00',
+            check_out_time: '12:00',
+            status: 'pending_review',
+          },
+        ]) // main hotel query
+        .mockResolvedValueOnce([]) // media_files
+        .mockResolvedValueOnce([]) // hotel_amenities
+        .mockResolvedValueOnce([]) // hotel_rooms
+        .mockResolvedValueOnce([]) // hotel_room_translations
+        .mockResolvedValueOnce([]); // hotel_room_amenities
+
+      const result = await service.hotel(hotelId);
+      expect(result.completeness.is_publishable).toBe(true);
+      expect(result.completeness.missing_fields).toEqual([]);
+      expect(result.completeness.sections.media).toBe(true);
+      expect(result.completeness.sections.amenities).toBe(true);
+      expect(result.completeness.sections.rooms).toBeUndefined();
+    }
+  });
+
   it('loads admin settings from persistent storage with defaults', async () => {
     pgMock.query.mockResolvedValue([
       {

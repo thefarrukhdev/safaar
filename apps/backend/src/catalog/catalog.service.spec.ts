@@ -459,3 +459,101 @@ describe('CatalogService regions/cities/amenities active-state filtering', () =>
     );
   });
 });
+
+describe('CatalogService.restaurant (single restaurant details with AIO metadata)', () => {
+  let service: CatalogService;
+  let cache: AppCacheService;
+  let postgres: jest.Mocked<PostgresService>;
+
+  beforeEach(() => {
+    cache = {
+      getOrSet: jest
+        .fn()
+        .mockImplementation(
+          (_key: string, _ttl: number, fn: () => Promise<unknown>) => fn(),
+        ),
+    } as unknown as AppCacheService;
+
+    postgres = {
+      query: jest.fn(),
+    } as unknown as jest.Mocked<PostgresService>;
+
+    service = new CatalogService(cache, postgres);
+  });
+
+  it('returns restaurant details enriched with AIO fields (opening_hours, price_range, menu_url, cuisine, contact_phone, meta_description, meta_keywords)', async () => {
+    const restaurantRow = {
+      id: 'rest-uuid-1',
+      slug: 'nook-restaurant',
+      name: 'Nook Restorani',
+      description: 'Mazali milliy va yevropa taomlari restorani',
+      address: 'Toshkent sh., Amir Temur 10',
+      rating: 4.8,
+      reviews_count: 25,
+      latitude: 41.311,
+      longitude: 69.279,
+      check_in_time: '10:00',
+      check_out_time: '23:00',
+      working_hours: '10:00 - 23:00',
+      phone: '+998901234567',
+      city_id: 'city-1',
+      city_name: { uz: 'Toshkent' },
+      updated_at: '2026-08-04T12:00:00Z',
+    };
+
+    postgres.query
+      .mockResolvedValueOnce([restaurantRow]) // main restaurant query
+      .mockResolvedValueOnce([
+        { url: 'https://example.com/cover.jpg', category: 'cover' },
+        { url: 'https://example.com/menu.pdf', category: 'menu' },
+      ]) // media_files
+      .mockResolvedValueOnce([
+        {
+          id: 'table-1',
+          code: '1',
+          base_occupancy: 4,
+          max_adults: 4,
+          base_price: 150000,
+          status: 'active',
+        },
+        {
+          id: 'table-2',
+          code: '2',
+          base_occupancy: 6,
+          max_adults: 6,
+          base_price: 300000,
+          status: 'active',
+        },
+      ]) // hotel_rooms (tables)
+      .mockResolvedValueOnce([
+        {
+          metadata: {
+            cuisine: ['Milliy', 'Turkcha'],
+          },
+        },
+      ]); // cms_entries metadata
+
+    const result = await service.restaurant('nook-restaurant');
+
+    expect(result.id).toBe('rest-uuid-1');
+    expect(result.slug).toBe('nook-restaurant');
+    expect(result.opening_hours).toBe('10:00 - 23:00');
+    expect(result.price_range).toBe('150 000 - 300 000 UZS');
+    expect(result.menu_url).toBe('https://example.com/menu.pdf');
+    expect(result.cuisine).toEqual(['Milliy', 'Turkcha']);
+    expect(result.contact_phone).toBe('+998901234567');
+    expect(result.phone).toBe('+998901234567');
+    expect(result.meta_description).toBe(
+      'Mazali milliy va yevropa taomlari restorani',
+    );
+    expect(result.meta_keywords).toEqual([
+      'Nook Restorani',
+      'Toshkent',
+      'restoran',
+      'restaurant',
+      'safaar',
+      'Milliy',
+      'Turkcha',
+    ]);
+  });
+});

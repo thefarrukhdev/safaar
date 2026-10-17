@@ -198,12 +198,15 @@ export class CmsService {
               isRoom && row.hotel_city_name
                 ? objectValue(row.hotel_city_name)
                 : {};
+            const listingType = isRoom ? 'hotels' : 'transport';
             return {
               id: row.id,
               type: 'offer',
               slug: isRoom
                 ? `hotels/${row.hotel_slug}`
                 : `transport/${row.entity_id}`,
+              listingType,
+              listing_type: listingType,
               title: { uz: titleStr, ru: titleStr, en: titleStr },
               name: titleStr,
               title_text: titleStr,
@@ -338,6 +341,7 @@ export class CmsService {
       updated_at: row.updated_at,
       hotel_id: meta.hotel_id ?? meta.hotelId ?? '',
       listing_type: meta.listing_type ?? meta.listingType ?? '',
+      listingType: meta.listingType ?? meta.listing_type ?? '',
       city_name: meta.city_name ?? meta.cityName ?? {},
       image_url: meta.image_url ?? meta.imageUrl ?? '',
       // Narx kalitlari uchta avlodda yozilgan: `old_price`/`new_price`

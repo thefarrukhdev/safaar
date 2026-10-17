@@ -463,9 +463,9 @@ export class CatalogService {
     const res = rows[0];
     const hotelId = String(res.id);
 
-    const [mediaRows, roomRows] = await Promise.all([
-      this.postgres.query<{ url: string }>(
-        `SELECT url FROM media_files WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL AND url IS NOT NULL ORDER BY is_cover DESC, sort_order ASC`,
+    const [mediaRows, roomRows, cmsRows] = await Promise.all([
+      this.postgres.query<{ url: string; category?: string | null }>(
+        `SELECT url, category FROM media_files WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL AND url IS NOT NULL ORDER BY is_cover DESC, sort_order ASC`,
         [hotelId],
       ),
       this.postgres.query<{
@@ -482,6 +482,10 @@ export class CatalogService {
          ORDER BY code ASC`,
         [hotelId],
       ),
+      this.postgres.query<{ metadata: Record<string, unknown> }>(
+        `SELECT metadata FROM cms_entries WHERE (id::text = $1 OR slug = $2) AND type = 'restaurant' LIMIT 1`,
+        [hotelId, String(res.slug)],
+      ),
     ]);
 
     const images = mediaRows.map((m) => publicMediaUrl(m.url));
@@ -493,6 +497,64 @@ export class CatalogService {
       base_price: Number(r.base_price || 0),
     }));
 
+    const cmsMeta = objectValue(cmsRows[0]?.metadata);
+    const openingHours =
+      res.working_hours != null && String(res.working_hours).trim()
+        ? String(res.working_hours)
+        : res.check_in_time && res.check_out_time
+          ? `${String(res.check_in_time)} - ${String(res.check_out_time)}`
+          : '09:00 - 23:00';
+
+    let priceRange = '100 000 - 300 000 UZS';
+    if (cmsMeta.price_range) {
+      priceRange = String(cmsMeta.price_range);
+    } else if (tables.some((t) => t.base_price > 0)) {
+      const validPrices = tables.map((t) => t.base_price).filter((p) => p > 0);
+      const minP = Math.min(...validPrices);
+      const maxP = Math.max(...validPrices);
+      priceRange =
+        minP === maxP
+          ? `${minP.toLocaleString('uz-UZ').replace(/\s+/g, ' ')} UZS`
+          : `${minP.toLocaleString('uz-UZ').replace(/\s+/g, ' ')} - ${maxP.toLocaleString('uz-UZ').replace(/\s+/g, ' ')} UZS`;
+    }
+
+    const menuMedia = mediaRows.find((m) => m.category === 'menu');
+    const menuUrl = cmsMeta.menu_url
+      ? String(cmsMeta.menu_url)
+      : menuMedia
+        ? publicMediaUrl(menuMedia.url)
+        : null;
+
+    const cuisine: string[] = Array.isArray(cmsMeta.cuisine)
+      ? cmsMeta.cuisine.map(String)
+      : cmsMeta.cuisine
+        ? [String(cmsMeta.cuisine)]
+        : ['Milliy', 'Yevropa'];
+
+    const contactPhone = res.phone
+      ? String(res.phone)
+      : cmsMeta.phone
+        ? String(cmsMeta.phone)
+        : '';
+    const cityNameStr =
+      typeof res.city_name === 'object' && res.city_name
+        ? (res.city_name as Record<string, string | null>)?.uz || ''
+        : String(res.city_name ?? '');
+    const restName = String(res.name ?? 'Restoran');
+    const metaDescription = res.description
+      ? String(res.description).length > 160
+        ? String(res.description).slice(0, 157) + '...'
+        : String(res.description)
+      : `${restName} - ${cityNameStr} shahrida joylashgan ajoyib restoran.`;
+    const metaKeywords = [
+      restName,
+      cityNameStr,
+      'restoran',
+      'restaurant',
+      'safaar',
+      ...cuisine,
+    ].filter(Boolean);
+
     return {
       id: res.id,
       slug: res.slug,
@@ -503,6 +565,13 @@ export class CatalogService {
       latitude: nullableNumber(res.latitude),
       longitude: nullableNumber(res.longitude),
       working_hours: res.working_hours,
+      opening_hours: openingHours,
+      price_range: priceRange,
+      menu_url: menuUrl,
+      cuisine,
+      contact_phone: contactPhone,
+      meta_description: metaDescription,
+      meta_keywords: metaKeywords,
       check_in_time: res.check_in_time,
       check_out_time: res.check_out_time,
       phone: res.phone,

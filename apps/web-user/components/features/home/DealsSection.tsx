@@ -21,6 +21,7 @@ export interface DealItem {
   newPriceSum: number;
   discountPercent: number;
   endsAt: string;
+  listingType?: string;
 }
 
 function DealCard({
@@ -46,6 +47,11 @@ function DealCard({
 
   const tags = endsInDays > 0 ? [`⏳ ${endsInDays} ${dict.days}`] : undefined;
   const viewDetailsLabel = locale === "ru" ? "Подробнее" : locale === "en" ? "Details" : "Batafsil";
+  const targetPrefix = deal.listingType || "hotels";
+  const cleanSlug = deal.slug.startsWith("/") ? deal.slug.slice(1) : deal.slug;
+  const dealHref = cleanSlug.includes("/")
+    ? `/${locale}/${cleanSlug}`
+    : `/${locale}/${targetPrefix}/${cleanSlug}`;
 
   return (
     <UniversalCard
@@ -56,7 +62,7 @@ function DealCard({
       title={deal.name}
       location={deal.cityName}
       tags={tags}
-      href={`/${locale}/${deal.slug.includes("/") ? deal.slug : "hotels/" + deal.slug}`}
+      href={dealHref}
       locale={locale}
       price={{
         amount: deal.newPriceSum,

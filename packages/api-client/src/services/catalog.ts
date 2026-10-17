@@ -65,6 +65,13 @@ export interface RestaurantDetailView {
   latitude?: number;
   longitude?: number;
   workingHours: string;
+  openingHours?: string;
+  priceRange?: string;
+  menuUrl?: string | null;
+  cuisine?: string[];
+  contactPhone?: string;
+  metaDescription?: string;
+  metaKeywords?: string[];
   checkInTime?: string;
   checkOutTime?: string;
   phone: string;
@@ -343,10 +350,17 @@ export const catalogService = {
       address: String(item.address ?? ""),
       latitude: item.latitude ? Number(item.latitude) : undefined,
       longitude: item.longitude ? Number(item.longitude) : undefined,
-      workingHours: String(item.workingHours ?? ""),
+      workingHours: String(item.workingHours ?? item.openingHours ?? ""),
+      openingHours: item.openingHours ? String(item.openingHours) : (item.workingHours ? String(item.workingHours) : undefined),
+      priceRange: item.priceRange ? String(item.priceRange) : undefined,
+      menuUrl: item.menuUrl ? String(item.menuUrl) : null,
+      cuisine: Array.isArray(item.cuisine) ? (item.cuisine as unknown[]).map(String) : (item.cuisine ? [String(item.cuisine)] : []),
+      contactPhone: item.contactPhone ? String(item.contactPhone) : (item.phone ? String(item.phone) : undefined),
+      metaDescription: item.metaDescription ? String(item.metaDescription) : undefined,
+      metaKeywords: Array.isArray(item.metaKeywords) ? (item.metaKeywords as unknown[]).map(String) : undefined,
       checkInTime: String(item.checkInTime ?? ""),
       checkOutTime: String(item.checkOutTime ?? ""),
-      phone: String(item.phone ?? ""),
+      phone: String(item.contactPhone ?? item.phone ?? ""),
       rating: Number(item.rating ?? 0),
       reviewsCount: Number(item.reviewsCount ?? 0),
       imageUrl: String(item.imageUrl ?? ""),

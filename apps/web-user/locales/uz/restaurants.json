@@ -76,7 +76,10 @@
     "workingHours": "Ish vaqti",
     "about": "Restoran haqida",
     "availableTables": "Mavjud stollar",
-    "capacity": "Sig'imi: {count} kishilik"
+    "capacity": "Sig'imi: {count} kishilik",
+    "viewMenu": "Menyu ko‘rish",
+    "priceRange": "Narx oralig'i",
+    "cuisines": "Oshxonalar"
   },
   "filtersTitle": "Filtrlar",
   "city": "Shahar",

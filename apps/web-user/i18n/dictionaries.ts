@@ -96,10 +96,81 @@ export type RestaurantsDict = Dict<"restaurants">;
 export type AttractionsDict = Dict<"attractions">;
 export type TransportDict = Dict<"transport">;
 
+function isPlainObject(item: unknown): item is Record<string, unknown> {
+  return typeof item === "object" && item !== null && !Array.isArray(item);
+}
+
+function deepMerge<T extends Record<string, unknown>>(
+  target: T,
+  source: Record<string, unknown>,
+): T {
+  const output: Record<string, unknown> = { ...target };
+  for (const key of Object.keys(source)) {
+    const sVal = source[key];
+    const tVal = output[key];
+    if (isPlainObject(sVal) && isPlainObject(tVal)) {
+      output[key] = deepMerge(tVal, sVal);
+    } else if (sVal !== undefined && sVal !== null) {
+      output[key] = sVal;
+    }
+  }
+  return output as T;
+}
+
+async function fetchRemoteDictionary(
+  locale: Locale,
+  namespace: string,
+): Promise<Record<string, unknown> | null> {
+  const baseUrl = (
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://api.safaar.uz/v1"
+  ).replace(/\/+$/, "");
+
+  const url = `${baseUrl}/translations/${encodeURIComponent(locale)}/${encodeURIComponent(namespace)}`;
+
+  try {
+    const res = await fetch(url, {
+      next: {
+        revalidate: 3600,
+        tags: ["translations", `translation:${locale}:${namespace}`],
+      },
+      signal: AbortSignal.timeout(2500),
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return data as Record<string, unknown>;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getDictionary<NS extends Namespace>(
   locale: Locale,
   namespace: NS,
 ): Promise<Dict<NS>> {
   const mod = await loaders[locale][namespace]();
-  return ("default" in mod ? mod.default : mod) as Dict<NS>;
+  const local = ("default" in mod ? mod.default : mod) as Dict<NS>;
+
+  try {
+    const remote = await fetchRemoteDictionary(locale, String(namespace));
+    if (remote && Object.keys(remote).length > 0) {
+      return deepMerge(
+        local as unknown as Record<string, unknown>,
+        remote,
+      ) as unknown as Dict<NS>;
+    }
+  } catch {
+    // Fail silently and use bundled local dictionary
+  }
+
+  return local;
 }
+

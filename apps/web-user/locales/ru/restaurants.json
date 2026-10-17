@@ -76,7 +76,10 @@
     "workingHours": "Время работы",
     "about": "О ресторане",
     "availableTables": "Доступные столики",
-    "capacity": "Вместимость: {count} чел."
+    "capacity": "Вместимость: {count} чел.",
+    "viewMenu": "Посмотреть меню",
+    "priceRange": "Диапазон цен",
+    "cuisines": "Кухня"
   },
   "filtersTitle": "Фильтры",
   "city": "Город",

@@ -88,6 +88,7 @@ export default async function HomePage({
     newPriceSum: d.newPriceSum,
     discountPercent: d.discountPercent,
     endsAt: d.endsAt,
+    listingType: d.listingType,
   }));
 
   const websiteSchema = {

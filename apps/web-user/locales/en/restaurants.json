@@ -76,7 +76,10 @@
     "workingHours": "Working hours",
     "about": "About restaurant",
     "availableTables": "Available tables",
-    "capacity": "Capacity: {count} persons"
+    "capacity": "Capacity: {count} persons",
+    "viewMenu": "View Menu",
+    "priceRange": "Price range",
+    "cuisines": "Cuisines"
   },
   "filtersTitle": "Filters",
   "city": "City",

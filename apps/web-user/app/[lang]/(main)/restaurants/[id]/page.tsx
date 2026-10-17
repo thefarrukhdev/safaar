@@ -6,7 +6,7 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { api, ApiRequestError } from "@/lib/api";
 import { BackButton } from "@/components/ui/BackButton";
 import { Badge } from "@/components/ui/Badge";
-import { MapPin, Phone, Star, Clock, Utensils } from "lucide-react";
+import { MapPin, Phone, Star, Clock, Utensils, Banknote, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
 import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
@@ -31,7 +31,8 @@ export async function generateMetadata({
     const restaurant = await getRestaurant(id, locale);
     return {
       title: `${restaurant.name} — Safaar`,
-      description: restaurant.description?.slice(0, 160),
+      description: restaurant.metaDescription || restaurant.description?.slice(0, 160),
+      keywords: restaurant.metaKeywords,
     };
   } catch {
     return {};
@@ -70,15 +71,24 @@ export default async function RestaurantDetailPage({
     "@context": "https://schema.org",
     "@type": "Restaurant",
     name: restaurant.name,
-    description: restaurant.description,
+    description: restaurant.metaDescription || restaurant.description,
     image: restaurant.imageUrl || undefined,
     address: {
       "@type": "PostalAddress",
       addressLocality: restaurant.cityName,
       streetAddress: restaurant.address,
     },
-    ...(restaurant.phone && { telephone: restaurant.phone }),
-    ...(restaurant.workingHours && { openingHours: restaurant.workingHours }),
+    ...((restaurant.contactPhone || restaurant.phone) && {
+      telephone: restaurant.contactPhone || restaurant.phone,
+    }),
+    ...((restaurant.openingHours || restaurant.workingHours) && {
+      openingHours: restaurant.openingHours || restaurant.workingHours,
+    }),
+    ...(restaurant.priceRange && { priceRange: restaurant.priceRange }),
+    ...(restaurant.cuisine && restaurant.cuisine.length > 0 && {
+      servesCuisine: restaurant.cuisine,
+    }),
+    ...(restaurant.menuUrl && { hasMenu: restaurant.menuUrl }),
     ...(restaurant.rating > 0 && {
       aggregateRating: {
         "@type": "AggregateRating",
@@ -162,20 +172,51 @@ export default async function RestaurantDetailPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
-          {restaurant.workingHours && (
-            <span className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5">
+        {restaurant.cuisine && restaurant.cuisine.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {restaurant.cuisine.map((c, idx) => (
+              <Badge
+                key={idx}
+                variant="secondary"
+                className="bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-medium px-2.5 py-0.5 text-xs"
+              >
+                {c}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-600 pt-1">
+          {(restaurant.openingHours || restaurant.workingHours) && (
+            <span className="flex items-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-2.5 py-1.5 shadow-xs">
               <Clock className="h-4 w-4 text-slate-400" />
-              {(dict as any).detail?.workingHours || "Ish vaqti"}: {restaurant.workingHours}
+              {(dict as any).detail?.workingHours || "Ish vaqti"}: {restaurant.openingHours || restaurant.workingHours}
             </span>
           )}
-          {restaurant.phone && (
+          {restaurant.priceRange && (
+            <span className="flex items-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-2.5 py-1.5 shadow-xs">
+              <Banknote className="h-4 w-4 text-emerald-600" />
+              <span>{restaurant.priceRange}</span>
+            </span>
+          )}
+          {(restaurant.contactPhone || restaurant.phone) && (
             <a
-              href={`tel:${restaurant.phone.replace(/\s+/g, "")}`}
-              className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 hover:bg-slate-200 :bg-slate-700"
+              href={`tel:${(restaurant.contactPhone || restaurant.phone).replace(/\s+/g, "")}`}
+              className="flex items-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-2.5 py-1.5 shadow-xs hover:bg-slate-50 transition"
             >
               <Phone className="h-4 w-4 text-slate-400" />
-              {restaurant.phone}
+              {restaurant.contactPhone || restaurant.phone}
+            </a>
+          )}
+          {restaurant.menuUrl && (
+            <a
+              href={restaurant.menuUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {(dict as any).detail?.viewMenu || (locale === "ru" ? "Посмотреть меню" : locale === "en" ? "View Menu" : "Menyu ko‘rish")}
             </a>
           )}
         </div>

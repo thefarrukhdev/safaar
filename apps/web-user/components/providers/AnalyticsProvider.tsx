@@ -4,7 +4,7 @@ import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-GNQBLTRTVF';
 const YM_ID = process.env.NEXT_PUBLIC_YM_ID;
 
 /**

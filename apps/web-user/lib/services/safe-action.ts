@@ -34,6 +34,17 @@ export function resolveApiError(error: unknown): { error: string; fields?: Field
       fields: error.fields as FieldErrors | undefined,
     };
   }
+  if (typeof error === "object" && error !== null) {
+    const errObj = error as Record<string, unknown>;
+    const code = typeof errObj.code === "string" && errObj.code ? errObj.code : undefined;
+    const message = typeof errObj.message === "string" && errObj.message ? errObj.message : undefined;
+    if (code || message) {
+      return {
+        error: code || message || "ERROR",
+        fields: errObj.fields as FieldErrors | undefined,
+      };
+    }
+  }
   return { error: "ERROR" };
 }
 

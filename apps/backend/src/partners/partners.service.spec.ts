@@ -1195,6 +1195,33 @@ describe('PartnersService.createHotel business-type enforcement (regression: any
 
     expect(queryCallsOf(pg).length).toBeGreaterThan(1);
   });
+
+  it('allows creating a hotel draft even when partner organization has no address', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        {
+          type: 'hotel',
+          brand_name: 'New Hotel',
+          legal_name: null,
+          address: null,
+          city_id: '00000000-0000-0000-0000-000000000001',
+        },
+      ])
+      .mockResolvedValueOnce([]) // INSERT INTO hotels
+      .mockResolvedValueOnce([]) // INSERT INTO hotel_translations
+      .mockResolvedValueOnce([
+        {
+          id: '00000000-0000-0000-0000-000000000099',
+          name: { uz: 'New Hotel', ru: 'New Hotel', en: 'New Hotel' },
+          address: '',
+          status: 'draft',
+        },
+      ]); // SELECT hotel
+
+    const created = await service.createHotel(actor, { name: 'New Hotel' });
+    expect(created).toBeDefined();
+    expect(created.status).toBe('draft');
+  });
 });
 
 describe('PartnersService.createBusCompany (regression: no live code path ever created a BusCompany — the entire transport partner line was non-functional)', () => {

@@ -992,8 +992,13 @@ export class PartnersService {
     const slug = body.slug
       ? String(body.slug)
       : `${this.slugify(nameUz)}-${hotelId.slice(0, 8)}`;
-    const cityId = String(body.city_id ?? organization?.city_id ?? '');
-    const address = String(body.address ?? organization?.address ?? '');
+    let cityId = this.optionalString(body.city_id ?? organization?.city_id);
+    if (!cityId) {
+      const [defaultCity] = await this.pg.query<{ id: string }>(
+        `SELECT id::text FROM cities ORDER BY sort_order ASC, created_at ASC LIMIT 1`,
+      );
+      cityId = defaultCity?.id ?? null;
+    }
 
     if (!cityId) {
       throw new BadRequestException({
@@ -1002,13 +1007,7 @@ export class PartnersService {
           "Hamkor arizasida shahar topilmadi. Avval profil ma'lumotlarini to'ldiring.",
       });
     }
-    if (!address) {
-      throw new BadRequestException({
-        code: 'PARTNER_ADDRESS_REQUIRED',
-        message:
-          "Hamkor arizasida manzil topilmadi. Avval profil ma'lumotlarini to'ldiring.",
-      });
-    }
+    const address = String(body.address ?? organization?.address ?? '');
     const latitude =
       body.latitude === undefined || body.latitude === null
         ? null

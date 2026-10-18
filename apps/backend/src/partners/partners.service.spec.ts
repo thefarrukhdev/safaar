@@ -1220,7 +1220,7 @@ describe('PartnersService.createHotel business-type enforcement (regression: any
 
     const created = await service.createHotel(actor, { name: 'New Hotel' });
     expect(created).toBeDefined();
-    expect(created.status).toBe('draft');
+    expect((created as { status?: string }).status).toBe('draft');
   });
 });
 

@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -358,9 +358,78 @@ export function UnifiedRoomDialog({
     onClose();
   };
 
+  const handleNextTab = async () => {
+    if (activeTab === "general") {
+      const valid = await form.trigger(["name", "capacity", "roomNumber", "floor", "description"]);
+      if (valid) {
+        setActiveTab("pricing");
+      }
+    } else if (activeTab === "pricing") {
+      const valid = await form.trigger(["basePrice", "sizeSqm", "bedType"]);
+      if (valid) {
+        setActiveTab("amenities");
+      }
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} title={title} description={description} size="lg">
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={title}
+      description={description}
+      size="xl"
+      footer={
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--muted-foreground)]">
+              {activeTab === "general" ? "1 / 3 qadam" : activeTab === "pricing" ? "2 / 3 qadam" : "3 / 3 qadam"}
+            </span>
+            {activeTab !== "general" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab(activeTab === "amenities" ? "pricing" : "general")}
+                className="h-8 px-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              >
+                &larr; Ortga
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
+              Bekor qilish
+            </Button>
+            {activeTab !== "amenities" ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isLoading}
+                onClick={handleNextTab}
+              >
+                Keyingisi &rarr;
+              </Button>
+            ) : null}
+            <Button
+              type="submit"
+              form="unified-room-form"
+              variant="primary"
+              disabled={isLoading}
+              loading={isLoading}
+            >
+              {editing
+                ? "Saqlash"
+                : mode === "room"
+                  ? "Qo'shish va e'longa chiqarish"
+                  : "Variant qo'shish"}
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <form id="unified-room-form" onSubmit={onSubmit} className="flex flex-col gap-4">
         <fieldset disabled={isLoading} className="flex flex-col gap-4 group-disabled:opacity-70">
           {/* Apple/Linear Segments Tabs Navigation */}
           <Tabs
@@ -443,7 +512,9 @@ export function UnifiedRoomDialog({
                     min={1}
                     max={50}
                     aria-invalid={Boolean(err.capacity)}
-                    {...form.register("capacity", { valueAsNumber: true })}
+                    {...form.register("capacity", {
+                      setValueAs: (v) => (v === "" || isNaN(Number(v)) ? 1 : Number(v)),
+                    })}
                   />
                   {err.capacity && (
                     <p className="text-xs text-red-600 dark:text-red-400">{err.capacity.message}</p>
@@ -502,7 +573,9 @@ export function UnifiedRoomDialog({
                           type="number"
                           min={1}
                           max={50}
-                          {...form.register("floor", { valueAsNumber: true })}
+                          {...form.register("floor", {
+                            setValueAs: (v) => (v === "" || isNaN(Number(v)) ? 1 : Number(v)),
+                          })}
                         />
                       </div>
                     )}
@@ -519,11 +592,20 @@ export function UnifiedRoomDialog({
                     <Label htmlFor="ur-price">
                       {isBus ? "1 kunlik ijara narxi (so'm)" : "Bir kechalik narx (so'm)"}
                     </Label>
-                    <MoneyInput
-                      id="ur-price"
-                      placeholder="400000"
-                      aria-invalid={Boolean(err.basePrice)}
-                      {...form.register("basePrice", { valueAsNumber: true })}
+                    <Controller
+                      control={form.control}
+                      name="basePrice"
+                      render={({ field }) => (
+                        <MoneyInput
+                          id="ur-price"
+                          placeholder="400 000"
+                          value={field.value}
+                          onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                          aria-invalid={Boolean(err.basePrice)}
+                        />
+                      )}
                     />
                     {err.basePrice && (
                       <p className="text-xs text-red-600 dark:text-red-400">{err.basePrice.message}</p>
@@ -668,48 +750,6 @@ export function UnifiedRoomDialog({
             </TabsContent>
           </Tabs>
 
-          {/* Form Actions Footer */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4 mt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--muted-foreground)]">
-                {activeTab === "general" ? "1 / 3 qadam" : activeTab === "pricing" ? "2 / 3 qadam" : "3 / 3 qadam"}
-              </span>
-              {activeTab !== "general" && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab(activeTab === "amenities" ? "pricing" : "general")}
-                  className="h-7 px-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                >
-                  &larr; Ortga
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
-                Bekor qilish
-              </Button>
-              {activeTab !== "amenities" ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={isLoading}
-                  onClick={() => setActiveTab(activeTab === "general" ? "pricing" : "amenities")}
-                >
-                  Keyingisi &rarr;
-                </Button>
-              ) : null}
-              <Button type="submit" variant="primary" disabled={isLoading} loading={isLoading}>
-                {editing
-                  ? "Saqlash"
-                  : mode === "room"
-                    ? "Qo'shish va e'longa chiqarish"
-                    : "Variant qo'shish"}
-              </Button>
-            </div>
-          </div>
         </fieldset>
       </form>
     </Dialog>

@@ -417,10 +417,20 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         nativeEl.dispatchEvent(inputEvent);
       }
 
+      if (onChange) {
+        const syntheticEvent = {
+          target: nativeEl ?? { value: option.value, name, id: selectId },
+          currentTarget: nativeEl ?? { value: option.value, name, id: selectId },
+          preventDefault: () => {},
+          stopPropagation: () => {},
+        } as unknown as React.ChangeEvent<HTMLSelectElement>;
+        onChange(syntheticEvent);
+      }
+
       closeMenu();
       triggerRef.current?.focus();
     },
-    [isControlled, closeMenu],
+    [isControlled, closeMenu, onChange, name, selectId],
   );
 
   // Keyboard navigation

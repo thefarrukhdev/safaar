@@ -496,6 +496,42 @@ export default function DeveloperSettingsPage() {
             : "Tashqi ilovangiz uchun alohida nom va tavsif bering."
         }
         size="md"
+        footer={
+          newKeyString ? (
+            <div className="flex justify-end w-full">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setShowKeyModal(false);
+                  setNewKeyString(null);
+                }}
+              >
+                Tushundim, saqlab oldim
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowKeyModal(false)}
+              >
+                Bekor qilish
+              </Button>
+              <Button
+                type="submit"
+                form="create-api-key-form"
+                variant="primary"
+                size="sm"
+                loading={submitting}
+              >
+                Kalit yaratish
+              </Button>
+            </div>
+          )
+        }
       >
         {newKeyString ? (
           <div className="flex flex-col gap-4">
@@ -521,22 +557,9 @@ export default function DeveloperSettingsPage() {
                 <Copy size={16} />
               </Button>
             </div>
-
-            <div className="mt-2 flex justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setShowKeyModal(false);
-                  setNewKeyString(null);
-                }}
-              >
-                Tushundim, saqlab oldim
-              </Button>
-            </div>
           </div>
         ) : (
-          <form onSubmit={handleCreateKey} className="flex flex-col gap-4">
+          <form id="create-api-key-form" onSubmit={handleCreateKey} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={keyNameId}>Kalit nomi / Ilova nomi</Label>
               <Input
@@ -551,25 +574,6 @@ export default function DeveloperSettingsPage() {
                 Kalit nima maqsadda ishlatilishini eslab qolish uchun aniq nom bering.
               </p>
             </div>
-
-            <div className="mt-4 flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowKeyModal(false)}
-              >
-                Bekor qilish
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                loading={submitting}
-              >
-                Kalit yaratish
-              </Button>
-            </div>
           </form>
         )}
       </Dialog>
@@ -581,8 +585,29 @@ export default function DeveloperSettingsPage() {
         title="Yangi Webhook qo'shish"
         description="Safaar platformasida sodir bo'ladigan o'zgarishlar to'g'risida sizning serveringizga yuboriladigan HTTP POST so'rovini sozlang."
         size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowWebhookModal(false)}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="submit"
+              form="add-webhook-form"
+              variant="primary"
+              size="sm"
+              loading={submitting}
+            >
+              Webhook qo'shish
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleCreateWebhook} className="flex flex-col gap-4">
+        <form id="add-webhook-form" onSubmit={handleCreateWebhook} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={webhookUrlId}>Endpoint URL (HTTPS)</Label>
             <Input
@@ -619,25 +644,6 @@ export default function DeveloperSettingsPage() {
                 );
               })}
             </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowWebhookModal(false)}
-            >
-              Bekor qilish
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              loading={submitting}
-            >
-              Webhook qo'shish
-            </Button>
           </div>
         </form>
       </Dialog>

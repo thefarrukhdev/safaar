@@ -60,6 +60,7 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
 
   const startDate = useWatch({ control: form.control, name: "startDate" }) ?? defaultCheckIn;
   const endDate = useWatch({ control: form.control, name: "endDate" }) ?? defaultCheckIn;
+  const watchedRoomNumber = useWatch({ control: form.control, name: "roomNumber" }) ?? "";
 
   useEffect(() => {
     if (open) {
@@ -104,9 +105,26 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
       onClose={onClose}
       title="Inventarni yopish (Blackout)"
       description="Ta'mirlash yoki profilaktika sababli sotuvni to'xtatish."
-      size="md"
+      size="lg"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
+            Bekor qilish
+          </Button>
+          <Button
+            type="submit"
+            form="blackout-form"
+            disabled={mutation.isPending}
+            loading={mutation.isPending}
+            className="bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white shadow-sm transition-all"
+          >
+            <Ban className="h-4 w-4 mr-1.5" />
+            Sotuvni to'xtatish
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form id="blackout-form" onSubmit={onSubmit} className="flex flex-col gap-5">
         {/* Apple-style alert notice */}
         <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-900 backdrop-blur-sm dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -121,6 +139,7 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
             <Label htmlFor="roomNumber">{unitCap}</Label>
             <Select
               id="roomNumber"
+              value={watchedRoomNumber}
               error={Boolean(err.roomNumber)}
               aria-describedby={err.roomNumber ? "roomNumber-error" : undefined}
               {...form.register("roomNumber")}
@@ -153,7 +172,7 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
               form.setValue("startDate", range.startDate, { shouldValidate: true });
               form.setValue("endDate", range.endDate, { shouldValidate: true });
             }}
-            showPresets={true}
+            showPresets={false}
             className="w-full"
           />
           {(err.startDate || err.endDate) && (
@@ -172,22 +191,6 @@ export function BlackoutDialog({ open, onClose, hotelId }: BlackoutDialogProps) 
             className="h-10"
             {...form.register("reason")}
           />
-        </div>
-
-        {/* Modal actions */}
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4 mt-1">
-          <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
-            Bekor qilish
-          </Button>
-          <Button
-            type="submit"
-            disabled={mutation.isPending}
-            loading={mutation.isPending}
-            className="bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white shadow-sm transition-all"
-          >
-            <Ban className="h-4 w-4 mr-1.5" />
-            Sotuvni to'xtatish
-          </Button>
         </div>
       </form>
     </Dialog>

@@ -325,9 +325,36 @@ export function WalkInDialog({
           ? "Mijozga joyida avtomobil ijaraga berish uchun."
           : "Resepsiyonga to'g'ridan-to'g'ri kelgan mehmon uchun tezkor bron yaratish."
       }
-      size="lg"
+      size="xl"
+      footer={
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <div className="text-left text-xs">
+            <span className="text-slate-500 dark:text-zinc-400 mr-1.5">Taxminiy to'lov:</span>
+            <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+              {liveCalculation.total > 0
+                ? `${liveCalculation.total.toLocaleString("uz-UZ")} so'm`
+                : "—"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Bekor qilish
+            </Button>
+            <Button
+              type="submit"
+              form="walk-in-form"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white shadow-sm transition-all"
+            >
+              <UserCheck className="h-4 w-4 mr-1.5" />
+              Bron yaratish
+            </Button>
+          </div>
+        </div>
+      }
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form id="walk-in-form" onSubmit={onSubmit} className="flex flex-col gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Guest Full Name */}
           <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -371,10 +398,16 @@ export function WalkInDialog({
               <Label htmlFor="roomTypeId">{labels.unitTypeLabel}</Label>
               <Select
                 id="roomTypeId"
+                value={watchedRoomTypeId}
                 error={Boolean(err.roomTypeId)}
                 aria-describedby={err.roomTypeId ? "roomTypeId-error" : undefined}
                 className="h-11"
-                {...form.register("roomTypeId")}
+                onChange={(e) =>
+                  form.setValue("roomTypeId", e.target.value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
               >
                 {roomTypes.length === 0 ? (
                   <option value="">Avval {labels.unitTypeLabel.toLowerCase()}ni yarating</option>
@@ -402,9 +435,15 @@ export function WalkInDialog({
               <Label htmlFor="roomNumber">{labels.unitSingular}</Label>
               <Select
                 id="roomNumber"
+                value={watchedRoomNumber}
                 error={Boolean(err.roomNumber)}
                 className="h-11"
-                {...form.register("roomNumber")}
+                onChange={(e) =>
+                  form.setValue("roomNumber", e.target.value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
               >
                 <option value="">Avtomobilni tanlang</option>
                 {vehicles
@@ -437,9 +476,15 @@ export function WalkInDialog({
                 <Label htmlFor="roomNumber">{unitCap}</Label>
                 <Select
                   id="roomNumber"
+                  value={watchedRoomNumber}
                   error={Boolean(err.roomNumber)}
                   className="h-11"
-                  {...form.register("roomNumber")}
+                  onChange={(e) =>
+                    form.setValue("roomNumber", e.target.value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
                 >
                   <option value="">{`${unitCap}ni tanlang ${restaurant ? "" : "(ixtiyoriy — avtomatik)"}`}</option>
                   {availableRooms.map((r) => (
@@ -475,8 +520,14 @@ export function WalkInDialog({
               </Label>
               <Select
                 id="slotTime"
+                value={watchedSlotTime}
                 className="h-11"
-                {...form.register("slotTime")}
+                onChange={(e) =>
+                  form.setValue("slotTime", e.target.value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
               >
                 {timeSlots.map((slot) => (
                   <option key={slot} value={slot}>
@@ -599,21 +650,6 @@ export function WalkInDialog({
           </div>
         </div>
 
-        {/* Footer actions */}
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4 mt-1">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Bekor qilish
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            loading={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white shadow-sm transition-all"
-          >
-            <UserCheck className="h-4 w-4 mr-1.5" />
-            Bron yaratish
-          </Button>
-        </div>
       </form>
     </Dialog>
   );

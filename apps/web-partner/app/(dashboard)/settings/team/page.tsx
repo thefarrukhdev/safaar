@@ -305,8 +305,29 @@ export default function TeamSettingsPage() {
         title="Yangi xodimni taklif qilish"
         description="Xodimning elektron pochtasiga tizimga kirish va parolni sozlash uchun maxsus havola yuboriladi."
         size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInviteModal(false)}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="submit"
+              form="invite-team-form"
+              variant="primary"
+              size="sm"
+              loading={submitting}
+            >
+              Taklif yuborish
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleInvite} className="flex flex-col gap-4">
+        <form id="invite-team-form" onSubmit={handleInvite} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={nameId}>Ism Familiya</Label>
             <Input
@@ -348,25 +369,6 @@ export default function TeamSettingsPage() {
               <option value="manager">Menejer — Narx, xona va bronlar boshqaruvi</option>
               <option value="staff">Xodim — Faqat bronlarni ko'rish va check-in/out</option>
             </select>
-          </div>
-
-          <div className="mt-4 flex items-center justify-end gap-2 border-t border-[var(--border)] pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowInviteModal(false)}
-            >
-              Bekor qilish
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              loading={submitting}
-            >
-              Taklif yuborish
-            </Button>
           </div>
         </form>
       </Dialog>

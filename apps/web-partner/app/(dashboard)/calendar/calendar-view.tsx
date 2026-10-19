@@ -518,13 +518,24 @@ export function CalendarView() {
         hotelId={useAuthStore.getState().user?.organizationId}
       />
 
-      {/* Xona biriktirish dialogi */}
+      {/* Xona biriktirish va Check-in dialogi */}
       <CheckInDialog
         open={Boolean(assignTarget)}
         onClose={() => setAssignTarget(null)}
         reservation={assignTarget}
         onAssigned={() => {
-          refetchReservations();
+          if (assignTarget) {
+            checkIn.mutate(assignTarget.id, {
+              onSuccess: () => {
+                toast.success(`${labels.checkInLabel} muvaffaqiyatli qilindi: ${assignTarget.guest.fullName}`);
+                refetchReservations();
+              },
+              onError: (err) => {
+                toast.error(err instanceof Error ? err.message : "Check-in qilishda xatolik yuz berdi");
+                refetchReservations();
+              },
+            });
+          }
           setAssignTarget(null);
         }}
       />

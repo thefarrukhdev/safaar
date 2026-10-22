@@ -50,6 +50,16 @@ interface RoomListingsPanelProps {
   onEditRoomType?: (roomType: RoomType) => void;
 }
 
+function resolveImageUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/uploads/')) {
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1').replace(/\/v1\/?$/, '');
+    return `${apiBase}${url}`;
+  }
+  return url;
+}
+
 export function RoomListingsPanel({
   roomAds,
   labels,
@@ -272,16 +282,24 @@ export function RoomAdCard({
   isDeleting,
 }: RoomAdCardProps) {
   const [isToggling, setIsToggling] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const resolvedUrl = resolveImageUrl(imageUrl);
+
   return (
     <div className="overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]">
       <div className="grid gap-0 sm:grid-cols-[140px_minmax(0,1fr)]">
         <div className="aspect-[4/3] bg-[var(--surface-muted)] sm:h-full sm:min-h-[180px] sm:aspect-auto">
-          {imageUrl ? (
+          {resolvedUrl && !imageError ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              src={resolvedUrl}
+              alt={name}
+              onError={() => setImageError(true)}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
-              <ImageIcon className="h-8 w-8" aria-hidden />
+              <ImageIcon className="h-8 w-8 text-zinc-400" aria-hidden />
             </div>
           )}
         </div>

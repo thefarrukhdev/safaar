@@ -28,7 +28,8 @@ import { RoomsStats } from "./rooms-stats";
 import { RoomsFilters } from "./rooms-filters";
 import { RoomsFloorSection } from "./rooms-floor-section";
 import { RoomsTable } from "./rooms-table";
-import { UnifiedRoomDialog } from "./_dialogs/unified-room-dialog";
+import { AddRoomDialog } from "./_dialogs/add-room-dialog";
+import { EditRoomDialog } from "./_dialogs/edit-room-dialog";
 import { BedManagementDialog } from "./_dialogs/bed-management-dialog";
 
 export function RoomsView() {
@@ -561,18 +562,15 @@ export function RoomsView() {
       </div>
 
       {/* Dialoglar */}
-      <UnifiedRoomDialog
+      <AddRoomDialog
         open={addingRoom}
         onClose={() => setAddingRoom(false)}
-        mode="room"
       />
 
-      <UnifiedRoomDialog
+      <EditRoomDialog
         open={Boolean(editingRoom)}
         onClose={() => setEditingRoom(null)}
-        mode="room"
-        editing={roomTypes?.find((t) => t.id === editingRoom?.roomTypeId) ?? null}
-        editingPhysicalRoom={editingRoom}
+        room={editingRoom}
       />
 
       <BedManagementDialog

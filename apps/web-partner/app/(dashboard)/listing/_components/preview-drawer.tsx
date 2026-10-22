@@ -27,6 +27,16 @@ for (const g of [...AMENITY_GROUPS, ...RESTAURANT_AMENITY_GROUPS]) {
   for (const it of g.items) AMENITY_LABEL.set(it.id, it.label);
 }
 
+function resolveImageUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/uploads/')) {
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1').replace(/\/v1\/?$/, '');
+    return `${apiBase}${url}`;
+  }
+  return url;
+}
+
 export function PreviewDrawer({
   open,
   onClose,
@@ -189,13 +199,13 @@ export function PreviewDrawer({
                       {roomType.imageUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={roomType.imageUrl}
-                          alt=""
+                          src={resolveImageUrl(roomType.imageUrl)}
+                          alt={roomType.name}
                           className="h-full w-full object-cover"
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
-                          <ImageIcon className="h-8 w-8" aria-hidden />
+                          <ImageIcon className="h-8 w-8 text-zinc-400" aria-hidden />
                         </div>
                       )}
                     </div>

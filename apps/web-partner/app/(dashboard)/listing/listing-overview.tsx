@@ -41,7 +41,7 @@ import { PhotosEditor } from './_editors/photos-editor';
 import { AmenitiesEditor } from './_editors/amenities-editor';
 import { LocationEditor } from './_editors/location-editor';
 import { RulesEditor } from './_editors/rules-editor';
-import { UnifiedRoomDialog } from '../rooms/_dialogs/unified-room-dialog';
+import { RoomTypeDialog } from '../rooms/_dialogs/room-type-dialog';
 import { VehicleDialog } from '../rooms/vehicles-view';
 
 import {
@@ -757,13 +757,12 @@ export function ListingOverview() {
         onClose={() => setOpenEditor(null)}
       />
       <PreviewDrawer open={previewOpen} onClose={() => setPreviewOpen(false)} />
-      <UnifiedRoomDialog
+      <RoomTypeDialog
         open={roomTypeDialogOpen}
         onClose={() => {
           setRoomTypeDialogOpen(false);
           setEditingRoomType(null);
         }}
-        mode={editingRoomType ? "type-only" : "room"}
         editing={editingRoomType}
       />
       <VehicleDialog

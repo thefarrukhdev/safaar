@@ -1,4 +1,4 @@
-import { rawApi } from "../client";
+import { rawApi, type RequestOptions } from "../client";
 
 export interface CurrencyRatesResponse {
   base: "UZS";
@@ -14,11 +14,13 @@ export interface CurrencyRatesResponse {
 export const currencyService = {
   /**
    * `GET /currency/rates` — CBU.uz'dan olingan, keshlangan joriy kurslar
-   * (ommaviy, auth talab qilmaydi). Har chaqiriqda keshsiz so'ralmaydi —
-   * backend o'zi TTL bo'yicha yangilaydi, shuning uchun bu yerda odatiy
-   * fetch keshiga tayanamiz.
+   * (ommaviy, auth talab qilmaydi). Next.js muhitida 1 soatlik ISR kesh bilan
+   * olinadi (har bir sahifa yuklanishida takroran tarmoq so'rovi qilinmaydi).
    */
-  async getRates(): Promise<CurrencyRatesResponse> {
-    return rawApi.get<CurrencyRatesResponse>("/currency/rates");
+  async getRates(options?: RequestOptions): Promise<CurrencyRatesResponse> {
+    return rawApi.get<CurrencyRatesResponse>("/currency/rates", {
+      next: { revalidate: 3600, tags: ["currency"] },
+      ...options,
+    });
   },
 };

@@ -29,6 +29,8 @@ interface CurrencyRateRow {
 export class CurrencyService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CurrencyService.name);
   private refreshTimer?: NodeJS.Timeout;
+  private isRefreshing = false;
+  private lastRefreshAttempt = 0;
 
   constructor(private readonly pg: PostgresService) {}
 
@@ -45,12 +47,32 @@ export class CurrencyService implements OnModuleInit, OnModuleDestroy {
 
   async getRates() {
     const latest = await this.latestRates();
-    if (!this.hasAllTrackedRates(latest) || this.isStale(latest)) {
+    const hasRates = this.hasAllTrackedRates(latest);
+
+    if (!hasRates) {
+      // Baza hali bo'sh bo'lsa — CBU dan sinxron olishga majburmiz
       await this.refreshRates().catch((error) => {
         this.logger.warn(
-          `CBU kurslarini yangilash xatosi: ${messageOf(error)}`,
+          `CBU kurslarini dastlabki olish xatosi: ${messageOf(error)}`,
         );
       });
+    } else if (this.isStale(latest) && !this.isRefreshing) {
+      // Kurslar eskirgan bo'lsa ham, bazadagi mavjud kurslarni darhol qaytaramiz (Stale-While-Revalidate).
+      // Foydalanuvchi so'rovini 10 soniya bloklamaslik uchun yangilashni asinxron fonda bajaramiz.
+      const now = Date.now();
+      if (now - this.lastRefreshAttempt > 15 * 60 * 1000) {
+        this.lastRefreshAttempt = now;
+        this.isRefreshing = true;
+        void this.refreshRates()
+          .catch((error) => {
+            this.logger.warn(
+              `CBU kurslarini fonda yangilash xatosi: ${messageOf(error)}`,
+            );
+          })
+          .finally(() => {
+            this.isRefreshing = false;
+          });
+      }
     }
 
     const rows = await this.latestRates();
@@ -80,7 +102,7 @@ export class CurrencyService implements OnModuleInit, OnModuleDestroy {
 
   async refreshRates() {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const timeout = setTimeout(() => controller.abort(), 4_000);
     try {
       const response = await fetch(cbuUrl, { signal: controller.signal });
       if (!response.ok) {

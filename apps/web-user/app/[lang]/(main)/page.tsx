@@ -150,7 +150,11 @@ export default async function HomePage({
       {/* EKRAN 4: City Cards */}
       <div className="py-10 sm:py-16 md:py-20 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: "600ms" }}>
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <CityCardsSection locale={locale} dict={dict.popularCities} />
+          <CityCardsSection
+            locale={locale}
+            dict={dict.popularCities}
+            initialDestinations={destinations}
+          />
         </Suspense>
       </div>
     </main>

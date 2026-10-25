@@ -18,6 +18,7 @@ type RequestLike = RequestWithActor & {
 
 const alwaysAllowedPrefixes = [
   '/health',
+  '/metrics',
   '/docs',
   '/settings/public',
   '/admin',

@@ -40,6 +40,12 @@ function isLegacyApiRequest(context: ExecutionContext): boolean {
   );
 }
 
+function isRawEndpoint(context: ExecutionContext): boolean {
+  const request = requestFromContext(context);
+  const path = request.originalUrl ?? request.url ?? '';
+  return /^\/(?:v1\/)?metrics(?:\/|\?|$)/.test(path);
+}
+
 function legacyResponse(data: unknown, context: ExecutionContext): unknown {
   const request = requestFromContext(context);
   const originalUrl = request.originalUrl ?? request.url ?? '';
@@ -79,6 +85,10 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<
       map((data) => {
         if (isLegacyApiRequest(context)) {
           return legacyResponse(data, context) as T;
+        }
+
+        if (isRawEndpoint(context)) {
+          return data;
         }
 
         if (isAlreadyEnveloped(data)) {

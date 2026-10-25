@@ -24,6 +24,8 @@ interface EnvironmentConfig {
   TEXTUP_TEMPLATE_ID?: string;
   TEXTUP_NICKNAME_ID?: string;
   API_PREFIX: string;
+  METRICS_ENABLED?: string;
+  METRICS_TOKEN?: string;
   BUSINESS_TIMEZONE: string;
   DATABASE_URL?: string;
   REDIS_URL?: string;
@@ -426,6 +428,10 @@ export function validateEnv(
       : undefined,
     CORS_ORIGINS: config.CORS_ORIGINS ? String(config.CORS_ORIGINS) : undefined,
     SWAGGER_ENABLED: String(config.SWAGGER_ENABLED ?? !production),
+    METRICS_ENABLED: String(config.METRICS_ENABLED ?? 'true'),
+    METRICS_TOKEN: config.METRICS_TOKEN
+      ? String(config.METRICS_TOKEN)
+      : undefined,
     SMTP_HOST: config.SMTP_HOST ? String(config.SMTP_HOST) : undefined,
     SMTP_PORT: config.SMTP_PORT ? toNumber(config.SMTP_PORT, 587) : undefined,
     SMTP_USER: config.SMTP_USER ? String(config.SMTP_USER) : undefined,

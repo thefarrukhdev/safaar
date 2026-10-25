@@ -142,6 +142,18 @@ export class PostgresService implements OnModuleDestroy {
       },
     };
   }
+
+  getPoolStats(): {
+    totalCount: number;
+    idleCount: number;
+    waitingCount: number;
+  } {
+    return {
+      totalCount: this.pool.totalCount,
+      idleCount: this.pool.idleCount,
+      waitingCount: this.pool.waitingCount,
+    };
+  }
 }
 
 function toPositiveInt(value: unknown, fallback: number): number {

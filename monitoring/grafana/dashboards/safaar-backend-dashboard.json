@@ -1,0 +1,378 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "🚀 Xizmatning Asosiy Ko'rsatkichlari (Golden Signals)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 500 }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "sum(rate(safaar_http_requests_total[1m])) or vector(0)",
+          "legendFormat": "RPS",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Umumiy Yuklama (RPS)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "((sum(rate(safaar_http_requests_total{status_code=~\"5..\"}[1m])) or vector(0)) / (sum(rate(safaar_http_requests_total[1m])) > 0 or vector(1))) * 100",
+          "legendFormat": "5xx Xatolar %",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "🚨 5xx Xatoliklar Ulushi (%)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.3 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(safaar_http_request_duration_seconds_bucket[5m])) by (le)) or vector(0)",
+          "legendFormat": "P95 Latency",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "⏱️ P95 Kechikish (Latency)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "sum(safaar_http_requests_in_flight) or vector(0)",
+          "legendFormat": "Faol so'rovlar",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "🔄 Ayni Paytda Faol So'rovlar (In-Flight)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "📊 HTTP Trafik va Kechikish (Latency Breakdown)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 5,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "histogram_quantile(0.95, sum(rate(safaar_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "P95 Latency",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "histogram_quantile(0.99, sum(rate(safaar_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "P99 Latency",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "histogram_quantile(0.50, sum(rate(safaar_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "P50 Median",
+          "refId": "C"
+        }
+      ],
+      "title": "⏱️ So'rovlar Kechikish Dinamikasi (P50, P95, P99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 6,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "topk(7, sum by (route) (rate(safaar_http_requests_total[1m])))",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🔥 Eng Ko'p Yuklangan Route-lar (Top 7 RPS)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "🗄️ Infratuzilma va Resurslar (DB Pool, CPU, Heap, Event Loop)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 20
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "waiting" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "idle" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "safaar_db_pool_connections",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🗄️ PostgreSQL Connection Pool (Total, Idle, Waiting)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 8,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "safaar_nodejs_heap_size_used_bytes",
+          "legendFormat": "Heap Ishlatilgan",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "safaar_nodejs_heap_size_total_bytes",
+          "legendFormat": "Heap Jami Ajratilgan",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "safaar_process_resident_memory_bytes",
+          "legendFormat": "RSS Xotira",
+          "refId": "C"
+        }
+      ],
+      "title": "🧠 Node.js Xotira Sarfi (Heap & RSS)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["safaar", "backend", "nest", "production"],
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "timezone": "browser",
+  "title": "Safaar Backend Overview",
+  "uid": "safaar-backend-overview",
+  "version": 1
+}

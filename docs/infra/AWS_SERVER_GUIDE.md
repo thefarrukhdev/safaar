@@ -45,3 +45,8 @@ Deploy jarayoni avtomatlashtirilgan bo'lib, **GitHub Actions** orqali amalga osh
 - **Health Check:** `https://api.safaar.uz/v1/health`
 - **Readiness Check:** `https://api.safaar.uz/v1/health/ready`
 - **Prometheus Metrikalari:** `https://api.safaar.uz/metrics`
+- **Grafana Cloud Dashboard (24/7 Jonli):** `https://fearlessdumpling2379.grafana.net/d/safaar-backend-overview/safaar-backend-overview`
+- **Metrics Agent Konteyneri:** `safaar-metrics-agent` (`prom/prometheus:v2.51.0` agent mode)
+  - `safaar-network` ichida `http://safaar-backend:4000/metrics` ni 15 soniyada bir scrape qiladi.
+  - Ma'lumotlarni to'g'ridan-to'g'ri `remote_write` orqali Grafana Cloud'ga 24/7 uzatib turadi.
+  - Resurs sarfi: ~20 MB RAM, <0.5% CPU.

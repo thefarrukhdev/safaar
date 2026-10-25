@@ -93,3 +93,4 @@ scratch.ts
 scratch.*.js
 scratch.*.ts
 tsconfig.tsbuildinfo
+monitoring/prometheus/prometheus.cloud.yml

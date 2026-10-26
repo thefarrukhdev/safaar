@@ -4,7 +4,6 @@ import { AlertCircle, CalendarDays, CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../../_components/ui/button";
 import { PageHeader } from "../../_components/layout/page-header";
-import { TODAY_ISO } from "../../_lib/utils/date";
 import type { PartnerLabels } from "../../_lib/utils/partner-labels";
 
 const WEEKDAYS = [
@@ -43,7 +42,7 @@ export function FrontDeskHeader({
   requiresCompanyDetails,
   onNewBooking,
 }: FrontDeskHeaderProps) {
-  const today = new Date(TODAY_ISO);
+  const today = new Date();
   const monthName = MONTHS[today.getMonth()];
   const dayNumber = today.getDate();
   const weekdayName = WEEKDAYS[today.getDay()];

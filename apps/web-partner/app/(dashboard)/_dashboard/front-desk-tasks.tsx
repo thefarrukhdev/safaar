@@ -61,11 +61,23 @@ export function FrontDeskTasks({
   onReject,
   onViewDetails,
 }: FrontDeskTasksProps) {
+  const arrivalTabLabel = labels.isBus
+    ? "Olib ketish"
+    : labels.isRestaurant
+      ? "Kelish"
+      : "Kirish";
+
+  const departureTabLabel = labels.isBus
+    ? "Qaytarish"
+    : labels.isRestaurant
+      ? "Ketish"
+      : "Chiqish";
+
   const filterTabs: { key: FilterKey; label: string; count: number }[] = [
     { key: "all", label: "Hammasi", count: counts.all },
     { key: "pending", label: "Yangi", count: counts.pending },
-    { key: "arrival", label: labels.checkInLabel, count: counts.arrival },
-    { key: "departure", label: labels.checkOutLabel, count: counts.departure },
+    { key: "arrival", label: arrivalTabLabel, count: counts.arrival },
+    { key: "departure", label: departureTabLabel, count: counts.departure },
   ];
 
   return (

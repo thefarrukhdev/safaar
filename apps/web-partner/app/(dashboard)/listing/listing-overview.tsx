@@ -68,7 +68,7 @@ import {
 } from '../../_lib/utils/partner-labels';
 import { cn } from '../../_lib/utils/cn';
 import { useAmenities } from '../../_hooks/use-catalog';
-import { useVehicles } from '../../_hooks/use-vehicles';
+import { useVehicles, type Vehicle } from '../../_hooks/use-vehicles';
 
 type OpenEditor = Exclude<SectionId, 'roomTypes' | 'rooms'> | null;
 
@@ -97,7 +97,7 @@ export function ListingOverview() {
     import('../../_lib/domain/types').RoomType | null
   >(null);
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
   const { data: vehicles = [] } = useVehicles();
 

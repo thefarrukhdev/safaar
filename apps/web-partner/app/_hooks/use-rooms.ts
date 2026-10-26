@@ -243,6 +243,13 @@ export function useDeleteRoom() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Xonani o'chirishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -268,6 +275,13 @@ export function useBulkCreateRooms() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Xonalarni yaratishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -284,6 +298,13 @@ export function useAddRoomPhoto() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasm yuklashda xatolik yuz berdi";
+      toast.error(message);
     },
   });
 }
@@ -302,6 +323,13 @@ export function useDeleteRoomPhoto() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasmni o'chirishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -318,6 +346,13 @@ export function useUpdateRoomPhoto() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasm ma'lumotlarini yangilashda xatolik yuz berdi";
+      toast.error(message);
     },
   });
 }

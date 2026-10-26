@@ -1,4 +1,4 @@
-import type { ReservationView } from "../../_lib/domain/types";
+import { ReservationSource, type ReservationView } from "../../_lib/domain/types";
 import { formatDate } from "../../_lib/utils/format";
 
 /**
@@ -21,7 +21,7 @@ export function exportReportToCsv(reservations: ReservationView[], filenamePrefi
   ];
 
   const rows = reservations.map((r) => {
-    const isOnline = r.source === "UZBRON";
+    const isOnline = r.source === ReservationSource.UZBRON;
     const phoneRaw = r.guest?.phone ? r.guest.phone.trim() : "";
     const phoneFormatted = phoneRaw
       ? phoneRaw.startsWith("+")

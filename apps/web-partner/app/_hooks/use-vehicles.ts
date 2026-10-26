@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { partners } from "../_lib/api";
 import { useAuthStore } from "../_stores/auth-store";
+import type { Vehicle, VehicleStatus } from "../(dashboard)/rooms/vehicles-types";
 
 export const vehiclesQueryKey = ["partner", "vehicles"] as const;
 
@@ -14,6 +15,10 @@ export type VehicleDraft = {
   status: "active" | "inactive";
 };
 
+export type { Vehicle, VehicleStatus };
+
+const EMPTY_VEHICLES: Vehicle[] = [];
+
 export function useVehicles() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
@@ -21,22 +26,22 @@ export function useVehicles() {
   
   const query = useQuery({
     queryKey: vehiclesQueryKey,
-    queryFn: async () => {
+    queryFn: async (): Promise<Vehicle[]> => {
       const data = await partners.listVehicles(accessToken);
-      return data.map(v => ({
+      return data.map((v) => ({
         id: v.id,
         name: v.name,
         plateNumber: v.plate_number,
         seatsCount: v.seats_count,
         pricePerDay: v.price_per_day,
-        status: v.status,
+        status: (v.status === 'inactive' ? 'inactive' : 'active') as VehicleStatus,
       }));
     },
     enabled: Boolean(accessToken) && isBus,
   });
 
   return { 
-    data: query.data ?? [], 
+    data: query.data ?? EMPTY_VEHICLES, 
     isLoading: query.isLoading && !query.data,
     isError: query.isError,
     error: query.error,

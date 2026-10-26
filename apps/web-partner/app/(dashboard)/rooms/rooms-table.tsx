@@ -31,7 +31,7 @@ export interface RoomsTableProps {
   isHostel: boolean;
   restaurant: boolean;
   isBus: boolean;
-  labels: PartnerLabels | any;
+  labels: PartnerLabels;
   selectedRoomIds: Set<string>;
   onToggleRoom: (id: string) => void;
   onToggleSelectAllVisible: () => void;

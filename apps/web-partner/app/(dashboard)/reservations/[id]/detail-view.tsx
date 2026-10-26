@@ -44,6 +44,7 @@ import {
   formatMoney,
   formatPhone,
 } from "../../../_lib/utils/format";
+import { todayIso } from "../../../_lib/utils/date";
 import { useAuthStore } from "../../../_stores/auth-store";
 import { useVehicles } from "../../../_hooks/use-vehicles";
 import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
@@ -86,7 +87,7 @@ export function ReservationDetailView({ id }: { id: string }) {
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIso();
   const isPastCheckIn = today > data.checkIn;
   const isPastCheckOut = today > data.checkOut;
 

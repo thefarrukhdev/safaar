@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronRight,
   FileText,
+  Home,
   Sparkles,
   Users,
   UtensilsCrossed,
@@ -136,18 +137,20 @@ export function FrontDeskQuickActions({
           <QuickNavLink
             href="/calendar"
             icon={<CalendarDays className="h-4 w-4" />}
-            label={labels.calendarTitle.split(" ")[0]}
+            label="Kalendar"
           />
           <QuickNavLink
-            href="/rooms"
+            href={dacha ? "/listing" : "/rooms"}
             icon={
-              restaurant ? (
+              dacha ? (
+                <Home className="h-4 w-4" />
+              ) : restaurant ? (
                 <UtensilsCrossed className="h-4 w-4" />
               ) : (
                 <BedDouble className="h-4 w-4" />
               )
             }
-            label={labels.unitsPageTitle}
+            label={dacha ? labels.listingTitle : labels.unitsPageTitle}
           />
           <QuickNavLink
             href="/reports"

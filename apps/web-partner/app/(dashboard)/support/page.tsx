@@ -66,7 +66,7 @@ export default function SupportPage() {
 
   const ticketsQuery = useQuery({
     queryKey: [...ticketsQueryKey, accessToken],
-    queryFn: () => support.listTickets(useAuthStore.getState().tokens?.accessToken ?? accessToken),
+    queryFn: () => support.listTickets(accessToken),
     enabled: Boolean(accessToken),
   });
 
@@ -78,7 +78,7 @@ export default function SupportPage() {
     queryFn: () =>
       support.getTicket(
         activeTicketId ?? "",
-        useAuthStore.getState().tokens?.accessToken ?? accessToken,
+        accessToken,
       ),
     enabled: Boolean(accessToken && activeTicketId),
   });
@@ -97,16 +97,15 @@ export default function SupportPage() {
 
   const createTicketMutation = useMutation({
     mutationFn: async () => {
-      const token = useAuthStore.getState().tokens?.accessToken ?? accessToken;
       const ticket = await support.createTicket(
         {
           subject: newTicketSubject.trim(),
           priority: newTicketPriority,
         },
-        token,
+        accessToken,
       );
       if (newTicketInitialMessage.trim()) {
-        await support.sendMessage(ticket.id, newTicketInitialMessage.trim(), token);
+        await support.sendMessage(ticket.id, newTicketInitialMessage.trim(), accessToken);
       }
       return ticket;
     },
@@ -133,8 +132,7 @@ export default function SupportPage() {
       if (!activeTicketId) {
         throw new Error("Murojaat tanlanmagan");
       }
-      const token = useAuthStore.getState().tokens?.accessToken ?? accessToken;
-      return support.sendMessage(activeTicketId, text, token);
+      return support.sendMessage(activeTicketId, text, accessToken);
     },
     onSuccess: () => {
       setNewMessageText("");

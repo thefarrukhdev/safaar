@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { DateRangePicker, type DateRange } from "../../_components/ui/date-range-picker";
-import type { ReservationView } from "../../_lib/domain/types";
+import { ReservationSource, type ReservationView } from "../../_lib/domain/types";
 import { formatMoney } from "../../_lib/utils/format";
 import { exportReportToCsv } from "./export-report-csv";
 
@@ -31,8 +31,8 @@ export function ReportsDetailedTab({
     return list;
   }, [reservations, dateRange.startDate, dateRange.endDate]);
 
-  const onlineReservations = filtered.filter((r) => r.source === "UZBRON");
-  const onsiteReservations = filtered.filter((r) => r.source !== "UZBRON");
+  const onlineReservations = filtered.filter((r) => r.source === ReservationSource.UZBRON);
+  const onsiteReservations = filtered.filter((r) => r.source !== ReservationSource.UZBRON);
   const totalRevenue = filtered.reduce((sum, r) => sum + r.totalPrice, 0);
 
   const handleExportCsv = () => {
@@ -142,7 +142,7 @@ export function ReportsDetailedTab({
                   </tr>
                 ) : (
                   filtered.map((r) => {
-                    const isOnline = r.source === "UZBRON";
+                    const isOnline = r.source === ReservationSource.UZBRON;
                     return (
                       <tr
                         key={r.id}

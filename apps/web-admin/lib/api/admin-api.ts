@@ -186,21 +186,100 @@ function toCity(row: ApiRecord): CatalogCity {
 
 function toAmenity(row: ApiRecord): CatalogAmenity {
   const code = String(row.code ?? '');
-  let type: CatalogAmenity['type'] = 'hotel';
 
-  if (code.startsWith('dacha_')) type = 'dacha';
-  else if (code.startsWith('restaurant_')) type = 'restaurant';
-  else if (code.startsWith('transport_') || code.startsWith('bus_')) type = 'transport';
-  else if (code.startsWith('room_')) type = 'room';
-  else if (code.startsWith('hotel_')) type = 'hotel';
-  else type = row.type === 'room' ? 'room' : 'hotel';
+  let nameUz = '';
+  let nameRu = '';
+  let nameEn = '';
+  let customCategories: string[] | undefined;
+  let customIcon: string | undefined;
+
+  if (row.name && typeof row.name === 'object' && !Array.isArray(row.name)) {
+    const n = row.name as Record<string, unknown>;
+    nameUz = String(n.uz ?? '').trim();
+    nameRu = String(n.ru ?? '').trim();
+    nameEn = String(n.en ?? '').trim();
+    if (Array.isArray(n.categories)) {
+      customCategories = n.categories.map(String).filter(Boolean);
+    }
+    if (n.icon) {
+      customIcon = String(n.icon).trim();
+    }
+  } else if (typeof row.name === 'string') {
+    nameUz = row.name.trim();
+  }
+
+  // Categories resolution
+  let categories: ('hotel' | 'room' | 'dacha' | 'restaurant' | 'transport')[] = [];
+
+  if (customCategories && customCategories.length > 0) {
+    categories = customCategories.filter((c): c is 'hotel' | 'room' | 'dacha' | 'restaurant' | 'transport' =>
+      ['hotel', 'room', 'dacha', 'restaurant', 'transport'].includes(c),
+    );
+  }
+
+  if (categories.length === 0) {
+    const isRestaurant =
+      code.startsWith('restaurant_') ||
+      [
+        'halal', 'vegan', 'kids_menu', 'bar', 'alcohol', 'hookah', 'live_music',
+        'karaoke', 'outdoor_seating', 'private_room', 'vip_room', 'kids_zone',
+        'tv_screens', 'wifi', 'parking', 'delivery', 'takeaway', 'reservation_required',
+        'table_reservation', 'catering', 'fast_food', 'national_dishes', 'desserts',
+        'smoking_area', 'ac', 'terrace', 'restaurant',
+      ].includes(code);
+
+    const isDacha =
+      code.startsWith('dacha_') ||
+      [
+        'pool', 'sauna', 'jacuzzi', 'billiards', 'table_tennis', 'karaoke',
+        'playstation', 'wifi', 'ac', 'kitchen', 'barbecue', 'tapchan',
+        'garden', 'parking', 'terrace',
+      ].includes(code);
+
+    const isTransport =
+      code.startsWith('transport_') ||
+      code.startsWith('bus_') ||
+      [
+        'wifi', 'ac', 'usb_charging', 'tv', 'water', 'toilet', 'baggage',
+        'seatbelt', 'airport_shuttle', 'car_rental',
+      ].includes(code);
+
+    const isRoom =
+      code.startsWith('room_') ||
+      [
+        'wifi', 'tv', 'ac', 'minibar', 'safe', 'balcony', 'kitchen',
+        'hairdryer', 'workspace', 'smoke_detector',
+      ].includes(code);
+
+    const isHotel =
+      !code.startsWith('room_') &&
+      !code.startsWith('transport_') &&
+      !code.startsWith('bus_');
+
+    if (isRestaurant) categories.push('restaurant');
+    if (isHotel) categories.push('hotel');
+    if (isRoom) categories.push('room');
+    if (isDacha) categories.push('dacha');
+    if (isTransport) categories.push('transport');
+
+    if (categories.length === 0) categories.push('hotel');
+  }
+
+  const primaryType =
+    categories.includes('restaurant') && !categories.includes('hotel')
+      ? 'restaurant'
+      : categories[0] || 'hotel';
 
   return {
     id: String(row.id ?? code ?? ''),
     code,
-    name: localizedText(row.name, 'Qulaylik'),
-    icon: String(row.icon ?? code ?? 'amenity'),
-    type,
+    name: nameUz || localizedText(row.name, 'Qulaylik'),
+    nameUz: nameUz || localizedText(row.name, 'Qulaylik'),
+    nameRu: nameRu || undefined,
+    nameEn: nameEn || undefined,
+    icon: customIcon || String(row.icon ?? code ?? 'amenity'),
+    type: primaryType,
+    categories,
     isActive: asBoolean(row.isActive ?? row.is_active, true),
   };
 }
@@ -2203,12 +2282,64 @@ export const AdminApi = {
     const { data } = await apiClient.get('/catalog/amenities');
     return unknownItems(data).map((row) => toAmenity(asRecord(row)));
   },
-  createAmenity: async (code: string, name: string, isActive?: boolean): Promise<CatalogAmenity> => {
-    const { data } = await apiClient.post('/admin/catalog/amenities', { code, name, isActive });
+  createAmenity: async (
+    codeOrPayload:
+      | string
+      | {
+          code: string;
+          name:
+            | {
+                uz: string;
+                ru?: string;
+                en?: string;
+                categories?: string[];
+                icon?: string;
+              }
+            | string;
+          isActive?: boolean;
+          categories?: string[];
+          icon?: string;
+        },
+    name?: string,
+    isActive?: boolean,
+  ): Promise<CatalogAmenity> => {
+    let payload: Record<string, unknown>;
+    if (typeof codeOrPayload === 'object' && codeOrPayload !== null) {
+      payload = codeOrPayload;
+    } else {
+      payload = { code: codeOrPayload, name, isActive };
+    }
+    const { data } = await apiClient.post('/admin/catalog/amenities', payload);
     return toAmenity(asRecord(data));
   },
-  updateAmenity: async (id: string, name: string, isActive?: boolean): Promise<CatalogAmenity> => {
-    const { data } = await apiClient.patch(`/admin/catalog/amenities/${id}`, { name, isActive });
+  updateAmenity: async (
+    id: string,
+    nameOrPayload:
+      | string
+      | {
+          code?: string;
+          name?:
+            | {
+                uz: string;
+                ru?: string;
+                en?: string;
+                categories?: string[];
+                icon?: string;
+              }
+            | string;
+          isActive?: boolean;
+          categories?: string[];
+          icon?: string;
+        },
+    isActive?: boolean,
+  ): Promise<CatalogAmenity> => {
+    let payload: Record<string, unknown>;
+    if (typeof nameOrPayload === 'object' && nameOrPayload !== null) {
+      payload = nameOrPayload;
+    } else {
+      payload = { name: nameOrPayload, isActive };
+    }
+    const { data } = await apiClient.patch(`/admin/catalog/amenities/${id}`, payload);
     return toAmenity(asRecord(data));
   },
   deleteAmenity: async (id: string): Promise<void> => {

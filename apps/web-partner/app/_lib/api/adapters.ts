@@ -50,6 +50,7 @@ export interface BackendHotel {
   pets_allowed?: boolean;
   children_allowed?: boolean;
   extra_fees?: unknown;
+  custom_rules?: unknown;
 }
 
 export interface BackendRoom {
@@ -180,6 +181,7 @@ export interface BackendBusCompany {
   check_out_time?: string;
   cancellation_policy_code?: string;
   extra_fees?: unknown;
+  custom_rules?: unknown;
   rating_average?: number;
   reviews_count?: number;
 }
@@ -212,6 +214,7 @@ export function toBusListing(bus: BackendBusCompany): Listing {
     petsAllowed: false,
     childrenAllowed: true,
     extraFees: parseExtraFees(bus.extra_fees),
+    customRules: Array.isArray(bus.custom_rules) ? bus.custom_rules.map(String) : [],
   };
 }
 
@@ -254,6 +257,7 @@ export function toListing(hotel: BackendHotel): Listing {
     petsAllowed: Boolean(hotel.pets_allowed),
     childrenAllowed: hotel.children_allowed !== false,
     extraFees: parseExtraFees(hotel.extra_fees),
+    customRules: Array.isArray(hotel.custom_rules) ? hotel.custom_rules.map(String) : [],
   };
 }
 

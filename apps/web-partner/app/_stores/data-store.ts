@@ -39,6 +39,7 @@ export const emptyListing: Listing = {
   petsAllowed: false,
   childrenAllowed: true,
   extraFees: [],
+  customRules: [],
 };
 
 function isRevenueBooking(reservation: ReservationView) {
@@ -117,6 +118,7 @@ export interface ListingRulesDraft {
   petsAllowed: boolean;
   childrenAllowed: boolean;
   extraFees?: ExtraFee[];
+  customRules?: string[];
 }
 
 export interface PhotoDraft {

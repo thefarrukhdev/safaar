@@ -323,23 +323,54 @@ function AddPhotoDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [isDragging, setIsDragging] = useState(false);
+
+  const restaurant = isRestaurant(partnerType);
+  const isBus = hasBuses(partnerType);
+  const dacha = isDacha(partnerType);
+  const categoryLabel = restaurant
+    ? RESTAURANT_CATEGORY_LABEL
+    : isBus
+      ? BUS_CATEGORY_LABEL
+      : dacha
+        ? DACHA_CATEGORY_LABEL
+        : CATEGORY_LABEL;
 
   const reset = () => {
     previewUrls.forEach((url) => URL.revokeObjectURL(url));
     setFiles([]);
     setPreviewUrls([]);
     setCaption("");
+    setSelectedCategory("");
+    setIsDragging(false);
   };
 
-  const handleFilesSelected = (newFiles: FileList | null) => {
-    if (!newFiles || newFiles.length === 0) return;
-    const fileArray = Array.from(newFiles);
+  const handleFilesSelected = (newFiles: FileList | File[] | null) => {
+    if (!newFiles) return;
+    const fileList = Array.from(newFiles);
+    const validImages = fileList.filter((f) => f.type.startsWith("image/"));
 
-    // Eski URL larni tozalash
-    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    if (validImages.length === 0) {
+      toast.error("Faqat rasm formatidagi fayllarni yuklang (PNG, JPG, WEBP)");
+      return;
+    }
 
-    setFiles(fileArray);
-    setPreviewUrls(fileArray.map((f) => URL.createObjectURL(f)));
+    setFiles((prev) => {
+      const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+      const uniqueNew = validImages.filter(
+        (f) => !existingKeys.has(`${f.name}_${f.size}`),
+      );
+
+      if (uniqueNew.length === 0) {
+        toast.info("Tanlangan rasmlar ro'yxatda allaqachon mavjud");
+        return prev;
+      }
+
+      const newUrls = uniqueNew.map((f) => URL.createObjectURL(f));
+      setPreviewUrls((prevUrls) => [...prevUrls, ...newUrls]);
+      return [...prev, ...uniqueNew];
+    });
   };
 
   const handleRemoveFile = (index: number) => {
@@ -348,6 +379,33 @@ function AddPhotoDialog({
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesSelected(e.dataTransfer.files);
+    }
+  };
+
+  const totalSizeBytes = files.reduce((acc, f) => acc + f.size, 0);
+  const totalSizeFormatted =
+    totalSizeBytes > 1024 * 1024
+      ? `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.round(totalSizeBytes / 1024)} KB`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,11 +418,12 @@ function AddPhotoDialog({
       await addPhotos.mutateAsync({
         files,
         caption: caption.trim() || undefined,
+        category: selectedCategory || undefined,
       });
       toast.success(
         files.length === 1
           ? "Rasm muvaffaqiyatli yuklandi"
-          : `${files.length} ta rasm muvaffaqiyatli yuklandi`,
+          : `${files.length} ta rasm birdaniga muvaffaqiyatli yuklandi`,
       );
       reset();
       onClose();
@@ -375,6 +434,14 @@ function AddPhotoDialog({
     }
   };
 
+  const categoryOptions = [
+    { value: "", label: "Kategoriya tanlang (ixtiyoriy)" },
+    ...Object.entries(categoryLabel).map(([key, label]) => ({
+      value: key,
+      label,
+    })),
+  ];
+
   return (
     <Dialog
       open={open}
@@ -382,73 +449,145 @@ function AddPhotoDialog({
         reset();
         onClose();
       }}
-      title="Rasm yuklash"
-      description="1 tadan 3 tagacha (yoki ko'proq) rasm tanlang. Kategoriya talab etilmaydi."
+      title="Rasmlar yuklash (Ommaviy)"
+      description="Bir nechta rasmlarni birdaniga tanlang yoki sudrab olib keling (drag & drop)."
       size="lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Dropzone */}
         <div className="flex flex-col gap-1.5">
-          <Label>Qurilmadan rasmlarni tanlash (1 yoki bir nechta)</Label>
-          <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] transition-colors hover:border-brand-500 hover:bg-[var(--surface)]">
-            <ImageIcon className="mb-2 h-8 w-8 text-zinc-400" />
-            <span className="text-sm font-medium text-zinc-600">
-              {files.length > 0
-                ? `${files.length} ta rasm tanlandi (O'zgartirish uchun bosing)`
-                : "Bir yoki bir nechta rasm tanlash uchun bosing"}
-            </span>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold">
+              Rasmlarni tanlash (1 yoki bir nechta)
+            </Label>
+            {files.length > 0 && (
+              <span className="text-[11px] font-medium text-brand-600 dark:text-brand-400">
+                {files.length} ta rasm tanlandi ({totalSizeFormatted})
+              </span>
+            )}
+          </div>
+          <label
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition-all",
+              isDragging
+                ? "border-brand-500 bg-brand-50/80 ring-2 ring-brand-200 dark:bg-brand-950/30"
+                : "border-[var(--border)] bg-[var(--surface-muted)] hover:border-brand-500 hover:bg-[var(--surface)]",
+            )}
+          >
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300">
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                Rasmlarni bu yerga sudrab tashlang yoki tanlash uchun bosing
+              </p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                PNG, JPG, WEBP formatlari qo'llab-quvvatlanadi. Bir nechta rasm tanlashingiz mumkin.
+              </p>
+            </div>
             <input
               type="file"
               accept="image/*"
               multiple
               className="hidden"
-              onChange={(e) => handleFilesSelected(e.target.files)}
+              onChange={(e) => {
+                handleFilesSelected(e.target.files);
+                e.target.value = "";
+              }}
             />
           </label>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="p-cap">Izoh (ixtiyoriy)</Label>
-          <Input
-            id="p-cap"
-            value={caption}
-            placeholder={`Masalan: ${
-              isRestaurant(partnerType)
-                ? "Zal yoki fasad ko'rinishi"
-                : hasBuses(partnerType)
-                  ? "Avtomobil oldi yoki salon ko'rinishi"
-                  : isDacha(partnerType)
-                    ? "Hovli yoki bino ko'rinishi"
-                    : "Fasad yoki lobbi ko'rinishi"
-            }`}
-            onChange={(e) => setCaption(e.target.value)}
-          />
-        </div>
-
+        {/* Tanlangan rasmlar ro'yxati (Prevyu galereyasi) */}
         {previewUrls.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 rounded-card border border-[var(--border)] p-2">
-            {previewUrls.map((url, idx) => (
-              <div
-                key={idx}
-                className="group relative aspect-video overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800"
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
+              <span>Tanlangan rasmlar prevyusi ({files.length} ta):</span>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-[11px] text-red-500 hover:underline cursor-pointer"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Preview ${idx + 1}`}
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(idx)}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
-                  aria-label="Rasmni olib tashlash"
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
+                Hammasini tozalash
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 max-h-56 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-2">
+              {previewUrls.map((url, idx) => {
+                const file = files[idx];
+                const fileSize = file
+                  ? file.size > 1024 * 1024
+                    ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                    : `${Math.round(file.size / 1024)} KB`
+                  : "";
+                return (
+                  <div
+                    key={idx}
+                    className="group relative aspect-video overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Preview ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 flex items-end justify-between p-1.5">
+                      <span className="truncate text-[10px] text-white max-w-[80%] font-medium">
+                        {file?.name} ({fileSize})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(idx)}
+                        className="rounded-full bg-red-600 p-1 text-white hover:bg-red-700 transition-colors cursor-pointer"
+                        aria-label="Rasmni olib tashlash"
+                      >
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
+
+        {/* Kategoriya va Izoh */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="p-cat">Kategoriya (ixtiyoriy)</Label>
+            <select
+              id="p-cat"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs focus:border-brand-600 focus:outline-none"
+            >
+              {categoryOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="p-cap">Izoh (ixtiyoriy)</Label>
+            <Input
+              id="p-cap"
+              value={caption}
+              placeholder={`Masalan: ${
+                restaurant
+                  ? "Zal yoki fasad ko'rinishi"
+                  : isBus
+                    ? "Avtomobil oldi yoki salon ko'rinishi"
+                    : dacha
+                      ? "Hovli yoki bino ko'rinishi"
+                      : "Fasad yoki lobbi ko'rinishi"
+              }`}
+              onChange={(e) => setCaption(e.target.value)}
+            />
+          </div>
+        </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4">
           <Button
@@ -465,7 +604,11 @@ function AddPhotoDialog({
             type="submit"
             disabled={files.length === 0 || addPhotos.isPending}
           >
-            {addPhotos.isPending ? "Yuklanmoqda..." : "Yuklash"}
+            {addPhotos.isPending
+              ? "Yuklanmoqda..."
+              : files.length > 1
+                ? `${files.length} ta rasmni yuklash`
+                : "Yuklash"}
           </Button>
         </div>
       </form>

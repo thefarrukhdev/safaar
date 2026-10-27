@@ -345,6 +345,21 @@ export function PreviewDrawer({
                 <RuleChip on={l.petsAllowed} label="Uy hayvonlari" />
                 <RuleChip on={l.smokingAllowed} label="Chekish" />
               </div>
+              {Array.isArray(l.customRules) && l.customRules.length > 0 && (
+                <div className="mt-3 border-t border-[var(--border)] pt-2.5">
+                  <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+                    Qo'shimcha shartlar:
+                  </span>
+                  <ul className="mt-1.5 space-y-1 text-xs text-zinc-700 dark:text-zinc-300">
+                    {l.customRules.map((rule, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-brand-600 font-bold">•</span>
+                        <span>{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}

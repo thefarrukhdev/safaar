@@ -474,16 +474,16 @@ export function formatUnitTypeName(
 
   if (isRest) {
     const lower = trimmed.toLowerCase();
-    if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер") {
+    if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер" || lower === "standart") {
       return "Standart stol (Umumiy zal)";
     }
-    if (lower === "deluxe xona" || lower === "deluxe room" || lower === "делюкс номер") {
+    if (lower === "deluxe xona" || lower === "deluxe room" || lower === "делюкс номер" || lower === "deluxe") {
       return "VIP Stol (Alohida kabinet)";
     }
     if (lower === "suite" || lower === "suite xona" || lower === "люкс") {
       return "Banket stoli / Katta zal";
     }
-    return trimmed
+    let formatted = trimmed
       .replace(/\bxonalar\b/gi, "stollar")
       .replace(/\bxonasi\b/gi, "stoli")
       .replace(/\bxonani\b/gi, "stolni")
@@ -500,6 +500,11 @@ export function formatUnitTypeName(
       .replace(/\bRoom\b/g, "Table")
       .replace(/\bномер\b/gi, "стол")
       .replace(/\bНомер\b/g, "Стол");
+
+    if (formatted.toLowerCase().includes("xona")) {
+      formatted = formatted.replace(/xona/gi, "stol").replace(/Xona/g, "Stol");
+    }
+    return formatted;
   }
 
   if (isB) {

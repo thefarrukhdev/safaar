@@ -182,6 +182,7 @@ export function useUpdateListingRules() {
         check_out_time: values.checkOutTime,
         cancellation_policy_code: values.cancellationPolicy,
         extra_fees: values.extraFees,
+        custom_rules: values.customRules,
       }, token).then((bus) => {
         const updated = toBusListing(bus);
         return {
@@ -190,6 +191,7 @@ export function useUpdateListingRules() {
           checkOutTime: bus.check_out_time !== undefined ? updated.checkOutTime : currentListing.checkOutTime,
           cancellationPolicy: bus.cancellation_policy_code !== undefined ? updated.cancellationPolicy : currentListing.cancellationPolicy,
           extraFees: bus.extra_fees !== undefined ? updated.extraFees : currentListing.extraFees,
+          customRules: bus.custom_rules !== undefined ? updated.customRules : currentListing.customRules,
         };
       });
     }

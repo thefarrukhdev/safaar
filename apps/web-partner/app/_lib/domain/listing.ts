@@ -97,6 +97,7 @@ export interface Listing {
   petsAllowed: boolean;
   childrenAllowed: boolean;
   extraFees: ExtraFee[];
+  customRules: string[];
 }
 
 /** Qulaylik guruhi (UI'da bo'limlarga bo'lish uchun). */

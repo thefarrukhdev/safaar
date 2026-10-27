@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { RoomStatus, type Bed, type Room, type RoomType } from "../../_lib/domain/types";
-import type { PartnerLabels } from "../../_lib/utils/partner-labels";
+import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
 import { Button } from "../../_components/ui/button";
 import {
   DropdownMenu,
@@ -214,7 +214,7 @@ export function RoomsTable({
                         )}
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[200px]">
-                        {room.roomTypeName || roomType?.name || "—"}
+                        {formatUnitTypeName(room.roomTypeName || roomType?.name || "", labels) || "—"}
                       </div>
                     </td>
 

@@ -26,7 +26,7 @@ import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useCreateRoom, useBulkCreateRooms, useRooms } from "../../../_hooks/use-rooms";
 import { useGenerateBeds } from "../../../_hooks/use-beds";
 import { cn } from "../../../_lib/utils/cn";
-import { getPartnerLabels, hasBeds, hasBuses, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBeds, hasBuses, isRestaurant, formatUnitTypeName } from "../../../_lib/utils/partner-labels";
 import { RoomStatus } from "../../../_lib/domain/types";
 import { RoomTypeDialog } from "./room-type-dialog";
 
@@ -270,7 +270,7 @@ export function AddRoomDialog({
     { value: "", label: `${labels.unitTypeLabel}ni tanlang` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
-      label: `${rt.name} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
+      label: `${formatUnitTypeName(rt.name, labels)} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
     })),
   ];
 
@@ -376,7 +376,7 @@ export function AddRoomDialog({
               {selectedRoomType && (
                 <div className="mt-1 flex items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 text-[11px] text-zinc-600 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-800">
                   <span className="font-semibold text-zinc-900 dark:text-zinc-200">
-                    {selectedRoomType.name}
+                    {formatUnitTypeName(selectedRoomType.name, labels)}
                   </span>
                   <span>•</span>
                   <span>{selectedRoomType.capacity} {labels.capacitySuffix}</span>
@@ -619,7 +619,7 @@ export function AddRoomDialog({
                 <Plus className="h-4 w-4" />
                 {creationMode === "bulk"
                   ? `${bulkCount ?? 0} ta ${labels.unitSingular.toLowerCase()} yaratish`
-                  : `${labels.addUnitLabel}`}
+                  : `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} qo'shish`}
               </Button>
             </div>
           </fieldset>

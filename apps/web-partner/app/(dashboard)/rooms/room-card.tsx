@@ -22,7 +22,7 @@ import {
 import { formatMoney } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
 
-import type { PartnerLabels } from "../../_lib/utils/partner-labels";
+import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
 
 interface RoomCardProps {
   room: Room;
@@ -253,7 +253,7 @@ export function RoomCard({
         {/* Xona turi va sig'im ma'lumotlari */}
         <div className="mt-3 flex flex-col gap-1">
           <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">
-            {room.roomTypeName}
+            {formatUnitTypeName(room.roomTypeName || roomType?.name || "", labels)}
           </span>
 
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">

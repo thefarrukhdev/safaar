@@ -15,7 +15,7 @@ import { Select } from "../../../_components/ui/select";
 import { useAuthStore } from "../../../_stores/auth-store";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useUpdateRoom, useRooms } from "../../../_hooks/use-rooms";
-import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, isRestaurant, formatUnitTypeName } from "../../../_lib/utils/partner-labels";
 import { RoomStatus, type Room } from "../../../_lib/domain/types";
 import { RoomTypeDialog } from "./room-type-dialog";
 
@@ -136,7 +136,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
     { value: "", label: `${labels.unitTypeLabel}ni tanlang` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
-      label: `${rt.name} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
+      label: `${formatUnitTypeName(rt.name, labels)} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
     })),
   ];
 

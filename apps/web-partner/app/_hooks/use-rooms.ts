@@ -9,6 +9,7 @@ import { useAuthStore } from "../_stores/auth-store";
 import { type BulkRoomsDraft, type RoomDraft } from "../_stores/data-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
 import { RoomStatus, type Room } from "../_lib/domain/types";
+import { formatUnitTypeName } from "../_lib/utils/partner-labels";
 
 export const roomsQueryKey = ["partner", "rooms"] as const;
 
@@ -21,15 +22,27 @@ const EMPTY_ROOMS: Room[] = [];
 
 export function useRooms() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
   const query = useQuery({
-    queryKey: roomsQueryKey,
+    queryKey: [...roomsQueryKey, partnerType],
     queryFn: async (): Promise<RoomsQueryResult> => {
       const [hotel] = pageItems(await partners.listHotels(accessToken));
       if (!hotel) return { allRooms: [], activeRooms: [] };
       const rawRooms = await partners.listRooms(hotel.id, accessToken);
+      const all = rawRooms.map(toRoom).map((r) => ({
+        ...r,
+        roomTypeName: formatUnitTypeName(r.roomTypeName, partnerType),
+      }));
+      const active = rawRooms
+        .filter((r) => r.status !== "inactive")
+        .map(toRoom)
+        .map((r) => ({
+          ...r,
+          roomTypeName: formatUnitTypeName(r.roomTypeName, partnerType),
+        }));
       return {
-        allRooms: rawRooms.map(toRoom),
-        activeRooms: rawRooms.filter((r) => r.status !== "inactive").map(toRoom),
+        allRooms: all,
+        activeRooms: active,
       };
     },
     enabled: Boolean(accessToken),

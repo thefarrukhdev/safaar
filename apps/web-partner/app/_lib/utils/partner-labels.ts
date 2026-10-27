@@ -350,7 +350,7 @@ const RESTAURANT_LABELS: PartnerLabels = {
   statusOccupiedLabel: "Band (Mijoz o'tiribdi)",
   statusOutOfServiceLabel: "Zaxirada / Yopiq",
   unitIdentifierLabel: "Stol raqami",
-  unitIdentifierPlaceholder: "Masalan: Stol-12, VIP-1",
+  unitIdentifierPlaceholder: "Stol-12, VIP-1",
   unitStatusLabel: "Stol holati",
   priceLabel: "Minimal depozit:",
   capacitySuffix: "kishi",
@@ -433,4 +433,77 @@ export function isRestaurant(partnerType?: string | null): boolean {
 /** Vaqt-slot asosida band qilinadigan hamkor turlari (hozircha faqat restoran). */
 export function hasTimeSlots(partnerType?: string | null): boolean {
   return isRestaurant(partnerType);
+}
+
+/**
+ * Toifa / xona turi nomini hamkor sohasi (mehmonxona, restoran, dacha, transport va h.k.)
+ * kontekstiga mos ravishda to'g'irlab formatlaydi.
+ *
+ * Masalan, bazada eski/umumiy "Standart xona" yoki "Deluxe xona" bo'lsa:
+ * - Restoran: "Standart stol (Umumiy zal)" / "VIP Stol (Alohida kabinet)" yoki "xona" -> "stol"
+ * - Transport: "Standart avtomobil"
+ * - Dacha: "Asosiy bino" / "Dacha hududi"
+ */
+export function formatUnitTypeName(
+  name?: string | null,
+  partnerTypeOrLabels?: string | Partial<PartnerLabels> | null,
+): string {
+  if (!name || typeof name !== "string") return "";
+  const trimmed = name.trim();
+  if (!trimmed) return "";
+
+  const isRest =
+    typeof partnerTypeOrLabels === "object" && partnerTypeOrLabels !== null
+      ? Boolean(partnerTypeOrLabels.isRestaurant)
+      : isRestaurant(partnerTypeOrLabels as string);
+
+  const isB =
+    typeof partnerTypeOrLabels === "object" && partnerTypeOrLabels !== null
+      ? Boolean(partnerTypeOrLabels.isBus)
+      : hasBuses(partnerTypeOrLabels as string);
+
+  if (isRest) {
+    const lower = trimmed.toLowerCase();
+    if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер") {
+      return "Standart stol (Umumiy zal)";
+    }
+    if (lower === "deluxe xona" || lower === "deluxe room" || lower === "делюкс номер") {
+      return "VIP Stol (Alohida kabinet)";
+    }
+    if (lower === "suite" || lower === "suite xona" || lower === "люкс") {
+      return "Banket stoli / Katta zal";
+    }
+    return trimmed
+      .replace(/\bxonalar\b/gi, "stollar")
+      .replace(/\bxonasi\b/gi, "stoli")
+      .replace(/\bxonani\b/gi, "stolni")
+      .replace(/\bxonaga\b/gi, "stolga")
+      .replace(/\bxonada\b/gi, "stolda")
+      .replace(/\bxona\b/gi, "stol")
+      .replace(/\bXonalar\b/g, "Stollar")
+      .replace(/\bXonasi\b/g, "Stoli")
+      .replace(/\bXonani\b/g, "Stolni")
+      .replace(/\bXonaga\b/g, "Stolga")
+      .replace(/\bXonada\b/g, "Stolda")
+      .replace(/\bXona\b/g, "Stol")
+      .replace(/\broom\b/gi, "table")
+      .replace(/\bRoom\b/g, "Table")
+      .replace(/\bномер\b/gi, "стол")
+      .replace(/\bНомер\b/g, "Стол");
+  }
+
+  if (isB) {
+    const lower = trimmed.toLowerCase();
+    if (lower.includes("xona") || lower.includes("room") || lower.includes("номер")) {
+      return trimmed
+        .replace(/\bxonalar\b/gi, "avtomobillar")
+        .replace(/\bxona\b/gi, "avtomobil")
+        .replace(/\bXonalar\b/g, "Avtomobillar")
+        .replace(/\bXona\b/g, "Avtomobil")
+        .replace(/\broom\b/gi, "vehicle")
+        .replace(/\bRoom\b/g, "Vehicle");
+    }
+  }
+
+  return trimmed;
 }

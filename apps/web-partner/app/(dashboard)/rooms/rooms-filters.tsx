@@ -4,7 +4,7 @@ import { Search, X, RotateCcw } from "lucide-react";
 import { RoomStatus, type RoomType } from "../../_lib/domain/types";
 import { Select, type SelectOptionItem } from "../../_components/ui/select";
 import { Button } from "../../_components/ui/button";
-import type { PartnerLabels } from "../../_lib/utils/partner-labels";
+import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
 import type { RoomSortOption } from "./types";
 
 interface RoomsFiltersProps {
@@ -68,7 +68,7 @@ export function RoomsFilters({
     { value: "all", label: `Barcha ${unitTypeLabelPlural.toLowerCase()}` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
-      label: rt.name,
+      label: formatUnitTypeName(rt.name, labels),
     })),
   ];
 

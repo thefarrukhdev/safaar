@@ -606,14 +606,22 @@ export function ListingOverview() {
               restaurant={restaurant}
               isBus={isBus}
               amenityLabels={dynamicAmenityLabels}
-              onAddRoomType={() => {
-                setEditingRoomType(null);
-                setRoomTypeDialogOpen(true);
-              }}
-              onEditRoomType={(rt) => {
-                setEditingRoomType(rt);
-                setRoomTypeDialogOpen(true);
-              }}
+              onAddRoomType={
+                restaurant
+                  ? undefined
+                  : () => {
+                      setEditingRoomType(null);
+                      setRoomTypeDialogOpen(true);
+                    }
+              }
+              onEditRoomType={
+                restaurant
+                  ? undefined
+                  : (rt) => {
+                      setEditingRoomType(rt);
+                      setRoomTypeDialogOpen(true);
+                    }
+              }
             />
           </div>
         )}

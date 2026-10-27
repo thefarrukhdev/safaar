@@ -203,7 +203,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                 <Label htmlFor="er-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                   {labels.unitTypeLabel} <span className="text-red-500">*</span>
                 </Label>
-                {selectedRoomType && (
+                {selectedRoomType && !restaurant && (
                   <button
                     type="button"
                     onClick={() => setOpenEditType(true)}

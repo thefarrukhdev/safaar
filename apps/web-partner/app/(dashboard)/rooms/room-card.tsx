@@ -22,7 +22,11 @@ import {
 import { formatMoney } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
 
-import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
+import {
+  type PartnerLabels,
+  formatUnitTypeName,
+  RESTAURANT_TABLE_AMENITY_OPTIONS,
+} from "../../_lib/utils/partner-labels";
 
 interface RoomCardProps {
   room: Room;
@@ -84,6 +88,18 @@ export function RoomCard({
           "border-red-200/80 bg-red-50/10 dark:border-red-900/40 dark:bg-red-950/10"
       )}
     >
+      {/* Restoran stol rasmi (agar mavjud bo'lsa) */}
+      {restaurant && room.photos?.[0]?.url && (
+        <div className="relative -mx-4 -mt-4 mb-3 h-28 overflow-hidden rounded-t-2xl border-b border-zinc-200/80 dark:border-zinc-800">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={room.photos[0].url}
+            alt={room.number}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+      )}
+
       {/* Yuqori qism: Tanlash katakchasi, Xona raqami va Amallar menyusi */}
       <div>
         <div className="flex items-start justify-between gap-2">
@@ -257,9 +273,9 @@ export function RoomCard({
           </span>
 
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 font-semibold text-zinc-700 dark:text-zinc-300">
               <Users className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
-              {roomType?.capacity || "?"} {labels.capacitySuffix}
+              {room.capacity || roomType?.capacity || "?"} {labels.capacitySuffix}
             </span>
             {!restaurant && !isBus && roomType?.bedType && (
               <>
@@ -268,6 +284,30 @@ export function RoomCard({
               </>
             )}
           </div>
+
+          {/* Restoran stol qulayliklari (Badges) */}
+          {restaurant && Array.isArray(room.amenities) && room.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {room.amenities.slice(0, 3).map((code) => {
+                const found = RESTAURANT_TABLE_AMENITY_OPTIONS.find((a) => a.value === code);
+                return (
+                  <span
+                    key={code}
+                    className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60"
+                    title={found?.label || code}
+                  >
+                    <span>{found?.icon || "•"}</span>
+                    <span>{found?.label || code}</span>
+                  </span>
+                );
+              })}
+              {room.amenities.length > 3 && (
+                <span className="text-[10px] text-zinc-400 self-center">
+                  +{room.amenities.length - 3}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

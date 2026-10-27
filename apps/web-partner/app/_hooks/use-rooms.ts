@@ -66,6 +66,10 @@ function roomBody(values: Omit<Partial<RoomDraft>, "status"> & { status?: RoomSt
   if (values.status !== undefined) body.status = values.status;
   if (values.isListed !== undefined) body.isListed = values.isListed;
   if (values.nightlyPrice !== undefined) body.nightlyPrice = values.nightlyPrice;
+  if (values.capacity !== undefined) body.capacity = values.capacity;
+  if (values.amenities !== undefined) body.amenities = values.amenities;
+  if (values.fileId !== undefined) body.file_id = values.fileId;
+  if (values.imageUrl !== undefined) body.image_url = values.imageUrl;
   return body;
 }
 
@@ -270,7 +274,7 @@ export function useBulkCreateRooms() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: BulkRoomsDraft & { basePrice?: number; capacity?: number }) => {
+    mutationFn: async (values: BulkRoomsDraft & { basePrice?: number; capacity?: number; amenities?: string[] }) => {
       const hotel = await getPrimaryHotel(accessToken);
       return partners.bulkCreateRooms(
         hotel.id,
@@ -282,6 +286,7 @@ export function useBulkCreateRooms() {
           basePrice: values.basePrice,
           capacity: values.capacity,
           prefix: values.prefix,
+          amenities: values.amenities,
         },
         accessToken,
       );

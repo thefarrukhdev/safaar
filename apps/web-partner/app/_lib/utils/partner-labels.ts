@@ -552,3 +552,46 @@ export function formatUnitTypeName(
 
   return trimmed;
 }
+
+export const RESTAURANT_HALL_OPTIONS = [
+  { value: 1, label: "1 - Asosiy zal" },
+  { value: 2, label: "2 - VIP kabinetlar zali" },
+  { value: 3, label: "3 - Ochiq terrasa / Yozgi ayvon" },
+  { value: 4, label: "4 - Banket zali" },
+  { value: 5, label: "5 - Tapchan / Bog' zonasi" },
+  { value: 6, label: "6 - 2-qavat / Balkon" },
+];
+
+export function getRestaurantHallName(floor: number): string {
+  switch (floor) {
+    case 1:
+      return "Asosiy zal";
+    case 2:
+      return "VIP kabinetlar";
+    case 3:
+      return "Ochiq terrasa";
+    case 4:
+      return "Banket zali";
+    case 5:
+      return "Tapchan zonasi";
+    case 6:
+      return "2-qavat / Balkon";
+    default:
+      return `${floor}-zal`;
+  }
+}
+
+export const RESTAURANT_TABLE_AMENITY_OPTIONS = [
+  { value: "window", label: "Deraza yonida", icon: "🪟" },
+  { value: "terrace", label: "Terrasa / Tashqarida", icon: "🌿" },
+  { value: "vip", label: "VIP kabinet", icon: "👑" },
+  { value: "quiet", label: "Tinch burchak", icon: "🤫" },
+  { value: "near_stage", label: "Sahna yonida", icon: "🎭" },
+  { value: "high_chair", label: "Bolalar kursisi", icon: "👶" },
+  { value: "power_outlet", label: "Rozetka bor", icon: "🔌" },
+  { value: "near_ac", label: "Konditsioner yonida", icon: "❄️" },
+  { value: "near_tv", label: "Katta ekran / TV yonida", icon: "📺" },
+  { value: "smoking", label: "Chekish zonasi", icon: "🚬" },
+  { value: "wheelchair", label: "Aravachaga mos", icon: "♿️" },
+];
+

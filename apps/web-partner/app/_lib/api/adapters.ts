@@ -274,6 +274,8 @@ export function toRoom(room: BackendRoom): Room {
     isListed: room.is_listed ?? room.status === 'active',
     photos: Array.isArray(room.media) ? room.media : [],
     nightlyPrice: room.base_price ?? undefined,
+    capacity: room.capacity ?? room.max_adults ?? room.base_occupancy ?? undefined,
+    amenities: Array.isArray(room.amenities) ? room.amenities : [],
     _rawStatus: room.status,
   } as Room & { _rawStatus?: string };
 }

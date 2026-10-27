@@ -45,6 +45,8 @@ function geminiMultilingualResponse(multi: {
 
 describe('AiTranslateService', () => {
   const originalApiKey = process.env.AI_TRANSLATE_API_KEY;
+  const originalGeminiKey = process.env.GEMINI_API_KEY;
+  const originalGoogleKey = process.env.GOOGLE_API_KEY;
   const originalFetch = global.fetch;
   let service: AiTranslateService;
   let fetchMock: jest.Mock;
@@ -57,12 +59,16 @@ describe('AiTranslateService', () => {
 
   afterEach(() => {
     process.env.AI_TRANSLATE_API_KEY = originalApiKey;
+    process.env.GEMINI_API_KEY = originalGeminiKey;
+    process.env.GOOGLE_API_KEY = originalGoogleKey;
     global.fetch = originalFetch;
     jest.restoreAllMocks();
   });
 
   it('fails closed with AI_TRANSLATE_NOT_CONFIGURED when no API key is set', async () => {
     delete process.env.AI_TRANSLATE_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
 
     await expect(
       service.translate({

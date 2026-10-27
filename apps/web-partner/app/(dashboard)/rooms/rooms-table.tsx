@@ -11,7 +11,12 @@ import {
   Users,
 } from "lucide-react";
 import { RoomStatus, type Bed, type Room, type RoomType } from "../../_lib/domain/types";
-import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
+import {
+  type PartnerLabels,
+  formatUnitTypeName,
+  getRestaurantHallName,
+  RESTAURANT_TABLE_AMENITY_OPTIONS,
+} from "../../_lib/utils/partner-labels";
 import { Button } from "../../_components/ui/button";
 import {
   DropdownMenu,
@@ -198,30 +203,64 @@ export function RoomsTable({
 
                     {/* Xona raqami & turi */}
                     <td className="px-4 py-3 align-middle">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEditRoom(room)}
-                          className="font-bold text-zinc-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400 transition-colors focus-visible:outline-none focus-visible:underline text-sm"
-                          title={`${room.number} ma'lumotlarini tahrirlash`}
-                        >
-                          {room.number}
-                        </button>
-                        {!room.isListed && (
-                          <span className="rounded-md bg-zinc-200/80 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
-                            YASHIRILGAN
-                          </span>
+                      <div className="flex items-center gap-2.5">
+                        {room.photos?.[0]?.url && (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={room.photos[0].url}
+                            alt={room.number}
+                            className="h-9 w-9 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                          />
                         )}
-                      </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[200px]">
-                        {formatUnitTypeName(room.roomTypeName || roomType?.name || "", labels) || "—"}
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onEditRoom(room)}
+                              className="font-bold text-zinc-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400 transition-colors focus-visible:outline-none focus-visible:underline text-sm"
+                              title={`${room.number} ma'lumotlarini tahrirlash`}
+                            >
+                              {room.number}
+                            </button>
+                            {!room.isListed && (
+                              <span className="rounded-md bg-zinc-200/80 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
+                                YASHIRILGAN
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[220px]">
+                            {formatUnitTypeName(room.roomTypeName || roomType?.name || "", labels) || "—"}
+                          </div>
+                          {restaurant && Array.isArray(room.amenities) && room.amenities.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {room.amenities.slice(0, 3).map((code) => {
+                                const found = RESTAURANT_TABLE_AMENITY_OPTIONS.find((a) => a.value === code);
+                                return (
+                                  <span
+                                    key={code}
+                                    className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                                    title={found?.label || code}
+                                  >
+                                    <span>{found?.icon || "•"}</span>
+                                    <span>{found?.label || code}</span>
+                                  </span>
+                                );
+                              })}
+                              {room.amenities.length > 3 && (
+                                <span className="text-[10px] text-zinc-400 self-center">
+                                  +{room.amenities.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
 
                     {/* Qavat */}
                     <td className="px-4 py-3 align-middle whitespace-nowrap">
                       <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        {room.floor}-{labels.floorSingular}
+                        {restaurant ? getRestaurantHallName(room.floor) : `${room.floor}-${labels.floorSingular}`}
                       </span>
                     </td>
 
@@ -230,7 +269,7 @@ export function RoomsTable({
                       <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
                         <Users className="h-3.5 w-3.5 text-zinc-400 shrink-0" aria-hidden="true" />
                         <span>
-                          {roomType?.capacity || "?"} {labels.capacitySuffix}
+                          {room.capacity || roomType?.capacity || "?"} {labels.capacitySuffix}
                         </span>
                         {!restaurant && !isBus && roomType?.bedType && (
                           <>

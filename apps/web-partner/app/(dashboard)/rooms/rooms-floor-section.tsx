@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { RoomStatus, type Bed, type Room, type RoomType } from "../../_lib/domain/types";
-import type { PartnerLabels } from "../../_lib/utils/partner-labels";
+import { type PartnerLabels, getRestaurantHallName } from "../../_lib/utils/partner-labels";
 import { cn } from "../../_lib/utils/cn";
 import { RoomCard } from "./room-card";
 
@@ -82,7 +82,7 @@ export function RoomsFloorSection({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 pb-3 dark:border-zinc-800">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white capitalize">
-            {floor}-{labels.floorSingular}
+            {restaurant ? `${getRestaurantHallName(floor)} (${floor}-zal)` : `${floor}-${labels.floorSingular}`}
           </h2>
 
           <div className="flex flex-wrap items-center gap-1.5 text-xs">

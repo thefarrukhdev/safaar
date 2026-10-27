@@ -84,6 +84,10 @@ export interface RoomDraft {
   status?: RoomStatus;
   isListed?: boolean;
   nightlyPrice?: number;
+  capacity?: number;
+  amenities?: string[];
+  fileId?: string;
+  imageUrl?: string;
 }
 
 export interface BedDraft {

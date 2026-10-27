@@ -22,6 +22,8 @@ import {
 import { formatMoney } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
 
+import { type PartnerLabels, formatUnitTypeName } from "../../_lib/utils/partner-labels";
+
 interface RoomCardProps {
   room: Room;
   roomType?: RoomType;
@@ -35,11 +37,16 @@ interface RoomCardProps {
   onToggleListed: () => void;
   onToggleBusStatus?: () => void;
   isUpdating?: boolean;
-  labels: {
+  labels: PartnerLabels | {
     unitSingular: string;
     unitPlural: string;
     capacitySuffix: string;
     priceLabel: string;
+    unitStatusLabel?: string;
+    statusCleanLabel?: string;
+    statusDirtyLabel?: string;
+    statusOccupiedLabel?: string;
+    statusOutOfServiceLabel?: string;
   };
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -211,11 +218,11 @@ export function RoomCard({
                 htmlFor={`status-select-${room.id}`}
                 className="text-[10px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase"
               >
-                Housekeeping holati
+                {labels.unitStatusLabel ?? "Holati"}
               </label>
               <select
                 id={`status-select-${room.id}`}
-                aria-label={`${room.number} xona holati`}
+                aria-label={`${room.number} ${labels.unitSingular.toLowerCase()} holati`}
                 value={room.status}
                 disabled={isUpdating}
                 onChange={(e) => onStatusChange(e.target.value as RoomStatus)}
@@ -233,10 +240,10 @@ export function RoomCard({
                     "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 )}
               >
-                <option value={RoomStatus.VACANT_CLEAN}>✓ Bo'sh & Tayyor (Toza)</option>
-                <option value={RoomStatus.VACANT_DIRTY}>🧹 Tozalanmoqda (Notoza)</option>
-                <option value={RoomStatus.OCCUPIED}>👤 Band (Mehmon bor)</option>
-                <option value={RoomStatus.OUT_OF_SERVICE}>🔧 Ta'mirda</option>
+                <option value={RoomStatus.VACANT_CLEAN}>✓ {labels.statusCleanLabel ?? "Bo'sh & Tayyor"}</option>
+                <option value={RoomStatus.VACANT_DIRTY}>🧹 {labels.statusDirtyLabel ?? "Tozalanmoqda"}</option>
+                <option value={RoomStatus.OCCUPIED}>👤 {labels.statusOccupiedLabel ?? "Band"}</option>
+                <option value={RoomStatus.OUT_OF_SERVICE}>🔧 {labels.statusOutOfServiceLabel ?? "Ta'mirda"}</option>
                 <option value={RoomStatus.BLOCKED}>🚫 Bloklangan</option>
               </select>
             </div>
@@ -246,7 +253,7 @@ export function RoomCard({
         {/* Xona turi va sig'im ma'lumotlari */}
         <div className="mt-3 flex flex-col gap-1">
           <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">
-            {room.roomTypeName}
+            {formatUnitTypeName(room.roomTypeName || roomType?.name || "", labels)}
           </span>
 
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -254,7 +261,7 @@ export function RoomCard({
               <Users className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
               {roomType?.capacity || "?"} {labels.capacitySuffix}
             </span>
-            {roomType?.bedType && (
+            {!restaurant && !isBus && roomType?.bedType && (
               <>
                 <span>·</span>
                 <span className="truncate">{roomType.bedType}</span>

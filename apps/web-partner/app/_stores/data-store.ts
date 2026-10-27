@@ -11,6 +11,7 @@ import {
   type Room,
   type RoomType,
 } from '../_lib/domain/types';
+import { todayIso } from '../_lib/utils/date';
 import {
   CancellationPolicy,
   ListingStatus,
@@ -39,10 +40,6 @@ export const emptyListing: Listing = {
   childrenAllowed: true,
   extraFees: [],
 };
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function isRevenueBooking(reservation: ReservationView) {
   return (

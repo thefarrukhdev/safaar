@@ -12,6 +12,29 @@ export const RESERVATION_FILTERS: { key: FilterKey; label: string }[] = [
   { key: BookingStatus.CANCELLED, label: "Bekor qilingan" },
 ];
 
+export function getReservationFilters(partnerType?: string | null): { key: FilterKey; label: string }[] {
+  const pt = (partnerType ?? "").toLowerCase();
+  const isRest = pt === "restaurant";
+  const isVehicle = pt === "bus" || pt === "rent_car";
+  const isDacha = pt === "dacha";
+  const inHouseLabel = isRest
+    ? "Mijoz kelgan (Amalda)"
+    : isVehicle
+      ? "Ijarada (Mijozda)"
+      : isDacha
+        ? "Dachada (Band)"
+        : "Yashayapti";
+
+  return [
+    { key: "all", label: "Hammasi" },
+    { key: BookingStatus.PENDING, label: "Yangi" },
+    { key: BookingStatus.CONFIRMED, label: "Tasdiqlangan" },
+    { key: "IN_HOUSE", label: inHouseLabel },
+    { key: BookingStatus.COMPLETED, label: "Yakunlangan" },
+    { key: BookingStatus.CANCELLED, label: "Bekor qilingan" },
+  ];
+}
+
 export interface ReservationStatsData {
   active: number;
   arrivalsToday: number;

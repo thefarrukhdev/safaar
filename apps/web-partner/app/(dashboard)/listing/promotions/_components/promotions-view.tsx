@@ -1,59 +1,40 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tag } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "../../../../_components/ui/button";
 import { PageHeader } from "../../../../_components/layout/page-header";
 import { EmptyState, LoadingState } from "../../../../_components/ui/empty-state";
-import { promotions, type Promotion } from "../../../../_lib/api/endpoints/promotions";
+import { promotions } from "../../../../_lib/api/endpoints/promotions";
 import { RoomPromotionDialog } from "../_dialogs/room-promotion-dialog";
 import { formatMoney } from "../../../../_lib/utils/format";
 import { useAuthStore } from "../../../../_stores/auth-store";
+import { getPartnerLabels } from "../../../../_lib/utils/partner-labels";
 import { Badge } from "../../../../_components/ui/badge";
+
+export const promotionsQueryKey = ["partner", "promotions"] as const;
 
 export function PromotionsView() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
-  const [data, setData] = useState<Promotion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const loadPromotions = useCallback(async () => {
-    try {
-      setLoading(true);
-      setLoadError(false);
-      const res = await promotions.getPromotions(accessToken);
-      setData(res);
-    } catch (e) {
-      console.error(e);
-      setLoadError(true);
-      toast.error("Chegirmalarni yuklashda xatolik yuz berdi");
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
+  const {
+    data = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: [...promotionsQueryKey, accessToken],
+    queryFn: () => promotions.getPromotions(accessToken),
+    enabled: Boolean(accessToken),
+  });
 
-  useEffect(() => {
-    // AuthGuard renders this page only once the Zustand `persist` store has
-    // rehydrated and confirmed a session (see auth-guard.tsx) — but a
-    // cold reload landing directly on this route can still commit this
-    // component's first render before that rehydration resolves, firing
-    // this effect once with `accessToken === undefined`. Every other
-    // authenticated Partner data hook (use-reservations.ts, use-vehicles.ts)
-    // guards on `enabled: Boolean(accessToken)` for exactly this reason —
-    // mirror that here instead of sending a request with no token at all.
-    if (!accessToken) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadPromotions();
-  }, [accessToken, loadPromotions]);
-
-  // Prepend the REAL POST response for immediate feedback. A full page
-  // reload re-fetches from GET /partners/promotions (now real) and shows
-  // the true persisted list — deliberately never both prepend AND re-fetch
-  // in the same flow, so a just-created row can never appear twice.
-  const handleAdded = (created: Promotion) => {
-    setData((prev) => [created, ...prev]);
+  const handleAdded = () => {
+    void queryClient.invalidateQueries({ queryKey: promotionsQueryKey });
   };
 
   return (
@@ -62,7 +43,7 @@ export function PromotionsView() {
         <PageHeader
           eyebrow="Sotuv"
           title="Chegirmalarim"
-          description="E'lon qilingan xonalar yoki mashinalar uchun maxsus chegirmalar o'rnatish."
+          description={`E'lon qilingan ${labels.unitPlural.toLowerCase()} uchun maxsus chegirmalar o'rnatish.`}
         />
         <div className="mt-4 sm:mt-0">
           <Button onClick={() => setDialogOpen(true)}>
@@ -73,15 +54,15 @@ export function PromotionsView() {
       </div>
 
       <div className="flex flex-col gap-10">
-        {loading ? (
+        {isLoading ? (
           <LoadingState title="Chegirmalar yuklanmoqda..." />
-        ) : loadError ? (
+        ) : isError ? (
           <EmptyState
             icon={<Tag className="w-12 h-12 text-[var(--muted-foreground)]" />}
             title="Chegirmalarni yuklab bo'lmadi"
             description="Server bilan bog'lanishda xatolik yuz berdi. Qayta urinib ko'ring."
             action={
-              <Button variant="outline" onClick={() => loadPromotions()}>
+              <Button variant="outline" onClick={() => void refetch()}>
                 Qayta urinish
               </Button>
             }

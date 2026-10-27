@@ -301,6 +301,10 @@ export class AppCacheService implements OnModuleDestroy {
       await this.redis.connect();
     }
   }
+
+  getMemorySize(): number {
+    return this.memory.size;
+  }
 }
 
 function stringFlag(value: unknown, fallback: boolean): boolean {

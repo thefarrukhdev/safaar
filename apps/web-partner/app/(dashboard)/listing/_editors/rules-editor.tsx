@@ -122,7 +122,7 @@ export function RulesEditor({
         }
       }
 
-      toast.success("Uy qoidalari saqlandi");
+      toast.success(isBus ? "Ijara qoidalari saqlandi" : restaurant ? "Restoran qoidalari saqlandi" : dacha ? "Dacha qoidalari saqlandi" : "Uy qoidalari saqlandi");
       onClose();
     } catch (error) {
       toast.error(
@@ -135,7 +135,7 @@ export function RulesEditor({
     <Drawer
       open={open}
       onClose={onClose}
-      title={dacha ? "Xonalar, narx va qoidalar" : isBus ? "Ijara qoidalari" : "Uy qoidalari"}
+      title={dacha ? "Dacha narxi va qoidalari" : isBus ? "Ijara qoidalari" : restaurant ? "Restoran qoidalari" : "Ichki tartib va qoidalar"}
       description={dacha ? "Dacha narxi, sig'imi, ish vaqtlari va bekor qilish siyosati." : "Ish vaqtlari, bekor qilish siyosati va qo'shimcha to'lovlar."}
       size="lg"
       footer={
@@ -193,11 +193,11 @@ export function RulesEditor({
         {/* Vaqtlar */}
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-            {labels.checkInLabel} va {labels.checkOutLabel.toLowerCase()}
+            {labels.openingTimeLabel} va {labels.closingTimeLabel.toLowerCase()}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="in">{labels.checkInLabel}</Label>
+              <Label htmlFor="in">{labels.openingTimeLabel}</Label>
               <Input
                 id="in"
                 type="time"
@@ -205,7 +205,7 @@ export function RulesEditor({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="out">{labels.checkOutLabel}</Label>
+              <Label htmlFor="out">{labels.closingTimeLabel}</Label>
               <Input
                 id="out"
                 type="time"
@@ -299,7 +299,7 @@ export function RulesEditor({
           </h3>
           <ExtraFeesEditor
             fees={data.extraFees}
-            restaurant={restaurant}
+            partnerType={partnerType}
             onAdd={(fee) => {
               update.mutate(
                 {
@@ -377,12 +377,12 @@ function RuleToggle({
 
 function ExtraFeesEditor({
   fees,
-  restaurant,
+  partnerType,
   onAdd,
   onRemove,
 }: {
   fees: import("../../../_lib/domain/listing").ExtraFee[];
-  restaurant: boolean;
+  partnerType?: Parameters<typeof getPartnerLabels>[0];
   onAdd: (
     fee: Omit<import("../../../_lib/domain/listing").ExtraFee, "id">,
   ) => void;
@@ -395,10 +395,14 @@ function ExtraFeesEditor({
   >("per_stay");
   const [required, setRequired] = useState(true);
 
+  const labels = getPartnerLabels(partnerType);
+  const restaurant = isRestaurant(partnerType);
+  const isBus = hasBuses(partnerType);
+
   const chargeLabel = {
     per_stay: "Butun bron",
-    per_night: restaurant ? "Har bron" : "Har kecha",
-    per_person: "Har mehmon",
+    per_night: restaurant ? "Har bron" : isBus ? "Har kun" : "Har kecha",
+    per_person: isBus ? "Har mijoz" : `Har ${labels.guestLabel.toLowerCase()}`,
   };
 
   return (
@@ -439,8 +443,12 @@ function ExtraFeesEditor({
             className="h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
           >
             <option value="per_stay">Butun bron uchun</option>
-            <option value="per_night">{restaurant ? "Har bron uchun" : "Har kecha uchun"}</option>
-            <option value="per_person">Har mehmon uchun</option>
+            <option value="per_night">
+              {restaurant ? "Har bron uchun" : isBus ? "Har kun uchun" : "Har kecha uchun"}
+            </option>
+            <option value="per_person">
+              {isBus ? "Har mijoz uchun" : `Har ${labels.guestLabel.toLowerCase()} uchun`}
+            </option>
           </select>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-sm">
             <input

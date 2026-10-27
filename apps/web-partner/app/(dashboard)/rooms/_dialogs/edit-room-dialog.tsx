@@ -15,7 +15,7 @@ import { Select } from "../../../_components/ui/select";
 import { useAuthStore } from "../../../_stores/auth-store";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useUpdateRoom, useRooms } from "../../../_hooks/use-rooms";
-import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, isRestaurant, formatUnitTypeName } from "../../../_lib/utils/partner-labels";
 import { RoomStatus, type Room } from "../../../_lib/domain/types";
 import { RoomTypeDialog } from "./room-type-dialog";
 
@@ -23,14 +23,14 @@ const editRoomSchema = z.object({
   number: z
     .string()
     .trim()
-    .min(1, "Xona raqami kiritilishi shart")
-    .max(20, "Xona raqami 20 ta belgidan oshmasin"),
+    .min(1, "Raqam kiritilishi shart")
+    .max(20, "Raqam 20 ta belgidan oshmasin"),
   floor: z
     .number()
-    .int("Qavat butun son bo'lishi kerak")
-    .min(1, "Qavat kamida 1 bo'lishi kerak")
-    .max(100, "Qavat 100 dan oshmasligi kerak"),
-  roomTypeId: z.string().min(1, "Xona turini tanlang"),
+    .int("Tartib raqami butun son bo'lishi kerak")
+    .min(1, "Kamida 1 bo'lishi kerak")
+    .max(100, "100 dan oshmasligi kerak"),
+  roomTypeId: z.string().min(1, "Toifani tanlang"),
   status: z.nativeEnum(RoomStatus),
   isListed: z.boolean(),
   nightlyPrice: z
@@ -133,10 +133,10 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
   const isSubmitting = form.formState.isSubmitting || updateRoom.isPending;
 
   const roomTypeSelectOptions = [
-    { value: "", label: "Xona turini tanlang" },
+    { value: "", label: `${labels.unitTypeLabel}ni tanlang` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
-      label: `${rt.name} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} kishi)`,
+      label: `${formatUnitTypeName(rt.name, labels)} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
     })),
   ];
 
@@ -148,21 +148,21 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
         open={open}
         onClose={onClose}
         title={`${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} ${room.number} ni tahrirlash`}
-        description="Xona raqami, qavati, turi va sotuv holatini o'zgartiring."
+        description={`${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} raqami, ${labels.floorSingular}i, ${labels.unitTypeLabel.toLowerCase()} va sotuv holatini o'zgartiring.`}
         size="md"
       >
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isSubmitting} className="flex flex-col gap-4 group-disabled:opacity-75">
             <div className="grid gap-3 sm:grid-cols-2">
-              {/* Xona raqami */}
+              {/* Identifikator / Raqam */}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="er-number" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} raqami{" "}
+                  {labels.unitIdentifierLabel}{" "}
                   <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="er-number"
-                  placeholder={restaurant ? "Stol-12" : "101"}
+                  placeholder={labels.unitIdentifierPlaceholder}
                   aria-invalid={Boolean(form.formState.errors.number) || Boolean(isDuplicate)}
                   {...form.register("number")}
                 />
@@ -199,7 +199,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="er-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  Xona turi <span className="text-red-500">*</span>
+                  {labels.unitTypeLabel} <span className="text-red-500">*</span>
                 </Label>
                 {selectedRoomType && (
                   <button
@@ -207,7 +207,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                     onClick={() => setOpenEditType(true)}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 cursor-pointer"
                   >
-                    <Edit3 className="h-3 w-3" /> Ushbu tur parametrlarini tahrirlash
+                    <Edit3 className="h-3 w-3" /> Ushbu {labels.unitTypeLabel.toLowerCase()} parametrlarini tahrirlash
                   </button>
                 )}
               </div>
@@ -232,7 +232,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="er-status" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  Operatsion holat
+                  {labels.unitStatusLabel}
                 </Label>
                 <Select
                   id="er-status"
@@ -241,17 +241,19 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                     form.setValue("status", e.target.value as RoomStatus, { shouldDirty: true })
                   }
                   options={[
-                    { value: RoomStatus.VACANT_CLEAN, label: "Toza (Vacant Clean)" },
-                    { value: RoomStatus.VACANT_DIRTY, label: "Nopok (Vacant Dirty)" },
-                    { value: RoomStatus.OCCUPIED, label: "Band (Occupied)" },
-                    { value: RoomStatus.OUT_OF_SERVICE, label: "Ta'mirda (Out of Service)" },
+                    { value: RoomStatus.VACANT_CLEAN, label: labels.statusCleanLabel },
+                    { value: RoomStatus.VACANT_DIRTY, label: labels.statusDirtyLabel },
+                    { value: RoomStatus.OCCUPIED, label: labels.statusOccupiedLabel },
+                    { value: RoomStatus.OUT_OF_SERVICE, label: labels.statusOutOfServiceLabel },
                   ]}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="er-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  Xona narxi (so&apos;m override)
+                  {restaurant
+                    ? "Minimal depozit override (so'm)"
+                    : `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} narxi (so'm override)`}
                 </Label>
                 <Controller
                   name="nightlyPrice"
@@ -270,7 +272,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                   )}
                 />
                 <p className="text-[11px] text-zinc-500">
-                  Standart tur narxi: {selectedRoomType?.basePrice.toLocaleString("ru-RU") ?? 0} so&apos;m
+                  Standart {labels.unitTypeLabel.toLowerCase()} narxi: {selectedRoomType?.basePrice.toLocaleString("ru-RU") ?? 0} so&apos;m
                 </p>
               </div>
             </div>
@@ -287,7 +289,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                   Sotuvda ko&apos;rinadi (e&apos;londa faol)
                 </span>
                 <span className="text-[11px] text-zinc-500">
-                  O&apos;chirilsa xona turistlar uchun qidiruv va bron ro&apos;yxatida ko&apos;rinmaydi
+                  O&apos;chirilsa {labels.unitSingular.toLowerCase()} mijozlar uchun qidiruv va bron ro&apos;yxatida ko&apos;rinmaydi
                 </span>
               </div>
             </label>

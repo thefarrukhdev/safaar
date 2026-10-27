@@ -145,7 +145,7 @@ export function ReservationBar({
             {formatDate(reservation.checkOut)}
             <span className="text-[var(--muted-foreground)]">
               {" "}
-              ({reservation.nights} kech.)
+              ({reservation.nights} {labels.isBus ? "kun" : restaurant ? "tashrif" : "kecha"})
             </span>
           </p>
         )}

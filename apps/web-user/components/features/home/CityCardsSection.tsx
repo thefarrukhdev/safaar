@@ -24,20 +24,25 @@ const FALLBACK_IMAGE = "/images/mock/Uzbekistan-travel.jpeg";
 export async function CityCardsSection({
   locale,
   dict,
+  initialDestinations,
 }: {
   locale: Locale;
   dict: HomeDict["popularCities"];
+  initialDestinations?: Awaited<ReturnType<typeof api.catalog.getDestinations>>;
 }) {
   // Admin panel ("Mashhur yo'nalishlar" — /cms/destinations) orqali
   // boshqariladi. Backend faqat faol/nashr qilingan yozuvlarni, admin
   // belgilagan tartibda qaytaradi — bu yerda qo'shimcha filtr/sort kerak
   // emas. API xato bersa ham sahifa buzilmasligi uchun try/catch bilan
   // o'raladi va bo'sh holat ko'rsatiladi.
-  let destinations: Awaited<ReturnType<typeof api.catalog.getDestinations>> = [];
-  try {
-    destinations = await api.catalog.getDestinations(locale);
-  } catch (error) {
-    console.error("Failed to load popular destinations", error);
+  let destinations: Awaited<ReturnType<typeof api.catalog.getDestinations>> =
+    initialDestinations ?? [];
+  if (!initialDestinations || initialDestinations.length === 0) {
+    try {
+      destinations = await api.catalog.getDestinations(locale);
+    } catch (error) {
+      console.error("Failed to load popular destinations", error);
+    }
   }
 
   const cities = destinations

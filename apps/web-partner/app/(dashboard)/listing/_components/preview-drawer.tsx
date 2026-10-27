@@ -3,6 +3,7 @@
 import {
   BedDouble,
   Calendar,
+  CarFront,
   ExternalLink,
   Image as ImageIcon,
   MapPin,
@@ -17,7 +18,7 @@ import { useListing } from "../../../_hooks/use-listing";
 import { useRooms } from "../../../_hooks/use-rooms";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { getPartnerLabels, hasBuses, hasStarRating, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBuses, hasStarRating, isRestaurant, isDacha } from "../../../_lib/utils/partner-labels";
 import { cn } from "../../../_lib/utils/cn";
 import { formatMoney } from "../../../_lib/utils/format";
 
@@ -51,6 +52,7 @@ export function PreviewDrawer({
   const labels = getPartnerLabels(partnerType);
   const showStars = hasStarRating(partnerType);
   const restaurant = isRestaurant(partnerType);
+  const dacha = isDacha(partnerType);
   const isBus = hasBuses(partnerType);
   const cover = l.photos.find((p) => p.isCover) ?? l.photos[0];
   const otherPhotos = l.photos.filter((p) => !p.isCover).slice(0, 4);
@@ -213,6 +215,8 @@ export function PreviewDrawer({
                       <div className="flex flex-wrap items-center gap-2">
                         {restaurant ? (
                           <UtensilsCrossed className="h-4 w-4 text-brand-600" aria-hidden />
+                        ) : isBus ? (
+                          <CarFront className="h-4 w-4 text-brand-600" aria-hidden />
                         ) : (
                           <BedDouble className="h-4 w-4 text-brand-600" aria-hidden />
                         )}
@@ -226,7 +230,7 @@ export function PreviewDrawer({
                       <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
                         <span className="inline-flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" aria-hidden />
-                          {roomType.capacity} kishi
+                          {roomType.capacity} {labels.capacitySuffix}
                         </span>
                         {!restaurant && roomType.bedType && <span>{roomType.bedType}</span>}
                         {!restaurant &&
@@ -254,7 +258,7 @@ export function PreviewDrawer({
                     </div>
                     <div className="border-t border-[var(--border)] p-4 text-left sm:border-l sm:border-t-0 sm:text-right">
                       <p className="text-[11px] text-[var(--muted-foreground)]">
-                        {restaurant ? "narxi" : "1 kecha"}
+                        {restaurant ? "depozit" : isBus ? "1 kunlik" : "1 kecha"}
                       </p>
                       <p className="text-lg font-bold text-brand-700 dark:text-brand-300">
                         {formatMoney(minPrice)}
@@ -323,17 +327,17 @@ export function PreviewDrawer({
         {!isBus && (
           <div className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-              Uy qoidalari
+              {restaurant ? "Restoran qoidalari" : isBus ? "Ijara qoidalari" : dacha ? "Dacha qoidalari" : "Ichki qoidalar"}
             </h2>
             <div className="rounded-card border border-[var(--border)] p-4 text-sm">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                  {labels.checkInLabel}: <strong>{l.checkInTime}</strong>
+                  {labels.openingTimeLabel}: <strong>{l.checkInTime}</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                  {labels.checkOutLabel}: <strong>{l.checkOutTime}</strong>
+                  {labels.closingTimeLabel}: <strong>{l.checkOutTime}</strong>
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">

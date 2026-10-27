@@ -81,13 +81,13 @@ export function ReservationsStats({
         type="button"
         onClick={onSelectToday}
         className="w-full text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-transform active:scale-[0.99] cursor-pointer"
-        title="Bugun kelishi kutilayotgan mehmonlarni ko'rish"
-        aria-label="Bugun kelishi kutilayotgan mehmonlarni ko'rish"
+        title={`Bugun kelishi kutilayotgan ${labels.guestLabel.toLowerCase()}larni ko'rish`}
+        aria-label={`Bugun kelishi kutilayotgan ${labels.guestLabel.toLowerCase()}larni ko'rish`}
       >
         <StatCard
-          label="Bugungi kelishlar"
+          label={labels.isBus ? "Bugungi olib ketishlar" : labels.isRestaurant ? "Bugungi tashriflar" : "Bugungi kelishlar"}
           value={stats.arrivalsToday.toString()}
-          hint={`${labels.checkInLabel} uchun tayyor`}
+          hint={`${labels.checkInActionLabel ?? labels.checkInLabel} uchun tayyor`}
           icon={<CalendarCheck className="h-5 w-5" />}
           tone="emerald"
           isLoading={isLoading}

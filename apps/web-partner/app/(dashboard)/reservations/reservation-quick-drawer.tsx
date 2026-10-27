@@ -169,7 +169,7 @@ export function ReservationQuickDrawer({
                 }}
               >
                 <CalendarCheck className="h-4 w-4" aria-hidden />
-                {labels.checkInLabel}
+                {labels.checkInActionLabel ?? labels.checkInLabel}
               </Button>
             )}
             {canCheckOut && onCheckOut && (
@@ -181,7 +181,7 @@ export function ReservationQuickDrawer({
                 }}
               >
                 <LogOut className="h-4 w-4" aria-hidden />
-                {labels.checkOutLabel}
+                {labels.checkOutActionLabel ?? labels.checkOutLabel}
               </Button>
             )}
           </div>
@@ -310,7 +310,7 @@ export function ReservationQuickDrawer({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">
-                {isBus ? "Olib ketish" : "Kelish (Check-in)"}:
+                {labels.checkInLabel}:
               </span>
               <span className="font-medium text-[var(--foreground)]">
                 {restaurant && reservation.slotTime
@@ -318,18 +318,18 @@ export function ReservationQuickDrawer({
                   : formatDate(reservation.checkIn)}
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[var(--muted-foreground)]">
-                {isBus ? "Qaytarish" : "Ketish (Check-out)"}:
-              </span>
-              <span className="font-medium text-[var(--foreground)]">
-                {restaurant
-                  ? formatDate(reservation.checkOut)
-                  : `${formatDate(reservation.checkOut)} (${reservation.nights} ${
-                      isBus ? "kun" : "kecha"
-                    })`}
-              </span>
-            </div>
+            {!restaurant && (
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted-foreground)]">
+                  {labels.checkOutLabel}:
+                </span>
+                <span className="font-medium text-[var(--foreground)]">
+                  {`${formatDate(reservation.checkOut)} (${reservation.nights} ${
+                    isBus ? "kun" : "kecha"
+                  })`}
+                </span>
+              </div>
+            )}
           </div>
         </section>
 

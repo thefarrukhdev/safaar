@@ -43,10 +43,10 @@ import { DEFAULT_SLOT_DURATION_MINUTES, buildTimeSlots, toMinutes } from "../../
 const schema = z.object({
   fullName: z.string().min(2, "Ism kamida 2 ta belgidan iborat bo'lishi kerak"),
   phone: z.string().refine(isValidPhone, "Telefon raqami noto'g'ri"),
-  roomTypeId: z.string().min(1, "Xona turini tanlang"),
+  roomTypeId: z.string().min(1, "Toifani tanlang"),
   roomNumber: z.string().optional(),
-  checkIn: z.string().min(1, "Kelish sanasini tanlang"),
-  checkOut: z.string().min(1, "Ketish sanasini tanlang"),
+  checkIn: z.string().min(1, "Boshlanish sanasini tanlang"),
+  checkOut: z.string().min(1, "Tugash sanasini tanlang"),
   slotTime: z.string().optional(),
   adults: z.number().int().min(1, "Kamida 1 nafar").max(10, "Maksimal 10 nafar"),
   children: z.number().int().min(0).max(10),
@@ -323,7 +323,9 @@ export function WalkInDialog({
       description={
         isBus
           ? "Mijozga joyida avtomobil ijaraga berish uchun."
-          : "Resepsiyonga to'g'ridan-to'g'ri kelgan mehmon uchun tezkor bron yaratish."
+          : restaurant
+            ? "Mijoz uchun joyida tezkor stol bronini yaratish."
+            : "Resepsiyonga to'g'ridan-to'g'ri kelgan mehmon uchun tezkor bron yaratish."
       }
       size="xl"
       footer={
@@ -358,7 +360,7 @@ export function WalkInDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Guest Full Name */}
           <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="fullName">{isBus ? "Mijoz (Haydovchi) FIO" : "Mehmon FIO"}</Label>
+            <Label htmlFor="fullName">{isBus ? "Mijoz (Haydovchi) FIO" : `${labels.guestLabel} FIO`}</Label>
             <Input
               id="fullName"
               placeholder="Masalan: Sherzod Aliyev"
@@ -416,7 +418,7 @@ export function WalkInDialog({
                     <option key={rt.id} value={rt.id}>
                       {restaurant
                         ? `${rt.capacity} kishilik (${rt.name})`
-                        : `${rt.name} — ${rt.basePrice.toLocaleString("uz-UZ")} so'm/kecha`}
+                        : `${rt.name} — ${rt.basePrice.toLocaleString("uz-UZ")} so'm${labels.pricingUnit}`}
                     </option>
                   ))
                 )}
@@ -631,7 +633,7 @@ export function WalkInDialog({
               {restaurant ? (
                 <>Slot vaqti: <strong className="font-semibold">{watchedSlotTime || "Tanlanmagan"}</strong></>
               ) : (
-                <>Muddat: <strong className="font-semibold">{liveCalculation.days} kecha</strong></>
+                <>Muddat: <strong className="font-semibold">{liveCalculation.days} {isBus ? "kun" : "kecha"}</strong></>
               )}
               {liveCalculation.unitName && (
                 <span className="ml-1 text-blue-700 dark:text-blue-300">

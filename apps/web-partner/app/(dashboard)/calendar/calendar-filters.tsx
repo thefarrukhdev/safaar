@@ -38,6 +38,10 @@ interface CalendarFiltersProps {
   statusFilter: "all" | "occupied" | "vacant";
   onStatusFilterChange: (status: "all" | "occupied" | "vacant") => void;
   unitTypeLabel: string;
+  unitPlural?: string;
+  unitTypePlural?: string;
+  unitStatusLabel?: string;
+  unitIdentifierLabel?: string;
   searchPlaceholder?: string;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
@@ -61,6 +65,10 @@ export function CalendarFilters({
   statusFilter,
   onStatusFilterChange,
   unitTypeLabel,
+  unitPlural,
+  unitTypePlural,
+  unitStatusLabel,
+  unitIdentifierLabel,
   searchPlaceholder,
   hasActiveFilters,
   onResetFilters,
@@ -163,7 +171,7 @@ export function CalendarFilters({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder || "Xona raqami yoki turi..."}
+            placeholder={searchPlaceholder || `${unitIdentifierLabel || "Raqam"} yoki toifa...`}
             className="h-9 pl-8 pr-8 text-xs placeholder:text-zinc-400"
           />
           {searchQuery && (
@@ -185,7 +193,7 @@ export function CalendarFilters({
           onChange={(e) => onTypeFilterChange(e.target.value)}
           className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--foreground)] focus:border-brand-600 focus:outline-none"
         >
-          <option value="all">Barcha {unitTypeLabel.toLowerCase()}lari</option>
+          <option value="all">Barcha {unitTypePlural || `${unitTypeLabel.toLowerCase()}lari`}</option>
           {roomTypes.map((rt) => (
             <option key={rt.id} value={rt.id}>
               {rt.name}
@@ -195,14 +203,14 @@ export function CalendarFilters({
 
         {/* Status filtri */}
         <select
-          aria-label="Xona holati"
+          aria-label={unitStatusLabel || "Holati"}
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value as "all" | "occupied" | "vacant")}
           className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--foreground)] focus:border-brand-600 focus:outline-none"
         >
           <option value="all">Barcha holatlar</option>
           <option value="occupied">Faqat band (ichkarida)</option>
-          <option value="vacant">Faqat bo'sh xonalar</option>
+          <option value="vacant">Faqat bo'sh {unitPlural || "birliklar"}</option>
         </select>
 
         {/* Filtrni tiklash tugmasi */}

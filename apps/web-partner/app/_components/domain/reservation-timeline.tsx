@@ -96,7 +96,12 @@ export function ReservationTimeline({
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
-  const steps = buildSteps(reservation, unitCap, labels.checkInLabel, labels.checkOutLabel);
+  const steps = buildSteps(
+    reservation,
+    unitCap,
+    labels.checkInActionLabel ?? labels.checkInLabel,
+    labels.checkOutActionLabel ?? labels.checkOutLabel,
+  );
 
   return (
     <ol className="flex flex-col">

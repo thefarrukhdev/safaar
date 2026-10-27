@@ -53,7 +53,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
         <nav
           aria-label="Sozlamalar bo'limlari"
-          className="flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+          className="flex flex-row gap-1.5 overflow-x-auto pb-2 scrollbar-thin lg:flex-col lg:overflow-visible lg:pb-0"
         >
           {TABS.map((t) => {
             const Icon = t.icon;

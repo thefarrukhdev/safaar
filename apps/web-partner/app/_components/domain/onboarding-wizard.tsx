@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
-import { CheckCircle2, ArrowRight, Building2, BedDouble, Wallet } from "lucide-react";
+import { CheckCircle2, ArrowRight, Building2, BedDouble, Wallet, CarFront, UtensilsCrossed } from "lucide-react";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useVehicles } from "../../_hooks/use-vehicles";
 import { useAuthStore } from "../../_stores/auth-store";
-import { getPartnerLabels, hasBuses } from "../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBuses, isRestaurant } from "../../_lib/utils/partner-labels";
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export function OnboardingWizard() {
   
   const partnerType = user?.partnerType ?? "hotel";
   const isBus = hasBuses(partnerType);
+  const restaurant = isRestaurant(partnerType);
   const labels = getPartnerLabels(partnerType);
   
   const [open, setOpen] = useState(false);
@@ -56,7 +57,7 @@ export function OnboardingWizard() {
       open={open} 
       onClose={handleDismiss} 
       title="Xush kelibsiz! Tizimni sozlaymiz"
-      description={`${labels.unitSingular}larni onlayn sotishni boshlash uchun dastlabki sozlamalarni bajarishingiz kerak. Bu atigi 3 daqiqa vaqt oladi.`}
+      description={`${labels.unitPlural}ni onlayn sotishni boshlash uchun dastlabki sozlamalarni bajarishingiz kerak. Bu atigi 3 daqiqa vaqt oladi.`}
       size="lg"
       footer={
         <div className="flex w-full justify-center">
@@ -78,10 +79,14 @@ export function OnboardingWizard() {
             </div>
             <div className="flex-1 flex flex-col gap-1">
               <h3 className={`font-semibold ${currentStep === 1 ? 'text-brand-900 dark:text-brand-100' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                {labels.unitTypeLabel}larini yarating
+                {labels.unitTypesTitle}ni yarating
               </h3>
               <p className="text-sm text-zinc-500">
-                Masalan: "Lyuks", "Standart" kabi toifalarni va ularning umumiy narxlarini belgilang.
+                {restaurant
+                  ? 'Masalan: "Terrasa", "Asosiy zal" kabi joylashuv toifalarini va depozit narxlarini belgilang.'
+                  : isBus
+                    ? 'Masalan: "Ekonom", "Komfort" kabi transport toifalarini va kunlik narxlarini belgilang.'
+                    : 'Masalan: "Lyuks", "Standart" kabi toifalarni va ularning umumiy narxlarini belgilang.'}
               </p>
               {currentStep === 1 && (
                 <div className="mt-3">
@@ -106,15 +111,25 @@ export function OnboardingWizard() {
             </div>
             <div className="flex-1 flex flex-col gap-1">
               <h3 className={`font-semibold ${currentStep === 2 ? 'text-brand-900 dark:text-brand-100' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                {labels.unitSingular}larni qo'shing
+                {labels.unitPlural}ni qo'shing
               </h3>
               <p className="text-sm text-zinc-500">
-                Yaratilgan toifalarga aniq {labels.unitSingular.toLowerCase()} raqamlarini biriktirib chiqing (masalan: 101, 102).
+                {restaurant
+                  ? 'Yaratilgan toifalarga aniq stol raqamlarini biriktirib chiqing (masalan: 1, 2, VIP-1).'
+                  : isBus
+                    ? 'Transportlar ro\'yxatiga aniq avtomobil yoki avtobuslarni kiriting (masalan: 01 A 777 AA).'
+                    : `Yaratilgan toifalarga aniq ${labels.unitSingular.toLowerCase()} raqamlarini biriktirib chiqing (masalan: 101, 102).`}
               </p>
               {currentStep === 2 && (
                 <div className="mt-3">
                   <Button onClick={() => { setOpen(false); router.push('/rooms'); }} size="sm" className="gap-2">
-                    <BedDouble className="w-4 h-4" />
+                    {restaurant ? (
+                      <UtensilsCrossed className="w-4 h-4" />
+                    ) : isBus ? (
+                      <CarFront className="w-4 h-4" />
+                    ) : (
+                      <BedDouble className="w-4 h-4" />
+                    )}
                     {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)} qo'shish
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -133,7 +148,7 @@ export function OnboardingWizard() {
                 E'longa chiqaring
               </h3>
               <p className="text-sm text-zinc-500">
-                Barcha ma'lumotlar tayyor bo'lgach, xonalarni sotuvga chiqaring.
+                Barcha ma'lumotlar tayyor bo'lgach, {labels.unitPlural.toLowerCase()}ni sotuvga chiqaring.
               </p>
               {currentStep === 3 && (
                 <div className="mt-3">

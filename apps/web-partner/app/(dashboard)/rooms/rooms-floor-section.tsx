@@ -87,15 +87,15 @@ export function RoomsFloorSection({
 
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-              {rooms.length} ta {labels.unitSingular || "xona"}
+              {rooms.length} ta {labels.unitSingular}
             </span>
             {!isBus && (
               <>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                  {cleanCount} toza
+                  {cleanCount} {labels.isRestaurant ? "tayyor" : labels.isBus ? "bo'sh" : "toza"}
                 </span>
                 <span className="rounded-full bg-blue-50 px-2.5 py-0.5 font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                  {occupiedCount} band
+                  {occupiedCount} {labels.isRestaurant ? "band" : labels.isBus ? "ijarada" : "band"}
                 </span>
               </>
             )}
@@ -112,14 +112,14 @@ export function RoomsFloorSection({
                   ? "border-brand-300/80 bg-brand-50/30 text-brand-700 dark:border-brand-800 dark:bg-brand-950/20 dark:text-brand-300"
                   : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
             )}
-            title={`${floor}-${labels.floorSingular}dagi barcha xonalarni tanlash`}
+            title={`${floor}-${labels.floorSingular}dagi barcha ${labels.unitPlural.toLowerCase()}ni tanlash`}
           >
             <input
               type="checkbox"
               ref={checkboxRef}
               checked={isAllSelected}
               onChange={() => onToggleFloor(floor, roomIds)}
-              aria-label={`${floor}-${labels.floorSingular}dagi barcha xonalarni tanlash`}
+              aria-label={`${floor}-${labels.floorSingular}dagi barcha ${labels.unitPlural.toLowerCase()}ni tanlash`}
               className="h-4 w-4 rounded-md border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700 dark:bg-zinc-800 dark:checked:bg-brand-600 cursor-pointer transition-colors"
             />
             <span>
@@ -127,7 +127,7 @@ export function RoomsFloorSection({
                 ? "Tanlovni bekor qilish"
                 : isIndeterminate
                   ? `${selectedCountOnFloor}/${rooms.length} tanlangan`
-                  : "Qavatni tanlash"}
+                  : `${labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1)}ni tanlash`}
             </span>
           </label>
         </div>

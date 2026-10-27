@@ -5,8 +5,10 @@ import { useMemo } from "react";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { DateRangePicker, type DateRange } from "../../_components/ui/date-range-picker";
-import type { ReservationView } from "../../_lib/domain/types";
+import { ReservationSource, type ReservationView } from "../../_lib/domain/types";
 import { formatMoney } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels, isRestaurant } from "../../_lib/utils/partner-labels";
 import { exportReportToCsv } from "./export-report-csv";
 
 interface ReportsDetailedTabProps {
@@ -20,6 +22,10 @@ export function ReportsDetailedTab({
   dateRange,
   onDateRangeChange,
 }: ReportsDetailedTabProps) {
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const isRest = isRestaurant(partnerType);
+
   const filtered = useMemo(() => {
     let list = reservations || [];
     if (dateRange.startDate) {
@@ -31,12 +37,12 @@ export function ReportsDetailedTab({
     return list;
   }, [reservations, dateRange.startDate, dateRange.endDate]);
 
-  const onlineReservations = filtered.filter((r) => r.source === "UZBRON");
-  const onsiteReservations = filtered.filter((r) => r.source !== "UZBRON");
+  const onlineReservations = filtered.filter((r) => r.source === ReservationSource.UZBRON);
+  const onsiteReservations = filtered.filter((r) => r.source !== ReservationSource.UZBRON);
   const totalRevenue = filtered.reduce((sum, r) => sum + r.totalPrice, 0);
 
   const handleExportCsv = () => {
-    exportReportToCsv(filtered, "batafsil-hisobot");
+    exportReportToCsv(filtered, "batafsil-hisobot", partnerType);
   };
 
   return (
@@ -117,7 +123,7 @@ export function ReportsDetailedTab({
                     Sana
                   </th>
                   <th className="px-4 py-3 font-semibold text-[var(--muted-foreground)] uppercase">
-                    Xona / Obyekt
+                    {labels.unitSingular} / Toifa
                   </th>
                   <th className="px-4 py-3 font-semibold text-[var(--muted-foreground)] uppercase">
                     Summa
@@ -142,7 +148,7 @@ export function ReportsDetailedTab({
                   </tr>
                 ) : (
                   filtered.map((r) => {
-                    const isOnline = r.source === "UZBRON";
+                    const isOnline = r.source === ReservationSource.UZBRON;
                     return (
                       <tr
                         key={r.id}
@@ -158,10 +164,12 @@ export function ReportsDetailedTab({
                         </td>
                         <td className="px-4 py-3">
                           <div>
-                            {formatShortDate(r.checkIn)} — {formatShortDate(r.checkOut)}
+                            {isRest && r.slotTime
+                              ? `${formatShortDate(r.checkIn)} · ${r.slotTime}`
+                              : `${formatShortDate(r.checkIn)} — ${formatShortDate(r.checkOut)}`}
                           </div>
                           <div className="text-[11px] text-[var(--muted-foreground)]">
-                            {r.nights} kecha
+                            {isRest ? "1 tashrif" : `${r.nights} ${labels.isBus ? "kun" : "kecha"}`}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -170,7 +178,7 @@ export function ReportsDetailedTab({
                           </div>
                           {r.roomNumber && (
                             <div className="text-[11px] text-[var(--muted-foreground)] font-mono">
-                              Xona {r.roomNumber}
+                              {labels.unitSingular} {r.roomNumber}
                             </div>
                           )}
                         </td>

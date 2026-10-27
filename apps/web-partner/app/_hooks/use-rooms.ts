@@ -9,6 +9,7 @@ import { useAuthStore } from "../_stores/auth-store";
 import { type BulkRoomsDraft, type RoomDraft } from "../_stores/data-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
 import { RoomStatus, type Room } from "../_lib/domain/types";
+import { formatUnitTypeName } from "../_lib/utils/partner-labels";
 
 export const roomsQueryKey = ["partner", "rooms"] as const;
 
@@ -21,15 +22,27 @@ const EMPTY_ROOMS: Room[] = [];
 
 export function useRooms() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
   const query = useQuery({
-    queryKey: roomsQueryKey,
+    queryKey: [...roomsQueryKey, partnerType],
     queryFn: async (): Promise<RoomsQueryResult> => {
       const [hotel] = pageItems(await partners.listHotels(accessToken));
       if (!hotel) return { allRooms: [], activeRooms: [] };
       const rawRooms = await partners.listRooms(hotel.id, accessToken);
+      const all = rawRooms.map(toRoom).map((r) => ({
+        ...r,
+        roomTypeName: formatUnitTypeName(r.roomTypeName, partnerType),
+      }));
+      const active = rawRooms
+        .filter((r) => r.status !== "inactive")
+        .map(toRoom)
+        .map((r) => ({
+          ...r,
+          roomTypeName: formatUnitTypeName(r.roomTypeName, partnerType),
+        }));
       return {
-        allRooms: rawRooms.map(toRoom),
-        activeRooms: rawRooms.filter((r) => r.status !== "inactive").map(toRoom),
+        allRooms: all,
+        activeRooms: active,
       };
     },
     enabled: Boolean(accessToken),
@@ -243,6 +256,13 @@ export function useDeleteRoom() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "O'chirishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -268,6 +288,13 @@ export function useBulkCreateRooms() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Yaratishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -284,6 +311,13 @@ export function useAddRoomPhoto() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasm yuklashda xatolik yuz berdi";
+      toast.error(message);
     },
   });
 }
@@ -302,6 +336,13 @@ export function useDeleteRoomPhoto() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
     },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasmni o'chirishda xatolik yuz berdi";
+      toast.error(message);
+    },
   });
 }
 
@@ -318,6 +359,13 @@ export function useUpdateRoomPhoto() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: roomsQueryKey });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || "Rasm ma'lumotlarini yangilashda xatolik yuz berdi";
+      toast.error(message);
     },
   });
 }

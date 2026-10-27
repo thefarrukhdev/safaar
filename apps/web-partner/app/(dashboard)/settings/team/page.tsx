@@ -38,7 +38,7 @@ const ROLE_CONFIG: Record<
   },
   manager: {
     label: "Menejer",
-    desc: "Narx, xona va bronlar boshqaruvi",
+    desc: "Narxlar, joylar va bronlar boshqaruvi",
     icon: Briefcase,
   },
   staff: {

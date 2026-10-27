@@ -3,7 +3,7 @@
 /* next-themes class strategiyasini Tailwind v4'ga ulash. */
 @custom-variant dark (.dark &);
 
-/* UzBron Hamkor Kabineti — brending */
+/* Safaar Hamkor Kabineti — brending */
 @theme {
   --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;

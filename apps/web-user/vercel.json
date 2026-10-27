@@ -2,5 +2,6 @@
   "buildCommand": "cd ../.. && pnpm run build:types && pnpm --filter @safaar/api-client run build && pnpm --filter @safaar/web-user run build",
   "installCommand": "cd ../.. && pnpm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "regions": ["fra1"]
 }

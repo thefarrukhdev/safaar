@@ -7,12 +7,13 @@ import { ReservationStatusBadge } from "../../_components/domain/reservation-sta
 import type { ReservationView } from "../../_lib/domain/types";
 import { formatDate } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
-import { RESERVATION_FILTERS, type FilterKey } from "./types";
+import { getReservationFilters, type FilterKey } from "./types";
 
 interface ReservationsFocusProps {
   focusItems: ReservationView[];
   counts: Record<FilterKey, number>;
   activeFilter: FilterKey;
+  partnerType?: string | null;
   onFilterChange: (filter: FilterKey) => void;
   onSelectReservation: (id: string) => void;
 }
@@ -21,9 +22,11 @@ export function ReservationsFocus({
   focusItems,
   counts,
   activeFilter,
+  partnerType,
   onFilterChange,
   onSelectReservation,
 }: ReservationsFocusProps) {
+  const filters = getReservationFilters(partnerType);
   return (
     <aside className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
       {/* Priority Focus Card: if empty, show only on xl desktop */}
@@ -110,7 +113,7 @@ export function ReservationsFocus({
               aria-label="Status bo'yicha saralash"
               className="w-full gap-1 p-0 bg-transparent flex flex-col"
             >
-              {RESERVATION_FILTERS.map((f) => {
+              {filters.map((f) => {
                 const active = activeFilter === f.key;
                 const count = counts[f.key] ?? 0;
                 return (

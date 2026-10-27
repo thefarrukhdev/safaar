@@ -168,7 +168,11 @@ export function Sidebar() {
                     const showText = !collapsed || mobileOpen;
                     return (
                       <li key={item.href}>
-                        <Tooltip content={!showText ? item.label : ""}>
+                        <Tooltip
+                          content={!showText ? item.label : ""}
+                          side="right"
+                          className="w-full"
+                        >
                           <Link
                             href={item.href}
                             aria-current={active ? "page" : undefined}

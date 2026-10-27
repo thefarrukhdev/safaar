@@ -20,7 +20,7 @@ import { blackoutDates } from "../../_lib/api/endpoints/partners";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const schema = z.object({
-  roomNumber: z.string().min(1, "Xonani tanlang"),
+  roomNumber: z.string().min(1, "Tanlov qilinishi shart"),
   startDate: z.string().min(1, "Boshlanish sanasini tanlang"),
   endDate: z.string().min(1, "Tugash sanasini tanlang"),
   reason: z.string().optional(),

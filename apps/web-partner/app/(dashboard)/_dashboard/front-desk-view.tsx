@@ -22,7 +22,7 @@ import {
 } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
 import { useAuthStore } from "../../_stores/auth-store";
-import { TODAY_ISO } from "../../_lib/utils/date";
+import { todayIso } from "../../_lib/utils/date";
 import { getPartnerLabels, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
 import type { ReservationView } from "../../_lib/domain/types";
 import { FrontDeskHeader } from "./front-desk-header";
@@ -71,13 +71,14 @@ export function FrontDeskView() {
   });
 
   // Sana oralig'i (standart: bugun)
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: TODAY_ISO,
-    endDate: TODAY_ISO,
-  });
+  const [dateRange, setDateRange] = useState<DateRange>(() => ({
+    startDate: todayIso(),
+    endDate: todayIso(),
+  }));
 
+  const currentToday = todayIso();
   const isCustomDateRange =
-    dateRange.startDate !== TODAY_ISO || dateRange.endDate !== TODAY_ISO;
+    dateRange.startDate !== currentToday || dateRange.endDate !== currentToday;
 
   // Dialog & Interaction State
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -271,7 +272,7 @@ export function FrontDeskView() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto fade-in">
+    <div className="flex flex-col gap-6 w-full fade-in">
       {/* 1. Header & Sana & Rekvizitlar ogohlantirish banneri */}
       <FrontDeskHeader
         labels={labels}
@@ -301,7 +302,7 @@ export function FrontDeskView() {
           onDateRangeChange={setDateRange}
           isCustomDateRange={isCustomDateRange}
           onResetDateToToday={() =>
-            setDateRange({ startDate: TODAY_ISO, endDate: TODAY_ISO })
+            setDateRange({ startDate: todayIso(), endDate: todayIso() })
           }
           isLoading={reservations.isLoading}
           isError={reservations.isError}
@@ -352,7 +353,7 @@ export function FrontDeskView() {
             checkIn.mutate(assignReservation.id, {
               onSuccess: () => {
                 toast.success(
-                  `${labels.checkInLabel}: ${assignReservation.guest.fullName}`,
+                  `${labels.checkInActionLabel ?? labels.checkInLabel}: ${assignReservation.guest.fullName}`,
                 );
               },
               onError: (error) => {

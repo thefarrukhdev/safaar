@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import {
+  CarFront,
   Check,
   DoorOpen,
   Filter,
   Search,
   Users,
+  UtensilsCrossed,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -59,6 +61,7 @@ function AssignRoomDialogContent({
   const floorCap = labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1);
   const restaurant = isRestaurant(partnerType);
   const isTransport = hasBuses(partnerType);
+  const UnitIcon = isTransport ? CarFront : restaurant ? UtensilsCrossed : DoorOpen;
 
   const rooms = useMemo(() => {
     if (isTransport) {
@@ -176,7 +179,7 @@ function AssignRoomDialogContent({
           onClose();
         },
         onError: (err) => {
-          toast.error(err instanceof Error ? err.message : "Xona biriktirib bo'lmadi");
+          toast.error(err instanceof Error ? err.message : `${unitCap} biriktirib bo'lmadi`);
         },
       },
     );
@@ -247,7 +250,7 @@ function AssignRoomDialogContent({
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/70 p-4 backdrop-blur-sm dark:border-blue-900/40 dark:bg-blue-950/30">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-2xs dark:bg-blue-900/60 dark:text-blue-300">
-                <DoorOpen className="h-5 w-5" />
+                <UnitIcon className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -304,7 +307,7 @@ function AssignRoomDialogContent({
         <div className="flex flex-col gap-6 max-h-[50vh] overflow-y-auto pr-1.5 custom-scrollbar">
           {floors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <DoorOpen className="h-10 w-10 text-slate-300 dark:text-zinc-700 mb-2" />
+              <UnitIcon className="h-10 w-10 text-slate-300 dark:text-zinc-700 mb-2" />
               <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
                 Mos {labels.unitSingular} topilmadi
               </p>
@@ -337,6 +340,7 @@ function AssignRoomDialogContent({
                         roomType={roomType}
                         isMatch={isMatch}
                         selected={isSelected}
+                        capacitySuffix={labels.capacitySuffix}
                         onSelect={() => {
                           if (isMatch) setSelected(room.number);
                         }}
@@ -358,12 +362,14 @@ function SmartRoomOption({
   roomType,
   isMatch,
   selected,
+  capacitySuffix = "kishi",
   onSelect,
 }: {
   room: Room;
   roomType?: RoomType;
   isMatch: boolean;
   selected: boolean;
+  capacitySuffix?: string;
   onSelect: () => void;
 }) {
   return (
@@ -406,7 +412,7 @@ function SmartRoomOption({
 
       <div className="flex items-center gap-1.5 mt-1 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
         <Users className="h-3 w-3 shrink-0" />
-        <span>{roomType?.capacity || 2} kishi</span>
+        <span>{roomType?.capacity || 2} {capacitySuffix}</span>
       </div>
     </button>
   );

@@ -43,6 +43,8 @@ export function ReservationsHeader({
       labels.unitSingular,
       beds,
       isRestaurant,
+      labels.isBus,
+      labels.isDacha,
     );
     toast.success(`${filteredReservations.length} ta bron CSV formatida yuklab olindi`);
   };

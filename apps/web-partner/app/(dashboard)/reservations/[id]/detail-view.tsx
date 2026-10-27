@@ -44,6 +44,7 @@ import {
   formatMoney,
   formatPhone,
 } from "../../../_lib/utils/format";
+import { todayIso } from "../../../_lib/utils/date";
 import { useAuthStore } from "../../../_stores/auth-store";
 import { useVehicles } from "../../../_hooks/use-vehicles";
 import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
@@ -86,7 +87,7 @@ export function ReservationDetailView({ id }: { id: string }) {
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIso();
   const isPastCheckIn = today > data.checkIn;
   const isPastCheckOut = today > data.checkOut;
 
@@ -111,9 +112,9 @@ export function ReservationDetailView({ id }: { id: string }) {
         eyebrow={`Bron ${data.id}`}
         title={data.guest.fullName}
         description={
-          restaurant && data.slotTime
-            ? `${formatDate(data.checkIn)} · ${data.slotTime}`
-            : (partnerType === "bus" || partnerType === "BUS")
+          restaurant
+            ? `${formatDate(data.checkIn)}${data.slotTime ? ` · ${data.slotTime}` : ""}`
+            : (partnerType === "bus" || partnerType === "BUS" || labels.isBus)
               ? `${formatDate(data.checkIn)} → ${formatDate(data.checkOut)} · ${data.nights} kun`
               : `${formatDate(data.checkIn)} → ${formatDate(data.checkOut)} · ${data.nights} kech.`
         }
@@ -157,9 +158,9 @@ export function ReservationDetailView({ id }: { id: string }) {
                   // Xona allaqachon tayinlangan bo'lsa — to'g'ridan-to'g'ri check-in
                   if (data.roomNumber) {
                     checkIn.mutate(data.id, {
-                      onSuccess: () => toast.success(`${labels.checkInLabel} qilindi`),
+                      onSuccess: () => toast.success(`${labels.checkInActionLabel ?? labels.checkInLabel} qilindi`),
                       onError: (err: any) =>
-                        toast.error(err?.message || "Check-in amalga oshmadi"),
+                        toast.error(err?.message || `${labels.checkInActionLabel ?? labels.checkInLabel} amalga oshmadi`),
                     });
                   } else {
                     // Xona tayinlanmagan — avval dialog orqali tayinla
@@ -167,7 +168,7 @@ export function ReservationDetailView({ id }: { id: string }) {
                   }
                 }}
               >
-                {labels.checkInLabel}
+                {labels.checkInActionLabel ?? labels.checkInLabel}
               </Button>
             )}
             {canCheckOut && (
@@ -177,11 +178,11 @@ export function ReservationDetailView({ id }: { id: string }) {
                 loading={checkOut.isPending}
                 onClick={() => {
                   checkOut.mutate(data.id, {
-                    onSuccess: () => toast.success(`${labels.checkOutLabel} qilindi`),
+                    onSuccess: () => toast.success(`${labels.checkOutActionLabel ?? labels.checkOutLabel} qilindi`),
                   });
                 }}
               >
-                {labels.checkOutLabel}
+                {labels.checkOutActionLabel ?? labels.checkOutLabel}
               </Button>
             )}
             {canCancel && !canConfirm && (
@@ -235,7 +236,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               />
               <InfoItem
                 icon={<User className="h-4 w-4" aria-hidden />}
-                label={restaurant ? "Kishilar soni" : "Mehmonlar"}
+                label={restaurant ? "Kishilar soni" : `${labels.guestLabel}lar`}
                 value={
                   restaurant
                     ? `${data.adults} kishi`
@@ -244,7 +245,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               />
               <InfoItem
                 icon={<CalendarRange className="h-4 w-4" aria-hidden />}
-                label="Kelish"
+                label={labels.checkInLabel}
                 value={
                   restaurant && data.slotTime
                     ? `${formatDate(data.checkIn)} · ${data.slotTime}`
@@ -254,10 +255,10 @@ export function ReservationDetailView({ id }: { id: string }) {
               {!restaurant && (
                 <InfoItem
                   icon={<CalendarRange className="h-4 w-4" aria-hidden />}
-                  label={(partnerType === "bus" || partnerType === "BUS") ? "Qaytarish" : "Ketish"}
-                  value={(partnerType === "bus" || partnerType === "BUS") 
+                  label={labels.checkOutLabel}
+                  value={(partnerType === "bus" || partnerType === "BUS" || labels.isBus) 
                     ? `${formatDate(data.checkOut)} (${data.nights} kun)`
-                    : `${formatDate(data.checkOut)} (${data.nights} kech.)`}
+                    : `${formatDate(data.checkOut)} (${data.nights} kecha)`}
                 />
               )}
               {data.specialRequests && (

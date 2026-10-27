@@ -6,6 +6,7 @@ import { partners } from "../_lib/api";
 import { useAuthStore } from "../_stores/auth-store";
 import { type RoomTypeDraft } from "../_stores/data-store";
 import { getPrimaryHotel } from "./use-primary-hotel";
+import { formatUnitTypeName } from "../_lib/utils/partner-labels";
 
 export const roomTypesQueryKey = ["partner", "room-types"] as const;
 
@@ -13,12 +14,18 @@ const EMPTY_ROOM_TYPES: ReturnType<typeof toRoomType>[] = [];
 
 export function useRoomTypes() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
   const query = useQuery({
-    queryKey: roomTypesQueryKey,
+    queryKey: [...roomTypesQueryKey, partnerType],
     queryFn: async () => {
       const [hotel] = pageItems(await partners.listHotels(accessToken));
       if (!hotel) return [];
-      return (await partners.listRoomTypes(hotel.id, accessToken)).map(toRoomType);
+      return (await partners.listRoomTypes(hotel.id, accessToken))
+        .map(toRoomType)
+        .map((rt) => ({
+          ...rt,
+          name: formatUnitTypeName(rt.name, partnerType),
+        }));
     },
     enabled: Boolean(accessToken),
   });

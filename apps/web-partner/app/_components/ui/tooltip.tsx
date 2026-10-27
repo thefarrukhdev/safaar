@@ -7,13 +7,14 @@ interface TooltipProps {
   content: string;
   children: ReactNode;
   side?: "top" | "bottom" | "left" | "right";
+  className?: string;
 }
 
 /**
  * Yengil CSS-asoslangan tooltip — focus/hover'da ko'rinadi.
  * Ikona tugmalari va qisqartmalar uchun.
  */
-export function Tooltip({ content, children, side = "top" }: TooltipProps) {
+export function Tooltip({ content, children, side = "top", className }: TooltipProps) {
   const [open, setOpen] = useState(false);
 
   if (!content.trim()) {
@@ -29,7 +30,7 @@ export function Tooltip({ content, children, side = "top" }: TooltipProps) {
 
   return (
     <span
-      className="relative inline-flex"
+      className={cn("relative inline-flex", className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}

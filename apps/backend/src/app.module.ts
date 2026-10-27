@@ -34,6 +34,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { AiTranslateModule } from './ai-translate/ai-translate.module';
 import { HeroBackgroundsModule } from './hero-backgrounds/hero-backgrounds.module';
 import { I18nModule } from './i18n/i18n.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { validateEnv } from './config/env.validation';
 import { MaintenanceGuard } from './common/maintenance.guard';
 
@@ -84,6 +85,7 @@ import { MaintenanceGuard } from './common/maintenance.guard';
     AiTranslateModule,
     HeroBackgroundsModule,
     I18nModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [

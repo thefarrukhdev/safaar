@@ -82,7 +82,7 @@ export function RoomListingsPanel({
     const ok = await confirm({
       title: `"${roomType.name}" ni o'chirish`,
       description: isCascade
-        ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta xona mavjud. Ushbu xona turini o'chirsangiz, ichidagi barcha xonalar ham qo'shib o'chiriladi. Rozimisiz?`
+        ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta ${labels.unitSingular.toLowerCase()} mavjud. Ushbu ${labels.unitTypeLabel.toLowerCase()}ni o'chirsangiz, ichidagi barcha ${labels.unitPlural.toLowerCase()} ham qo'shib o'chiriladi. Rozimisiz?`
         : `Rostdan ham "${roomType.name}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
       confirmText: "O'chirish",
       cancelText: "Bekor qilish",
@@ -171,7 +171,7 @@ export function RoomListingsPanel({
               Hali hech qanday variant yo'q
             </h3>
             <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-              Turistlar bron qila olishi uchun kamida bitta xona variantini qo'shing.
+              Mijozlar bron qila olishi uchun kamida bitta {labels.unitSingular.toLowerCase()} variantini qo'shing.
             </p>
             {onAddRoomType && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -203,6 +203,8 @@ export function RoomListingsPanel({
                   amenities={roomType.amenities}
                   minPrice={minPrice}
                   unitLabel={labels.unitSingular}
+                  unitPlural={labels.unitPlural}
+                  capacitySuffix={labels.capacitySuffix}
                   totalUnits={isHostel ? totalBeds : relatedRooms.length}
                   listedUnits={isHostel ? listedBedCount : listedCount}
                   restaurant={restaurant}
@@ -248,6 +250,8 @@ interface RoomAdCardProps {
   amenities: string[];
   minPrice: number;
   unitLabel: string;
+  unitPlural?: string;
+  capacitySuffix?: string;
   totalUnits: number;
   listedUnits: number;
   restaurant: boolean;
@@ -270,6 +274,8 @@ export function RoomAdCard({
   amenities,
   minPrice,
   unitLabel,
+  unitPlural,
+  capacitySuffix,
   totalUnits,
   listedUnits,
   restaurant,
@@ -322,7 +328,7 @@ export function RoomAdCard({
               <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)]">
                 <span className="inline-flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" aria-hidden />
-                  {capacity} {isBus ? "o'rindiq" : "kishi"}
+                  {capacity} {capacitySuffix || (isBus ? "o'rindiq" : "kishi")}
                 </span>
                 {!restaurant && !isBus && bedType && <span>{bedType}</span>}
                 {!restaurant && typeof sizeSqm === 'number' && sizeSqm > 0 && (
@@ -341,7 +347,7 @@ export function RoomAdCard({
             <div className="shrink-0 text-right flex flex-col items-end gap-2">
               <div>
                 <p className="text-[11px] text-[var(--muted-foreground)]">
-                  {restaurant ? 'narxi' : isBus ? '1 kunlik' : '1 kecha'}
+                  {restaurant ? 'depozit' : isBus ? '1 kunlik' : '1 kecha'}
                 </p>
                 <p className="text-base font-semibold text-brand-700 dark:text-brand-300">
                   {formatMoney(minPrice)}
@@ -366,7 +372,9 @@ export function RoomAdCard({
           <div className="mt-3 flex flex-wrap gap-1.5">
             {relatedRooms && relatedRooms.length > 0 && (
               <div className="w-full mb-1">
-                <span className="text-[10px] uppercase font-semibold text-[var(--muted-foreground)] tracking-widest">Ichidagi {unitLabel}lar: </span>
+                <span className="text-[10px] uppercase font-semibold text-[var(--muted-foreground)] tracking-widest">
+                  Tegishli {unitPlural || `${unitLabel}lar`}:{" "}
+                </span>
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {relatedRooms.map((room) => (
                     <span
@@ -404,8 +412,8 @@ export function RoomAdCard({
           <div className="mt-3 border-t border-[var(--border)] pt-3 flex items-center justify-between gap-2">
             <span className="text-xs text-[var(--muted-foreground)]">
               {listedUnits > 0
-                ? `${listedUnits} ta ${unitLabel} turistlarga ko'rinadi`
-                : `Hozircha turistlarga ko'rinmaydi`}
+                ? `${listedUnits} ta ${unitLabel} mijozlarga ko'rinadi`
+                : `Hozircha mijozlarga ko'rinmaydi`}
             </span>
             {onTogglePublish && (
               <Button

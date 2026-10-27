@@ -9,6 +9,8 @@ export function exportReservationsToCsv(
   unitLabel: string,
   beds: Bed[],
   restaurant: boolean,
+  isBus?: boolean,
+  isDacha?: boolean,
 ) {
   const headers = [
     "ID",
@@ -17,7 +19,7 @@ export function exportReservationsToCsv(
     `${unitLabel} turi`,
     unitLabel,
     "Sana",
-    ...(restaurant ? ["Vaqt"] : ["Ketish", "Kech."]),
+    ...(restaurant ? ["Vaqt"] : [isBus ? "Qaytarish" : "Ketish", isBus ? "Kun" : "Kech."]),
     "Summa",
     "To'langan",
     "Status",
@@ -29,7 +31,7 @@ export function exportReservationsToCsv(
     AWAITING_PAYMENT: "To'lov kutilmoqda",
     AWAITING_PARTNER_CONFIRMATION: "Tasdiqlash kutilmoqda",
     CONFIRMED: "Tasdiqlangan",
-    IN_HOUSE: "Yashayapti",
+    IN_HOUSE: restaurant ? "Mijoz kelgan (Amalda)" : isBus ? "Ijarada (Mijozda)" : isDacha ? "Dachada (Band)" : "Yashayapti",
     COMPLETED: "Yakunlangan",
     CANCELLED: "Bekor qilingan",
     EXPIRED: "Muddati o'tgan",

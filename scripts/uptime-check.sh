@@ -27,8 +27,8 @@ echo ""
 for item in "${ENDPOINTS[@]}"; do
   IFS='|' read -r NAME URL EXPECTED_CODE <<< "$item"
   
-  # curl bilan HTTP status va javob vaqtini olish (timeout 10 soniya)
-  RESPONSE=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" --max-time 10 "$URL" 2>/dev/null || echo "000 0.000")
+  # curl bilan HTTP status va javob vaqtini olish (timeout 20 soniya — SSR cold start uchun yetarli)
+  RESPONSE=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" --max-time 20 "$URL" 2>/dev/null || echo "000 0.000")
   HTTP_CODE=$(echo "$RESPONSE" | awk '{print $1}')
   TIME_TOTAL=$(echo "$RESPONSE" | awk '{print $2}')
   TIME_MS=$(awk "BEGIN {print int($TIME_TOTAL * 1000)}")

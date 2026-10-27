@@ -43,7 +43,7 @@ export const ROOM_AMENITY_OPTIONS = [
 export const TABLE_AMENITY_OPTIONS = [
   { value: "window", label: "Deraza yonida" },
   { value: "terrace", label: "Terrasa/tashqarida" },
-  { value: "vip", label: "VIP xona" },
+  { value: "vip", label: "VIP kabinet" },
   { value: "quiet", label: "Tinch burchak" },
   { value: "near_stage", label: "Sahna yonida" },
   { value: "high_chair", label: "Bolalar kursisi" },
@@ -213,7 +213,7 @@ export function RoomTypeDialog({
         amenities: values.amenities,
       });
 
-      toast.success(`Yangi xona turi "${values.name}" qo'shildi`);
+      toast.success(`Yangi ${labels.unitTypeLabel.toLowerCase()} "${values.name}" qo'shildi`);
       onSuccess?.(created);
       onClose();
     } catch (error) {
@@ -230,37 +230,53 @@ export function RoomTypeDialog({
     : `Yangi ${labels.unitTypeLabel.toLowerCase()} yaratish`;
 
   const description = editing
-    ? "Ushbu xona turi parametri, narxi va qulayliklarini yangilang."
-    : "Mehmonlar bron qilishi uchun xona turi andozasi va narxini kiriting.";
+    ? `Ushbu ${labels.unitTypeLabel.toLowerCase()} parametri, narxi va qulayliklarini yangilang.`
+    : `Mehmonlar bron qilishi uchun ${labels.unitTypeLabel.toLowerCase()} andozasi va narxini kiriting.`;
 
   return (
     <Dialog open={open} onClose={onClose} title={title} description={description} size="lg">
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <fieldset disabled={isLoading} className="flex flex-col gap-4 group-disabled:opacity-75">
-          {/* 1. XONA TURI NOMI */}
+          {/* 1. XONA/STOL TURI NOMI */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="rt-name" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-              Xona turi nomi <span className="text-red-500">*</span>
+              {labels.unitTypeLabel} nomi <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
               <Input
                 id="rt-name"
-                placeholder="Masalan: Standard, Deluxe, Suite, Family Room..."
+                placeholder={
+                  restaurant
+                    ? "Masalan: Umumiy zal, VIP Kabinet, Terrasa..."
+                    : "Masalan: Standard, Deluxe, Suite, Family Room..."
+                }
                 aria-invalid={Boolean(err.name)}
                 list="room-type-presets"
                 {...form.register("name")}
               />
               <datalist id="room-type-presets">
-                <option value="Standard" />
-                <option value="Superior" />
-                <option value="Deluxe" />
-                <option value="Lux" />
-                <option value="Junior Suite" />
-                <option value="Suite" />
-                <option value="Family Room" />
-                <option value="Kottej" />
-                <option value="Ekoxona" />
-                <option value="Villa" />
+                {restaurant ? (
+                  <>
+                    <option value="Umumiy zal (Standard)" />
+                    <option value="VIP Kabinet" />
+                    <option value="Terrasa" />
+                    <option value="Banket stoli" />
+                    <option value="Bar stoli" />
+                  </>
+                ) : (
+                  <>
+                    <option value="Standard" />
+                    <option value="Superior" />
+                    <option value="Deluxe" />
+                    <option value="Lux" />
+                    <option value="Junior Suite" />
+                    <option value="Suite" />
+                    <option value="Family Room" />
+                    <option value="Kottej" />
+                    <option value="Ekoxona" />
+                    <option value="Villa" />
+                  </>
+                )}
               </datalist>
             </div>
             {err.name && <p className="text-xs text-red-500">{err.name.message}</p>}
@@ -270,7 +286,7 @@ export function RoomTypeDialog({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rt-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                {restaurant ? "Minimal xarajat (so'm)" : "Bir kechalik narx (so'm)"}{" "}
+                {restaurant ? "Minimal depozit / xarajat (so'm)" : `${labels.priceLabel} narx (so'm)`}{" "}
                 <span className="text-red-500">*</span>
               </Label>
               <Controller
@@ -279,7 +295,7 @@ export function RoomTypeDialog({
                 render={({ field }) => (
                   <MoneyInput
                     id="rt-price"
-                    placeholder="350 000"
+                    placeholder={restaurant ? "0" : "350 000"}
                     value={field.value}
                     onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                     onBlur={field.onBlur}
@@ -292,14 +308,16 @@ export function RoomTypeDialog({
                 <p className="text-xs text-red-500">{err.basePrice.message}</p>
               ) : (
                 <p className="text-[11px] text-zinc-500">
-                  Ushbu turdagi xonalar uchun standart kunlik/kechalik narx
+                  {restaurant
+                    ? "Ushbu toifadagi stollar uchun minimal depozit miqdori"
+                    : `Ushbu turdagi ${labels.unitPlural.toLowerCase()} uchun standart ${labels.pricingUnit} narx`}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rt-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                Maksimal sig&apos;im (kishi) <span className="text-red-500">*</span>
+                Maksimal sig&apos;im ({labels.capacitySuffix}) <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="rt-capacity"
@@ -313,49 +331,55 @@ export function RoomTypeDialog({
               {err.capacity ? (
                 <p className="text-xs text-red-500">{err.capacity.message}</p>
               ) : (
-                <p className="text-[11px] text-zinc-500">Xonada yashashi mumkin bo&apos;lgan mehmonlar soni</p>
+                <p className="text-[11px] text-zinc-500">
+                  {restaurant
+                    ? "Stol atrofida o'tirishi mumkin bo'lgan maksimal mehmonlar soni"
+                    : `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)}da sig'ishi mumkin bo'lgan maksimal ${labels.guestLabel.toLowerCase()}lar soni`}
+                </p>
               )}
             </div>
           </div>
 
-          {/* 3. KARAVOT TURI VA MAYDONI (2 ustun) */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rt-bed" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                Karavot turi
-              </Label>
-              <Select
-                id="rt-bed"
-                placeholder="Tanlang (ixtiyoriy)"
-                value={bedTypeValue}
-                onChange={(e) =>
-                  form.setValue("bedType", e.target.value, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                options={BED_TYPE_OPTIONS}
-              />
-            </div>
+          {/* 3. KARAVOT TURI VA MAYDONI (Faqat mehmonxona/hostel/dacha) */}
+          {!restaurant && !labels.isBus && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="rt-bed" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  Karavot turi
+                </Label>
+                <Select
+                  id="rt-bed"
+                  placeholder="Tanlang (ixtiyoriy)"
+                  value={bedTypeValue}
+                  onChange={(e) =>
+                    form.setValue("bedType", e.target.value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                  options={BED_TYPE_OPTIONS}
+                />
+              </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rt-size" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                Xona maydoni (m², ixtiyoriy)
-              </Label>
-              <Input
-                id="rt-size"
-                type="number"
-                min={0}
-                max={1000}
-                placeholder="28"
-                aria-invalid={Boolean(err.sizeSqm)}
-                {...form.register("sizeSqm", {
-                  setValueAs: (v) => (v === "" || v === undefined ? undefined : Number(v)),
-                })}
-              />
-              {err.sizeSqm && <p className="text-xs text-red-500">{err.sizeSqm.message}</p>}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="rt-size" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} maydoni (m², ixtiyoriy)
+                </Label>
+                <Input
+                  id="rt-size"
+                  type="number"
+                  min={0}
+                  max={1000}
+                  placeholder="28"
+                  aria-invalid={Boolean(err.sizeSqm)}
+                  {...form.register("sizeSqm", {
+                    setValueAs: (v) => (v === "" || v === undefined ? undefined : Number(v)),
+                  })}
+                />
+                {err.sizeSqm && <p className="text-xs text-red-500">{err.sizeSqm.message}</p>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 4. QULAYLIKLAR VA JİHOZLAR */}
           <div className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
@@ -395,7 +419,7 @@ export function RoomTypeDialog({
           {/* 5. RASM YUKLASH */}
           <div className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
             <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-              Xona fotosurati (ixtiyoriy)
+              {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} fotosurati (ixtiyoriy)
             </Label>
             <div className="flex items-center gap-3">
               <label className="group relative h-20 w-28 cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 transition-all hover:border-brand-500 dark:border-zinc-800 dark:bg-zinc-900/50 shrink-0">
@@ -403,7 +427,7 @@ export function RoomTypeDialog({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={imageUrl}
-                    alt="Xona rasmi"
+                    alt={`${labels.unitSingular} rasmi`}
                     className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-85"
                   />
                 ) : (
@@ -425,7 +449,9 @@ export function RoomTypeDialog({
 
               <div className="flex flex-col justify-center gap-1.5 flex-1">
                 <span className="text-[11px] text-zinc-500 leading-snug">
-                  Xonaning fotosurati mijozlar e&apos;tiborini tortish va bron qilish qaroriga to&apos;g&apos;ridan-to&apos;g&apos;ri ta&apos;sir qiladi.
+                  {restaurant
+                    ? "Stol yoki zonaning fotosurati mijozlar e'tiborini tortish va bron qilish qaroriga to'g'ridan-to'g'ri ta'sir qiladi."
+                    : "Fotosurat mijozlar e'tiborini tortish va bron qilish qaroriga to'g'ridan-to'g'ri ta'sir qiladi."}
                 </span>
                 {imageUrl && (
                   <Button
@@ -454,7 +480,7 @@ export function RoomTypeDialog({
               Bekor qilish
             </Button>
             <Button type="submit" variant="primary" disabled={isLoading} loading={isLoading}>
-              {editing ? "Saqlash" : "Xona turini yaratish"}
+              {editing ? "Saqlash" : `${labels.unitTypeLabel}ni yaratish`}
             </Button>
           </div>
         </fieldset>

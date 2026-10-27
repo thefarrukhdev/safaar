@@ -25,7 +25,7 @@ import {
   useUpdateListingPhoto,
 } from "../../../_hooks/use-listing";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { isRestaurant } from "../../../_lib/utils/partner-labels";
+import { hasBuses, isDacha, isRestaurant } from "../../../_lib/utils/partner-labels";
 import { PhotoCategory } from "../../../_lib/domain/listing";
 import { cn } from "../../../_lib/utils/cn";
 
@@ -53,6 +53,30 @@ const RESTAURANT_CATEGORY_LABEL: Record<PhotoCategory, string> = {
   [PhotoCategory.OTHER]: "Boshqa",
 };
 
+const BUS_CATEGORY_LABEL: Record<PhotoCategory, string> = {
+  [PhotoCategory.FACADE]: "Old ko'rinish",
+  [PhotoCategory.LOBBY]: "Salon ichi",
+  [PhotoCategory.ROOM]: "Avtomobil / Salon",
+  [PhotoCategory.BATHROOM]: "Yukxona (Bagaj)",
+  [PhotoCategory.RESTAURANT]: "Boshqaruv paneli",
+  [PhotoCategory.POOL]: "Hovuz",
+  [PhotoCategory.GYM]: "Fitness",
+  [PhotoCategory.SPA]: "Spa",
+  [PhotoCategory.OTHER]: "Boshqa",
+};
+
+const DACHA_CATEGORY_LABEL: Record<PhotoCategory, string> = {
+  [PhotoCategory.FACADE]: "Hovli va bino",
+  [PhotoCategory.LOBBY]: "Dam olish xonasi (Zal)",
+  [PhotoCategory.ROOM]: "Yotoqxona",
+  [PhotoCategory.BATHROOM]: "Hammom / Sauna",
+  [PhotoCategory.RESTAURANT]: "Oshxona / Mangal",
+  [PhotoCategory.POOL]: "Basseyn",
+  [PhotoCategory.GYM]: "Bilyard / O'yin xonasi",
+  [PhotoCategory.SPA]: "Sauna / Fin hammomi",
+  [PhotoCategory.OTHER]: "Boshqa",
+};
+
 export function PhotosEditor({
   open,
   onClose,
@@ -67,7 +91,15 @@ export function PhotosEditor({
   const [addOpen, setAddOpen] = useState(false);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const restaurant = isRestaurant(partnerType);
-  const categoryLabel = restaurant ? RESTAURANT_CATEGORY_LABEL : CATEGORY_LABEL;
+  const isBus = hasBuses(partnerType);
+  const dacha = isDacha(partnerType);
+  const categoryLabel = restaurant
+    ? RESTAURANT_CATEGORY_LABEL
+    : isBus
+      ? BUS_CATEGORY_LABEL
+      : dacha
+        ? DACHA_CATEGORY_LABEL
+        : CATEGORY_LABEL;
 
   const sortedPhotos = [...data.photos].sort((a, b) => a.order - b.order);
   const busy = deletePhoto.isPending || updatePhoto.isPending;
@@ -273,7 +305,7 @@ export function PhotosEditor({
         )}
       </Drawer>
 
-      <AddPhotoDialog open={addOpen} onClose={() => setAddOpen(false)} />
+      <AddPhotoDialog open={addOpen} onClose={() => setAddOpen(false)} partnerType={partnerType} />
     </>
   );
 }
@@ -281,9 +313,11 @@ export function PhotosEditor({
 function AddPhotoDialog({
   open,
   onClose,
+  partnerType,
 }: {
   open: boolean;
   onClose: () => void;
+  partnerType?: string | null;
 }) {
   const addPhotos = useAddListingPhotos();
   const [files, setFiles] = useState<File[]>([]);
@@ -377,7 +411,15 @@ function AddPhotoDialog({
           <Input
             id="p-cap"
             value={caption}
-            placeholder="Masalan: Mehmonxona ko'rinishi"
+            placeholder={`Masalan: ${
+              isRestaurant(partnerType)
+                ? "Zal yoki fasad ko'rinishi"
+                : hasBuses(partnerType)
+                  ? "Avtomobil oldi yoki salon ko'rinishi"
+                  : isDacha(partnerType)
+                    ? "Hovli yoki bino ko'rinishi"
+                    : "Fasad yoki lobbi ko'rinishi"
+            }`}
             onChange={(e) => setCaption(e.target.value)}
           />
         </div>

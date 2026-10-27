@@ -40,6 +40,11 @@ export function CommandPalette() {
   const { data: reservations } = useReservations();
   const { data: guests } = useGuests();
 
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
   // Klaviatura shortcut — ⌘K yoki Ctrl+K
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,13 +52,13 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((v) => !v);
       }
-      if (e.key === "Escape" && open) {
+      if (e.key === "Escape" && openRef.current) {
         setOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, []);
 
   useBodyScrollLock(open);
 
@@ -87,17 +92,21 @@ export function CommandPalette() {
     }
 
     if (q) {
+      const qDigits = q.replace(/\D/g, "");
+
       // Reservations by ID, guest name, phone
       for (const r of reservations) {
+        const guestName = (r.guest?.fullName ?? "").toLowerCase();
+        const guestPhone = (r.guest?.phone ?? "").replace(/\D/g, "");
         if (
           r.id.toLowerCase().includes(q) ||
-          r.guest.fullName.toLowerCase().includes(q) ||
-          r.guest.phone.includes(q.replace(/\D/g, ""))
+          guestName.includes(q) ||
+          (qDigits.length >= 3 && guestPhone.includes(qDigits))
         ) {
           items.push({
             id: `res-${r.id}`,
-            label: `${r.id} — ${r.guest.fullName}`,
-            sublabel: `${r.roomTypeName}${r.roomNumber ? ` · ${r.roomNumber}` : ""} · ${formatPhone(r.guest.phone)}`,
+            label: `${r.id} — ${r.guest?.fullName ?? "—"}`,
+            sublabel: `${r.roomTypeName || ""}${r.roomNumber ? ` · ${r.roomNumber}` : ""} · ${formatPhone(r.guest?.phone)}`,
             icon: CalendarRange,
             href: `/reservations/${r.id}`,
             group: "Bronlar",
@@ -107,9 +116,11 @@ export function CommandPalette() {
 
       // Guests by name/phone
       for (const g of guests) {
+        const gName = (g.fullName ?? "").toLowerCase();
+        const gPhone = (g.phone ?? "").replace(/\D/g, "");
         if (
-          g.fullName.toLowerCase().includes(q) ||
-          g.phone.includes(q.replace(/\D/g, ""))
+          gName.includes(q) ||
+          (qDigits.length >= 3 && gPhone.includes(qDigits))
         ) {
           items.push({
             id: `guest-${g.id}`,

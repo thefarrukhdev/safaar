@@ -68,7 +68,7 @@ import {
 } from '../../_lib/utils/partner-labels';
 import { cn } from '../../_lib/utils/cn';
 import { useAmenities } from '../../_hooks/use-catalog';
-import { useVehicles } from '../../_hooks/use-vehicles';
+import { useVehicles, type Vehicle } from '../../_hooks/use-vehicles';
 
 type OpenEditor = Exclude<SectionId, 'roomTypes' | 'rooms'> | null;
 
@@ -97,7 +97,7 @@ export function ListingOverview() {
     import('../../_lib/domain/types').RoomType | null
   >(null);
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
   const { data: vehicles = [] } = useVehicles();
 
@@ -231,16 +231,18 @@ export function ListingOverview() {
 
     base.push({
       id: 'rules',
-      title: isBus ? 'Ijara qoidalari' : 'Uy qoidalari',
-      subtitle: `${labels.checkInLabel}, ${labels.checkOutLabel.toLowerCase()} va bekor qilish shartlari`,
+      title: isBus ? 'Ijara qoidalari' : restaurant ? 'Tartib va qoidalar' : dacha ? 'Dacha qoidalari' : 'Ichki qoidalar',
+      subtitle: `${labels.openingTimeLabel}, ${labels.closingTimeLabel.toLowerCase()} va bekor qilish shartlari`,
       action: 'Qoidalarni sozlash',
       complete: rulesComplete,
-      summary: `${listing.checkInTime || '--:--'} dan ${isBus ? 'olib ketish' : 'kirish'} · ${
-        listing.checkOutTime || '--:--'
-      } gacha ${isBus ? 'qaytarish' : 'chiqish'}`,
+      summary: restaurant
+        ? `${listing.checkInTime || '--:--'} dan ochilish · ${listing.checkOutTime || '--:--'} gacha yopilish`
+        : isBus
+          ? `${listing.checkInTime || '--:--'} dan olib ketish · ${listing.checkOutTime || '--:--'} gacha qaytarish`
+          : `${listing.checkInTime || '--:--'} dan kirish · ${listing.checkOutTime || '--:--'} gacha chiqish`,
       icon: <Baby className="h-4 w-4" aria-hidden />,
       missing: !rulesComplete
-        ? `${labels.checkInLabel} va ${labels.checkOutLabel.toLowerCase()} vaqtlarini kiriting.`
+        ? `${labels.openingTimeLabel} va ${labels.closingTimeLabel.toLowerCase()} vaqtlarini kiriting.`
         : undefined,
     });
 
@@ -260,7 +262,7 @@ export function ListingOverview() {
           icon: <BedDouble className="h-4 w-4" aria-hidden />,
           missing:
             roomAds.length === 0 || listedRooms.length === 0
-              ? `Dachangizning xona turini qo'shing va e'longa chiqaring.`
+              ? `Dachangizning narx va sig'im ma'lumotlarini qo'shing va e'longa chiqaring.`
               : undefined,
         },
       ];
@@ -386,7 +388,7 @@ export function ListingOverview() {
     const confirmed = await confirm({
       title: "E'lonni qayta yaratmoqchimisiz?",
       description:
-        "Nomi, tavsifi, rasmlari, qulayliklari va xonalari butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.",
+        `Nomi, tavsifi, rasmlari, qulayliklari va ${labels.unitPlural} butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.`,
       confirmText: "Qayta yaratish",
       cancelText: "Bekor qilish",
       destructive: true,

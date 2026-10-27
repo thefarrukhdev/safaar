@@ -2,10 +2,13 @@
 
 import {
   AlertCircle,
+  BedSingle,
+  CarFront,
   Check,
   DoorOpen,
   Layers,
   Plus,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -23,22 +26,22 @@ import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { useCreateRoom, useBulkCreateRooms, useRooms } from "../../../_hooks/use-rooms";
 import { useGenerateBeds } from "../../../_hooks/use-beds";
 import { cn } from "../../../_lib/utils/cn";
-import { getPartnerLabels, hasBeds, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBeds, hasBuses, isRestaurant, formatUnitTypeName } from "../../../_lib/utils/partner-labels";
 import { RoomStatus } from "../../../_lib/domain/types";
 import { RoomTypeDialog } from "./room-type-dialog";
 
 const addRoomSchema = z
   .object({
     mode: z.enum(["single", "bulk"]),
-    roomTypeId: z.string().min(1, "Xona turini tanlang"),
+    roomTypeId: z.string().min(1, "Toifani tanlang"),
     number: z.string().optional(),
     startNumber: z.number().optional(),
     count: z.number().optional(),
     floor: z
       .number()
-      .int("Qavat butun son bo'lishi kerak")
-      .min(1, "Qavat kamida 1 bo'lishi kerak")
-      .max(100, "Qavat 100 dan oshmasligi kerak"),
+      .int("Tartib raqami butun son bo'lishi kerak")
+      .min(1, "Kamida 1 bo'lishi kerak")
+      .max(100, "100 dan oshmasligi kerak"),
     status: z.nativeEnum(RoomStatus),
     isListed: z.boolean(),
     nightlyPrice: z.number().min(0, "Narx 0 dan kichik bo'lmasin").optional(),
@@ -48,13 +51,13 @@ const addRoomSchema = z
       if (!data.number || data.number.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Xona raqami kiritilishi shart",
+          message: "Raqam kiritilishi shart",
           path: ["number"],
         });
       } else if (data.number.trim().length > 20) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Xona raqami 20 ta belgidan oshmasin",
+          message: "Raqam 20 ta belgidan oshmasin",
           path: ["number"],
         });
       }
@@ -69,7 +72,7 @@ const addRoomSchema = z
       if (data.count === undefined || data.count < 1 || data.count > 200) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Xonalar soni 1 dan 200 gacha bo'lishi kerak",
+          message: "Birliklar soni 1 dan 200 gacha bo'lishi kerak",
           path: ["count"],
         });
       }
@@ -94,7 +97,10 @@ export function AddRoomDialog({
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const isHostel = hasBeds(partnerType);
   const restaurant = isRestaurant(partnerType);
+  const isBus = hasBuses(partnerType);
   const labels = getPartnerLabels(partnerType);
+
+  const SingleIcon = isBus ? CarFront : restaurant ? UtensilsCrossed : isHostel ? BedSingle : DoorOpen;
 
   const { data: roomTypes = [], isLoading: isLoadingTypes } = useRoomTypes();
   const { allRooms = [] } = useRooms();
@@ -198,7 +204,7 @@ export function AddRoomDialog({
     try {
       if (values.mode === "single") {
         if (!values.number?.trim()) {
-          toast.error("Xona raqami kiritilishi shart");
+          toast.error(`${labels.unitIdentifierLabel} kiritilishi shart`);
           return;
         }
         if (singleDuplicate) {
@@ -231,7 +237,7 @@ export function AddRoomDialog({
 
       if (values.mode === "bulk") {
         if (!values.startNumber || !values.count) {
-          toast.error("Boshlang'ich raqam va xonalar sonini kiriting");
+          toast.error(`Boshlang'ich raqam va ${labels.unitPlural.toLowerCase()} sonini kiriting`);
           return;
         }
 
@@ -261,10 +267,10 @@ export function AddRoomDialog({
     generateBeds.isPending;
 
   const roomTypeSelectOptions = [
-    { value: "", label: "Xona turini tanlang" },
+    { value: "", label: `${labels.unitTypeLabel}ni tanlang` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
-      label: `${rt.name} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} kishi)`,
+      label: `${formatUnitTypeName(rt.name, labels)} — ${rt.basePrice.toLocaleString("ru-RU")} so'm (${rt.capacity} ${labels.capacitySuffix})`,
     })),
   ];
 
@@ -274,22 +280,22 @@ export function AddRoomDialog({
         open={open}
         onClose={onClose}
         title={`Yangi ${labels.unitSingular} qo'shish`}
-        description={`Mehmonxonaga yangi ${labels.unitSingular} yoki bir nechta xonalarni birdaniga qo'shing.`}
+        description={`${labels.facilityDirectional} yangi ${labels.unitSingular} yoki bir nechta ${labels.unitPlural}ni birdaniga qo'shing.`}
         size="md"
       >
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isSubmitting} className="flex flex-col gap-4 group-disabled:opacity-75">
-            {/* Bo'sh xona turlari holati (Agar hali hech qanday RoomType bo'lmasa) */}
+            {/* Bo'sh turlar holati (Agar hali hech qanday toifa bo'lmasa) */}
             {roomTypes.length === 0 && !isLoadingTypes && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/30">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                      Hali xona turlari yaratilmagan
+                      Hali {labels.unitTypePlural.toLowerCase()} yaratilmagan
                     </h4>
                     <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                      Xonalarni raqamlab qo&apos;shish uchun avval kamida bitta xona turi (masalan: Standart, Lyuks) yaratilishi kerak.
+                      {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)}ni qo&apos;shish uchun avval kamida bitta {labels.unitTypeLabel.toLowerCase()} (masalan: {restaurant ? "VIP, Umumiy zal, Terrasa" : "Standart, Lyuks"}) yaratilishi kerak.
                     </p>
                     <Button
                       type="button"
@@ -299,7 +305,7 @@ export function AddRoomDialog({
                       className="mt-3 gap-1.5"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      Xona turi yaratish
+                      {labels.unitTypeLabel} yaratish
                     </Button>
                   </div>
                 </div>
@@ -318,8 +324,8 @@ export function AddRoomDialog({
                     : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white",
                 )}
               >
-                <DoorOpen className="h-3.5 w-3.5" />
-                Yakka xona
+                <SingleIcon className="h-3.5 w-3.5" />
+                {labels.singleUnitModeLabel}
               </button>
               <button
                 type="button"
@@ -332,27 +338,27 @@ export function AddRoomDialog({
                 )}
               >
                 <Layers className="h-3.5 w-3.5" />
-                Guruhlab qo&apos;shish (Ommaviy)
+                {labels.bulkUnitModeLabel}
               </button>
             </div>
 
-            {/* XONA TURI TANLASH */}
+            {/* TOIFA TANLASH */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="ar-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  Xona turi <span className="text-red-500">*</span>
+                  {labels.unitTypeLabel} <span className="text-red-500">*</span>
                 </Label>
                 <button
                   type="button"
                   onClick={() => setOpenCreateType(true)}
                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 cursor-pointer"
                 >
-                  <Plus className="h-3 w-3" /> Yangi tur yaratish
+                  <Plus className="h-3 w-3" /> Yangi {labels.unitTypeLabel.toLowerCase()} yaratish
                 </button>
               </div>
               <Select
                 id="ar-type"
-                placeholder="Xona turini tanlang"
+                placeholder={`${labels.unitTypeLabel}ni tanlang`}
                 value={selectedRoomTypeId}
                 onChange={(e) =>
                   form.setValue("roomTypeId", e.target.value, {
@@ -370,13 +376,13 @@ export function AddRoomDialog({
               {selectedRoomType && (
                 <div className="mt-1 flex items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 text-[11px] text-zinc-600 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-800">
                   <span className="font-semibold text-zinc-900 dark:text-zinc-200">
-                    {selectedRoomType.name}
+                    {formatUnitTypeName(selectedRoomType.name, labels)}
                   </span>
                   <span>•</span>
-                  <span>{selectedRoomType.capacity} kishilik</span>
+                  <span>{selectedRoomType.capacity} {labels.capacitySuffix}</span>
                   <span>•</span>
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {selectedRoomType.basePrice.toLocaleString("ru-RU")} so&apos;m / kecha
+                    {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
                   </span>
                 </div>
               )}
@@ -386,15 +392,15 @@ export function AddRoomDialog({
             {creationMode === "single" && (
               <div className="flex flex-col gap-3">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {/* Xona raqami */}
+                  {/* Identifikator / Raqam */}
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ar-number" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} raqami{" "}
+                      {labels.unitIdentifierLabel}{" "}
                       <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="ar-number"
-                      placeholder={restaurant ? "Stol-12, VIP-1" : "101, 204..."}
+                      placeholder={labels.unitIdentifierPlaceholder}
                       value={singleNumber || ""}
                       onChange={(e) => handleNumberChange(e.target.value)}
                       aria-invalid={Boolean(form.formState.errors.number) || Boolean(singleDuplicate)}
@@ -406,11 +412,13 @@ export function AddRoomDialog({
                     ) : form.formState.errors.number ? (
                       <p className="text-xs text-red-500">{form.formState.errors.number.message}</p>
                     ) : (
-                      <p className="text-[11px] text-zinc-500">Masalan: 101, 102 yoki 2A</p>
+                      <p className="text-[11px] text-zinc-500">
+                        Masalan: {labels.unitIdentifierPlaceholder}
+                      </p>
                     )}
                   </div>
 
-                  {/* Qavat */}
+                  {/* Qavat / Zal */}
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ar-floor" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                       {labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1)}{" "}
@@ -445,9 +453,9 @@ export function AddRoomDialog({
                         })
                       }
                       options={[
-                        { value: RoomStatus.VACANT_CLEAN, label: "Toza (Vacant Clean)" },
-                        { value: RoomStatus.VACANT_DIRTY, label: "Nopok (Tozalash kerak)" },
-                        { value: RoomStatus.OUT_OF_SERVICE, label: "Ta'mirda (Out of Service)" },
+                        { value: RoomStatus.VACANT_CLEAN, label: labels.statusCleanLabel },
+                        { value: RoomStatus.VACANT_DIRTY, label: labels.statusDirtyLabel },
+                        { value: RoomStatus.OUT_OF_SERVICE, label: labels.statusOutOfServiceLabel },
                       ]}
                     />
                   </div>
@@ -475,7 +483,7 @@ export function AddRoomDialog({
                       )}
                     />
                     <p className="text-[11px] text-zinc-500">
-                      Kiritilmasa, xona turining narxi olinadi
+                      Kiritilmasa, {labels.unitTypeLabel.toLowerCase()} narxi olinadi
                     </p>
                   </div>
                 </div>
@@ -492,7 +500,7 @@ export function AddRoomDialog({
                       Darhol e&apos;longa chiqarilsin (sotuvda ko&apos;rinadi)
                     </span>
                     <span className="text-[11px] text-zinc-500">
-                      Mehmonlar ushbu xonani to&apos;g&apos;ridan-to&apos;g&apos;ri platformadan bron qilishi mumkin bo&apos;ladi
+                      {labels.guestLabel}lar ushbu {labels.unitSingular.toLowerCase()}ni to&apos;g&apos;ridan-to&apos;g&apos;ri platformadan bron qilishi mumkin bo&apos;ladi
                     </span>
                   </div>
                 </label>
@@ -511,7 +519,7 @@ export function AddRoomDialog({
                       id="ar-start"
                       type="number"
                       min={1}
-                      placeholder="101"
+                      placeholder={restaurant || isBus ? "1" : "101"}
                       aria-invalid={Boolean(form.formState.errors.startNumber)}
                       {...form.register("startNumber", { valueAsNumber: true })}
                     />
@@ -522,7 +530,7 @@ export function AddRoomDialog({
 
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ar-count" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Xonalar soni <span className="text-red-500">*</span>
+                      {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)} soni <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="ar-count"
@@ -557,12 +565,12 @@ export function AddRoomDialog({
                   </div>
                 </div>
 
-                {/* Yaratiladigan xonalar jonli ko'rinishi */}
+                {/* Yaratiladigan birliklar jonli ko'rinishi */}
                 {bulkPreview.length > 0 && (
                   <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        Yaratiladigan xonalar ({bulkCount ?? 0} ta):
+                        Yaratiladigan {labels.unitPlural.toLowerCase()} ({bulkCount ?? 0} ta):
                       </span>
                       {bulkPreview.some((p) => p.exists) && (
                         <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
@@ -610,7 +618,7 @@ export function AddRoomDialog({
               >
                 <Plus className="h-4 w-4" />
                 {creationMode === "bulk"
-                  ? `${bulkCount ?? 0} ta xona yaratish`
+                  ? `${bulkCount ?? 0} ta ${labels.unitSingular.toLowerCase()} yaratish`
                   : `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} qo'shish`}
               </Button>
             </div>

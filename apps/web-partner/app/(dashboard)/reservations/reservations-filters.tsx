@@ -13,7 +13,7 @@ import { Button } from "../../_components/ui/button";
 import { DateRangePicker } from "../../_components/ui/date-range-picker";
 import { Input } from "../../_components/ui/input";
 import { cn } from "../../_lib/utils/cn";
-import { RESERVATION_FILTERS, type FilterKey, type ViewMode } from "./types";
+import { getReservationFilters, type FilterKey, type ViewMode } from "./types";
 import { todayIso } from "../../_lib/utils/date";
 
 interface ReservationsFiltersProps {
@@ -27,6 +27,8 @@ interface ReservationsFiltersProps {
   filteredCount: number;
   totalCount: number;
   unitSingular: string;
+  guestLabel?: string;
+  partnerType?: string | null;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
   statusFilter?: FilterKey;
@@ -45,6 +47,8 @@ export function ReservationsFilters({
   filteredCount,
   totalCount,
   unitSingular,
+  guestLabel,
+  partnerType,
   hasActiveFilters,
   onResetFilters,
   statusFilter,
@@ -52,6 +56,7 @@ export function ReservationsFilters({
   counts,
 }: ReservationsFiltersProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const filters = getReservationFilters(partnerType);
 
   const today = todayIso();
   const dTomorrow = new Date();
@@ -102,7 +107,7 @@ export function ReservationsFilters({
       {statusFilter && onStatusFilterChange && (
         <div className="xl:hidden -mx-1 overflow-x-auto no-scrollbar pb-1 border-b border-[var(--border)]">
           <div className="flex items-center gap-1.5 min-w-max px-1">
-            {RESERVATION_FILTERS.map((f) => {
+            {filters.map((f) => {
               const active = statusFilter === f.key;
               const count = counts?.[f.key] ?? 0;
               return (
@@ -146,7 +151,7 @@ export function ReservationsFilters({
           <Input
             ref={inputRef}
             type="search"
-            placeholder={`ID, mehmon ismi, telefon, ${unitSingular} bo'yicha tezkor qidirish...`}
+            placeholder={`ID, ${guestLabel || "mehmon"} ismi, telefon, ${unitSingular} bo'yicha tezkor qidirish...`}
             className="pl-9 pr-9 h-10 w-full rounded-lg"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}

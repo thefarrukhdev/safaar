@@ -1,7 +1,23 @@
+/**
+ * Bugungi sanani mahalliy vaqt (foydalanuvchi/receptionist vaqt zonasi)
+ * bo'yicha YYYY-MM-DD formatda qaytaradi.
+ * UTC toISOString() ishlatilmaydi, chunki O'zbekistonda (UTC+5) soat 00:00-05:00
+ * oralig'ida UTC kechagi kunni qaytaradi va tungi smenada ishlaydigan
+ * receptionist uchun bugungi kelish/ketishlar bir kunga surilib qoladi.
+ */
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
+/**
+ * @deprecated Module yuklanish vaqtida hisoblanadi va o'zgarmaydi.
+ * Buning o'rniga todayIso() funksiyasini chaqiring.
+ * Faqat bir martalik qiymat sifatida import qilinadigan joylarda ishlatish mumkin.
+ */
 export const TODAY_ISO = todayIso();
 
 /**

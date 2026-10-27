@@ -156,6 +156,15 @@ export function AddRoomDialog({
     }
   }, [open, defaultFloor, defaultRoomTypeId, roomTypes, form, restaurant, isBus]);
 
+  // Agar roomTypeId bo'sh bo'lsa va toifalar yuklansa, avtomatik birinchisini tanlash
+  useEffect(() => {
+    if (open && !form.getValues("roomTypeId") && roomTypes.length > 0) {
+      form.setValue("roomTypeId", defaultRoomTypeId || roomTypes[0].id, {
+        shouldValidate: true,
+      });
+    }
+  }, [open, roomTypes, defaultRoomTypeId, form]);
+
   const selectedRoomTypeId = useWatch({ control: form.control, name: "roomTypeId" });
   const singleNumber = useWatch({ control: form.control, name: "number" });
   const bulkPrefix = useWatch({ control: form.control, name: "prefix" }) || "";
@@ -293,8 +302,8 @@ export function AddRoomDialog({
       >
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isSubmitting} className="flex flex-col gap-4 group-disabled:opacity-75">
-            {/* Bo'sh turlar holati (Agar hali hech qanday toifa bo'lmasa) */}
-            {roomTypes.length === 0 && !isLoadingTypes && (
+            {/* Bo'sh turlar holati (Faqat mehmonxona/hostel uchun agar hali toifa bo'lmasa) */}
+            {!restaurant && roomTypes.length === 0 && !isLoadingTypes && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/30">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -303,7 +312,7 @@ export function AddRoomDialog({
                       Hali {labels.unitTypePlural.toLowerCase()} yaratilmagan
                     </h4>
                     <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                      {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)}ni qo&apos;shish uchun avval kamida bitta {labels.unitTypeLabel.toLowerCase()} (masalan: {restaurant ? "VIP, Umumiy zal, Terrasa" : "Standart, Lyuks"}) yaratilishi kerak.
+                      {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)}ni qo&apos;shish uchun avval kamida bitta {labels.unitTypeLabel.toLowerCase()} (masalan: Standart, Lyuks) yaratilishi kerak.
                     </p>
                     <Button
                       type="button"
@@ -356,13 +365,15 @@ export function AddRoomDialog({
                 <Label htmlFor="ar-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                   {labels.unitTypeLabel} <span className="text-red-500">*</span>
                 </Label>
-                <button
-                  type="button"
-                  onClick={() => setOpenCreateType(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 cursor-pointer"
-                >
-                  <Plus className="h-3 w-3" /> Yangi {labels.unitTypeLabel.toLowerCase()} yaratish
-                </button>
+                {!restaurant && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenCreateType(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" /> Yangi {labels.unitTypeLabel.toLowerCase()} yaratish
+                  </button>
+                )}
               </div>
               <Select
                 id="ar-type"

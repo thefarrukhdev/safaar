@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   BedDouble,
   CarFront,
@@ -142,10 +143,17 @@ export function RoomListingsPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {onAddRoomType && roomAds.length > 0 && (
+            {!restaurant && onAddRoomType && roomAds.length > 0 && (
               <Button size="sm" onClick={onAddRoomType} variant="outline">
                 + Yangi variant qo'shish
               </Button>
+            )}
+            {restaurant && (
+              <Link href="/rooms">
+                <Button size="sm" variant="primary">
+                  + Stol qo'shish
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -174,11 +182,20 @@ export function RoomListingsPanel({
             <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
               Mijozlar bron qila olishi uchun kamida bitta {labels.unitSingular.toLowerCase()} variantini qo'shing.
             </p>
-            {onAddRoomType && (
+            {!restaurant && onAddRoomType && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button onClick={onAddRoomType}>
                   + Yangi variant qo'shish
                 </Button>
+              </div>
+            )}
+            {restaurant && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Link href="/rooms">
+                  <Button variant="primary">
+                    + Stol qo'shish
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
@@ -213,7 +230,7 @@ export function RoomListingsPanel({
                   amenityLabels={amenityLabels}
                   relatedRooms={relatedRooms}
                   onEdit={onEditRoomType ? () => onEditRoomType(roomType) : undefined}
-                  onDelete={() => handleDelete(roomType, relatedRooms)}
+                  onDelete={restaurant ? undefined : () => handleDelete(roomType, relatedRooms)}
                   onTogglePublish={async (publish) => {
                     try {
                       await Promise.all(

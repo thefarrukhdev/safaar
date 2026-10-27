@@ -1066,6 +1066,10 @@ export class PartnersService {
       });
     }
 
+    if (organization?.type === 'restaurant') {
+      await this.provisionRestaurantTableTypes(hotelId);
+    }
+
     // Return the created hotel
     const hotels = await this.pg.query(`SELECT * FROM hotels WHERE id = $1`, [
       hotelId,
@@ -1851,7 +1855,21 @@ export class PartnersService {
   }
 
   async roomTypes(actor: RequestActor | undefined, id: string) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
+
+    if (partnerType === 'restaurant') {
+      const existing = await this.pg.query(
+        `SELECT 1 FROM room_types rt
+         WHERE rt.code = 'table-umumiy-zal-' || $1::text
+         LIMIT 1`,
+        [id],
+      );
+      if (existing.length === 0) {
+        await this.provisionRestaurantTableTypes(id);
+      }
+    }
+
     return this.pg.query(
       `SELECT rt.id::text, rt.code, rt.name, rt.description, rt.image_url,
         rt.bed_type, rt.size_sqm, rt.amenities, rt.created_at, rt.updated_at,
@@ -1868,6 +1886,82 @@ export class PartnersService {
        ORDER BY rt.name ->> 'uz' ASC`,
       [id],
     );
+  }
+
+  async provisionRestaurantTableTypes(hotelId: string): Promise<void> {
+    const presets = [
+      {
+        slug: 'umumiy-zal',
+        name: { uz: 'Umumiy zal', ru: 'Общий зал', en: 'Main Hall' },
+        description: 'Umumiy zaldagi qulay stol (2-4 kishi uchun)',
+        capacity: 4,
+        basePrice: 0,
+        amenities: ['wifi', 'ac'],
+      },
+      {
+        slug: 'oila-uchun',
+        name: { uz: 'Oila uchun stol', ru: 'Семейный стол', en: 'Family Table' },
+        description: 'Oila va bolalar bilan qulay dam olish uchun (4-6 kishi)',
+        capacity: 6,
+        basePrice: 0,
+        amenities: ['wifi', 'ac', 'family_friendly'],
+      },
+      {
+        slug: 'vip-kabinet',
+        name: { uz: 'VIP kabinet', ru: 'VIP кабинет / Комната', en: 'VIP Booth / Private Room' },
+        description: 'Alohida shinam VIP xona, biznes va maxsus uchrashuvlar uchun (6-8 kishi)',
+        capacity: 8,
+        basePrice: 100000,
+        amenities: ['wifi', 'ac', 'tv_screens', 'vip_room'],
+      },
+      {
+        slug: 'ochiq-terrasa',
+        name: { uz: 'Ochiq terrasa', ru: 'Открытая терраса', en: 'Open Terrace' },
+        description: 'Toza havoda ochiq terrasadagi stol (2-4 kishi)',
+        capacity: 4,
+        basePrice: 0,
+        amenities: ['wifi', 'outdoor_seating'],
+      },
+      {
+        slug: 'katta-kompaniya',
+        name: { uz: 'Katta kompaniya stoli', ru: 'Стол для большой компании', en: 'Large Group Table' },
+        description: "Do'stlar va jamoaviy uchrashuvlar uchun katta stol (8-12 kishi)",
+        capacity: 12,
+        basePrice: 150000,
+        amenities: ['wifi', 'ac'],
+      },
+      {
+        slug: 'tapchan-sori',
+        name: { uz: 'Tapchan / So‘ri', ru: 'Топчан', en: 'Topchan / Traditional Couch' },
+        description: "Milliy uslubdagi shinam tapchan/so'ri (6-8 kishi)",
+        capacity: 8,
+        basePrice: 50000,
+        amenities: ['wifi', 'national_dishes'],
+      },
+    ];
+
+    const now = new Date().toISOString();
+    for (const preset of presets) {
+      const code = `table-${preset.slug}-${hotelId}`;
+      const id = randomUUID();
+      await this.pg.query(
+        `INSERT INTO room_types (
+           id, code, name, description, size_sqm, base_price, capacity, amenities, created_at, updated_at
+         ) VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8::jsonb, $9, $9)
+         ON CONFLICT (code) DO NOTHING`,
+        [
+          id,
+          code,
+          JSON.stringify(preset.name),
+          preset.description,
+          0,
+          preset.basePrice,
+          preset.capacity,
+          JSON.stringify(preset.amenities),
+          now,
+        ],
+      );
+    }
   }
 
   async createRoomType(

@@ -3222,9 +3222,16 @@ export class PartnersService {
         for (const code of unknownCodes) {
           const id = randomUUID();
           const now = new Date().toISOString();
-          const name = code
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, (c) => c.toUpperCase());
+          const customName =
+            typeof (body.custom_names as Record<string, string> | undefined)?.[code] === 'string'
+              ? (body.custom_names as Record<string, string>)[code].trim()
+              : null;
+          const name =
+            customName ||
+            code
+              .replace(/^restaurant_|^dacha_|^hotel_/i, '')
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (c) => c.toUpperCase());
           await this.pg.query(
             `INSERT INTO amenities (id, code, name, created_at, updated_at)
              VALUES ($1::uuid, $2, ($3)::jsonb, $4, $5)
@@ -3243,6 +3250,7 @@ export class PartnersService {
           [codes],
         );
         codeToId = new Map(resolved.map((r) => [r.code, r.id]));
+        void this.cache?.delByPattern('catalog:*');
       }
 
       await this.pg.query(`DELETE FROM hotel_amenities WHERE hotel_id = $1`, [

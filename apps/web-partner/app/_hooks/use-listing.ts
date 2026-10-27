@@ -200,8 +200,18 @@ export function useUpdateListingRules() {
 }
 
 export function useUpdateListingAmenities() {
-  return useListingMutation<string[]>((hotelId, token, amenities) =>
-    partners.updateListingAmenities(hotelId!, amenities, token).then(toListing),
+  const queryClient = useQueryClient();
+  return useListingMutation<string[] | { amenities: string[]; customNames?: Record<string, string> }>(
+    (hotelId, token, payload) => {
+      const amenities = Array.isArray(payload) ? payload : payload.amenities;
+      const customNames = Array.isArray(payload) ? undefined : payload.customNames;
+      return partners
+        .updateListingAmenities(hotelId!, amenities, token, customNames)
+        .then((h) => {
+          void queryClient.invalidateQueries({ queryKey: ["catalog", "amenities"] });
+          return toListing(h);
+        });
+    },
   );
 }
 

@@ -37,3 +37,14 @@ export function listCities(): Promise<CatalogCity[]> {
   );
 }
 
+export interface CatalogCancellationPolicy {
+  id: string;
+  name: Record<string, string> | string;
+  rules: Array<{ beforeHours: number; penaltyPercent: number }>;
+  refundable_until_hours: number;
+}
+
+export function listCancellationPolicies(): Promise<CatalogCancellationPolicy[]> {
+  return request<CatalogCancellationPolicy[]>('/catalog/cancellation-policies');
+}
+

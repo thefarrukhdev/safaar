@@ -36,6 +36,14 @@ export interface PartnerLabels {
   checkInLabel: string;
   /** Check-out termini */
   checkOutLabel: string;
+  /** Check-in amali (tugma va bildirishnomalar uchun) */
+  checkInActionLabel: string;
+  /** Check-out amali (tugma va bildirishnomalar uchun) */
+  checkOutActionLabel: string;
+  /** Obyekt ish/ochilish vaqti (qoidalar va e'lon uchun) */
+  openingTimeLabel: string;
+  /** Obyekt ish/yopilish vaqti (qoidalar va e'lon uchun) */
+  closingTimeLabel: string;
   /** Mijoz yoki yo'lovchi */
   guestLabel: string;
   /** Front desk sarlavhasi */
@@ -108,6 +116,10 @@ const HOTEL_LABELS: PartnerLabels = {
   listingTitle: "Mehmonxona E'loni",
   checkInLabel: "Kirish (Check-in)",
   checkOutLabel: "Chiqish (Check-out)",
+  checkInActionLabel: "Check-in",
+  checkOutActionLabel: "Check-out",
+  openingTimeLabel: "Kirish vaqti",
+  closingTimeLabel: "Chiqish vaqti",
   guestLabel: "Mehmon",
   frontDeskTitle: "Front Desk",
   frontDeskDescription: "Bugungi vazifalar va navbat.",
@@ -156,6 +168,10 @@ const DACHA_LABELS: PartnerLabels = {
   listingTitle: "Dacha E'loni",
   checkInLabel: "Kelish sanasi",
   checkOutLabel: "Ketish sanasi",
+  checkInActionLabel: "Qabul qilish",
+  checkOutActionLabel: "Kuzatish",
+  openingTimeLabel: "Kirish vaqti",
+  closingTimeLabel: "Chiqish vaqti",
   guestLabel: "Mehmon",
   frontDeskTitle: "Dacha Boshqaruvi",
   frontDeskDescription: "Bugungi band qilishlar va vazifalar.",
@@ -204,6 +220,10 @@ const HOSTEL_LABELS: PartnerLabels = {
   listingTitle: "Hostel E'loni",
   checkInLabel: "Kirish",
   checkOutLabel: "Chiqish",
+  checkInActionLabel: "Check-in",
+  checkOutActionLabel: "Check-out",
+  openingTimeLabel: "Kirish vaqti",
+  closingTimeLabel: "Chiqish vaqti",
   guestLabel: "Mehmon",
   frontDeskTitle: "Front Desk",
   frontDeskDescription: "Bugungi band qilishlar va vazifalar.",
@@ -252,6 +272,10 @@ const BUS_LABELS: PartnerLabels = {
   listingTitle: "Rent Car E'loni",
   checkInLabel: "Olib ketish vaqti",
   checkOutLabel: "Qaytarib keldi",
+  checkInActionLabel: "Topshirish (Olib ketdi)",
+  checkOutActionLabel: "Qabul qilish (Qaytdi)",
+  openingTimeLabel: "Olib ketish vaqti",
+  closingTimeLabel: "Qaytarish vaqti",
   guestLabel: "Mijoz",
   frontDeskTitle: "Ijara Boshqaruvi",
   frontDeskDescription: "Bugungi ijaraga beriladigan va qaytadigan avtomobillar.",
@@ -298,8 +322,12 @@ const RESTAURANT_LABELS: PartnerLabels = {
   unitsPageTitle: "Stollar Xaritasi",
   unitsPageDescription: "Restorandagi barcha stollarning joylashuvi va sig'imi.",
   listingTitle: "Restoran E'loni",
-  checkInLabel: "Ochilish vaqti",
-  checkOutLabel: "Yopilish vaqti",
+  checkInLabel: "Tashrif vaqti",
+  checkOutLabel: "Yakunlash vaqti",
+  checkInActionLabel: "Mijoz keldi (Qabul)",
+  checkOutActionLabel: "Stol bo'shadi",
+  openingTimeLabel: "Ochilish vaqti",
+  closingTimeLabel: "Yopilish vaqti",
   guestLabel: "Mehmon",
   frontDeskTitle: "Bugungi Bronlar",
   frontDeskDescription: "Bugungi rezervatsiyalar va navbat.",

@@ -1,18 +1,27 @@
 import { ReservationSource, type ReservationView } from "../../_lib/domain/types";
 import { formatDate } from "../../_lib/utils/format";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 /**
  * To'liq hisobot ma'lumotlarini UTF-8 BOM bilan CSV formatida yuklab olish
  */
-export function exportReportToCsv(reservations: ReservationView[], filenamePrefix = "hisobot") {
+export function exportReportToCsv(
+  reservations: ReservationView[],
+  filenamePrefix = "hisobot",
+  partnerType?: string | null,
+) {
+  const labels = getPartnerLabels(partnerType);
+  const isBus = labels.isBus;
+  const isRest = labels.isRestaurant;
+
   const headers = [
     "Bron ID",
     "Mijoz (F.I.SH)",
     "Telefon",
-    "Kelish sanasi",
-    "Ketish sanasi",
-    "Xona / Birlik",
-    "Kechalar",
+    isRest ? "Tashrif sanasi" : isBus ? "Olib ketish" : "Kelish sanasi",
+    isRest ? "Vaqt" : isBus ? "Qaytarish" : "Ketish sanasi",
+    `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} / Toifa`,
+    isBus ? "Kunlar" : isRest ? "Tashrif" : "Kechalar",
     "Jami summa (UZS)",
     "To'langan summa (UZS)",
     "To'lov turi",
@@ -34,9 +43,9 @@ export function exportReportToCsv(reservations: ReservationView[], filenamePrefi
       r.guest?.fullName ?? "—",
       phoneFormatted,
       formatDate(r.checkIn),
-      formatDate(r.checkOut),
+      isRest && r.slotTime ? r.slotTime : formatDate(r.checkOut),
       `${r.roomTypeName}${r.roomNumber ? ` (${r.roomNumber})` : ""}`,
-      r.nights,
+      isRest ? 1 : r.nights,
       r.totalPrice,
       r.paidAmount,
       isOnline ? "Online (UzBron)" : "Joyida (Naqd/Karta)",

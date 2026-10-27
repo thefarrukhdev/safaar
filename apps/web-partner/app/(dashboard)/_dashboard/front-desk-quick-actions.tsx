@@ -185,8 +185,8 @@ function NextTaskPreview({
     task.kind === "pending"
       ? "Yangi bron"
       : task.kind === "arrival"
-        ? labels.checkInLabel
-        : labels.checkOutLabel;
+        ? (labels.checkInActionLabel ?? labels.checkInLabel)
+        : (labels.checkOutActionLabel ?? labels.checkOutLabel);
 
   const badgeTone: BadgeTone =
     task.kind === "pending"

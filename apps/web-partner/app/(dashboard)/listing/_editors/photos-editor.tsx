@@ -67,7 +67,7 @@ const BUS_CATEGORY_LABEL: Record<PhotoCategory, string> = {
 
 const DACHA_CATEGORY_LABEL: Record<PhotoCategory, string> = {
   [PhotoCategory.FACADE]: "Hovli va bino",
-  [PhotoCategory.LOBBY]: "Mehmonxona (Zal)",
+  [PhotoCategory.LOBBY]: "Dam olish xonasi (Zal)",
   [PhotoCategory.ROOM]: "Yotoqxona",
   [PhotoCategory.BATHROOM]: "Hammom / Sauna",
   [PhotoCategory.RESTAURANT]: "Oshxona / Mangal",

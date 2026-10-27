@@ -41,6 +41,7 @@ interface CalendarFiltersProps {
   unitPlural?: string;
   unitTypePlural?: string;
   unitStatusLabel?: string;
+  unitIdentifierLabel?: string;
   searchPlaceholder?: string;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
@@ -67,6 +68,7 @@ export function CalendarFilters({
   unitPlural,
   unitTypePlural,
   unitStatusLabel,
+  unitIdentifierLabel,
   searchPlaceholder,
   hasActiveFilters,
   onResetFilters,
@@ -169,7 +171,7 @@ export function CalendarFilters({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder || "Xona raqami yoki turi..."}
+            placeholder={searchPlaceholder || `${unitIdentifierLabel || "Raqam"} yoki toifa...`}
             className="h-9 pl-8 pr-8 text-xs placeholder:text-zinc-400"
           />
           {searchQuery && (
@@ -208,7 +210,7 @@ export function CalendarFilters({
         >
           <option value="all">Barcha holatlar</option>
           <option value="occupied">Faqat band (ichkarida)</option>
-          <option value="vacant">Faqat bo'sh {unitPlural || "xonalar"}</option>
+          <option value="vacant">Faqat bo'sh {unitPlural || "birliklar"}</option>
         </select>
 
         {/* Filtrni tiklash tugmasi */}

@@ -135,7 +135,7 @@ export function RulesEditor({
     <Drawer
       open={open}
       onClose={onClose}
-      title={dacha ? "Xonalar, narx va qoidalar" : isBus ? "Ijara qoidalari" : restaurant ? "Restoran qoidalari" : "Uy qoidalari"}
+      title={dacha ? "Dacha narxi va qoidalari" : isBus ? "Ijara qoidalari" : restaurant ? "Restoran qoidalari" : "Ichki tartib va qoidalar"}
       description={dacha ? "Dacha narxi, sig'imi, ish vaqtlari va bekor qilish siyosati." : "Ish vaqtlari, bekor qilish siyosati va qo'shimcha to'lovlar."}
       size="lg"
       footer={
@@ -193,11 +193,11 @@ export function RulesEditor({
         {/* Vaqtlar */}
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-            {labels.checkInLabel} va {labels.checkOutLabel.toLowerCase()}
+            {labels.openingTimeLabel} va {labels.closingTimeLabel.toLowerCase()}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="in">{labels.checkInLabel}</Label>
+              <Label htmlFor="in">{labels.openingTimeLabel}</Label>
               <Input
                 id="in"
                 type="time"
@@ -205,7 +205,7 @@ export function RulesEditor({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="out">{labels.checkOutLabel}</Label>
+              <Label htmlFor="out">{labels.closingTimeLabel}</Label>
               <Input
                 id="out"
                 type="time"

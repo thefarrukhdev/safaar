@@ -39,9 +39,9 @@ const addRoomSchema = z
     count: z.number().optional(),
     floor: z
       .number()
-      .int("Qavat/zal butun son bo'lishi kerak")
-      .min(1, "Qavat/zal kamida 1 bo'lishi kerak")
-      .max(100, "Qavat/zal 100 dan oshmasligi kerak"),
+      .int("Tartib raqami butun son bo'lishi kerak")
+      .min(1, "Kamida 1 bo'lishi kerak")
+      .max(100, "100 dan oshmasligi kerak"),
     status: z.nativeEnum(RoomStatus),
     isListed: z.boolean(),
     nightlyPrice: z.number().min(0, "Narx 0 dan kichik bo'lmasin").optional(),

@@ -42,7 +42,7 @@ export function ReportsDetailedTab({
   const totalRevenue = filtered.reduce((sum, r) => sum + r.totalPrice, 0);
 
   const handleExportCsv = () => {
-    exportReportToCsv(filtered, "batafsil-hisobot");
+    exportReportToCsv(filtered, "batafsil-hisobot", partnerType);
   };
 
   return (
@@ -164,10 +164,12 @@ export function ReportsDetailedTab({
                         </td>
                         <td className="px-4 py-3">
                           <div>
-                            {formatShortDate(r.checkIn)} — {formatShortDate(r.checkOut)}
+                            {isRest && r.slotTime
+                              ? `${formatShortDate(r.checkIn)} · ${r.slotTime}`
+                              : `${formatShortDate(r.checkIn)} — ${formatShortDate(r.checkOut)}`}
                           </div>
                           <div className="text-[11px] text-[var(--muted-foreground)]">
-                            {r.nights} {labels.isBus ? "kun" : isRest ? "tashrif" : "kecha"}
+                            {isRest ? "1 tashrif" : `${r.nights} ${labels.isBus ? "kun" : "kecha"}`}
                           </div>
                         </td>
                         <td className="px-4 py-3">

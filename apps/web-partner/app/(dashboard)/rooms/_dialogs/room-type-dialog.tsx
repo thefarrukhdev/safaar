@@ -43,7 +43,7 @@ export const ROOM_AMENITY_OPTIONS = [
 export const TABLE_AMENITY_OPTIONS = [
   { value: "window", label: "Deraza yonida" },
   { value: "terrace", label: "Terrasa/tashqarida" },
-  { value: "vip", label: "VIP xona" },
+  { value: "vip", label: "VIP kabinet" },
   { value: "quiet", label: "Tinch burchak" },
   { value: "near_stage", label: "Sahna yonida" },
   { value: "high_chair", label: "Bolalar kursisi" },
@@ -340,8 +340,8 @@ export function RoomTypeDialog({
             </div>
           </div>
 
-          {/* 3. KARAVOT TURI VA MAYDONI (Faqat mehmonxona/hostel) */}
-          {!restaurant && (
+          {/* 3. KARAVOT TURI VA MAYDONI (Faqat mehmonxona/hostel/dacha) */}
+          {!restaurant && !labels.isBus && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="rt-bed" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
@@ -363,7 +363,7 @@ export function RoomTypeDialog({
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="rt-size" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                  Xona maydoni (m², ixtiyoriy)
+                  {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} maydoni (m², ixtiyoriy)
                 </Label>
                 <Input
                   id="rt-size"

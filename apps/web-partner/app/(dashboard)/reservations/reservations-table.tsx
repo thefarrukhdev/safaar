@@ -52,6 +52,8 @@ interface ReservationsTableProps {
   isBus: boolean;
   checkInLabel: string;
   checkOutLabel?: string;
+  checkInActionLabel?: string;
+  checkOutActionLabel?: string;
   onSelect: (reservation: ReservationView) => void;
   onConfirm: (reservation: ReservationView) => void;
   onReject: (reservation: ReservationView) => void;
@@ -97,6 +99,8 @@ export function ReservationsTable({
   isBus,
   checkInLabel,
   checkOutLabel,
+  checkInActionLabel,
+  checkOutActionLabel,
   onSelect,
   onConfirm,
   onReject,
@@ -407,11 +411,11 @@ export function ReservationsTable({
                   type="button"
                   size="sm"
                   className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                  title={checkInLabel}
+                  title={checkInActionLabel ?? checkInLabel}
                   onClick={() => onCheckIn(r)}
                 >
                   <CalendarCheck className="h-3.5 w-3.5" aria-hidden />
-                  <span className="hidden xl:inline ml-1">{checkInLabel}</span>
+                  <span className="hidden xl:inline ml-1">{checkInActionLabel ?? checkInLabel}</span>
                 </Button>
               )}
               {canCheckOut && onCheckOut && (
@@ -420,11 +424,11 @@ export function ReservationsTable({
                   size="sm"
                   variant="secondary"
                   className="h-8 px-2.5 text-xs"
-                  title={checkOutLabel ?? "Chiqish"}
+                  title={checkOutActionLabel ?? checkOutLabel ?? "Chiqish"}
                   onClick={() => onCheckOut(r)}
                 >
                   <LogOut className="h-3.5 w-3.5" aria-hidden />
-                  <span className="hidden xl:inline ml-1">{checkOutLabel ?? "Chiqish"}</span>
+                  <span className="hidden xl:inline ml-1">{checkOutActionLabel ?? checkOutLabel ?? "Chiqish"}</span>
                 </Button>
               )}
 
@@ -536,6 +540,8 @@ export function ReservationsTable({
     beds,
     checkInLabel,
     checkOutLabel,
+    checkInActionLabel,
+    checkOutActionLabel,
     isBus,
     isRest,
     onCheckIn,

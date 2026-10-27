@@ -27,9 +27,9 @@ const editRoomSchema = z.object({
     .max(20, "Raqam 20 ta belgidan oshmasin"),
   floor: z
     .number()
-    .int("Qavat/zal butun son bo'lishi kerak")
-    .min(1, "Qavat/zal kamida 1 bo'lishi kerak")
-    .max(100, "Qavat/zal 100 dan oshmasligi kerak"),
+    .int("Tartib raqami butun son bo'lishi kerak")
+    .min(1, "Kamida 1 bo'lishi kerak")
+    .max(100, "100 dan oshmasligi kerak"),
   roomTypeId: z.string().min(1, "Toifani tanlang"),
   status: z.nativeEnum(RoomStatus),
   isListed: z.boolean(),

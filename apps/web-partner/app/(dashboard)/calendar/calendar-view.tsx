@@ -463,7 +463,8 @@ export function CalendarView() {
         unitPlural={labels.unitPlural}
         unitTypePlural={labels.unitTypePlural}
         unitStatusLabel={labels.unitStatusLabel}
-        searchPlaceholder={`${labels.unitSingular} raqami yoki toifasi...`}
+        unitIdentifierLabel={labels.unitIdentifierLabel}
+        searchPlaceholder={`${labels.unitIdentifierLabel} yoki toifasi...`}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={handleResetFilters}
       />
@@ -530,11 +531,11 @@ export function CalendarView() {
           if (assignTarget) {
             checkIn.mutate(assignTarget.id, {
               onSuccess: () => {
-                toast.success(`${labels.checkInLabel} muvaffaqiyatli qilindi: ${assignTarget.guest.fullName}`);
+                toast.success(`${labels.checkInActionLabel ?? labels.checkInLabel} muvaffaqiyatli qilindi: ${assignTarget.guest.fullName}`);
                 refetchReservations();
               },
               onError: (err) => {
-                toast.error(err instanceof Error ? err.message : `${labels.checkInLabel} qilishda xatolik yuz berdi`);
+                toast.error(err instanceof Error ? err.message : `${labels.checkInActionLabel ?? labels.checkInLabel} qilishda xatolik yuz berdi`);
                 refetchReservations();
               },
             });

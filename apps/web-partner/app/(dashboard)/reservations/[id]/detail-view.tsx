@@ -112,9 +112,9 @@ export function ReservationDetailView({ id }: { id: string }) {
         eyebrow={`Bron ${data.id}`}
         title={data.guest.fullName}
         description={
-          restaurant && data.slotTime
-            ? `${formatDate(data.checkIn)} · ${data.slotTime}`
-            : (partnerType === "bus" || partnerType === "BUS")
+          restaurant
+            ? `${formatDate(data.checkIn)}${data.slotTime ? ` · ${data.slotTime}` : ""}`
+            : (partnerType === "bus" || partnerType === "BUS" || labels.isBus)
               ? `${formatDate(data.checkIn)} → ${formatDate(data.checkOut)} · ${data.nights} kun`
               : `${formatDate(data.checkIn)} → ${formatDate(data.checkOut)} · ${data.nights} kech.`
         }
@@ -158,9 +158,9 @@ export function ReservationDetailView({ id }: { id: string }) {
                   // Xona allaqachon tayinlangan bo'lsa — to'g'ridan-to'g'ri check-in
                   if (data.roomNumber) {
                     checkIn.mutate(data.id, {
-                      onSuccess: () => toast.success(`${labels.checkInLabel} qilindi`),
+                      onSuccess: () => toast.success(`${labels.checkInActionLabel ?? labels.checkInLabel} qilindi`),
                       onError: (err: any) =>
-                        toast.error(err?.message || "Check-in amalga oshmadi"),
+                        toast.error(err?.message || `${labels.checkInActionLabel ?? labels.checkInLabel} amalga oshmadi`),
                     });
                   } else {
                     // Xona tayinlanmagan — avval dialog orqali tayinla
@@ -168,7 +168,7 @@ export function ReservationDetailView({ id }: { id: string }) {
                   }
                 }}
               >
-                {labels.checkInLabel}
+                {labels.checkInActionLabel ?? labels.checkInLabel}
               </Button>
             )}
             {canCheckOut && (
@@ -178,11 +178,11 @@ export function ReservationDetailView({ id }: { id: string }) {
                 loading={checkOut.isPending}
                 onClick={() => {
                   checkOut.mutate(data.id, {
-                    onSuccess: () => toast.success(`${labels.checkOutLabel} qilindi`),
+                    onSuccess: () => toast.success(`${labels.checkOutActionLabel ?? labels.checkOutLabel} qilindi`),
                   });
                 }}
               >
-                {labels.checkOutLabel}
+                {labels.checkOutActionLabel ?? labels.checkOutLabel}
               </Button>
             )}
             {canCancel && !canConfirm && (

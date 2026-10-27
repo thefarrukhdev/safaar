@@ -10,6 +10,7 @@ export function exportReservationsToCsv(
   beds: Bed[],
   restaurant: boolean,
   isBus?: boolean,
+  isDacha?: boolean,
 ) {
   const headers = [
     "ID",
@@ -30,7 +31,7 @@ export function exportReservationsToCsv(
     AWAITING_PAYMENT: "To'lov kutilmoqda",
     AWAITING_PARTNER_CONFIRMATION: "Tasdiqlash kutilmoqda",
     CONFIRMED: "Tasdiqlangan",
-    IN_HOUSE: restaurant ? "Mijoz kelgan (Amalda)" : isBus ? "Ijarada (Mijozda)" : "Yashayapti",
+    IN_HOUSE: restaurant ? "Mijoz kelgan (Amalda)" : isBus ? "Ijarada (Mijozda)" : isDacha ? "Dachada (Band)" : "Yashayapti",
     COMPLETED: "Yakunlangan",
     CANCELLED: "Bekor qilingan",
     EXPIRED: "Muddati o'tgan",

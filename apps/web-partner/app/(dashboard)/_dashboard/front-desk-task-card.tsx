@@ -4,6 +4,7 @@ import {
   AlertCircle,
   BedDouble,
   CalendarDays,
+  CarFront,
   Copy,
   ExternalLink,
   LogIn,
@@ -100,8 +101,8 @@ export function FrontDeskTaskCard({
     kind === "pending"
       ? "Yangi"
       : kind === "arrival"
-        ? labels.checkInLabel
-        : labels.checkOutLabel;
+        ? (labels.checkInActionLabel ?? labels.checkInLabel)
+        : (labels.checkOutActionLabel ?? labels.checkOutLabel);
 
   // Sanitized phone link
   const rawPhone = reservation.guest.phone ?? "";
@@ -184,6 +185,8 @@ export function FrontDeskTaskCard({
               <span className="text-[var(--muted-foreground)]">
                 {restaurant ? (
                   <UtensilsCrossed className="h-4 w-4" aria-hidden="true" />
+                ) : labels.isBus ? (
+                  <CarFront className="h-4 w-4" aria-hidden="true" />
                 ) : (
                   <BedDouble className="h-4 w-4" aria-hidden="true" />
                 )}
@@ -295,7 +298,7 @@ export function FrontDeskTaskCard({
               onClick={onCheckIn}
             >
               <LogIn className="h-4 w-4 mr-1.5" aria-hidden="true" />
-              <span>{labels.checkInLabel}</span>
+              <span>{labels.checkInActionLabel ?? labels.checkInLabel}</span>
             </Button>
           )}
 
@@ -307,7 +310,7 @@ export function FrontDeskTaskCard({
               className="hover:bg-[var(--surface-muted)] border-[var(--border)] min-h-[44px] sm:min-h-[36px]"
             >
               <LogOut className="h-4 w-4 mr-1.5" aria-hidden="true" />
-              <span>{labels.checkOutLabel}</span>
+              <span>{labels.checkOutActionLabel ?? labels.checkOutLabel}</span>
             </Button>
           )}
 
@@ -358,14 +361,14 @@ export function FrontDeskTaskCard({
               {kind === "arrival" && (
                 <DropdownMenuItem onClick={onCheckIn}>
                   <LogIn className="h-4 w-4 mr-2 text-emerald-600" />
-                  <span>{labels.checkInLabel}</span>
+                  <span>{labels.checkInActionLabel ?? labels.checkInLabel}</span>
                 </DropdownMenuItem>
               )}
 
               {kind === "departure" && (
                 <DropdownMenuItem onClick={onCheckOut}>
                   <LogOut className="h-4 w-4 mr-2 text-blue-600" />
-                  <span>{labels.checkOutLabel}</span>
+                  <span>{labels.checkOutActionLabel ?? labels.checkOutLabel}</span>
                 </DropdownMenuItem>
               )}
 

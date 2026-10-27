@@ -85,9 +85,9 @@ export function ReservationsStats({
         aria-label={`Bugun kelishi kutilayotgan ${labels.guestLabel.toLowerCase()}larni ko'rish`}
       >
         <StatCard
-          label="Bugungi kelishlar"
+          label={labels.isBus ? "Bugungi olib ketishlar" : labels.isRestaurant ? "Bugungi tashriflar" : "Bugungi kelishlar"}
           value={stats.arrivalsToday.toString()}
-          hint={`${labels.checkInLabel} uchun tayyor`}
+          hint={`${labels.checkInActionLabel ?? labels.checkInLabel} uchun tayyor`}
           icon={<CalendarCheck className="h-5 w-5" />}
           tone="emerald"
           isLoading={isLoading}

@@ -232,7 +232,7 @@ export function RoomsTable({
                         <span>
                           {roomType?.capacity || "?"} {labels.capacitySuffix}
                         </span>
-                        {roomType?.bedType && (
+                        {!restaurant && !isBus && roomType?.bedType && (
                           <>
                             <span className="text-zinc-300 dark:text-zinc-600">·</span>
                             <span className="truncate max-w-[120px] text-zinc-500 dark:text-zinc-400">

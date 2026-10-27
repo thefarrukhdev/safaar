@@ -261,7 +261,7 @@ export function RoomCard({
               <Users className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
               {roomType?.capacity || "?"} {labels.capacitySuffix}
             </span>
-            {roomType?.bedType && (
+            {!restaurant && !isBus && roomType?.bedType && (
               <>
                 <span>·</span>
                 <span className="truncate">{roomType.bedType}</span>

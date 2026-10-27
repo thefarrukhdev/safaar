@@ -327,17 +327,17 @@ export function PreviewDrawer({
         {!isBus && (
           <div className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-              {restaurant ? "Restoran qoidalari" : isBus ? "Ijara qoidalari" : dacha ? "Dacha qoidalari" : "Uy qoidalari"}
+              {restaurant ? "Restoran qoidalari" : isBus ? "Ijara qoidalari" : dacha ? "Dacha qoidalari" : "Ichki qoidalar"}
             </h2>
             <div className="rounded-card border border-[var(--border)] p-4 text-sm">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                  {labels.checkInLabel}: <strong>{l.checkInTime}</strong>
+                  {labels.openingTimeLabel}: <strong>{l.checkInTime}</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                  {labels.checkOutLabel}: <strong>{l.checkOutTime}</strong>
+                  {labels.closingTimeLabel}: <strong>{l.checkOutTime}</strong>
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">

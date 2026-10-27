@@ -118,7 +118,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
   const handleConfirmCheckIn = async () => {
     if (dacha && !existingRoomNumber) {
       if (roomsLoading) return;
-      toast.error("Avval dacha uchun xona/birlik yarating.");
+      toast.error(`Avval ${labels.facilityDirectional.toLowerCase()} ${labels.unitSingular} yarating.`);
       return;
     }
 
@@ -136,7 +136,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
           roomNumber: existingRoomNumber,
         });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Xona biriktirishda xatolik");
+        toast.error(err instanceof Error ? err.message : `${unitCap} biriktirishda xatolik`);
         return;
       }
     }
@@ -145,11 +145,15 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
     onClose();
   };
 
+  const actionText = labels.isRestaurant || labels.isDacha || labels.isBus
+    ? labels.checkInActionLabel
+    : `${labels.checkInActionLabel} qilish`;
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
-      title={`${labels.checkInLabel} qilish`}
+      title={actionText}
       description={`${labels.guestLabel}ni qabul qilish va ma'lumotlarni tasdiqlash`}
       size="md"
       footer={
@@ -180,7 +184,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
               className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm transition-all"
             >
               <LogIn className="h-4 w-4 mr-1.5" />
-              {labels.checkInLabel} qilish
+              {actionText}
             </Button>
           </div>
         </div>

@@ -27,12 +27,13 @@ export function RoomsStats({
   if (metrics.total === 0) return null;
 
   const isRestaurant = labels?.isRestaurant;
+  const isDacha = labels?.isDacha;
   const cleanBadge = isRestaurant ? "tayyor" : isBus ? "tayyor" : "toza";
   const dirtyBadge = isRestaurant ? "yig'ishtirishda" : isBus ? "moykada" : "navbatda";
-  const occupiedBadge = isRestaurant ? "mijoz bor" : isBus ? "ijarada" : "yashayapti";
+  const occupiedBadge = isRestaurant ? "mijoz bor" : isBus ? "ijarada" : isDacha ? "band" : "yashayapti";
   const outOfServiceBadge = isRestaurant ? "yopiq" : isBus ? "servisda" : "xizmatdan tashqari";
 
-  const occupiedTitle = isRestaurant ? "Band (Mijoz)" : isBus ? "Ijarada (Mijoz)" : "Band (Mehmon)";
+  const occupiedTitle = isRestaurant ? "Band (Mijoz)" : isBus ? "Ijarada (Mijoz)" : isDacha ? "Band" : "Band (Mehmon)";
   const outOfServiceTitle = isRestaurant ? "Zaxirada / Yopiq" : isBus ? "Servis / Ta'mirda" : "Ta'mirda";
 
   return (

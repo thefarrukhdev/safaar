@@ -336,7 +336,7 @@ export function ReservationCard({
                   className="min-h-[40px] sm:min-h-[34px] px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
                 >
                   <CalendarCheck className="h-3.5 w-3.5 mr-1" aria-hidden />
-                  {labels.checkInLabel}
+                  {labels.checkInActionLabel ?? labels.checkInLabel}
                 </Button>
               )}
 
@@ -349,7 +349,7 @@ export function ReservationCard({
                   className="min-h-[40px] sm:min-h-[34px] px-3 text-xs"
                 >
                   <LogOut className="h-3.5 w-3.5 mr-1" aria-hidden />
-                  {labels.checkOutLabel}
+                  {labels.checkOutActionLabel ?? labels.checkOutLabel}
                 </Button>
               )}
 

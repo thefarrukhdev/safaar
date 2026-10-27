@@ -570,6 +570,8 @@ export function ReservationsView() {
               isBus={isBus}
               checkInLabel={labels.checkInLabel}
               checkOutLabel={labels.checkOutLabel}
+              checkInActionLabel={labels.checkInActionLabel}
+              checkOutActionLabel={labels.checkOutActionLabel}
               onSelect={(r) => setSelectedReservationId(r.id)}
               onConfirm={handleConfirm}
               onReject={(r) => setRejectTarget(r)}

@@ -134,7 +134,7 @@ export function RoomsFilters({
         {roomTypes.length > 0 && (
           <div className="w-[160px]">
             <Select
-              aria-label="Xona turi"
+              aria-label={labels?.unitTypeLabel ?? "Toifa"}
               value={selectedType}
               onChange={(e) => onTypeChange(e.target.value)}
               options={typeOptions}

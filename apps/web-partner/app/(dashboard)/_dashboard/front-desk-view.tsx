@@ -353,7 +353,7 @@ export function FrontDeskView() {
             checkIn.mutate(assignReservation.id, {
               onSuccess: () => {
                 toast.success(
-                  `${labels.checkInLabel}: ${assignReservation.guest.fullName}`,
+                  `${labels.checkInActionLabel ?? labels.checkInLabel}: ${assignReservation.guest.fullName}`,
                 );
               },
               onError: (error) => {

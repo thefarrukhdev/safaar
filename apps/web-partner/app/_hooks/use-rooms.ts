@@ -247,7 +247,7 @@ export function useDeleteRoom() {
       const message =
         err instanceof Error
           ? err.message
-          : (err as { message?: string })?.message || "Xonani o'chirishda xatolik yuz berdi";
+          : (err as { message?: string })?.message || "O'chirishda xatolik yuz berdi";
       toast.error(message);
     },
   });
@@ -279,7 +279,7 @@ export function useBulkCreateRooms() {
       const message =
         err instanceof Error
           ? err.message
-          : (err as { message?: string })?.message || "Xonalarni yaratishda xatolik yuz berdi";
+          : (err as { message?: string })?.message || "Yaratishda xatolik yuz berdi";
       toast.error(message);
     },
   });

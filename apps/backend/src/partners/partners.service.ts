@@ -1840,6 +1840,7 @@ export class PartnersService {
     await this.assertHotel(id, actor);
     return this.pg.query(
       `SELECT r.*,
+              COALESCE(r.max_adults, r.base_occupancy, 1) as capacity,
               COALESCE(
                 (SELECT json_agg(json_build_object(
                   'id', m.id, 'url', m.url, 'caption', m.caption, 'category', m.category, 'sort_order', m.sort_order, 'is_cover', m.is_cover
@@ -1847,7 +1848,14 @@ export class PartnersService {
                  FROM media_files m
                  WHERE m.owner_type = 'room' AND m.owner_id = r.id AND m.deleted_at IS NULL),
                 '[]'::json
-              ) as media
+              ) as media,
+              COALESCE(
+                (SELECT json_agg(a.code)
+                 FROM room_amenities ra
+                 JOIN amenities a ON a.id = ra.amenity_id
+                 WHERE ra.room_id = r.id),
+                '[]'::json
+              ) as amenities
        FROM hotel_rooms r
        WHERE r.hotel_id = $1 ORDER BY r.code ASC`,
       [id],
@@ -2276,6 +2284,78 @@ export class PartnersService {
     return { ok: true, room_type_id: roomTypeId, deleted: true };
   }
 
+  async syncRoomAmenities(roomId: string, rawAmenities: unknown): Promise<void> {
+    if (!Array.isArray(rawAmenities)) return;
+    const codes = Array.from(
+      new Set(
+        rawAmenities
+          .map(String)
+          .map((c) => c.trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (codes.length === 0) {
+      await this.pg.query(`DELETE FROM room_amenities WHERE room_id = $1::uuid`, [roomId]);
+      return;
+    }
+
+    let resolved = await this.pg.query<{ code: string; id: string }>(
+      `SELECT code, id::text FROM amenities WHERE code = ANY($1::text[])`,
+      [codes],
+    );
+    let codeToId = new Map(resolved.map((r) => [r.code, r.id]));
+    const unknownCodes = codes.filter((code) => !codeToId.has(code));
+
+    if (unknownCodes.length > 0) {
+      const TABLE_DEFAULTS: Record<string, { uz: string; ru: string; en: string }> = {
+        window: { uz: 'Deraza yonida', ru: 'У окна', en: 'Near window' },
+        terrace: { uz: 'Terrasa / Tashqarida', ru: 'На террасе', en: 'Terrace / Outdoor' },
+        vip: { uz: 'VIP kabinet', ru: 'VIP кабинет', en: 'VIP booth' },
+        quiet: { uz: 'Tinch burchak', ru: 'Тихий угол', en: 'Quiet corner' },
+        near_stage: { uz: 'Sahna yonida', ru: 'У сцены', en: 'Near stage' },
+        high_chair: { uz: 'Bolalar kursisi', ru: 'Детский стульчик', en: 'High chair' },
+        power_outlet: { uz: 'Rozetka bor', ru: 'Есть розетка', en: 'Power outlet' },
+        near_ac: { uz: 'Konditsioner yonida', ru: 'Рядом с кондиционером', en: 'Near A/C' },
+        near_tv: { uz: 'Katta ekran / TV yonida', ru: 'Рядом с экраном / ТВ', en: 'Near TV' },
+        smoking: { uz: 'Chekish zonasi', ru: 'Зона для курения', en: 'Smoking zone' },
+        wheelchair: { uz: 'Aravachaga mos', ru: 'Для колясок', en: 'Wheelchair accessible' },
+      };
+
+      for (const code of unknownCodes) {
+        const id = randomUUID();
+        const now = new Date().toISOString();
+        const def = TABLE_DEFAULTS[code];
+        const uz = def?.uz || code.replace(/_/g, ' ');
+        const ru = def?.ru || uz;
+        const en = def?.en || uz;
+        await this.pg.query(
+          `INSERT INTO amenities (id, code, name, is_active, created_at, updated_at)
+           VALUES ($1::uuid, $2, ($3)::jsonb, true, $4, $5)
+           ON CONFLICT (code) DO NOTHING`,
+          [id, code, JSON.stringify({ uz, ru, en, categories: ['restaurant', 'table'] }), now, now],
+        );
+      }
+      resolved = await this.pg.query<{ code: string; id: string }>(
+        `SELECT code, id::text FROM amenities WHERE code = ANY($1::text[])`,
+        [codes],
+      );
+      codeToId = new Map(resolved.map((r) => [r.code, r.id]));
+    }
+
+    await this.pg.query(`DELETE FROM room_amenities WHERE room_id = $1::uuid`, [roomId]);
+    for (const code of codes) {
+      const amenityId = codeToId.get(code);
+      if (!amenityId) continue;
+      await this.pg.query(
+        `INSERT INTO room_amenities (room_id, amenity_id)
+         VALUES ($1::uuid, $2::uuid)
+         ON CONFLICT (room_id, amenity_id) DO NOTHING`,
+        [roomId, amenityId],
+      );
+    }
+  }
+
   async createRoom(
     actor: RequestActor | undefined,
     id: string,
@@ -2368,8 +2448,60 @@ export class PartnersService {
       ],
     );
 
+    if (body.amenities !== undefined && Array.isArray(body.amenities)) {
+      await this.syncRoomAmenities(roomId, body.amenities);
+    }
+
+    const fileId = String(body.file_id ?? body.fileId ?? (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ?? '').trim();
+    const imageUrl = String(body.image_url ?? body.imageUrl ?? '').trim();
+    if (fileId) {
+      await this.pg.query(
+        `UPDATE media_files
+         SET owner_type = 'room', owner_id = $1::uuid, is_cover = true, sort_order = 0
+         WHERE id = $2::uuid AND deleted_at IS NULL`,
+        [roomId, fileId],
+      );
+    } else if (imageUrl) {
+      const existingMedia = await this.pg.query<{ id: string }>(
+        `SELECT id::text FROM media_files WHERE url = $1 AND deleted_at IS NULL LIMIT 1`,
+        [imageUrl],
+      );
+      if (existingMedia[0]) {
+        await this.pg.query(
+          `UPDATE media_files
+           SET owner_type = 'room', owner_id = $1::uuid, is_cover = true, sort_order = 0
+           WHERE id = $2::uuid`,
+          [roomId, existingMedia[0].id],
+        );
+      } else {
+        await this.pg.query(
+          `INSERT INTO media_files
+           (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, is_cover, sort_order, created_at)
+           VALUES ($1::uuid, 'room', $2::uuid, 'image', 'room-image', $3, 'image/jpeg', 0, 'public', true, 0, $4)`,
+          [randomUUID(), roomId, imageUrl, now],
+        );
+      }
+    }
+
     const rooms = await this.pg.query(
-      `SELECT * FROM hotel_rooms WHERE id = $1`,
+      `SELECT r.*,
+              COALESCE(r.max_adults, r.base_occupancy, 1) as capacity,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'id', m.id, 'url', m.url, 'caption', m.caption, 'category', m.category, 'sort_order', m.sort_order, 'is_cover', m.is_cover
+                ))
+                 FROM media_files m
+                 WHERE m.owner_type = 'room' AND m.owner_id = r.id AND m.deleted_at IS NULL),
+                '[]'::json
+              ) as media,
+              COALESCE(
+                (SELECT json_agg(a.code)
+                 FROM room_amenities ra
+                 JOIN amenities a ON a.id = ra.amenity_id
+                 WHERE ra.room_id = r.id),
+                '[]'::json
+              ) as amenities
+       FROM hotel_rooms r WHERE r.id = $1`,
       [roomId],
     );
     return rooms[0];
@@ -2493,9 +2625,61 @@ export class PartnersService {
       params.push(isListed ? 'active' : 'inactive');
     }
 
+    if (body.amenities !== undefined && Array.isArray(body.amenities)) {
+      await this.syncRoomAmenities(roomId, body.amenities);
+    }
+
+    const fileId = String(body.file_id ?? body.fileId ?? (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ?? '').trim();
+    const imageUrl = String(body.image_url ?? body.imageUrl ?? '').trim();
+    if (fileId) {
+      await this.pg.query(
+        `UPDATE media_files
+         SET owner_type = 'room', owner_id = $1::uuid, is_cover = true, sort_order = 0
+         WHERE id = $2::uuid AND deleted_at IS NULL`,
+        [roomId, fileId],
+      );
+    } else if (imageUrl) {
+      const existingMedia = await this.pg.query<{ id: string }>(
+        `SELECT id::text FROM media_files WHERE url = $1 AND deleted_at IS NULL LIMIT 1`,
+        [imageUrl],
+      );
+      if (existingMedia[0]) {
+        await this.pg.query(
+          `UPDATE media_files
+           SET owner_type = 'room', owner_id = $1::uuid, is_cover = true, sort_order = 0
+           WHERE id = $2::uuid`,
+          [roomId, existingMedia[0].id],
+        );
+      } else {
+        await this.pg.query(
+          `INSERT INTO media_files
+           (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, is_cover, sort_order, created_at)
+           VALUES ($1::uuid, 'room', $2::uuid, 'image', 'room-image', $3, 'image/jpeg', 0, 'public', true, 0, now())`,
+          [randomUUID(), roomId, imageUrl],
+        );
+      }
+    }
+
     if (sets.length === 0) {
       const rooms = await this.pg.query(
-        `SELECT * FROM hotel_rooms WHERE id = $1 AND hotel_id = $2`,
+        `SELECT r.*,
+                COALESCE(r.max_adults, r.base_occupancy, 1) as capacity,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                    'id', m.id, 'url', m.url, 'caption', m.caption, 'category', m.category, 'sort_order', m.sort_order, 'is_cover', m.is_cover
+                  ))
+                   FROM media_files m
+                   WHERE m.owner_type = 'room' AND m.owner_id = r.id AND m.deleted_at IS NULL),
+                  '[]'::json
+                ) as media,
+                COALESCE(
+                  (SELECT json_agg(a.code)
+                   FROM room_amenities ra
+                   JOIN amenities a ON a.id = ra.amenity_id
+                   WHERE ra.room_id = r.id),
+                  '[]'::json
+                ) as amenities
+         FROM hotel_rooms r WHERE r.id = $1 AND r.hotel_id = $2`,
         [roomId, id],
       );
       if (!rooms[0]) {
@@ -2523,7 +2707,29 @@ export class PartnersService {
         message: 'Xona topilmadi',
       });
     }
-    return result[0];
+
+    const updatedRooms = await this.pg.query(
+      `SELECT r.*,
+              COALESCE(r.max_adults, r.base_occupancy, 1) as capacity,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'id', m.id, 'url', m.url, 'caption', m.caption, 'category', m.category, 'sort_order', m.sort_order, 'is_cover', m.is_cover
+                ))
+                 FROM media_files m
+                 WHERE m.owner_type = 'room' AND m.owner_id = r.id AND m.deleted_at IS NULL),
+                '[]'::json
+              ) as media,
+              COALESCE(
+                (SELECT json_agg(a.code)
+                 FROM room_amenities ra
+                 JOIN amenities a ON a.id = ra.amenity_id
+                 WHERE ra.room_id = r.id),
+                '[]'::json
+              ) as amenities
+       FROM hotel_rooms r WHERE r.id = $1 AND r.hotel_id = $2`,
+      [roomId, id],
+    );
+    return updatedRooms[0] ?? result[0];
   }
 
   async createRoomsBulk(
@@ -2624,6 +2830,10 @@ export class PartnersService {
           now,
         ],
       );
+
+      if (Array.isArray(body.amenities) && body.amenities.length > 0) {
+        await this.syncRoomAmenities(roomId, body.amenities);
+      }
 
       created.push({
         id: roomId,

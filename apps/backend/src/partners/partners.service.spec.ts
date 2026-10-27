@@ -4733,5 +4733,76 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
         }),
       );
     });
+
+    it('createRoom handles table amenities, capacity, and photo attachment', async () => {
+      const roomTypeId = '00000000-0000-0000-0000-000000000001';
+      query
+        .mockResolvedValueOnce([{ id: 'hotel-123', partner_type: 'restaurant', partner_organization_id: partnerActor.organizationId, owner_id: 'partner-user-1' }]) // assertHotel
+        .mockResolvedValueOnce([{ id: roomTypeId, capacity: 4, base_price: 0 }]) // assertRoomType
+        .mockResolvedValueOnce([]) // INSERT INTO hotel_rooms
+        .mockResolvedValueOnce([{ code: 'window', id: 'amenity-window-id' }]) // SELECT code, id from amenities
+        .mockResolvedValueOnce([]) // DELETE FROM room_amenities
+        .mockResolvedValueOnce([]) // INSERT INTO room_amenities
+        .mockResolvedValueOnce([]) // UPDATE media_files
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            code: 'Stol 1',
+            capacity: 6,
+            media: [{ id: 'm-1', url: 'https://cdn.safaar.uz/table1.jpg' }],
+            amenities: ['window'],
+          },
+        ]); // SELECT enriched hotel_rooms
+
+      const created = await service.createRoom(partnerActor, 'hotel-123', {
+        number: 'Stol 1',
+        roomTypeId,
+        capacity: 6,
+        floor: 2,
+        amenities: ['window'],
+        fileId: 'media-file-123',
+      });
+
+      expect(created).toMatchObject({
+        id: 'room-1',
+        code: 'Stol 1',
+        capacity: 6,
+        media: expect.any(Array),
+        amenities: ['window'],
+      });
+    });
+
+    it('updateRoom updates table amenities, capacity, and photo', async () => {
+      query
+        .mockResolvedValueOnce([{ id: 'hotel-123', partner_type: 'restaurant', partner_organization_id: partnerActor.organizationId, owner_id: 'partner-user-1' }]) // assertHotel
+        .mockResolvedValueOnce([{ id: 'amenity-vip-id', code: 'vip' }]) // SELECT code, id from amenities
+        .mockResolvedValueOnce([]) // DELETE FROM room_amenities
+        .mockResolvedValueOnce([]) // INSERT INTO room_amenities
+        .mockResolvedValueOnce([]) // UPDATE media_files
+        .mockResolvedValueOnce([{ id: 'room-1', base_occupancy: 8 }]) // UPDATE hotel_rooms RETURNING *
+        .mockResolvedValueOnce([
+          {
+            id: 'room-1',
+            code: 'VIP-1',
+            capacity: 8,
+            media: [{ id: 'm-2', url: 'https://cdn.safaar.uz/vip1.jpg' }],
+            amenities: ['vip'],
+          },
+        ]); // SELECT enriched hotel_rooms
+
+      const updated = await service.updateRoom(partnerActor, 'hotel-123', 'room-1', {
+        number: 'VIP-1',
+        capacity: 8,
+        amenities: ['vip'],
+        fileId: 'media-vip-1',
+      });
+
+      expect(updated).toMatchObject({
+        id: 'room-1',
+        code: 'VIP-1',
+        capacity: 8,
+        amenities: ['vip'],
+      });
+    });
   });
 });

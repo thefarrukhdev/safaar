@@ -60,6 +60,8 @@ export interface Room {
   /** Agar xona alohida narxda e'lon qilinsa. */
   nightlyPrice?: number;
   status: RoomStatus;
+  capacity?: number;
+  amenities?: string[];
   /** Hozir band bo'lsa — joriy bronning qisqa ma'lumoti */
   occupant?: {
     guestName: string;

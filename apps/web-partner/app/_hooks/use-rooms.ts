@@ -281,6 +281,7 @@ export function useBulkCreateRooms() {
           roomTypeId: values.roomTypeId,
           basePrice: values.basePrice,
           capacity: values.capacity,
+          prefix: values.prefix,
         },
         accessToken,
       );

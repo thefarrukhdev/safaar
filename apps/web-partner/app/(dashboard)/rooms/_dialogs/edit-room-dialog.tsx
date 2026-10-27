@@ -189,9 +189,11 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                   aria-invalid={Boolean(form.formState.errors.floor)}
                   {...form.register("floor", { valueAsNumber: true })}
                 />
-                {form.formState.errors.floor && (
+                {form.formState.errors.floor ? (
                   <p className="text-xs text-red-500">{form.formState.errors.floor.message}</p>
-                )}
+                ) : restaurant ? (
+                  <p className="text-[11px] text-zinc-500">1 (Asosiy zal), 2 (VIP kabinetlar), 3 (Terrasa)</p>
+                ) : null}
               </div>
             </div>
 
@@ -225,6 +227,20 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
               />
               {form.formState.errors.roomTypeId && (
                 <p className="text-xs text-red-500">{form.formState.errors.roomTypeId.message}</p>
+              )}
+
+              {selectedRoomType && (
+                <div className="mt-1 flex items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 text-[11px] text-zinc-600 dark:bg-zinc-900/60 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-800">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-200">
+                    {formatUnitTypeName(selectedRoomType.name, labels)}
+                  </span>
+                  <span>•</span>
+                  <span>{selectedRoomType.capacity} {labels.capacitySuffix}</span>
+                  <span>•</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
+                  </span>
+                </div>
               )}
             </div>
 

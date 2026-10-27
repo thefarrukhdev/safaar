@@ -462,6 +462,16 @@ export function formatUnitTypeName(
       ? Boolean(partnerTypeOrLabels.isBus)
       : hasBuses(partnerTypeOrLabels as string);
 
+  const isHost =
+    typeof partnerTypeOrLabels === "object" && partnerTypeOrLabels !== null
+      ? Boolean(partnerTypeOrLabels.isHostel)
+      : hasBeds(partnerTypeOrLabels as string);
+
+  const isDach =
+    typeof partnerTypeOrLabels === "object" && partnerTypeOrLabels !== null
+      ? Boolean(partnerTypeOrLabels.isDacha)
+      : isDacha(partnerTypeOrLabels as string);
+
   if (isRest) {
     const lower = trimmed.toLowerCase();
     if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер") {
@@ -503,6 +513,36 @@ export function formatUnitTypeName(
         .replace(/\broom\b/gi, "vehicle")
         .replace(/\bRoom\b/g, "Vehicle");
     }
+  }
+
+  if (isHost) {
+    const lower = trimmed.toLowerCase();
+    if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер") {
+      return "Umumiy yotoqxona (Dormitory)";
+    }
+    if (lower === "deluxe xona" || lower === "deluxe room" || lower === "делюкс номер") {
+      return "Alohida qulay xona";
+    }
+    return trimmed
+      .replace(/\bxonalar\b/gi, "yotoqxonalar")
+      .replace(/\bxona\b/gi, "yotoqxona")
+      .replace(/\bXonalar\b/g, "Yotoqxonalar")
+      .replace(/\bXona\b/g, "Yotoqxona");
+  }
+
+  if (isDach) {
+    const lower = trimmed.toLowerCase();
+    if (lower === "standart xona" || lower === "standard room" || lower === "стандартный номер") {
+      return "Dacha (Kottej)";
+    }
+    if (lower === "deluxe xona" || lower === "deluxe room" || lower === "делюкс номер") {
+      return "Butun dacha (Asosiy kottej)";
+    }
+    return trimmed
+      .replace(/\bxonalar\b/gi, "kottejlar")
+      .replace(/\bxona\b/gi, "kottej")
+      .replace(/\bXonalar\b/g, "Kottejlar")
+      .replace(/\bXona\b/g, "Kottej");
   }
 
   return trimmed;

@@ -15,3 +15,11 @@ export function useCities() {
     staleTime: 1000 * 60 * 10, // 10 daqiqa keshlaymiz
   });
 }
+
+export function useCancellationPolicies() {
+  return useQuery({
+    queryKey: ["catalog", "cancellation-policies"],
+    queryFn: () => catalog.listCancellationPolicies(),
+    staleTime: 1000 * 60 * 10,
+  });
+}

@@ -80,7 +80,7 @@ describe('PartnersService frontend action endpoints', () => {
 
     expect(pgMock.query).toHaveBeenCalledWith(
       expect.stringContaining(
-        'ORDER BY CASE status\n' +
+        'ORDER BY CASE h.status\n' +
           "                  WHEN 'published' THEN 0\n" +
           "                  WHEN 'pending_review' THEN 1\n" +
           "                  WHEN 'hidden' THEN 2\n" +
@@ -91,7 +91,7 @@ describe('PartnersService frontend action endpoints', () => {
       ),
       [actor.organizationId, 50, 0],
     );
-    expect(pgMock.query.mock.calls[0]?.[0]).toContain('AND deleted_at IS NULL');
+    expect(pgMock.query.mock.calls[0]?.[0]).toContain('AND h.deleted_at IS NULL');
   });
 
   it('keeps a reset draft name empty instead of falling back to its slug', async () => {

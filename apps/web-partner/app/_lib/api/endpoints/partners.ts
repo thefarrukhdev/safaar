@@ -597,12 +597,16 @@ export function updateListingAmenities(
   hotelId: string,
   amenities: string[],
   token?: string | null,
+  customNames?: Record<string, string>,
 ) {
   return request<BackendHotel>(
     `/partners/hotels/${encodeURIComponent(hotelId)}/listing/amenities`,
     {
       method: 'PATCH',
-      body: { amenities },
+      body: {
+        amenities,
+        ...(customNames && { custom_names: customNames }),
+      },
       token,
     },
   );

@@ -67,7 +67,26 @@ values
   ('00000000-0000-1003-0000-00000000001d', 'smoke_detector', '{"uz":"Tutun detektori","ru":"Дымовой датчик","en":"Smoke detector"}', now(), now()),
   ('00000000-0000-1003-0000-00000000001e', 'fire_extinguisher', '{"uz":"O''t o''chirgich","ru":"Огнетушитель","en":"Fire extinguisher"}', now(), now()),
   ('00000000-0000-1003-0000-00000000001f', 'wheelchair', '{"uz":"Nogironlar aravasi uchun","ru":"Для инвалидов","en":"Wheelchair accessible"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000020', 'family_friendly', '{"uz":"Oilaviylar uchun","ru":"Для семей","en":"Family friendly"}', now(), now())
+  ('00000000-0000-1003-0000-000000000020', 'family_friendly', '{"uz":"Oilaviylar uchun","ru":"Для семей","en":"Family friendly"}', now(), now()),
+  -- Restoran va umumiy ovqatlanish qulayliklari
+  ('00000000-0000-1003-0000-000000000040', 'halal', '{"uz":"Halol taomlar","ru":"Халяльные блюда","en":"Halal food"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000041', 'vip_room', '{"uz":"VIP xona / Alohida kabina","ru":"VIP комната / Отдельная кабина","en":"VIP room / Private booth"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000042', 'live_music', '{"uz":"Jonli musiqa","ru":"Живая музыка","en":"Live music"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000043', 'karaoke', '{"uz":"Karaoke","ru":"Караоке","en":"Karaoke"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000044', 'outdoor_seating', '{"uz":"Ochiq terrasa / Yozgi ayvon","ru":"Открытая терраса / Летняя веранда","en":"Outdoor seating"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000045', 'kids_zone', '{"uz":"Bolalar maydonchasi","ru":"Детская площадка","en":"Kids playground"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000046', 'delivery', '{"uz":"Yetkazib berish xizmati","ru":"Служба доставки","en":"Delivery service"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000047', 'takeaway', '{"uz":"Olib ketish (Takeaway)","ru":"На вынос (Takeaway)","en":"Takeaway"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000048', 'hookah', '{"uz":"Kalyan","ru":"Кальян","en":"Hookah"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000049', 'alcohol', '{"uz":"Alkogolli ichimliklar","ru":"Алкогольные напитки","en":"Alcoholic beverages"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004a', 'vegan', '{"uz":"Vegetarian / Parhez taomlar","ru":"Вегетарианские блюда","en":"Vegetarian dishes"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004b', 'tv_screens', '{"uz":"Sport translyatsiyalari (Katta ekran)","ru":"Спортивные трансляции","en":"Sports broadcast"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004c', 'catering', '{"uz":"Ketering / Tadbirlar tashkillashtirish","ru":"Кейтеринг / Банкеты","en":"Catering"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004d', 'smoking_area', '{"uz":"Chekish uchun maxsus joy","ru":"Зона для курения","en":"Smoking area"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004e', 'table_reservation', '{"uz":"Oldindan stol band qilish","ru":"Предварительное бронирование стола","en":"Table reservation"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000004f', 'national_dishes', '{"uz":"Milliy taomlar / O''choq-tandir","ru":"Национальная кухня / Тандыр","en":"National cuisine / Tandoor"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000050', 'fast_food', '{"uz":"Fast-food / Tezkor tamaddilar","ru":"Фастфуд","en":"Fast food"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000051', 'desserts', '{"uz":"Qandolat va shirinliklar","ru":"Кондитерские изделия и десерты","en":"Desserts & Bakery"}', now(), now())
 on conflict (code) do update
 set name = excluded.name, updated_at = now();
 

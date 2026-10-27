@@ -1,7 +1,7 @@
 "use client";
 
 import { Baby, Cigarette, Dog, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +24,7 @@ import {
   CANCELLATION_POLICY_INFO,
   CancellationPolicy,
 } from "../../../_lib/domain/listing";
+import { useCancellationPolicies } from "../../../_hooks/use-catalog";
 import { RoomStatus } from "../../../_lib/domain/types";
 import { cn } from "../../../_lib/utils/cn";
 import { formatMoney } from "../../../_lib/utils/format";
@@ -57,6 +58,46 @@ export function RulesEditor({
   const restaurant = isRestaurant(partnerType);
   const dacha = isDacha(partnerType);
   const isBus = hasBuses(partnerType);
+  const { data: catalogPolicies = [] } = useCancellationPolicies();
+
+  const dynamicPolicyInfo = useMemo(() => {
+    const map = { ...CANCELLATION_POLICY_INFO };
+    for (const cp of catalogPolicies) {
+      const rawName = typeof cp.name === "string" ? cp.name : cp.name?.uz || "";
+      const lower = rawName.toLowerCase();
+      let key: CancellationPolicy | null = null;
+      if (lower.includes("moslashuvchan") || lower.includes("flexible"))
+        key = CancellationPolicy.FLEXIBLE;
+      else if (
+        lower.includes("o'rtacha") ||
+        lower.includes("o‘rtacha") ||
+        lower.includes("moderate")
+      )
+        key = CancellationPolicy.MODERATE;
+      else if (
+        lower.includes("qat'iy") ||
+        lower.includes("qat‘iy") ||
+        lower.includes("strict")
+      )
+        key = CancellationPolicy.STRICT;
+      else if (
+        lower.includes("qaytarilmaydi") ||
+        lower.includes("non-refundable")
+      )
+        key = CancellationPolicy.NON_REFUNDABLE;
+
+      if (key) {
+        map[key] = {
+          label: rawName,
+          description:
+            cp.refundable_until_hours > 0
+              ? `Kelish sanasidan ${cp.refundable_until_hours} soat oldingacha bepul bekor qilish mumkin.`
+              : "Bron qilingandan keyin pul qaytarilmaydi.",
+        };
+      }
+    }
+    return map;
+  }, [catalogPolicies]);
 
   const { data: roomTypes } = useRoomTypes();
   const roomType = roomTypes[0];
@@ -226,7 +267,7 @@ export function RulesEditor({
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
             {Object.values(CancellationPolicy).map((policy) => {
-              const info = CANCELLATION_POLICY_INFO[policy];
+              const info = dynamicPolicyInfo[policy] ?? CANCELLATION_POLICY_INFO[policy];
               const selected = currentPolicy === policy;
               return (
                 <label

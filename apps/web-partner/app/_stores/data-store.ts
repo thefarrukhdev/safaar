@@ -95,10 +95,11 @@ export interface BedDraft {
 
 export interface BulkRoomsDraft {
   floor: number;
-  /** Boshlanish raqami, masalan 101 */
+  /** Boshlanish raqami, masalan 101 yoki 1 */
   startNumber: number;
   count: number;
   roomTypeId: string;
+  prefix?: string;
 }
 
 export interface ListingGeneralDraft {

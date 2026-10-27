@@ -35,6 +35,7 @@ const addRoomSchema = z
     mode: z.enum(["single", "bulk"]),
     roomTypeId: z.string().min(1, "Toifani tanlang"),
     number: z.string().optional(),
+    prefix: z.string().optional(),
     startNumber: z.number().optional(),
     count: z.number().optional(),
     floor: z
@@ -116,7 +117,8 @@ export function AddRoomDialog({
       mode: "single",
       roomTypeId: defaultRoomTypeId ?? "",
       number: "",
-      startNumber: defaultFloor * 100 + 1,
+      prefix: "",
+      startNumber: restaurant || isBus ? 1 : defaultFloor * 100 + 1,
       count: 10,
       floor: defaultFloor,
       status: RoomStatus.VACANT_CLEAN,
@@ -131,7 +133,7 @@ export function AddRoomDialog({
     form.setValue("mode", newMode, { shouldValidate: false });
     const currentFloor = form.getValues("floor") || 1;
     if (newMode === "bulk" && !form.getValues("startNumber")) {
-      form.setValue("startNumber", currentFloor * 100 + 1);
+      form.setValue("startNumber", restaurant || isBus ? 1 : currentFloor * 100 + 1);
       form.setValue("count", 10);
     }
   };
@@ -143,7 +145,8 @@ export function AddRoomDialog({
         mode: "single",
         roomTypeId: initialTypeId,
         number: "",
-        startNumber: defaultFloor * 100 + 1,
+        prefix: "",
+        startNumber: restaurant || isBus ? 1 : defaultFloor * 100 + 1,
         count: 10,
         floor: defaultFloor,
         status: RoomStatus.VACANT_CLEAN,
@@ -151,10 +154,11 @@ export function AddRoomDialog({
         nightlyPrice: undefined,
       });
     }
-  }, [open, defaultFloor, defaultRoomTypeId, roomTypes, form]);
+  }, [open, defaultFloor, defaultRoomTypeId, roomTypes, form, restaurant, isBus]);
 
   const selectedRoomTypeId = useWatch({ control: form.control, name: "roomTypeId" });
   const singleNumber = useWatch({ control: form.control, name: "number" });
+  const bulkPrefix = useWatch({ control: form.control, name: "prefix" }) || "";
   const bulkStartNumber = useWatch({ control: form.control, name: "startNumber" });
   const bulkCount = useWatch({ control: form.control, name: "count" });
   const currentStatus = useWatch({ control: form.control, name: "status" }) || RoomStatus.VACANT_CLEAN;
@@ -177,25 +181,28 @@ export function AddRoomDialog({
     const count = Math.min(Math.max(1, bulkCount), 50); // limit preview items to 50
     const list: Array<{ number: string; exists: boolean }> = [];
     const existingSet = new Set(allRooms.map((r) => r.number.trim().toLowerCase()));
+    const p = bulkPrefix.trim();
 
     for (let i = 0; i < count; i++) {
-      const numStr = String(bulkStartNumber + i);
+      const numStr = p ? `${p}${bulkStartNumber + i}` : String(bulkStartNumber + i);
       list.push({
         number: numStr,
         exists: existingSet.has(numStr.toLowerCase()),
       });
     }
     return list;
-  }, [creationMode, bulkStartNumber, bulkCount, allRooms]);
+  }, [creationMode, bulkStartNumber, bulkCount, bulkPrefix, allRooms]);
 
-  // Auto-suggest floor when typing room number (e.g. 201 -> floor 2, 1204 -> floor 12)
+  // Auto-suggest floor when typing room number (only for hotels, not restaurants or transport)
   const handleNumberChange = (val: string) => {
     form.setValue("number", val, { shouldValidate: true, shouldDirty: true });
-    const cleanDigits = val.replace(/\D/g, "");
-    if (cleanDigits.length >= 3) {
-      const derivedFloor = parseInt(cleanDigits.slice(0, cleanDigits.length - 2), 10);
-      if (derivedFloor > 0 && derivedFloor <= 100) {
-        form.setValue("floor", derivedFloor, { shouldValidate: true });
+    if (!restaurant && !isBus) {
+      const cleanDigits = val.replace(/\D/g, "");
+      if (cleanDigits.length >= 3) {
+        const derivedFloor = parseInt(cleanDigits.slice(0, cleanDigits.length - 2), 10);
+        if (derivedFloor > 0 && derivedFloor <= 100) {
+          form.setValue("floor", derivedFloor, { shouldValidate: true });
+        }
       }
     }
   };
@@ -248,6 +255,7 @@ export function AddRoomDialog({
           roomTypeId: values.roomTypeId,
           basePrice: values.nightlyPrice,
           capacity: selectedRoomType?.capacity,
+          prefix: values.prefix?.trim() || undefined,
         });
 
         toast.success(
@@ -432,9 +440,13 @@ export function AddRoomDialog({
                       aria-invalid={Boolean(form.formState.errors.floor)}
                       {...form.register("floor", { valueAsNumber: true })}
                     />
-                    {form.formState.errors.floor && (
+                    {form.formState.errors.floor ? (
                       <p className="text-xs text-red-500">{form.formState.errors.floor.message}</p>
-                    )}
+                    ) : restaurant ? (
+                      <p className="text-[11px] text-zinc-500">
+                        1 (Asosiy zal), 2 (VIP kabinetlar), 3 (Terrasa)
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -510,7 +522,18 @@ export function AddRoomDialog({
             {/* ─── GURUHLAB (OMMAVIY) QO'SHISH REJIMI ─── */}
             {creationMode === "bulk" && (
               <div className="flex flex-col gap-3">
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="ar-prefix" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      Prefiks (ixtiyoriy)
+                    </Label>
+                    <Input
+                      id="ar-prefix"
+                      placeholder={restaurant ? "Stol-" : isBus ? "Avto-" : "Masalan: B-"}
+                      {...form.register("prefix")}
+                    />
+                  </div>
+
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ar-start" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                       Boshlanish raqami <span className="text-red-500">*</span>

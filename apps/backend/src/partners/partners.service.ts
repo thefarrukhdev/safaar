@@ -1872,7 +1872,8 @@ export class PartnersService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
     const roomTypeId = randomUUID();
     const now = new Date().toISOString();
     const name = localizedText(body, 'name');
@@ -1880,12 +1881,24 @@ export class PartnersService {
     const basePrice = this.requiredNonNegativeNumber(
       body.base_price ?? body.basePrice,
       'ROOM_TYPE_PRICE_REQUIRED',
-      'Xona turi narxi kiritilishi kerak',
+      partnerType === 'restaurant'
+        ? 'Stol toifasi depozit narxi kiritilishi kerak'
+        : partnerType === 'dacha'
+          ? 'Dacha kunlik narxi kiritilishi kerak'
+          : partnerType === 'hostel'
+            ? 'Yotoq turi narxi kiritilishi kerak'
+            : 'Xona turi narxi kiritilishi kerak',
     );
     const capacity = this.requiredPositiveInteger(
       body.capacity ?? body.max_adults ?? body.base_occupancy,
       'ROOM_TYPE_CAPACITY_REQUIRED',
-      "Xona turi sig'imi kiritilishi kerak",
+      partnerType === 'restaurant'
+        ? "Stol toifasi sig'imi kiritilishi kerak"
+        : partnerType === 'hostel'
+          ? "Yotoqxona toifasi sig'imi kiritilishi kerak"
+          : partnerType === 'dacha'
+            ? "Dacha sig'imi kiritilishi kerak"
+            : "Xona turi sig'imi kiritilishi kerak",
     );
     const amenities = Array.isArray(body.amenities)
       ? body.amenities.map(String).filter(Boolean)
@@ -2134,17 +2147,26 @@ export class PartnersService {
     id: string,
     roomTypeId: string,
   ) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
     await this.assertRoomTypeOwnedByHotel(id, roomTypeId);
     const rooms = await this.pg.query(
       `SELECT id::text FROM hotel_rooms WHERE hotel_id = $1 AND room_type_id = $2 LIMIT 1`,
       [id, roomTypeId],
     );
     if (rooms[0]) {
+      const unitPlural =
+        partnerType === 'restaurant'
+          ? 'stollar'
+          : partnerType === 'hostel'
+            ? 'yotoqlar'
+            : partnerType === 'dacha'
+              ? 'dachalar'
+              : 'xonalar';
       return {
         ok: false,
         reason:
-          "Bu turdan foydalanayotgan xonalar bor. Avval ularni boshqa turga o'tkazing.",
+          `Bu turdan foydalanayotgan ${unitPlural} bor. Avval ularni boshqa turga o'tkazing.`,
       };
     }
 
@@ -2162,13 +2184,22 @@ export class PartnersService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
     const now = new Date().toISOString();
     const roomId = randomUUID();
     const code = this.requiredString(
       body.code ?? body.number ?? body.room_number,
       'ROOM_CODE_REQUIRED',
-      'Xona raqami kiritilishi kerak',
+      partnerType === 'restaurant'
+        ? 'Stol raqami kiritilishi kerak'
+        : partnerType === 'hostel'
+          ? 'Yotoq raqami kiritilishi kerak'
+          : partnerType === 'dacha'
+            ? 'Dacha raqami yoki nomi kiritilishi kerak'
+            : partnerType === 'bus' || partnerType === 'rent_car'
+              ? 'Davlat raqami kiritilishi kerak'
+              : 'Xona raqami kiritilishi kerak',
     );
     const roomTypeId = String(
       body.room_type_id ?? body.roomTypeId ?? body.room_type ?? '',
@@ -2180,7 +2211,15 @@ export class PartnersService {
         body.base_occupancy ??
         roomType.capacity,
       'ROOM_CAPACITY_REQUIRED',
-      "Xona sig'imi kiritilishi kerak",
+      partnerType === 'restaurant'
+        ? "Stol sig'imi kiritilishi kerak"
+        : partnerType === 'hostel'
+          ? "Yotoqxona sig'imi kiritilishi kerak"
+          : partnerType === 'dacha'
+            ? "Dacha sig'imi kiritilishi kerak"
+            : partnerType === 'bus' || partnerType === 'rent_car'
+              ? "O'rindiqlar soni kiritilishi kerak"
+              : "Xona sig'imi kiritilishi kerak",
     );
     const baseOccupancy =
       this.optionalPositiveInteger(body.base_occupancy) ?? capacity;
@@ -2193,7 +2232,13 @@ export class PartnersService {
         body.nightlyPrice ??
         roomType.base_price,
       'ROOM_PRICE_REQUIRED',
-      'Xona narxi kiritilishi kerak',
+      partnerType === 'restaurant'
+        ? 'Stol toifasi depozit narxi kiritilishi kerak'
+        : partnerType === 'dacha'
+          ? 'Dacha kunlik narxi kiritilishi kerak'
+          : partnerType === 'hostel'
+            ? 'Yotoq narxi kiritilishi kerak'
+            : 'Xona narxi kiritilishi kerak',
     );
     const floor = this.optionalInteger(body.floor);
     const housekeepingStatus = this.roomHousekeepingStatus(body.status);
@@ -2239,7 +2284,8 @@ export class PartnersService {
     roomId: string,
     body: Record<string, unknown>,
   ) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
     const now = new Date().toISOString();
 
     const sets: string[] = [];
@@ -2252,7 +2298,13 @@ export class PartnersService {
         this.requiredString(
           body.code ?? body.number,
           'ROOM_CODE_REQUIRED',
-          'Xona raqami kiritilishi kerak',
+          partnerType === 'restaurant'
+            ? 'Stol raqami kiritilishi kerak'
+            : partnerType === 'hostel'
+              ? 'Yotoq raqami kiritilishi kerak'
+              : partnerType === 'dacha'
+                ? 'Dacha raqami yoki nomi kiritilishi kerak'
+                : 'Xona raqami kiritilishi kerak',
         ),
       );
     }
@@ -2271,7 +2323,13 @@ export class PartnersService {
         this.requiredNonNegativeNumber(
           body.base_price,
           'ROOM_PRICE_REQUIRED',
-          'Xona narxi kiritilishi kerak',
+          partnerType === 'restaurant'
+            ? 'Stol toifasi depozit narxi kiritilishi kerak'
+            : partnerType === 'dacha'
+              ? 'Dacha kunlik narxi kiritilishi kerak'
+              : partnerType === 'hostel'
+                ? 'Yotoq narxi kiritilishi kerak'
+                : 'Xona narxi kiritilishi kerak',
         ),
       );
     } else if (body.basePrice !== undefined) {
@@ -2280,7 +2338,13 @@ export class PartnersService {
         this.requiredNonNegativeNumber(
           body.basePrice,
           'ROOM_PRICE_REQUIRED',
-          'Xona narxi kiritilishi kerak',
+          partnerType === 'restaurant'
+            ? 'Stol toifasi depozit narxi kiritilishi kerak'
+            : partnerType === 'dacha'
+              ? 'Dacha kunlik narxi kiritilishi kerak'
+              : partnerType === 'hostel'
+                ? 'Yotoq narxi kiritilishi kerak'
+                : 'Xona narxi kiritilishi kerak',
         ),
       );
     } else if (body.nightlyPrice !== undefined) {
@@ -2289,7 +2353,13 @@ export class PartnersService {
         this.requiredNonNegativeNumber(
           body.nightlyPrice,
           'ROOM_PRICE_REQUIRED',
-          'Xona narxi kiritilishi kerak',
+          partnerType === 'restaurant'
+            ? 'Stol toifasi depozit narxi kiritilishi kerak'
+            : partnerType === 'dacha'
+              ? 'Dacha kunlik narxi kiritilishi kerak'
+              : partnerType === 'hostel'
+                ? 'Yotoq narxi kiritilishi kerak'
+                : 'Xona narxi kiritilishi kerak',
         ),
       );
     }
@@ -2364,7 +2434,8 @@ export class PartnersService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    await this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const partnerType = String(hotel['partner_type'] ?? '');
     const startNumber = this.requiredPositiveInteger(
       body.startNumber ?? body.start_number,
       'ROOM_START_NUMBER_REQUIRED',
@@ -2373,12 +2444,18 @@ export class PartnersService {
     const count = this.requiredPositiveInteger(
       body.count,
       'ROOM_COUNT_REQUIRED',
-      'Xonalar soni kiritilishi kerak',
+      partnerType === 'restaurant'
+        ? 'Stollar soni kiritilishi kerak'
+        : partnerType === 'hostel'
+          ? 'Yotoqlar soni kiritilishi kerak'
+          : partnerType === 'dacha'
+            ? 'Dachalar soni kiritilishi kerak'
+            : 'Xonalar soni kiritilishi kerak',
     );
     if (count > 200) {
       throw new BadRequestException({
         code: 'ROOM_COUNT_TOO_LARGE',
-        message: 'Xonalar soni 200 tadan oshmasligi kerak',
+        message: 'Birliklar soni 200 tadan oshmasligi kerak',
       });
     }
     const roomTypeId = String(
@@ -2397,8 +2474,15 @@ export class PartnersService {
     const basePrice = this.requiredNonNegativeNumber(
       body.base_price ?? body.basePrice ?? roomType.base_price,
       'ROOM_PRICE_REQUIRED',
-      'Xona narxi kiritilishi kerak',
+      partnerType === 'restaurant'
+        ? 'Stol toifasi depozit narxi kiritilishi kerak'
+        : partnerType === 'dacha'
+          ? 'Dacha kunlik narxi kiritilishi kerak'
+          : partnerType === 'hostel'
+            ? 'Yotoq narxi kiritilishi kerak'
+            : 'Xona narxi kiritilishi kerak',
     );
+    const prefix = typeof body.prefix === 'string' ? body.prefix.trim() : '';
 
     // Get existing codes
     const existing = await this.pg.query(
@@ -2411,7 +2495,9 @@ export class PartnersService {
     const now = new Date().toISOString();
 
     for (let index = 0; index < count; index += 1) {
-      const code = String(startNumber + index);
+      const code = prefix
+        ? `${prefix}${startNumber + index}`
+        : String(startNumber + index);
       if (existingCodes.has(code)) {
         continue;
       }
@@ -6736,13 +6822,17 @@ export class PartnersService {
   }
 
   private async assertHotel(id: string, actor?: RequestActor) {
-    const hotels = await this.pg.query(`SELECT * FROM hotels WHERE id = $1`, [
-      id,
-    ]);
+    const hotels = await this.pg.query(
+      `SELECT h.*, po.type as partner_type, po.brand_name as partner_name
+       FROM hotels h
+       LEFT JOIN partner_organizations po ON po.id = h.partner_organization_id
+       WHERE h.id = $1`,
+      [id],
+    );
     if (!hotels[0]) {
       throw new NotFoundException({
         code: 'HOTEL_NOT_FOUND',
-        message: 'Hotel topilmadi',
+        message: 'Obyekt topilmadi',
       });
     }
 
@@ -6752,7 +6842,7 @@ export class PartnersService {
     ) {
       throw new ForbiddenException({
         code: 'HOTEL_FORBIDDEN',
-        message: 'Bu hotel sizning tashkilotingizga tegishli emas',
+        message: 'Bu obyekt sizning tashkilotingizga tegishli emas',
       });
     }
 

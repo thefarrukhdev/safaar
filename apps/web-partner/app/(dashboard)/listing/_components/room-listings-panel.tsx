@@ -21,7 +21,7 @@ import {
 import { useDeleteRoom, useUpdateRoom } from '../../../_hooks/use-rooms';
 import { useDeleteRoomType, useUpdateRoomType } from '../../../_hooks/use-room-types';
 import type { Room, RoomType } from '../../../_lib/domain/types';
-import type { PartnerLabels } from '../../../_lib/utils/partner-labels';
+import { type PartnerLabels, formatUnitTypeName } from '../../../_lib/utils/partner-labels';
 import { cn } from '../../../_lib/utils/cn';
 import { formatMoney } from '../../../_lib/utils/format';
 
@@ -79,11 +79,12 @@ export function RoomListingsPanel({
 
   const handleDelete = async (roomType: RoomType, relatedRooms: Room[]) => {
     const isCascade = relatedRooms.length > 0;
+    const formattedName = formatUnitTypeName(roomType.name, labels);
     const ok = await confirm({
-      title: `"${roomType.name}" ni o'chirish`,
+      title: `"${formattedName}" ni o'chirish`,
       description: isCascade
-        ? `"${roomType.name}" turiga ulangan ${relatedRooms.length} ta ${labels.unitSingular.toLowerCase()} mavjud. Ushbu ${labels.unitTypeLabel.toLowerCase()}ni o'chirsangiz, ichidagi barcha ${labels.unitPlural.toLowerCase()} ham qo'shib o'chiriladi. Rozimisiz?`
-        : `Rostdan ham "${roomType.name}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
+        ? `"${formattedName}" turiga ulangan ${relatedRooms.length} ta ${labels.unitSingular.toLowerCase()} mavjud. Ushbu ${labels.unitTypeLabel.toLowerCase()}ni o'chirsangiz, ichidagi barcha ${labels.unitPlural.toLowerCase()} ham qo'shib o'chiriladi. Rozimisiz?`
+        : `Rostdan ham "${formattedName}" ni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`,
       confirmText: "O'chirish",
       cancelText: "Bekor qilish",
       destructive: true,
@@ -194,7 +195,7 @@ export function RoomListingsPanel({
               }) => (
                 <RoomAdCard
                   key={roomType.id}
-                  name={roomType.name}
+                  name={formatUnitTypeName(roomType.name, labels)}
                   capacity={roomType.capacity}
                   description={roomType.description}
                   imageUrl={roomType.imageUrl}

@@ -1282,6 +1282,7 @@ describe('PartnersService.createBusCompany (regression: no live code path ever c
       null,
       'MODERATE',
       '[]',
+      '[]',
       expect.any(String),
     ]);
   });
@@ -1768,6 +1769,7 @@ describe('PartnersService bus company Transport location/rental-rules persistenc
       '18:00',
       'STRICT', // normalized to uppercase
       JSON.stringify(extraFees),
+      '[]', // custom_rules
       expect.any(String), // now (created_at = updated_at)
     ]);
 
@@ -1817,6 +1819,7 @@ describe('PartnersService bus company Transport location/rental-rules persistenc
       null, // check_out_time
       'MODERATE', // cancellation_policy_code
       '[]', // extra_fees
+      '[]', // custom_rules
       expect.any(String),
     ]);
   });

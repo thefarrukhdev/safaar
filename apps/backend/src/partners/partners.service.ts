@@ -83,6 +83,7 @@ type BusCompanyRow = {
   check_out_time: string | null;
   cancellation_policy_code: string;
   extra_fees: unknown;
+  custom_rules: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -90,7 +91,7 @@ type BusCompanyRow = {
 const BUS_COMPANY_RETURNING_SQL = `id::text, partner_organization_id::text, name, status,
               rating_average::float8, reviews_count,
               address, latitude::float8, longitude::float8, nearby_places,
-              check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+              check_in_time, check_out_time, cancellation_policy_code, extra_fees, custom_rules,
               created_at, updated_at`;
 
 /**
@@ -915,10 +916,12 @@ export class PartnersService {
     // eski urinishdan ustun turadi — hamkor rad etilgandan keyin yangi
     // qoralamasini ko'rishi kerak, o'lik "rejected" yozuvni emas.
     const rows = await this.pg.query(
-      `SELECT * FROM hotels
-       WHERE partner_organization_id = $1
-         AND deleted_at IS NULL
-       ORDER BY CASE status
+      `SELECT h.*, po.type as partner_type, po.brand_name as partner_name
+       FROM hotels h
+       LEFT JOIN partner_organizations po ON po.id = h.partner_organization_id
+       WHERE h.partner_organization_id = $1
+         AND h.deleted_at IS NULL
+       ORDER BY CASE h.status
                   WHEN 'published' THEN 0
                   WHEN 'pending_review' THEN 1
                   WHEN 'hidden' THEN 2
@@ -926,7 +929,7 @@ export class PartnersService {
                   WHEN 'rejected' THEN 4
                   ELSE 5
                 END,
-                ${sortColumn} ${orderDir}
+                h.${sortColumn} ${orderDir}
        LIMIT $2 OFFSET $3`,
       [organizationId, pagination.limit, pagination.offset],
     );
@@ -1242,7 +1245,7 @@ export class PartnersService {
            check_in_time = null, check_out_time = null,
            cancellation_policy_id = null, cancellation_policy_code = 'MODERATE',
            smoking_allowed = false, pets_allowed = false, children_allowed = true,
-           extra_fees = '[]'::jsonb, rules_completed_at = null,
+           extra_fees = '[]'::jsonb, custom_rules = '[]'::jsonb, rules_completed_at = null,
            submitted_at = null, submitted_by = null,
            reviewed_at = null, reviewed_by = null, rejection_reason = null,
            next_draft_prepared_at = null,
@@ -3118,6 +3121,7 @@ export class PartnersService {
     const petsAllowed = body.petsAllowed ?? body.pets_allowed;
     const childrenAllowed = body.childrenAllowed ?? body.children_allowed;
     const extraFees = body.extraFees ?? body.extra_fees;
+    const customRules = body.customRules ?? body.custom_rules;
 
     if (checkInTime !== undefined) {
       sets.push(`check_in_time = $${idx++}`);
@@ -3146,6 +3150,19 @@ export class PartnersService {
     if (Array.isArray(extraFees)) {
       sets.push(`extra_fees = $${idx++}::jsonb`);
       params.push(JSON.stringify(extraFees));
+    }
+    if (Array.isArray(customRules)) {
+      const sanitizedRules = customRules
+        .map((r) =>
+          typeof r === 'string'
+            ? r.trim()
+            : typeof r === 'object' && r !== null
+              ? String((r as Record<string, unknown>).text ?? (r as Record<string, unknown>).name ?? '').trim()
+              : '',
+        )
+        .filter(Boolean);
+      sets.push(`custom_rules = $${idx++}::jsonb`);
+      params.push(JSON.stringify(sanitizedRules));
     }
     if (checkInTime !== undefined || checkOutTime !== undefined) {
       const existingTyped = existing as Record<string, unknown>;
@@ -3381,14 +3398,16 @@ export class PartnersService {
       )?.toUpperCase() ?? 'MODERATE';
     const extraFeesInput = body.extraFees ?? body.extra_fees;
     const extraFees = Array.isArray(extraFeesInput) ? extraFeesInput : [];
+    const customRulesInput = body.customRules ?? body.custom_rules;
+    const customRules = Array.isArray(customRulesInput) ? customRulesInput : [];
     const [company] = await this.pg.query<BusCompanyRow>(
       `INSERT INTO bus_companies (
          id, partner_organization_id, name, status,
          address, latitude, longitude, nearby_places,
-         check_in_time, check_out_time, cancellation_policy_code, extra_fees,
+         check_in_time, check_out_time, cancellation_policy_code, extra_fees, custom_rules,
          created_at, updated_at
        )
-       VALUES ($1, $2, $3, 'active', $4, $5, $6, $7::jsonb, $8, $9, $10, $11::jsonb, $12, $12)
+       VALUES ($1, $2, $3, 'active', $4, $5, $6, $7::jsonb, $8, $9, $10, $11::jsonb, $12::jsonb, $13, $13)
        RETURNING ${BUS_COMPANY_RETURNING_SQL}`,
       [
         randomUUID(),
@@ -3402,6 +3421,7 @@ export class PartnersService {
         checkOutTime,
         cancellationPolicyCode,
         JSON.stringify(extraFees),
+        JSON.stringify(customRules),
         now,
       ],
     );
@@ -3531,6 +3551,11 @@ export class PartnersService {
     if (Array.isArray(extraFeesInput)) {
       sets.push(`extra_fees = $${idx++}::jsonb`);
       params.push(JSON.stringify(extraFeesInput));
+    }
+    const customRulesInput = body.customRules ?? body.custom_rules;
+    if (Array.isArray(customRulesInput)) {
+      sets.push(`custom_rules = $${idx++}::jsonb`);
+      params.push(JSON.stringify(customRulesInput));
     }
 
     sets.push(`updated_at = $${idx++}`);
@@ -6571,6 +6596,7 @@ export class PartnersService {
         pets_allowed: Boolean(row['pets_allowed'] ?? false),
         children_allowed: Boolean(row['children_allowed'] ?? true),
         extra_fees: row['extra_fees'] ?? [],
+        custom_rules: Array.isArray(row['custom_rules']) ? row['custom_rules'] : [],
         nearby_places: row['nearby_places'] ?? [],
       };
     });

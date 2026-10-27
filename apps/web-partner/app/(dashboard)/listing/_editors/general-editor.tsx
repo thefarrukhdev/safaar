@@ -15,7 +15,7 @@ import {
   useUpdateListingGeneral,
 } from "../../../_hooks/use-listing";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { getPartnerLabels, hasStarRating, isRestaurant } from "../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBuses, hasStarRating, isDacha, isRestaurant } from "../../../_lib/utils/partner-labels";
 import { cn } from "../../../_lib/utils/cn";
 
 function buildSchema(requireStars: boolean) {
@@ -43,6 +43,8 @@ export function GeneralEditor({
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const showStars = hasStarRating(partnerType);
   const restaurant = isRestaurant(partnerType);
+  const dacha = isDacha(partnerType);
+  const isBus = hasBuses(partnerType);
   const labels = getPartnerLabels(partnerType);
   const schema = useMemo(() => buildSchema(showStars), [showStars]);
 
@@ -101,7 +103,15 @@ export function GeneralEditor({
           <Label htmlFor="e-name">Nomi</Label>
           <Input
             id="e-name"
-            placeholder={restaurant ? "Osh Markazi Samarqand" : "Hotel Samarkand Plaza"}
+            placeholder={
+              restaurant
+                ? "Osh Markazi Samarqand"
+                : isBus
+                  ? "Samarkand Rent Car"
+                  : dacha
+                    ? "Chorvoq Oazis Dacha"
+                    : "Hotel Samarkand Plaza"
+            }
             aria-invalid={Boolean(err.name)}
             {...form.register("name")}
           />

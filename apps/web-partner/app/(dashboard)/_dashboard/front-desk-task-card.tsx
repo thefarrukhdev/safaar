@@ -214,7 +214,7 @@ export function FrontDeskTaskCard({
             <span className="tabular-nums">
               {restaurant && reservation.slotTime
                 ? `${formatDate(reservation.checkIn)} · ${reservation.slotTime}`
-                : `${reservation.nights} kecha (${formatDate(reservation.checkIn)} - ${formatDate(reservation.checkOut)})`}
+                : `${reservation.nights} ${labels.isBus ? "kun" : restaurant ? "tashrif" : "kecha"} (${formatDate(reservation.checkIn)} - ${formatDate(reservation.checkOut)})`}
             </span>
           </div>
 

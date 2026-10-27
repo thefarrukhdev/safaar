@@ -150,7 +150,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
       open={open}
       onClose={handleClose}
       title={`${labels.checkInLabel} qilish`}
-      description="Mehmonni qabul qilish va ma'lumotlarni tasdiqlash"
+      description={`${labels.guestLabel}ni qabul qilish va ma'lumotlarni tasdiqlash`}
       size="md"
       footer={
         <div className="flex w-full items-center justify-between gap-2">
@@ -164,7 +164,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
                 className="text-xs text-slate-600 dark:text-zinc-300"
               >
                 <Zap className="h-3.5 w-3.5 mr-1 text-amber-500" />
-                Xonani almashtirish
+                {unitCap}ni almashtirish
               </Button>
             )}
           </div>
@@ -232,7 +232,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
               ) : (
                 <>
                   <Moon className="h-4 w-4 text-slate-400 dark:text-zinc-500 shrink-0" />
-                  <span>{reservation.nights} kecha</span>
+                  <span>{reservation.nights} {isBus ? "kun" : "kecha"}</span>
                 </>
               )}
             </div>
@@ -249,7 +249,7 @@ export function CheckInDialog({ open, onClose, reservation, onAssigned }: Props)
         {/* Status banner */}
         <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <span>{unitCap} tayyorlangan va mehmonni qabul qilishga tayyor.</span>
+          <span>{unitCap} tayyorlangan va {labels.guestLabel.toLowerCase()}ni qabul qilishga tayyor.</span>
         </div>
       </div>
     </Dialog>

@@ -260,7 +260,7 @@ export function ListingOverview() {
           icon: <BedDouble className="h-4 w-4" aria-hidden />,
           missing:
             roomAds.length === 0 || listedRooms.length === 0
-              ? `Dachangizning xona turini qo'shing va e'longa chiqaring.`
+              ? `Dachangizning narx va sig'im ma'lumotlarini qo'shing va e'longa chiqaring.`
               : undefined,
         },
       ];
@@ -386,7 +386,7 @@ export function ListingOverview() {
     const confirmed = await confirm({
       title: "E'lonni qayta yaratmoqchimisiz?",
       description:
-        "Nomi, tavsifi, rasmlari, qulayliklari va xonalari butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.",
+        `Nomi, tavsifi, rasmlari, qulayliklari va ${labels.unitPlural} butunlay o'chiriladi va bu amalni bekor qilib bo'lmaydi.`,
       confirmText: "Qayta yaratish",
       cancelText: "Bekor qilish",
       destructive: true,

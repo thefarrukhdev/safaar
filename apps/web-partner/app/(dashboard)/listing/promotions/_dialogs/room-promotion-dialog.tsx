@@ -16,7 +16,7 @@ import { promotions, type Promotion } from "../../../../_lib/api/endpoints/promo
 import { useRoomTypes } from "../../../../_hooks/use-room-types";
 import { useVehicles } from "../../../../_hooks/use-vehicles";
 import { useAuthStore } from "../../../../_stores/auth-store";
-import { hasBuses } from "../../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBuses } from "../../../../_lib/utils/partner-labels";
 
 const schema = z
   .object({
@@ -48,6 +48,7 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
   const isBus = hasBuses(partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const { data: roomTypes = [] } = useRoomTypes();
   const { data: vehicles = [] } = useVehicles();
@@ -65,12 +66,12 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
     } else {
       return roomTypes.map((rt) => ({
         id: rt.id,
-        label: `Xona turi: ${rt.name}`,
+        label: `${labels.unitTypeLabel}: ${rt.name}`,
         type: "roomType" as const,
         price: rt.basePrice || 0,
       }));
     }
-  }, [roomTypes, vehicles, isBus]);
+  }, [roomTypes, vehicles, isBus, labels.unitTypeLabel]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -166,7 +167,7 @@ export function RoomPromotionDialog({ open, onClose, onSuccess }: Props) {
       open={open}
       onClose={onClose}
       title="Yangi chegirma qo'shish"
-      description="Sotuvda mavjud bo'lgan xona yoki transport vositalari uchun maxsus chegirma taklifini belgilang."
+      description={`Sotuvda mavjud bo'lgan ${labels.unitPlural.toLowerCase()} uchun maxsus chegirma taklifini belgilang.`}
       size="md"
       footer={
         <div className="flex justify-end gap-2">

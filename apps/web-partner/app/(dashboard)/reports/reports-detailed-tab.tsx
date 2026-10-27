@@ -7,6 +7,8 @@ import { Card, CardBody } from "../../_components/ui/card";
 import { DateRangePicker, type DateRange } from "../../_components/ui/date-range-picker";
 import { ReservationSource, type ReservationView } from "../../_lib/domain/types";
 import { formatMoney } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels, isRestaurant } from "../../_lib/utils/partner-labels";
 import { exportReportToCsv } from "./export-report-csv";
 
 interface ReportsDetailedTabProps {
@@ -20,6 +22,10 @@ export function ReportsDetailedTab({
   dateRange,
   onDateRangeChange,
 }: ReportsDetailedTabProps) {
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const isRest = isRestaurant(partnerType);
+
   const filtered = useMemo(() => {
     let list = reservations || [];
     if (dateRange.startDate) {
@@ -117,7 +123,7 @@ export function ReportsDetailedTab({
                     Sana
                   </th>
                   <th className="px-4 py-3 font-semibold text-[var(--muted-foreground)] uppercase">
-                    Xona / Obyekt
+                    {labels.unitSingular} / Toifa
                   </th>
                   <th className="px-4 py-3 font-semibold text-[var(--muted-foreground)] uppercase">
                     Summa
@@ -161,7 +167,7 @@ export function ReportsDetailedTab({
                             {formatShortDate(r.checkIn)} — {formatShortDate(r.checkOut)}
                           </div>
                           <div className="text-[11px] text-[var(--muted-foreground)]">
-                            {r.nights} kecha
+                            {r.nights} {labels.isBus ? "kun" : isRest ? "tashrif" : "kecha"}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -170,7 +176,7 @@ export function ReportsDetailedTab({
                           </div>
                           {r.roomNumber && (
                             <div className="text-[11px] text-[var(--muted-foreground)] font-mono">
-                              Xona {r.roomNumber}
+                              {labels.unitSingular} {r.roomNumber}
                             </div>
                           )}
                         </td>

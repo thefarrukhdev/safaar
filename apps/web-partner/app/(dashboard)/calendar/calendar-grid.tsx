@@ -66,7 +66,7 @@ export function CalendarGrid({
             <EmptyState
               icon={<SearchX className="h-10 w-10 text-[var(--muted-foreground)]" aria-hidden="true" />}
               title="Hech narsa topilmadi"
-              description="Kiritilgan parametrlar bo'yicha hech qanday xona yoki bron mos kelmadi."
+              description={`Kiritilgan parametrlar bo'yicha hech qanday ${unitSingular} yoki bron mos kelmadi.`}
               action={
                 <Button variant="outline" size="sm" onClick={onResetFilters}>
                   Filtrlarni tozalash
@@ -77,7 +77,7 @@ export function CalendarGrid({
             <EmptyState
               icon={<CalendarDays className="h-10 w-10 text-[var(--muted-foreground)]" aria-hidden="true" />}
               title={`${unitPlural.charAt(0).toUpperCase()}${unitPlural.slice(1)} mavjud emas`}
-              description="Kalendarda ko'rish uchun avval Xonalar fondi bo'limidan xonalarni qo'shing."
+              description={`Kalendarda ko'rish uchun avval ${unitPlural} bo'limidan qo'shing.`}
               action={
                 <Button size="sm" asChild>
                   <Link href="/rooms">

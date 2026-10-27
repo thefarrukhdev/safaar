@@ -236,7 +236,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               />
               <InfoItem
                 icon={<User className="h-4 w-4" aria-hidden />}
-                label={restaurant ? "Kishilar soni" : "Mehmonlar"}
+                label={restaurant ? "Kishilar soni" : `${labels.guestLabel}lar`}
                 value={
                   restaurant
                     ? `${data.adults} kishi`
@@ -245,7 +245,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               />
               <InfoItem
                 icon={<CalendarRange className="h-4 w-4" aria-hidden />}
-                label="Kelish"
+                label={labels.checkInLabel}
                 value={
                   restaurant && data.slotTime
                     ? `${formatDate(data.checkIn)} · ${data.slotTime}`
@@ -255,10 +255,10 @@ export function ReservationDetailView({ id }: { id: string }) {
               {!restaurant && (
                 <InfoItem
                   icon={<CalendarRange className="h-4 w-4" aria-hidden />}
-                  label={(partnerType === "bus" || partnerType === "BUS") ? "Qaytarish" : "Ketish"}
-                  value={(partnerType === "bus" || partnerType === "BUS") 
+                  label={labels.checkOutLabel}
+                  value={(partnerType === "bus" || partnerType === "BUS" || labels.isBus) 
                     ? `${formatDate(data.checkOut)} (${data.nights} kun)`
-                    : `${formatDate(data.checkOut)} (${data.nights} kech.)`}
+                    : `${formatDate(data.checkOut)} (${data.nights} kecha)`}
                 />
               )}
               {data.specialRequests && (

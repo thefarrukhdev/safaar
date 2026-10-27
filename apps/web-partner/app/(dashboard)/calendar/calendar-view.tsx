@@ -460,7 +460,10 @@ export function CalendarView() {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         unitTypeLabel={labels.unitTypeLabel}
-        searchPlaceholder={`${labels.unitSingular} raqami yoki turi...`}
+        unitPlural={labels.unitPlural}
+        unitTypePlural={labels.unitTypePlural}
+        unitStatusLabel={labels.unitStatusLabel}
+        searchPlaceholder={`${labels.unitSingular} raqami yoki toifasi...`}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={handleResetFilters}
       />
@@ -531,7 +534,7 @@ export function CalendarView() {
                 refetchReservations();
               },
               onError: (err) => {
-                toast.error(err instanceof Error ? err.message : "Check-in qilishda xatolik yuz berdi");
+                toast.error(err instanceof Error ? err.message : `${labels.checkInLabel} qilishda xatolik yuz berdi`);
                 refetchReservations();
               },
             });

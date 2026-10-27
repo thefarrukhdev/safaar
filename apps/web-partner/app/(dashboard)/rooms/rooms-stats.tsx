@@ -4,6 +4,7 @@ import { CheckCircle2, AlertTriangle, Users, Wrench, Building2 } from "lucide-re
 import { RoomStatus } from "../../_lib/domain/types";
 import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { cn } from "../../_lib/utils/cn";
+import type { PartnerLabels } from "../../_lib/utils/partner-labels";
 import type { RoomMetrics } from "./types";
 
 interface RoomsStatsProps {
@@ -12,6 +13,7 @@ interface RoomsStatsProps {
   onSelectStatus: (status: RoomStatus | "all") => void;
   unitPlural: string;
   isBus?: boolean;
+  labels?: PartnerLabels;
 }
 
 export function RoomsStats({
@@ -20,8 +22,18 @@ export function RoomsStats({
   onSelectStatus,
   unitPlural,
   isBus,
+  labels,
 }: RoomsStatsProps) {
   if (metrics.total === 0) return null;
+
+  const isRestaurant = labels?.isRestaurant;
+  const cleanBadge = isRestaurant ? "tayyor" : isBus ? "tayyor" : "toza";
+  const dirtyBadge = isRestaurant ? "yig'ishtirishda" : isBus ? "moykada" : "navbatda";
+  const occupiedBadge = isRestaurant ? "mijoz bor" : isBus ? "ijarada" : "yashayapti";
+  const outOfServiceBadge = isRestaurant ? "yopiq" : isBus ? "servisda" : "xizmatdan tashqari";
+
+  const occupiedTitle = isRestaurant ? "Band (Mijoz)" : isBus ? "Ijarada (Mijoz)" : "Band (Mehmon)";
+  const outOfServiceTitle = isRestaurant ? "Zaxirada / Yopiq" : isBus ? "Servis / Ta'mirda" : "Ta'mirda";
 
   return (
     <section aria-label="Operatsion holat ko'rsatkichlari" className="flex flex-col gap-3">
@@ -52,7 +64,7 @@ export function RoomsStats({
               {metrics.total}
             </span>
             <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-              ta xona
+              ta {unitPlural.toLowerCase()}
             </span>
           </div>
         </button>
@@ -86,7 +98,7 @@ export function RoomsStats({
                   {metrics.clean}
                 </span>
                 <span className="text-xs font-medium text-emerald-600/80 dark:text-emerald-500/80">
-                  toza
+                  {cleanBadge}
                 </span>
               </div>
             </button>
@@ -118,12 +130,12 @@ export function RoomsStats({
                   {metrics.dirty}
                 </span>
                 <span className="text-xs font-medium text-amber-600/80 dark:text-amber-500/80">
-                  navbatda
+                  {dirtyBadge}
                 </span>
               </div>
             </button>
 
-            {/* Band (Mehmon bor) */}
+            {/* Band */}
             <button
               type="button"
               onClick={() =>
@@ -141,7 +153,7 @@ export function RoomsStats({
             >
               <div className="flex items-center justify-between text-blue-700 dark:text-blue-400">
                 <span className="text-xs font-semibold tracking-wide uppercase">
-                  Band (Mehmon)
+                  {occupiedTitle}
                 </span>
                 <Users className="h-4 w-4 text-blue-500" aria-hidden="true" />
               </div>
@@ -150,12 +162,12 @@ export function RoomsStats({
                   {metrics.occupied}
                 </span>
                 <span className="text-xs font-medium text-blue-600/80 dark:text-blue-500/80">
-                  yashayapti
+                  {occupiedBadge}
                 </span>
               </div>
             </button>
 
-            {/* Ta'mirda (Out of Service) */}
+            {/* Ta'mirda / Zaxirada */}
             <button
               type="button"
               onClick={() =>
@@ -173,7 +185,7 @@ export function RoomsStats({
             >
               <div className="flex items-center justify-between text-red-700 dark:text-red-400">
                 <span className="text-xs font-semibold tracking-wide uppercase">
-                  Ta'mirda
+                  {outOfServiceTitle}
                 </span>
                 <Wrench className="h-4 w-4 text-red-500" aria-hidden="true" />
               </div>
@@ -182,7 +194,7 @@ export function RoomsStats({
                   {metrics.outOfService}
                 </span>
                 <span className="text-xs font-medium text-red-600/80 dark:text-red-500/80">
-                  xizmatdan tashqari
+                  {outOfServiceBadge}
                 </span>
               </div>
             </button>

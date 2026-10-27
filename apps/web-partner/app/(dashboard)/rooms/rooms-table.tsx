@@ -101,12 +101,12 @@ export function RoomsTable({
 
               {/* Xona raqami & turi */}
               <th scope="col" className="px-4 py-3.5">
-                {labels.unitSingular} raqami & turi
+                {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} raqami & {labels.unitTypeLabel.toLowerCase()}
               </th>
 
               {/* Qavat */}
               <th scope="col" className="px-4 py-3.5">
-                {labels.floorSingular}
+                {labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1)}
               </th>
 
               {/* Sig'imi */}
@@ -121,9 +121,9 @@ export function RoomsTable({
                 </th>
               )}
 
-              {/* Housekeeping holati */}
+              {/* Birlik holati */}
               <th scope="col" className="px-4 py-3.5">
-                Housekeeping holati
+                {labels.unitStatusLabel}
               </th>
 
               {/* Kunlik narx */}
@@ -156,9 +156,9 @@ export function RoomsTable({
                   }
                   className="py-16 text-center text-zinc-500 dark:text-zinc-400"
                 >
-                  <p className="text-sm font-medium">Mos keluvchi xonalar topilmadi</p>
+                  <p className="text-sm font-medium">Mos keluvchi {labels.unitPlural.toLowerCase()} topilmadi</p>
                   <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                    Filtrlarni tozalang yoki yangi xona qo'shing.
+                    Filtrlarni tozalang yoki yangi {labels.unitSingular.toLowerCase()} qo'shing.
                   </p>
                 </td>
               </tr>
@@ -291,7 +291,7 @@ export function RoomsTable({
                       ) : (
                         <select
                           id={`table-status-select-${room.id}`}
-                          aria-label={`${room.number} xona holati`}
+                          aria-label={`${room.number} ${labels.unitSingular.toLowerCase()} holati`}
                           value={room.status}
                           disabled={isUpdating}
                           onChange={(e) => onStatusChange(room, e.target.value as RoomStatus)}
@@ -309,10 +309,10 @@ export function RoomsTable({
                               "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                           )}
                         >
-                          <option value={RoomStatus.VACANT_CLEAN}>✓ Bo'sh & Tayyor</option>
-                          <option value={RoomStatus.VACANT_DIRTY}>🧹 Tozalanmoqda</option>
-                          <option value={RoomStatus.OCCUPIED}>👤 Band</option>
-                          <option value={RoomStatus.OUT_OF_SERVICE}>🔧 Ta'mirda</option>
+                          <option value={RoomStatus.VACANT_CLEAN}>✓ {labels.statusCleanLabel}</option>
+                          <option value={RoomStatus.VACANT_DIRTY}>🧹 {labels.statusDirtyLabel}</option>
+                          <option value={RoomStatus.OCCUPIED}>👤 {labels.statusOccupiedLabel}</option>
+                          <option value={RoomStatus.OUT_OF_SERVICE}>🔧 {labels.statusOutOfServiceLabel}</option>
                           <option value={RoomStatus.BLOCKED}>🚫 Bloklangan</option>
                         </select>
                       )}

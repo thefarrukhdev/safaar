@@ -1,13 +1,16 @@
 import {
   AlertCircle,
+  CarFront,
   CheckCircle2,
   Clock,
   House,
+  UtensilsCrossed,
   XCircle,
 } from "lucide-react";
 import { BookingStatus } from "@safaar/types";
 import { Badge } from "../ui/badge";
 import type { ReservationUiStatus } from "../../_lib/domain/types";
+import { useAuthStore } from "../../_stores/auth-store";
 
 const config: Record<
   ReservationUiStatus,
@@ -61,14 +64,37 @@ const config: Record<
 
 export function ReservationStatusBadge({
   status,
+  partnerType: propPartnerType,
 }: {
   status: ReservationUiStatus;
+  partnerType?: string | null;
 }) {
+  const storePartnerType = useAuthStore((s) => s.user?.partnerType);
+  const partnerType = (propPartnerType ?? storePartnerType ?? "").toLowerCase();
+  const isRestaurant = partnerType === "restaurant";
+  const isBus = partnerType === "bus" || partnerType === "rent_car";
+  const isDacha = partnerType === "dacha";
+
   const c = config[status];
-  const Icon = c.icon;
+  let label = c.label;
+  let Icon = c.icon;
+
+  if (status === "IN_HOUSE") {
+    if (isRestaurant) {
+      label = "Mijoz kelgan (Amalda)";
+      Icon = UtensilsCrossed;
+    } else if (isBus) {
+      label = "Ijarada (Mijozda)";
+      Icon = CarFront;
+    } else if (isDacha) {
+      label = "Dachada (Band)";
+      Icon = House;
+    }
+  }
+
   return (
     <Badge tone={c.tone} icon={<Icon className="h-3 w-3" aria-hidden />}>
-      {c.label}
+      {label}
     </Badge>
   );
 }

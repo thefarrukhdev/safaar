@@ -167,7 +167,7 @@ export function HotelSettingsView() {
       <PageHeader
         eyebrow="Kompaniya Sozlamalari"
         title={`${labels.topbarSubtitle}`}
-        description="Tashuvchi hamkor yoki mehmonxona rekvizitlari, aloqa ma'lumotlari hamda manzilni boshqarish."
+        description="Biznes rekvizitlari, aloqa ma'lumotlari hamda manzilni boshqarish."
       />
       <Card>
         <CardHeader>

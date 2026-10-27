@@ -311,7 +311,7 @@ export function ReservationsTable({
                 {formatDate(r.checkIn)} → {formatDate(r.checkOut)}
               </span>
               <span className="text-[var(--muted-foreground)]">
-                {r.nights} {isBus ? "kun" : "kecha"}
+                {r.nights} {isBus ? "kun" : isRest ? "tashrif" : "kecha"}
               </span>
             </div>
           );

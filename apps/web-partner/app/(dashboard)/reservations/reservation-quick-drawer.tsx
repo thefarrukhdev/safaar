@@ -310,7 +310,7 @@ export function ReservationQuickDrawer({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">
-                {isBus ? "Olib ketish" : "Kelish (Check-in)"}:
+                {labels.checkInLabel}:
               </span>
               <span className="font-medium text-[var(--foreground)]">
                 {restaurant && reservation.slotTime
@@ -320,13 +320,13 @@ export function ReservationQuickDrawer({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[var(--muted-foreground)]">
-                {isBus ? "Qaytarish" : "Ketish (Check-out)"}:
+                {labels.checkOutLabel}:
               </span>
               <span className="font-medium text-[var(--foreground)]">
                 {restaurant
                   ? formatDate(reservation.checkOut)
                   : `${formatDate(reservation.checkOut)} (${reservation.nights} ${
-                      isBus ? "kun" : "kecha"
+                      isBus ? "kun" : restaurant ? "tashrif" : "kecha"
                     })`}
               </span>
             </div>

@@ -212,7 +212,7 @@ export function ReservationCard({
               <div className="rounded-lg bg-[var(--surface-muted)] p-2.5 border border-[var(--border)]">
                 <p className="flex items-center gap-1 text-[11px] font-medium text-[var(--muted-foreground)]">
                   <CalendarDays className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-                  {isBus ? "Olib ketish" : "Kelish"}
+                  {isBus ? "Olib ketish" : restaurant ? "Tashrif" : "Kelish"}
                 </p>
                 <p className="mt-0.5 truncate text-xs font-semibold text-[var(--foreground)]">
                   {restaurant && reservation.slotTime
@@ -224,13 +224,13 @@ export function ReservationCard({
               <div className="rounded-lg bg-[var(--surface-muted)] p-2.5 border border-[var(--border)]">
                 <p className="flex items-center gap-1 text-[11px] font-medium text-[var(--muted-foreground)]">
                   <CalendarDays className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-                  {isBus ? "Qaytarish" : "Ketish"}
+                  {isBus ? "Qaytarish" : restaurant ? "Tashrif kuni" : "Ketish"}
                 </p>
                 <p className="mt-0.5 truncate text-xs font-semibold text-[var(--foreground)]">
                   {restaurant
                     ? formatDate(reservation.checkOut)
                     : `${formatDate(reservation.checkOut)} (${reservation.nights} ${
-                        isBus ? "kun" : "kecha"
+                        isBus ? "kun" : restaurant ? "tashrif" : "kecha"
                       })`}
                 </p>
               </div>

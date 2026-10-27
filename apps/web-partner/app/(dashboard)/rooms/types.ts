@@ -1,4 +1,5 @@
 import { RoomStatus, type Room } from "../../_lib/domain/types";
+import type { PartnerLabels } from "../../_lib/utils/partner-labels";
 
 export type RoomViewMode = "grid" | "table";
 
@@ -34,3 +35,12 @@ export const ROOM_STATUS_OPTIONS: BulkStatusOption[] = [
   { label: "Band (Occupied)", value: RoomStatus.OCCUPIED, color: "#3b82f6" },
   { label: "Ta'mirda (Out of Service)", value: RoomStatus.OUT_OF_SERVICE, color: "#ef4444" },
 ];
+
+export function getRoomStatusOptions(labels: PartnerLabels): BulkStatusOption[] {
+  return [
+    { label: labels.statusCleanLabel, value: RoomStatus.VACANT_CLEAN, color: "#10b981" },
+    { label: labels.statusDirtyLabel, value: RoomStatus.VACANT_DIRTY, color: "#f59e0b" },
+    { label: labels.statusOccupiedLabel, value: RoomStatus.OCCUPIED, color: "#3b82f6" },
+    { label: labels.statusOutOfServiceLabel, value: RoomStatus.OUT_OF_SERVICE, color: "#ef4444" },
+  ];
+}

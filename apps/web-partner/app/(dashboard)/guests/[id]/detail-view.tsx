@@ -5,6 +5,7 @@ import {
   BedDouble,
   CalendarCheck,
   CalendarPlus,
+  CarFront,
   Clock,
   Copy,
   Crown,
@@ -55,7 +56,7 @@ export function GuestDetailView({ id }: { id: string }) {
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const restaurant = isRestaurant(partnerType);
   const isBus = hasBuses(partnerType);
-  const UnitIcon = restaurant ? UtensilsCrossed : BedDouble;
+  const UnitIcon = restaurant ? UtensilsCrossed : isBus ? CarFront : BedDouble;
 
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -437,7 +438,7 @@ export function GuestDetailView({ id }: { id: string }) {
                         <span>
                           {restaurant
                             ? `${formatDate(b.checkIn)}${b.slotTime ? ` · ${b.slotTime}` : ""}`
-                            : `${formatDate(b.checkIn)} → ${formatDate(b.checkOut)} · ${b.nights} kecha`}
+                            : `${formatDate(b.checkIn)} → ${formatDate(b.checkOut)} · ${b.nights} ${isBus ? "kun" : "kecha"}`}
                         </span>
                         <span>·</span>
                         <SourceBadge source={b.source} />

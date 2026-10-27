@@ -3,6 +3,7 @@
 import {
   BedDouble,
   CalendarDays,
+  CarFront,
   ChevronRight,
   FileText,
   Home,
@@ -146,6 +147,8 @@ export function FrontDeskQuickActions({
                 <Home className="h-4 w-4" />
               ) : restaurant ? (
                 <UtensilsCrossed className="h-4 w-4" />
+              ) : labels.isBus ? (
+                <CarFront className="h-4 w-4" />
               ) : (
                 <BedDouble className="h-4 w-4" />
               )

@@ -4,6 +4,7 @@ import { Search, X, RotateCcw } from "lucide-react";
 import { RoomStatus, type RoomType } from "../../_lib/domain/types";
 import { Select, type SelectOptionItem } from "../../_components/ui/select";
 import { Button } from "../../_components/ui/button";
+import type { PartnerLabels } from "../../_lib/utils/partner-labels";
 import type { RoomSortOption } from "./types";
 
 interface RoomsFiltersProps {
@@ -23,6 +24,7 @@ interface RoomsFiltersProps {
   unitSingular: string;
   floorSingular: string;
   isBus?: boolean;
+  labels?: PartnerLabels;
 }
 
 export function RoomsFilters({
@@ -42,6 +44,7 @@ export function RoomsFilters({
   unitSingular,
   floorSingular,
   isBus,
+  labels,
 }: RoomsFiltersProps) {
   const isFiltered =
     Boolean(searchQuery.trim()) ||
@@ -50,8 +53,11 @@ export function RoomsFilters({
     selectedStatus !== "all" ||
     sortBy !== "number";
 
+  const floorLabelPlural = labels?.floorPlural ?? "qavatlar";
+  const unitTypeLabelPlural = labels?.unitTypePlural ?? "turlar";
+
   const floorOptions: SelectOptionItem[] = [
-    { value: "all", label: "Barcha qavatlar" },
+    { value: "all", label: `Barcha ${floorLabelPlural}` },
     ...availableFloors.map((fl) => ({
       value: String(fl),
       label: `${fl}-${floorSingular}`,
@@ -59,7 +65,7 @@ export function RoomsFilters({
   ];
 
   const typeOptions: SelectOptionItem[] = [
-    { value: "all", label: "Barcha turlar" },
+    { value: "all", label: `Barcha ${unitTypeLabelPlural.toLowerCase()}` },
     ...roomTypes.map((rt) => ({
       value: rt.id,
       label: rt.name,
@@ -68,10 +74,10 @@ export function RoomsFilters({
 
   const statusOptions: SelectOptionItem[] = [
     { value: "all", label: "Barcha holatlar" },
-    { value: RoomStatus.VACANT_CLEAN, label: "✓ Bo'sh & Tayyor (Toza)" },
-    { value: RoomStatus.VACANT_DIRTY, label: "🧹 Tozalanmoqda (Notoza)" },
-    { value: RoomStatus.OCCUPIED, label: "👤 Band (Mehmon bor)" },
-    { value: RoomStatus.OUT_OF_SERVICE, label: "🔧 Ta'mirda" },
+    { value: RoomStatus.VACANT_CLEAN, label: `✓ ${labels?.statusCleanLabel ?? "Bo'sh & Tayyor (Toza)"}` },
+    { value: RoomStatus.VACANT_DIRTY, label: `🧹 ${labels?.statusDirtyLabel ?? "Tozalanmoqda (Notoza)"}` },
+    { value: RoomStatus.OCCUPIED, label: `👤 ${labels?.statusOccupiedLabel ?? "Band (Mehmon bor)"}` },
+    { value: RoomStatus.OUT_OF_SERVICE, label: `🔧 ${labels?.statusOutOfServiceLabel ?? "Ta'mirda"}` },
     { value: RoomStatus.BLOCKED, label: "🚫 Bloklangan" },
   ];
 

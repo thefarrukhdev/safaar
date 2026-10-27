@@ -492,6 +492,7 @@ export function ReservationsView() {
           focusItems={focusItems}
           counts={counts}
           activeFilter={filter}
+          partnerType={partnerType}
           onFilterChange={handleFilterChange}
           onSelectReservation={(id) => setSelectedReservationId(id)}
         />
@@ -513,6 +514,8 @@ export function ReservationsView() {
             filteredCount={filtered.length}
             totalCount={data.length}
             unitSingular={labels.unitSingular}
+            guestLabel={labels.guestLabel}
+            partnerType={partnerType}
             hasActiveFilters={hasActiveFilters}
             onResetFilters={handleResetFilters}
             statusFilter={filter}

@@ -22,7 +22,7 @@ import {
   isRestaurant,
 } from "../../_lib/utils/partner-labels";
 
-import { ROOM_STATUS_OPTIONS, type RoomMetrics, type RoomSortOption, type RoomViewMode } from "./types";
+import { getRoomStatusOptions, type RoomMetrics, type RoomSortOption, type RoomViewMode } from "./types";
 import { RoomsHeader } from "./rooms-header";
 import { RoomsStats } from "./rooms-stats";
 import { RoomsFilters } from "./rooms-filters";
@@ -231,7 +231,7 @@ export function RoomsView() {
           isListed: room.isListed,
         },
       });
-      toast.success(`${room.number} xona holati yangilandi`);
+      toast.success(`${room.number} ${labels.unitSingular.toLowerCase()} holati yangilandi`);
     } catch (err: any) {
       toast.error(err?.payload?.message || err?.message || "Holatni yangilashda xatolik yuz berdi");
     } finally {
@@ -455,6 +455,7 @@ export function RoomsView() {
           onSelectStatus={setSelectedStatus}
           unitPlural={labels.unitPlural}
           isBus={isBus}
+          labels={labels}
         />
       )}
 
@@ -477,6 +478,7 @@ export function RoomsView() {
           unitSingular={labels.unitSingular}
           floorSingular={labels.floorSingular}
           isBus={isBus}
+          labels={labels}
         />
       )}
 
@@ -587,7 +589,7 @@ export function RoomsView() {
         onConfirmAll={handleBulkConfirmAll}
         onCancelAll={handleBulkCancelAll}
         onChangeStatus={handleBulkStatusChange}
-        statusOptions={ROOM_STATUS_OPTIONS}
+        statusOptions={getRoomStatusOptions(labels)}
         isProcessing={isBulkProcessing}
       />
     </div>

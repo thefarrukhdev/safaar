@@ -10,12 +10,15 @@ import { promotions } from "../../../../_lib/api/endpoints/promotions";
 import { RoomPromotionDialog } from "../_dialogs/room-promotion-dialog";
 import { formatMoney } from "../../../../_lib/utils/format";
 import { useAuthStore } from "../../../../_stores/auth-store";
+import { getPartnerLabels } from "../../../../_lib/utils/partner-labels";
 import { Badge } from "../../../../_components/ui/badge";
 
 export const promotionsQueryKey = ["partner", "promotions"] as const;
 
 export function PromotionsView() {
   const accessToken = useAuthStore((s) => s.tokens?.accessToken);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -40,7 +43,7 @@ export function PromotionsView() {
         <PageHeader
           eyebrow="Sotuv"
           title="Chegirmalarim"
-          description="E'lon qilingan xonalar yoki mashinalar uchun maxsus chegirmalar o'rnatish."
+          description={`E'lon qilingan ${labels.unitPlural.toLowerCase()} uchun maxsus chegirmalar o'rnatish.`}
         />
         <div className="mt-4 sm:mt-0">
           <Button onClick={() => setDialogOpen(true)}>

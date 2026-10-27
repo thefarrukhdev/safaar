@@ -642,8 +642,12 @@ export interface CatalogAmenity {
   id: string;
   code: string;
   name: string;
+  nameUz?: string;
+  nameRu?: string;
+  nameEn?: string;
   icon: string;
   type: 'hotel' | 'room' | 'dacha' | 'restaurant' | 'transport' | 'other';
+  categories?: ('hotel' | 'room' | 'dacha' | 'restaurant' | 'transport')[];
   isActive: boolean;
 }
 

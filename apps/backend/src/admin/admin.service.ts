@@ -5397,18 +5397,31 @@ export class AdminService {
       raw && typeof raw === 'object' && !Array.isArray(raw)
         ? (raw as Record<string, unknown>)
         : { uz: raw };
-    const uz = String(name.uz ?? '').trim();
+    const uz = String(name.uz ?? body.uz ?? '').trim();
     if (!uz) {
       throw new BadRequestException({
         code: 'NAME_REQUIRED',
         message: "Nomi (o'zbekcha) kiritilishi shart",
       });
     }
-    return JSON.stringify({
+    const ru = name.ru ? String(name.ru).trim() : body.ru ? String(body.ru).trim() : uz;
+    const en = name.en ? String(name.en).trim() : body.en ? String(body.en).trim() : uz;
+    const categories = Array.isArray(name.categories)
+      ? name.categories.map(String).filter(Boolean)
+      : Array.isArray(body.categories)
+        ? body.categories.map(String).filter(Boolean)
+        : undefined;
+    const icon = name.icon ? String(name.icon).trim() : body.icon ? String(body.icon).trim() : undefined;
+
+    const payload: Record<string, unknown> = {
       uz,
-      ru: name.ru ? String(name.ru) : uz,
-      en: name.en ? String(name.en) : uz,
-    });
+      ru: ru || uz,
+      en: en || uz,
+    };
+    if (categories && categories.length > 0) payload.categories = categories;
+    if (icon) payload.icon = icon;
+
+    return JSON.stringify(payload);
   }
 
   async regionCreate(body: Record<string, unknown>) {
@@ -5637,7 +5650,21 @@ export class AdminService {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (body.name !== undefined || body.uz !== undefined) {
+    if (body.code !== undefined) {
+      const code = String(body.code).trim().toLowerCase().replace(/\s+/g, '_');
+      if (code) {
+        sets.push(`code = $${idx++}`);
+        params.push(code);
+      }
+    }
+
+    if (
+      body.name !== undefined ||
+      body.uz !== undefined ||
+      body.ru !== undefined ||
+      body.en !== undefined ||
+      body.categories !== undefined
+    ) {
       sets.push(`name = ($${idx++})::jsonb`);
       params.push(this.localizedNameJson(body));
     }
@@ -5648,12 +5675,23 @@ export class AdminService {
     }
     params.push(id);
 
-    const rows = await this.rows(
-      `update amenities set ${sets.join(', ')}
-       where id = $${idx}::uuid
-       returning id::text, code, name, is_active, created_at, updated_at`,
-      params,
-    );
+    let rows: DbRow[];
+    try {
+      rows = await this.rows(
+        `update amenities set ${sets.join(', ')}
+         where id = $${idx}::uuid
+         returning id::text, code, name, is_active, created_at, updated_at`,
+        params,
+      );
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException({
+          code: 'AMENITY_CODE_EXISTS',
+          message: 'Bu kodli qulaylik allaqachon mavjud.',
+        });
+      }
+      throw error;
+    }
     if (!rows[0]) {
       throw new NotFoundException({
         code: 'AMENITY_NOT_FOUND',

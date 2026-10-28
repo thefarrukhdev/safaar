@@ -118,7 +118,7 @@ const DEFAULT_RESTAURANT_TABLE_TYPES = [
   {
     name: "VIP kabinet (Maxsus xona)",
     description: "Alohida eshikli shinam VIP kabinet (6-8 kishi)",
-    basePrice: 100000,
+    basePrice: 0,
     capacity: 8,
     amenities: ["wifi", "ac", "vip"],
   },
@@ -132,14 +132,14 @@ const DEFAULT_RESTAURANT_TABLE_TYPES = [
   {
     name: "Katta kompaniya stoli (Tadbirlar)",
     description: "Kompaniya va bayramlar uchun katta stol (8-12 kishi)",
-    basePrice: 150000,
+    basePrice: 0,
     capacity: 12,
     amenities: ["wifi", "ac"],
   },
   {
     name: "Tapchan / So‘ri — Milliy uslub",
     description: "Xontaxtali qulay milliy so'ri (6-8 kishi)",
-    basePrice: 50000,
+    basePrice: 0,
     capacity: 8,
     amenities: ["wifi"],
   },

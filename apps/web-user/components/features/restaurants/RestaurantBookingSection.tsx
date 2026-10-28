@@ -69,8 +69,14 @@ function mapErrorCode(code: string): string {
       return "Telefon raqamingizga SMS orqali yuborilgan tasdiqlash kodini kiriting.";
     case "OTP_INVALID":
       return "Tasdiqlash kodi noto'g'ri. Iltimos, tekshirib qaytadan kiriting.";
-    case "OTP_EXPIRED":
-      return "Tasdiqlash kodi muddati o'tgan. Iltimos, yangi kod so'rang.";
+    case "BOOKING_GUEST_PHONE_INVALID":
+      return "Telefon raqami noto'g'ri kiritildi (+998 XX XXX XX XX formatida 9 ta raqam bo'lishi kerak).";
+    case "BOOKING_GUEST_NAME_REQUIRED":
+      return "Iltimos, ismingizni kiriting.";
+    case "BOOKING_GUEST_CONTACT_REQUIRED":
+      return "Iltimos, telefon raqamingizni kiriting.";
+    case "BOOKING_GUEST_EMAIL_INVALID":
+      return "Email manzili noto'g'ri kiritildi.";
     default:
       return code || "Bron qilishda xatolik yuz berdi. Qaytadan urinib ko'ring.";
   }
@@ -102,8 +108,22 @@ export function RestaurantBookingSection({
   const [guests, setGuests] = useState<number>(2);
 
   const [guestName, setGuestName] = useState<string>("");
-  const [guestPhone, setGuestPhone] = useState<string>("+998");
+  const [guestPhone, setGuestPhone] = useState<string>("+998 ");
   const [guestEmail, setGuestEmail] = useState<string>("");
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^\d+]/g, "");
+    if (!val.startsWith("+998")) {
+      val = "+998";
+    }
+    const digits = val.replace(/\D/g, "").slice(3);
+    let formatted = "+998";
+    if (digits.length > 0) formatted += " " + digits.slice(0, 2);
+    if (digits.length > 2) formatted += " " + digits.slice(2, 5);
+    if (digits.length > 5) formatted += " " + digits.slice(5, 7);
+    if (digits.length > 7) formatted += " " + digits.slice(7, 9);
+    setGuestPhone(formatted);
+  };
 
   const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("cash");
@@ -115,8 +135,9 @@ export function RestaurantBookingSection({
 
   const bDict = (dict as any).booking || {};
   const selectedTable = restaurant.tables.find((t) => t.id === selectedTableId);
-  const totalAmount = selectedTable?.basePriceSum ?? 0;
-  const isFreeBooking = totalAmount === 0;
+  // Restoranda stol band qilish mutlaqo BEPUL! O'rtacha chek esa restoran taomlari uchun ma'lumot xolos.
+  const totalAmount = 0;
+  const isFreeBooking = true;
 
   const handleTableClick = (tblId: string) => {
     setSelectedTableId(tblId);
@@ -140,8 +161,9 @@ export function RestaurantBookingSection({
       return;
     }
 
-    if (guestPhone.length < 9) {
-      setErrorMsg(bDict.namePhoneRequired || "Iltimos, to'liq telefon raqamingizni kiriting.");
+    const phoneDigits = guestPhone.replace(/\D/g, "").slice(3);
+    if (phoneDigits.length !== 9) {
+      setErrorMsg("Iltimos, to'liq telefon raqamingizni kiriting (+998 XX XXX XX XX).");
       return;
     }
 
@@ -315,16 +337,10 @@ export function RestaurantBookingSection({
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-center gap-2 text-xs">
-                        {isFree ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                            <Sparkles className="h-3 w-3" />
-                            Bepul bron
-                          </span>
-                        ) : (
-                          <span className="font-semibold text-slate-800">
-                            {formatSum(tbl.basePriceSum)} depozit
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                          <Sparkles className="h-3 w-3" />
+                          Bepul bron qilish
+                        </span>
                       </div>
                     </div>
 
@@ -399,9 +415,9 @@ export function RestaurantBookingSection({
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-slate-500 block">Depozit summasi:</span>
+                <span className="text-slate-500 block">Bron narxi:</span>
                 <span className="font-bold text-emerald-700 text-sm">
-                  {isFreeBooking ? "Bepul" : formatSum(totalAmount)}
+                  Bepul
                 </span>
               </div>
             </div>
@@ -507,61 +523,20 @@ export function RestaurantBookingSection({
                   type="tel"
                   placeholder="+998 90 123 45 67"
                   value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
+                  onChange={handlePhoneChange}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
             </div>
 
-            {/* Payment Mode Selection */}
-            {!isFreeBooking ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  To'lov usuli (Depozit uchun)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("cash")}
-                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                      paymentMethod === "cash"
-                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <Banknote className="h-4 w-4 text-emerald-600" />
-                    <div>
-                      <div className="font-semibold">Naqd (Joyida)</div>
-                      <div className="text-[10px] text-slate-500">Yetib kelgach to'lanadi</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("uzcard")}
-                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                      paymentMethod !== "cash"
-                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <CreditCard className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <div className="font-semibold">Karta orqali</div>
-                      <div className="text-[10px] text-slate-500">Uzcard / Humo / Visa</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200/60">
-                <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>
-                  Ushbu stol bepul band qilinadi. Hech qanday oldindan to'lov talab etilmaydi!
-                </span>
-              </div>
-            )}
+            {/* Free Booking Banner */}
+            <div className="flex items-center gap-2.5 rounded-xl bg-emerald-50 p-3.5 text-xs text-emerald-800 border border-emerald-200/60">
+              <Sparkles className="h-5 w-5 text-emerald-600 shrink-0" />
+              <span>
+                Ushbu stolni band qilish mutlaqo bepul. Hech qanday oldindan to'lov yoki depozit talab etilmaydi!
+              </span>
+            </div>
 
             {/* Terms checkbox */}
             <label className="flex items-start gap-2 pt-1 cursor-pointer">
@@ -591,11 +566,7 @@ export function RestaurantBookingSection({
                 disabled={loading}
                 className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm"
               >
-                {loading
-                  ? "Band qilinmoqda..."
-                  : isFreeBooking
-                  ? "Stolni bepul band qilish"
-                  : `Bronni tasdiqlash (${formatSum(totalAmount)})`}
+                {loading ? "Band qilinmoqda..." : "Stolni bepul band qilish"}
               </Button>
             </div>
           </form>

@@ -509,7 +509,7 @@ export class CatalogService {
       code: r.code,
       name: `Stol № ${r.code}`,
       capacity: r.max_adults || r.base_occupancy || 4,
-      base_price: Number(r.base_price || 0),
+      base_price: 0, // Restoran stollarini band qilish har doim BEPUL
     }));
 
     const amenities = amenityRows.map((a) => ({
@@ -542,8 +542,10 @@ export class CatalogService {
     let priceRange = '100 000 - 300 000 UZS';
     if (cmsMeta.price_range) {
       priceRange = String(cmsMeta.price_range);
-    } else if (tables.some((t) => t.base_price > 0)) {
-      const validPrices = tables.map((t) => t.base_price).filter((p) => p > 0);
+    } else if (roomRows.some((r) => Number(r.base_price || 0) > 0)) {
+      const validPrices = roomRows
+        .map((r) => Number(r.base_price || 0))
+        .filter((p) => p > 0);
       const minP = Math.min(...validPrices);
       const maxP = Math.max(...validPrices);
       priceRange =

@@ -109,23 +109,9 @@ export function RestaurantBookingSection({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("cash");
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
 
-  const [bookingStep, setBookingStep] = useState<"form" | "otp">("form");
-  const [otpCode, setOtpCode] = useState<string>("");
-  const [otpLoading, setOtpLoading] = useState<boolean>(false);
-  const [resendCooldown, setResendCooldown] = useState<number>(60);
-  const [, setVerificationToken] = useState<string | undefined>(undefined);
-
   const [loading, setLoading] = useState<boolean>(false);
   const [successBookingId, setSuccessBookingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (resendCooldown <= 0 || bookingStep !== "otp") return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown, bookingStep]);
 
   const bDict = (dict as any).booking || {};
   const selectedTable = restaurant.tables.find((t) => t.id === selectedTableId);
@@ -139,8 +125,6 @@ export function RestaurantBookingSection({
       setGuests(Math.min(table.capacity, 4));
     }
     setErrorMsg(null);
-    setBookingStep("form");
-    setOtpCode("");
     setShowBookingModal(true);
   };
 
@@ -186,20 +170,6 @@ export function RestaurantBookingSection({
       });
 
       if (!res.ok || !res.bookingId) {
-        if (res.error === "OTP_REQUIRED" || res.requiresOtp) {
-          try {
-            const { cashOtpResendAction } = await import(
-              "@/lib/services/booking/actions"
-            );
-            await cashOtpResendAction({ phone: guestPhone });
-          } catch {
-            // ignore
-          }
-          setBookingStep("otp");
-          setResendCooldown(60);
-          setErrorMsg(null);
-          return;
-        }
         setErrorMsg(mapErrorCode(res.error || ""));
         return;
       }
@@ -221,77 +191,6 @@ export function RestaurantBookingSection({
       setErrorMsg(bDict.error || "Xatolik yuz berdi. Qaytadan urinib ko'ring.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpCode.trim().length < 4) {
-      setErrorMsg("Iltimos, 6 xonali SMS kodni kiriting.");
-      return;
-    }
-    setOtpLoading(true);
-    setErrorMsg(null);
-    try {
-      const { cashOtpVerifyAction, createRestaurantBookingAction } = await import(
-        "@/lib/services/booking/actions"
-      );
-      const verifyRes = await cashOtpVerifyAction({
-        phone: guestPhone,
-        otp_code: otpCode.trim(),
-      });
-
-      if (!verifyRes.ok || !verifyRes.verificationToken) {
-        setErrorMsg("Kiritilgan SMS kod noto'g'ri yoki muddati o'tgan.");
-        setOtpLoading(false);
-        return;
-      }
-
-      const token = verifyRes.verificationToken;
-      setVerificationToken(token);
-
-      const resolvedPayment = isFreeBooking ? "cash" : paymentMethod;
-      const res = await createRestaurantBookingAction({
-        restaurantId: restaurant.id,
-        tableId: selectedTableId || restaurant.tables[0]?.id || restaurant.id,
-        date,
-        slotTime,
-        guests,
-        totalPrice: totalAmount,
-        guestName,
-        guestPhone,
-        guestEmail,
-        paymentMethod: resolvedPayment,
-        agreeTerms,
-        verificationToken: token,
-      });
-
-      if (!res.ok || !res.bookingId) {
-        setErrorMsg(mapErrorCode(res.error || ""));
-        setOtpLoading(false);
-        return;
-      }
-
-      setSuccessBookingId(res.bookingNumber || res.bookingId);
-      setShowBookingModal(false);
-      setBookingStep("form");
-      setOtpCode("");
-    } catch {
-      setErrorMsg("Tasdiqlashda xatolik yuz berdi. Qaytadan urinib ko'ring.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    setErrorMsg(null);
-    try {
-      const { cashOtpResendAction } = await import("@/lib/services/booking/actions");
-      await cashOtpResendAction({ phone: guestPhone });
-      setResendCooldown(60);
-    } catch {
-      setErrorMsg("SMS yuborishda xatolik yuz berdi.");
     }
   };
 
@@ -459,339 +358,248 @@ export function RestaurantBookingSection({
       </div>
 
       {/* Booking Checkout Modal */}
-      {/* Booking Checkout Modal */}
       <Modal
         isOpen={showBookingModal}
         onClose={() => {
           setShowBookingModal(false);
-          setBookingStep("form");
           setErrorMsg(null);
         }}
         maxWidth="max-w-lg"
       >
-        {bookingStep === "otp" ? (
-          <div className="flex flex-col p-1">
-            {/* OTP Header */}
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
+        <div className="flex flex-col p-1">
+          {/* Header */}
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Utensils className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Stolni band qilish
+              </h2>
+              <p className="text-xs text-slate-500">
+                {restaurant.name} · {selectedTable?.name || "Tanlangan stol"}
+              </p>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleProcessPayment} className="mt-4 space-y-4">
+            {/* Table Summary Box */}
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 border border-slate-200/80 text-xs">
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Telefon raqamni tasdiqlash
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Naqd to‘lov bilan bron qilish uchun SMS kod
-                </p>
+                <span className="text-slate-500 block">Tanlangan stol:</span>
+                <span className="font-bold text-slate-900 text-sm">
+                  {selectedTable?.name}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-slate-500 block">Depozit summasi:</span>
+                <span className="font-bold text-emerald-700 text-sm">
+                  {isFreeBooking ? "Bepul" : formatSum(totalAmount)}
+                </span>
               </div>
             </div>
 
-            {errorMsg && (
-              <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleVerifyOtp} className="mt-5 space-y-4">
-              <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-xs text-slate-600">
-                <p>
-                  Biz <strong className="font-semibold text-slate-900">{guestPhone}</strong> raqamiga 6 xonali tasdiqlash kodini SMS orqali yubordik.
-                </p>
+            {/* Date and Time */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Kelish sanasi *
+                </label>
+                <DatePicker
+                  value={date}
+                  onChange={setDate}
+                  min={new Date().toISOString().split("T")[0]}
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  SMS tasdiqlash kodi *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Mehmonlar soni *
+                </label>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {Array.from(
+                    { length: Math.max(selectedTable?.capacity || 4, 12) },
+                    (_, i) => i + 1
+                  ).map((n) => (
+                    <option key={n} value={n}>
+                      {n} kishi {n > (selectedTable?.capacity || 4) ? "(qo'shimcha)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Time Slot Picker with suggested chips */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700">
+                  Kelish vaqti *
+                </label>
+                <span className="text-[11px] text-slate-500">
+                  Ish vaqti: {restaurant.workingHours || restaurant.openingHours || "10:00 - 23:00"}
+                </span>
+              </div>
+
+              {/* Suggested quick chips */}
+              {suggestedSlots.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {suggestedSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setSlotTime(slot)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                        slotTime === slot
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="time"
+                  value={slotTime}
+                  onChange={(e) => setSlotTime(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Guest Details */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ismingiz *
                 </label>
                 <input
                   type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="123456"
-                  value={otpCode}
-                  onChange={(e) => {
-                    setOtpCode(e.target.value.replace(/\D/g, ""));
-                    setErrorMsg(null);
-                  }}
-                  className="w-full text-center tracking-[0.4em] text-2xl font-bold font-mono rounded-xl border border-slate-200 bg-slate-50/50 py-3 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  autoFocus
+                  placeholder="Ali Valiyev"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={resendCooldown > 0 || otpLoading}
-                  className="text-emerald-600 hover:text-emerald-700 font-semibold disabled:text-slate-400 disabled:cursor-not-allowed"
-                >
-                  {resendCooldown > 0
-                    ? `Qayta yuborish (${resendCooldown}s)`
-                    : "Kodni qayta yuborish"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBookingStep("form");
-                    setErrorMsg(null);
-                  }}
-                  className="text-slate-500 hover:text-slate-700 underline text-xs"
-                >
-                  Raqamni o'zgartirish
-                </button>
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  disabled={otpLoading || otpCode.trim().length < 4}
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm"
-                >
-                  {otpLoading ? "Tasdiqlanmoqda..." : "Tasdiqlash va stolni band qilish"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="flex flex-col p-1">
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <Utensils className="h-5 w-5" />
-              </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Stolni band qilish
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {restaurant.name} · {selectedTable?.name || "Tanlangan stol"}
-                </p>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Telefon raqam *
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+998 90 123 45 67"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
               </div>
             </div>
 
-            {errorMsg && (
-              <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
+            {/* Payment Mode Selection */}
+            {!isFreeBooking ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
+                  To'lov usuli (Depozit uchun)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cash")}
+                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
+                      paymentMethod === "cash"
+                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Banknote className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="font-semibold">Naqd (Joyida)</div>
+                      <div className="text-[10px] text-slate-500">Yetib kelgach to'lanadi</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("uzcard")}
+                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
+                      paymentMethod !== "cash"
+                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <CreditCard className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <div className="font-semibold">Karta orqali</div>
+                      <div className="text-[10px] text-slate-500">Uzcard / Humo / Visa</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200/60">
+                <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>
+                  Ushbu stol bepul band qilinadi. Hech qanday oldindan to'lov talab etilmaydi!
+                </span>
               </div>
             )}
 
-            <form onSubmit={handleProcessPayment} className="mt-4 space-y-4">
-              {/* Table Summary Box */}
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 border border-slate-200/80 text-xs">
-                <div>
-                  <span className="text-slate-500 block">Tanlangan stol:</span>
-                  <span className="font-bold text-slate-900 text-sm">
-                    {selectedTable?.name}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-slate-500 block">Depozit summasi:</span>
-                  <span className="font-bold text-emerald-700 text-sm">
-                    {isFreeBooking ? "Bepul" : formatSum(totalAmount)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Kelish sanasi *
-                  </label>
-                  <DatePicker
-                    value={date}
-                    onChange={setDate}
-                    min={new Date().toISOString().split("T")[0]}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mehmonlar soni *
-                  </label>
-                  <select
-                    value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {Array.from(
-                      { length: Math.max(selectedTable?.capacity || 4, 12) },
-                      (_, i) => i + 1
-                    ).map((n) => (
-                      <option key={n} value={n}>
-                        {n} kishi {n > (selectedTable?.capacity || 4) ? "(qo'shimcha)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Time Slot Picker with suggested chips */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-slate-700">
-                    Kelish vaqti *
-                  </label>
-                  <span className="text-[11px] text-slate-500">
-                    Ish vaqti: {restaurant.workingHours || restaurant.openingHours || "10:00 - 23:00"}
-                  </span>
-                </div>
-
-                {/* Suggested quick chips */}
-                {suggestedSlots.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {suggestedSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSlotTime(slot)}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                          slotTime === slot
-                            ? "bg-emerald-600 text-white shadow-xs"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="time"
-                    value={slotTime}
-                    onChange={(e) => setSlotTime(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Guest Details */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Ismingiz *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ali Valiyev"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Telefon raqam *
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="+998 90 123 45 67"
-                    value={guestPhone}
-                    onChange={(e) => setGuestPhone(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Payment Mode Selection */}
-              {!isFreeBooking ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">
-                    To'lov usuli (Depozit uchun)
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("cash")}
-                      className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                        paymentMethod === "cash"
-                          ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Banknote className="h-4 w-4 text-emerald-600" />
-                      <div>
-                        <div className="font-semibold">Naqd (Joyida)</div>
-                        <div className="text-[10px] text-slate-500">Yetib kelgach to'lanadi</div>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("uzcard")}
-                      className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                        paymentMethod !== "cash"
-                          ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      <CreditCard className="h-4 w-4 text-blue-600" />
-                      <div>
-                        <div className="font-semibold">Karta orqali</div>
-                        <div className="text-[10px] text-slate-500">Uzcard / Humo / Visa</div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200/60">
-                  <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>
-                    Ushbu stol bepul band qilinadi. Hech qanday oldindan to'lov talab etilmaydi!
-                  </span>
-                </div>
-              )}
-
-              {/* Terms checkbox */}
-              <label className="flex items-start gap-2 pt-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-[11px] text-slate-500">
-                  Men{" "}
-                  <Link
-                    href={`/${locale}/terms`}
-                    target="_blank"
-                    className="font-medium text-emerald-700 underline"
-                  >
-                    Ommaviy Oferta shartlari
-                  </Link>
-                  ga va restoran tartib-qoidalariga rozilik bildiraman.
-                </span>
-              </label>
-
-              {/* Submit Button */}
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm"
+            {/* Terms checkbox */}
+            <label className="flex items-start gap-2 pt-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-[11px] text-slate-500">
+                Men{" "}
+                <Link
+                  href={`/${locale}/terms`}
+                  target="_blank"
+                  className="font-medium text-emerald-700 underline"
                 >
-                  {loading
-                    ? "Band qilinmoqda..."
-                    : isFreeBooking
-                    ? "Stolni bepul band qilish"
-                    : `Bronni tasdiqlash (${formatSum(totalAmount)})`}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
+                  Ommaviy Oferta shartlari
+                </Link>
+                ga va restoran tartib-qoidalariga rozilik bildiraman.
+              </span>
+            </label>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm"
+              >
+                {loading
+                  ? "Band qilinmoqda..."
+                  : isFreeBooking
+                  ? "Stolni bepul band qilish"
+                  : `Bronni tasdiqlash (${formatSum(totalAmount)})`}
+              </Button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </>
   );

@@ -1703,11 +1703,14 @@ export class BookingsService {
     const rooms = isRestaurant ? 1 : Number(dto.rooms ?? 1);
     const guest = this.guestContact(actor, dto);
 
-    const consumeOtp = await this.validateCashBookingOtpIfNeeded(
-      dto,
-      guest.phone,
-      actor,
-    );
+    // Restoran stoli bron qilishda SMS OTP tasdiqlash talab qilinmaydi
+    const consumeOtp = isRestaurant
+      ? undefined
+      : await this.validateCashBookingOtpIfNeeded(
+          dto,
+          guest.phone,
+          actor,
+        );
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);

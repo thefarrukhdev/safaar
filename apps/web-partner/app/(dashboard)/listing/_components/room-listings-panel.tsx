@@ -230,7 +230,7 @@ export function RoomListingsPanel({
                   amenityLabels={amenityLabels}
                   relatedRooms={relatedRooms}
                   onEdit={onEditRoomType ? () => onEditRoomType(roomType) : undefined}
-                  onDelete={restaurant ? undefined : () => handleDelete(roomType, relatedRooms)}
+                  onDelete={() => handleDelete(roomType, relatedRooms)}
                   onTogglePublish={async (publish) => {
                     try {
                       await Promise.all(

@@ -115,12 +115,16 @@ export function ListingOverview() {
   const statusInfo = LISTING_STATUS_INFO[listing.status];
   const cover =
     listing.photos.find((photo) => photo.isCover) ?? listing.photos[0];
-  const listedRooms = rooms.filter((room) => room.isListed);
+  const listedRooms = rooms.filter(
+    (room) => room.isListed && !room.number.startsWith("DELETED_"),
+  );
   const roomAds = roomTypes
     .filter((rt) => !rt.name.startsWith("DELETED_"))
     .map((roomType) => {
       const relatedRooms = rooms.filter(
-        (room) => room.roomTypeId === roomType.id,
+        (room) =>
+          room.roomTypeId === roomType.id &&
+          !room.number.startsWith("DELETED_"),
       );
       const listedCount = relatedRooms.filter((room) => room.isListed).length;
       const relatedBeds = beds.filter((bed) =>
@@ -140,6 +144,14 @@ export function ListingOverview() {
         totalBeds: relatedBeds.length,
         listedBedCount,
       };
+    })
+    .filter((ad) => {
+      // Restoran rejimida turist faqat amalda stollari mavjud bo'lgan (relatedRooms.length > 0) toifalarni/variantlarni ko'ra oladi.
+      // Agar stollar bo'limidan stollar o'chirilsa, ular bu yerdan ham yo'qoladi.
+      if (restaurant) {
+        return ad.relatedRooms.length > 0;
+      }
+      return true;
     });
 
   const sections = useMemo<ListingSection[]>(() => {

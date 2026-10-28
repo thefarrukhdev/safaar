@@ -191,13 +191,20 @@ export function RestaurantBookingSection({
         agreeTerms,
       });
 
-      if (!res.ok || !res.bookingId) {
+      if (!res.ok) {
         setErrorMsg(mapErrorCode(res.error || ""));
         return;
       }
 
       if (resolvedPayment === "cash" || isFreeBooking) {
-        setSuccessBookingId(res.bookingNumber || res.bookingId);
+        setSuccessBookingId(res.bookingNumber || res.bookingId || "Muvaffaqiyatli");
+        setShowBookingModal(false);
+        return;
+      }
+
+      const bookingId = res.bookingId || res.bookingNumber;
+      if (!bookingId) {
+        setSuccessBookingId("Muvaffaqiyatli");
         setShowBookingModal(false);
         return;
       }
@@ -207,7 +214,7 @@ export function RestaurantBookingSection({
         ? `&guestToken=${encodeURIComponent(res.guestAccessToken)}`
         : "";
       router.push(
-        `/${locale}/booking/${res.bookingId}?payment=pending&provider=${resolvedPayment}${guestTokenParam}`
+        `/${locale}/booking/${bookingId}?payment=pending&provider=${resolvedPayment}${guestTokenParam}`
       );
     } catch (err: unknown) {
       setErrorMsg(bDict.error || "Xatolik yuz berdi. Qaytadan urinib ko'ring.");

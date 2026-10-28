@@ -45,6 +45,13 @@ function extractErrorCode(data: any, fallback = "ERROR"): string {
   return fallback;
 }
 
+function unwrapResponseData(data: any): any {
+  if (data && typeof data === "object" && "data" in data && data.data && typeof data.data === "object") {
+    return data.data;
+  }
+  return data;
+}
+
 export interface CheckoutState {
   error?: string;
 }
@@ -242,18 +249,19 @@ export async function createRestaurantBookingAction(input: {
       };
     }
 
-    const bookingId = data.booking?.id || data.id;
-    const guestAccessToken = data.guestAccessToken || data.guest_access_token;
-    const bookingNumber = data.booking?.booking_number || data.bookingNumber;
+    const payload = unwrapResponseData(data);
+    const bookingId = payload?.booking?.id || payload?.id || data?.booking?.id || data?.id;
+    const guestAccessToken = payload?.guestAccessToken || payload?.guest_access_token || data?.guestAccessToken || data?.guest_access_token;
+    const bookingNumber = payload?.booking?.booking_number || payload?.bookingNumber || payload?.booking_number || data?.booking?.booking_number || data?.bookingNumber;
 
     return {
       ok: true,
       bookingId,
       bookingNumber,
       guestAccessToken,
-      requiresOtp: Boolean(data.requires_otp || data.requiresOtp),
-      maskedPhone: data.masked_phone || data.maskedPhone,
-      expiresIn: data.expires_in || data.expiresIn,
+      requiresOtp: Boolean(payload?.requires_otp || payload?.requiresOtp || data?.requires_otp || data?.requiresOtp),
+      maskedPhone: payload?.masked_phone || payload?.maskedPhone || data?.masked_phone || data?.maskedPhone,
+      expiresIn: payload?.expires_in || payload?.expiresIn || data?.expires_in || data?.expiresIn,
     };
   } catch (err: unknown) {
     return {
@@ -350,8 +358,9 @@ export async function createHotelBookingDirectAction(input: {
       };
     }
 
-    const bookingId = data.booking?.id || data.id;
-    const guestAccessToken = data.guestAccessToken || data.guest_access_token;
+    const resultPayload = unwrapResponseData(data);
+    const bookingId = resultPayload?.booking?.id || resultPayload?.id || data?.booking?.id || data?.id;
+    const guestAccessToken = resultPayload?.guestAccessToken || resultPayload?.guest_access_token || data?.guestAccessToken || data?.guest_access_token;
 
     return {
       ok: true,
@@ -413,8 +422,9 @@ export async function createVehicleBookingAction(input: {
       };
     }
 
-    const bookingId = data.booking?.id || data.id || data.booking?.booking_number || data.bookingNumber;
-    const guestAccessToken = data.guestAccessToken || data.guest_access_token;
+    const payload = unwrapResponseData(data);
+    const bookingId = payload?.booking?.id || payload?.id || payload?.booking?.booking_number || payload?.bookingNumber || data?.id;
+    const guestAccessToken = payload?.guestAccessToken || payload?.guest_access_token || data?.guestAccessToken || data?.guest_access_token;
 
     return {
       ok: true,
@@ -458,10 +468,11 @@ export async function sendCashOtpAction(input: {
       };
     }
 
+    const payload = unwrapResponseData(data);
     return {
       ok: true,
-      challengeId: data.challenge_id || data.challengeId,
-      resendAfter: data.resend_after || data.resendAfter,
+      challengeId: payload?.challenge_id || payload?.challengeId || data?.challenge_id || data?.challengeId,
+      resendAfter: payload?.resend_after || payload?.resendAfter || data?.resend_after || data?.resendAfter,
     };
   } catch (err: unknown) {
     return {
@@ -511,11 +522,12 @@ export async function cashOtpVerifyAction(input: {
       };
     }
 
+    const payload = unwrapResponseData(data);
     return {
       ok: true,
-      verificationToken: data.verification_token || data.verificationToken,
-      bookingId: data.booking?.id || data.bookingId || input.booking_id,
-      status: data.status || data.booking?.status,
+      verificationToken: payload?.verification_token || payload?.verificationToken || data?.verification_token || data?.verificationToken,
+      bookingId: payload?.booking?.id || payload?.bookingId || data?.booking?.id || data?.bookingId || input.booking_id,
+      status: payload?.status || payload?.booking?.status || data?.status,
     };
   } catch (err: unknown) {
     return {
@@ -562,10 +574,11 @@ export async function cashOtpResendAction(input: {
       };
     }
 
+    const payload = unwrapResponseData(data);
     return {
       ok: true,
-      expiresIn: data.expires_in || 180,
-      resendAvailableIn: data.resend_available_in || data.resend_after || 60,
+      expiresIn: payload?.expires_in || data?.expires_in || 180,
+      resendAvailableIn: payload?.resend_available_in || payload?.resend_after || data?.resend_available_in || 60,
     };
   } catch (err: unknown) {
     return {

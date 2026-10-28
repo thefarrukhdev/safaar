@@ -236,6 +236,7 @@ export async function createRestaurantBookingAction(input: {
         guest_email: input.guestEmail,
         source: "web-user",
         payment_method: input.paymentMethod,
+        confirmation_mode: "request_confirmation",
         agree_terms: input.agreeTerms,
         verification_token: input.verificationToken,
       }),

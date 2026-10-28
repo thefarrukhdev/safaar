@@ -100,12 +100,15 @@ export function FrontDeskView() {
     const end = dateRange.endDate;
 
     for (const r of reservations.data) {
-      if (r.status === BookingStatus.PENDING) {
+      const isRecent = r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 24 * 3600 * 1000;
+      if (
+        r.status === BookingStatus.PENDING ||
+        r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION
+      ) {
         list.push({ kind: "pending", reservation: r });
       } else if (
-        r.checkIn >= start &&
-        r.checkIn <= end &&
-        r.status === BookingStatus.CONFIRMED
+        r.status === BookingStatus.CONFIRMED &&
+        ((r.checkIn >= start && r.checkIn <= end) || isRecent)
       ) {
         list.push({ kind: "arrival", reservation: r });
       } else if (
@@ -116,7 +119,12 @@ export function FrontDeskView() {
         list.push({ kind: "departure", reservation: r });
       }
     }
-    return list.sort((a, b) => TASK_ORDER[a.kind] - TASK_ORDER[b.kind]);
+    return list.sort(
+      (a, b) =>
+        TASK_ORDER[a.kind] - TASK_ORDER[b.kind] ||
+        (b.reservation.createdAt || "").localeCompare(a.reservation.createdAt || "") ||
+        a.reservation.checkIn.localeCompare(b.reservation.checkIn),
+    );
   }, [reservations.data, dateRange]);
 
   // Hisoblagichlar

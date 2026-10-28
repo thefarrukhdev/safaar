@@ -115,8 +115,9 @@ export function RestaurantBookingSection({
 
   const bDict = (dict as any).booking || {};
   const selectedTable = restaurant.tables.find((t) => t.id === selectedTableId);
-  const totalAmount = selectedTable?.basePriceSum ?? 0;
-  const isFreeBooking = totalAmount === 0;
+  // Restoranda stol band qilish mutlaqo BEPUL! O'rtacha chek esa restoran taomlari uchun ma'lumot xolos.
+  const totalAmount = 0;
+  const isFreeBooking = true;
 
   const handleTableClick = (tblId: string) => {
     setSelectedTableId(tblId);
@@ -315,16 +316,10 @@ export function RestaurantBookingSection({
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-center gap-2 text-xs">
-                        {isFree ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                            <Sparkles className="h-3 w-3" />
-                            Bepul bron
-                          </span>
-                        ) : (
-                          <span className="font-semibold text-slate-800">
-                            {formatSum(tbl.basePriceSum)} depozit
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                          <Sparkles className="h-3 w-3" />
+                          Bepul bron qilish
+                        </span>
                       </div>
                     </div>
 
@@ -399,9 +394,9 @@ export function RestaurantBookingSection({
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-slate-500 block">Depozit summasi:</span>
+                <span className="text-slate-500 block">Bron narxi:</span>
                 <span className="font-bold text-emerald-700 text-sm">
-                  {isFreeBooking ? "Bepul" : formatSum(totalAmount)}
+                  Bepul
                 </span>
               </div>
             </div>
@@ -514,54 +509,13 @@ export function RestaurantBookingSection({
               </div>
             </div>
 
-            {/* Payment Mode Selection */}
-            {!isFreeBooking ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  To'lov usuli (Depozit uchun)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("cash")}
-                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                      paymentMethod === "cash"
-                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <Banknote className="h-4 w-4 text-emerald-600" />
-                    <div>
-                      <div className="font-semibold">Naqd (Joyida)</div>
-                      <div className="text-[10px] text-slate-500">Yetib kelgach to'lanadi</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("uzcard")}
-                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left text-xs font-medium transition ${
-                      paymentMethod !== "cash"
-                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <CreditCard className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <div className="font-semibold">Karta orqali</div>
-                      <div className="text-[10px] text-slate-500">Uzcard / Humo / Visa</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200/60">
-                <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>
-                  Ushbu stol bepul band qilinadi. Hech qanday oldindan to'lov talab etilmaydi!
-                </span>
-              </div>
-            )}
+            {/* Free Booking Banner */}
+            <div className="flex items-center gap-2.5 rounded-xl bg-emerald-50 p-3.5 text-xs text-emerald-800 border border-emerald-200/60">
+              <Sparkles className="h-5 w-5 text-emerald-600 shrink-0" />
+              <span>
+                Ushbu stolni band qilish mutlaqo bepul. Hech qanday oldindan to'lov yoki depozit talab etilmaydi!
+              </span>
+            </div>
 
             {/* Terms checkbox */}
             <label className="flex items-start gap-2 pt-1 cursor-pointer">
@@ -591,11 +545,7 @@ export function RestaurantBookingSection({
                 disabled={loading}
                 className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm"
               >
-                {loading
-                  ? "Band qilinmoqda..."
-                  : isFreeBooking
-                  ? "Stolni bepul band qilish"
-                  : `Bronni tasdiqlash (${formatSum(totalAmount)})`}
+                {loading ? "Band qilinmoqda..." : "Stolni bepul band qilish"}
               </Button>
             </div>
           </form>

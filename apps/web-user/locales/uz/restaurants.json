@@ -79,7 +79,9 @@
     "capacity": "Sig'imi: {count} kishilik",
     "viewMenu": "Menyu ko‘rish",
     "priceRange": "Narx oralig'i",
-    "cuisines": "Oshxonalar"
+    "cuisines": "Oshxonalar",
+    "amenities": "Qulayliklar va xizmatlar",
+    "rules": "Restoran tartib-qoidalari va shartlari"
   },
   "filtersTitle": "Filtrlar",
   "city": "Shahar",

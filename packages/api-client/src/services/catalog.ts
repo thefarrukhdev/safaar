@@ -86,6 +86,23 @@ export interface RestaurantDetailView {
     capacity: number;
     basePriceSum: number;
   }>;
+  amenities: Array<{
+    id: string;
+    code: string;
+    name: string;
+  }>;
+  rules?: {
+    checkInTime?: string;
+    checkOutTime?: string;
+    smokingAllowed?: boolean;
+    petsAllowed?: boolean;
+    childrenAllowed?: boolean;
+    cancellationPolicyCode?: string;
+    customRules?: string[];
+    extraFees?: Array<{ name: string; amount: number }>;
+    allowsCash?: boolean;
+    allowsOnlinePayment?: boolean;
+  };
 }
 
 export interface TransportCatalogView {
@@ -374,6 +391,40 @@ export const catalogService = {
             basePriceSum: Number(t.basePrice ?? 0),
           }))
         : [],
+      amenities: Array.isArray(item.amenities)
+        ? (item.amenities as Array<Record<string, unknown>>).map((a) => ({
+            id: String(a.id ?? ""),
+            code: String(a.code ?? ""),
+            name: pickLocale(a.name as LocalizedValue, locale) || String(a.code ?? ""),
+          }))
+        : [],
+      rules: item.rules && typeof item.rules === "object"
+        ? {
+            checkInTime: (item.rules as Record<string, unknown>).checkInTime
+              ? String((item.rules as Record<string, unknown>).checkInTime)
+              : undefined,
+            checkOutTime: (item.rules as Record<string, unknown>).checkOutTime
+              ? String((item.rules as Record<string, unknown>).checkOutTime)
+              : undefined,
+            smokingAllowed: typeof (item.rules as Record<string, unknown>).smokingAllowed === "boolean"
+              ? Boolean((item.rules as Record<string, unknown>).smokingAllowed)
+              : undefined,
+            petsAllowed: typeof (item.rules as Record<string, unknown>).petsAllowed === "boolean"
+              ? Boolean((item.rules as Record<string, unknown>).petsAllowed)
+              : undefined,
+            childrenAllowed: typeof (item.rules as Record<string, unknown>).childrenAllowed === "boolean"
+              ? Boolean((item.rules as Record<string, unknown>).childrenAllowed)
+              : undefined,
+            cancellationPolicyCode: (item.rules as Record<string, unknown>).cancellationPolicyCode
+              ? String((item.rules as Record<string, unknown>).cancellationPolicyCode)
+              : undefined,
+            customRules: Array.isArray((item.rules as Record<string, unknown>).customRules)
+              ? ((item.rules as Record<string, unknown>).customRules as unknown[]).map(String)
+              : [],
+            allowsCash: (item.rules as Record<string, unknown>).allowsCash !== false,
+            allowsOnlinePayment: (item.rules as Record<string, unknown>).allowsOnlinePayment !== false,
+          }
+        : undefined,
     };
   }
 

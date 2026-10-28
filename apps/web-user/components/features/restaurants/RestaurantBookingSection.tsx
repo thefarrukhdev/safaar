@@ -69,8 +69,14 @@ function mapErrorCode(code: string): string {
       return "Telefon raqamingizga SMS orqali yuborilgan tasdiqlash kodini kiriting.";
     case "OTP_INVALID":
       return "Tasdiqlash kodi noto'g'ri. Iltimos, tekshirib qaytadan kiriting.";
-    case "OTP_EXPIRED":
-      return "Tasdiqlash kodi muddati o'tgan. Iltimos, yangi kod so'rang.";
+    case "BOOKING_GUEST_PHONE_INVALID":
+      return "Telefon raqami noto'g'ri kiritildi (+998 XX XXX XX XX formatida 9 ta raqam bo'lishi kerak).";
+    case "BOOKING_GUEST_NAME_REQUIRED":
+      return "Iltimos, ismingizni kiriting.";
+    case "BOOKING_GUEST_CONTACT_REQUIRED":
+      return "Iltimos, telefon raqamingizni kiriting.";
+    case "BOOKING_GUEST_EMAIL_INVALID":
+      return "Email manzili noto'g'ri kiritildi.";
     default:
       return code || "Bron qilishda xatolik yuz berdi. Qaytadan urinib ko'ring.";
   }
@@ -102,8 +108,22 @@ export function RestaurantBookingSection({
   const [guests, setGuests] = useState<number>(2);
 
   const [guestName, setGuestName] = useState<string>("");
-  const [guestPhone, setGuestPhone] = useState<string>("+998");
+  const [guestPhone, setGuestPhone] = useState<string>("+998 ");
   const [guestEmail, setGuestEmail] = useState<string>("");
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^\d+]/g, "");
+    if (!val.startsWith("+998")) {
+      val = "+998";
+    }
+    const digits = val.replace(/\D/g, "").slice(3);
+    let formatted = "+998";
+    if (digits.length > 0) formatted += " " + digits.slice(0, 2);
+    if (digits.length > 2) formatted += " " + digits.slice(2, 5);
+    if (digits.length > 5) formatted += " " + digits.slice(5, 7);
+    if (digits.length > 7) formatted += " " + digits.slice(7, 9);
+    setGuestPhone(formatted);
+  };
 
   const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("cash");
@@ -141,8 +161,9 @@ export function RestaurantBookingSection({
       return;
     }
 
-    if (guestPhone.length < 9) {
-      setErrorMsg(bDict.namePhoneRequired || "Iltimos, to'liq telefon raqamingizni kiriting.");
+    const phoneDigits = guestPhone.replace(/\D/g, "").slice(3);
+    if (phoneDigits.length !== 9) {
+      setErrorMsg("Iltimos, to'liq telefon raqamingizni kiriting (+998 XX XXX XX XX).");
       return;
     }
 
@@ -502,7 +523,7 @@ export function RestaurantBookingSection({
                   type="tel"
                   placeholder="+998 90 123 45 67"
                   value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
+                  onChange={handlePhoneChange}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />

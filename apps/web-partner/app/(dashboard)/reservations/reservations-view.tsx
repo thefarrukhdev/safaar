@@ -256,19 +256,26 @@ export function ReservationsView() {
           .includes(q),
       );
     }
-    return [...list].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+    return [...list].sort((a, b) => {
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      if (dateB !== dateA) return dateB - dateA;
+      return a.checkIn.localeCompare(b.checkIn);
+    });
   }, [data, endDate, filter, query, startDate]);
 
   // Focus queue (high urgency items)
   const focusItems = useMemo(() => {
     const today = todayIso();
+    const isRecent = (r: ReservationView) =>
+      r.createdAt ? Date.now() - new Date(r.createdAt).getTime() < 24 * 3600 * 1000 : false;
     return data
       .filter(
         (r) =>
           r.status === BookingStatus.PENDING ||
           r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION ||
           r.status === BookingStatus.AWAITING_PAYMENT ||
-          (r.checkIn.slice(0, 10) === today && r.status === BookingStatus.CONFIRMED),
+          ((r.checkIn.slice(0, 10) === today || isRecent(r)) && r.status === BookingStatus.CONFIRMED),
       )
       .sort((a, b) => {
         const priority = (r: ReservationView) =>
@@ -278,7 +285,11 @@ export function ReservationsView() {
             : r.checkIn.slice(0, 10) === today
               ? 1
               : 2;
-        return priority(a) - priority(b) || a.checkIn.localeCompare(b.checkIn);
+        return (
+          priority(a) - priority(b) ||
+          (b.createdAt || "").localeCompare(a.createdAt || "") ||
+          a.checkIn.localeCompare(b.checkIn)
+        );
       })
       .slice(0, 5);
   }, [data]);

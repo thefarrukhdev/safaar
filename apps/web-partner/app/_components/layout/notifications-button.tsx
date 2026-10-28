@@ -20,9 +20,18 @@ export function NotificationsButton() {
   const ref = useRef<HTMLDivElement>(null);
 
   const notifications = useMemo(() => {
-    const pending = data.filter((r) => r.status === BookingStatus.PENDING);
+    const isRecent = (createdAt?: string) =>
+      createdAt ? Date.now() - new Date(createdAt).getTime() < 24 * 3600 * 1000 : false;
+
+    const pending = data.filter(
+      (r) =>
+        r.status === BookingStatus.PENDING ||
+        r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION,
+    );
     const arrivalsToday = data.filter(
-      (r) => r.checkIn === TODAY_ISO && r.status === BookingStatus.CONFIRMED,
+      (r) =>
+        (r.checkIn === TODAY_ISO || isRecent(r.createdAt)) &&
+        r.status === BookingStatus.CONFIRMED,
     );
     return { pending, arrivalsToday };
   }, [data]);
@@ -132,7 +141,7 @@ export function NotificationsButton() {
 
               {notifications.arrivalsToday.length > 0 && (
                 <li className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Bugun keladi
+                  Yangi / Bugun kutilayotgan
                 </li>
               )}
               {notifications.arrivalsToday.map((r) => (

@@ -111,9 +111,7 @@ export function ReservationsTable({
   onToggleSelect,
   onToggleSelectAll,
 }: ReservationsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "checkIn", desc: false },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const handleCopyPhone = async (phone: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -291,7 +289,10 @@ export function ReservationsTable({
         sortingFn: (rowA, rowB) => {
           const tA = new Date(rowA.original.checkIn).getTime() || 0;
           const tB = new Date(rowB.original.checkIn).getTime() || 0;
-          return tA - tB;
+          if (tA !== tB) return tA - tB;
+          const cA = new Date(rowA.original.createdAt).getTime() || 0;
+          const cB = new Date(rowB.original.createdAt).getTime() || 0;
+          return cB - cA;
         },
         header: ({ column }) => (
           <SortableHeader

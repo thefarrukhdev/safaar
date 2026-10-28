@@ -45,6 +45,7 @@ export function useReservations() {
     queryKey: reservationsQueryKey,
     queryFn: async () => pageItems(await partners.listBookings(accessToken)).map(toReservation),
     enabled: Boolean(accessToken),
+    refetchInterval: 10_000,
   });
 
   return {

@@ -10,6 +10,7 @@ import {
   Layers,
   Loader2,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
   UtensilsCrossed,
@@ -26,7 +27,7 @@ import { MoneyInput } from "../../../_components/ui/money-input";
 import { Label } from "../../../_components/ui/label";
 import { Select } from "../../../_components/ui/select";
 import { useAuthStore } from "../../../_stores/auth-store";
-import { useRoomTypes } from "../../../_hooks/use-room-types";
+import { useRoomTypes, useCreateRoomType } from "../../../_hooks/use-room-types";
 import { useCreateRoom, useBulkCreateRooms, useRooms } from "../../../_hooks/use-rooms";
 import { useGenerateBeds } from "../../../_hooks/use-beds";
 import { partners } from "../../../_lib/api";
@@ -99,6 +100,51 @@ const addRoomSchema = z
 
 export type AddRoomFormValues = z.infer<typeof addRoomSchema>;
 
+const DEFAULT_RESTAURANT_TABLE_TYPES = [
+  {
+    name: "Standart stol (Umumiy zal)",
+    description: "Umumiy zalda joylashgan shinam stol (2-4 kishi)",
+    basePrice: 0,
+    capacity: 4,
+    amenities: ["wifi", "ac"],
+  },
+  {
+    name: "Oila uchun stol — Bolalar bilan",
+    description: "Katta oilalar va bolalar uchun qulay stol (4-6 kishi)",
+    basePrice: 0,
+    capacity: 6,
+    amenities: ["wifi", "ac", "high_chair"],
+  },
+  {
+    name: "VIP kabinet (Maxsus xona)",
+    description: "Alohida eshikli shinam VIP kabinet (6-8 kishi)",
+    basePrice: 100000,
+    capacity: 8,
+    amenities: ["wifi", "ac", "vip"],
+  },
+  {
+    name: "Ochiq terrasa — Beg'ubor havo",
+    description: "Tashqaridagi manzarali shinam stol (2-4 kishi)",
+    basePrice: 0,
+    capacity: 4,
+    amenities: ["wifi", "terrace"],
+  },
+  {
+    name: "Katta kompaniya stoli (Tadbirlar)",
+    description: "Kompaniya va bayramlar uchun katta stol (8-12 kishi)",
+    basePrice: 150000,
+    capacity: 12,
+    amenities: ["wifi", "ac"],
+  },
+  {
+    name: "Tapchan / So‘ri — Milliy uslub",
+    description: "Xontaxtali qulay milliy so'ri (6-8 kishi)",
+    basePrice: 50000,
+    capacity: 8,
+    amenities: ["wifi"],
+  },
+];
+
 export interface AddRoomDialogProps {
   open: boolean;
   onClose: () => void;
@@ -126,9 +172,33 @@ export function AddRoomDialog({
   const createRoom = useCreateRoom();
   const bulkCreateRooms = useBulkCreateRooms();
   const generateBeds = useGenerateBeds();
+  const createRoomType = useCreateRoomType();
 
   const [openCreateType, setOpenCreateType] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isSeedingPresets, setIsSeedingPresets] = useState(false);
+
+  const handleSeedPresets = async () => {
+    if (isSeedingPresets) return;
+    setIsSeedingPresets(true);
+    try {
+      let firstCreatedId = "";
+      for (const preset of DEFAULT_RESTAURANT_TABLE_TYPES) {
+        const created = await createRoomType.mutateAsync(preset);
+        if (!firstCreatedId && created?.id) {
+          firstCreatedId = created.id;
+        }
+      }
+      toast.success("Standart stol toifalari muvaffaqiyatli yuklandi!");
+      if (firstCreatedId) {
+        form.setValue("roomTypeId", firstCreatedId, { shouldValidate: true, shouldDirty: true });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Toifalarni yuklashda xatolik yuz berdi");
+    } finally {
+      setIsSeedingPresets(false);
+    }
+  };
 
   const form = useForm<AddRoomFormValues>({
     resolver: zodResolver(addRoomSchema),
@@ -364,7 +434,13 @@ export function AddRoomDialog({
     isUploadingImage;
 
   const roomTypeSelectOptions = [
-    { value: "", label: `${labels.unitTypeLabel}ni tanlang` },
+    {
+      value: "",
+      label:
+        roomTypes.length === 0
+          ? "Toifalar mavjud emas — yangi qo'shing"
+          : `${labels.unitTypeLabel}ni tanlang`,
+    },
     ...roomTypes.map((rt) => ({
       value: rt.id,
       label: `${formatUnitTypeName(rt.name, labels)} — ${rt.basePrice > 0 ? `${rt.basePrice.toLocaleString("ru-RU")} so'm` : "Bepul"} (${rt.capacity} ${labels.capacitySuffix})`,
@@ -382,12 +458,12 @@ export function AddRoomDialog({
             ? "Restoraningiz uchun stol turi, sig'imi, joylashgan zali, qulayliklari va rasmini kiriting."
             : `${labels.facilityDirectional} yangi ${labels.unitSingular} yoki bir nechta ${labels.unitPlural}ni birdaniga qo'shing.`
         }
-        size="md"
+        size="lg"
       >
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isSubmitting} className="flex flex-col gap-4 group-disabled:opacity-75">
-            {/* Bo'sh turlar holati (Faqat mehmonxona/hostel uchun agar hali toifa bo'lmasa) */}
-            {!restaurant && roomTypes.length === 0 && !isLoadingTypes && (
+            {/* Bo'sh turlar holati agar hali toifa bo'lmasa */}
+            {roomTypes.length === 0 && !isLoadingTypes && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/30">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -396,18 +472,35 @@ export function AddRoomDialog({
                       Hali {labels.unitTypePlural.toLowerCase()} yaratilmagan
                     </h4>
                     <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                      {labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)}ni qo&apos;shish uchun avval kamida bitta {labels.unitTypeLabel.toLowerCase()} yaratilishi kerak.
+                      {restaurant
+                        ? "Stol qo'shish uchun avval kamida bitta stol toifasi (masalan, Umumiy zal, VIP kabinet, Terrasa) bo'lishi kerak. Standart toifalarni 1 ta bosishda yuklashingiz yoki o'zingiz yangi toifa yaratishingiz mumkin."
+                        : `${labels.unitPlural.charAt(0).toUpperCase() + labels.unitPlural.slice(1)}ni qo'shish uchun avval kamida bitta ${labels.unitTypeLabel.toLowerCase()} yaratilishi kerak.`}
                     </p>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setOpenCreateType(true)}
-                      className="mt-3 gap-1.5"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      {labels.unitTypeLabel} yaratish
-                    </Button>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {restaurant && (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          loading={isSeedingPresets}
+                          onClick={handleSeedPresets}
+                          className="gap-1.5 font-semibold"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Standart toifalarni yuklash
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant={restaurant ? "outline" : "primary"}
+                        size="sm"
+                        onClick={() => setOpenCreateType(true)}
+                        className="gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        {labels.unitTypeLabel} yaratish
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -444,19 +537,28 @@ export function AddRoomDialog({
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════
-                RESTORAN STOL FORM (FOYDALANUVCHI TALABIGA TO'LIQ MOS)
+                RESTORAN STOL FORM (PREMIUM MODERN DESIGN & FULLY RESPONSIVE)
             ═══════════════════════════════════════════════════════════════════ */}
             {restaurant ? (
-              <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-4">
                 {/* 1. Stol turi & Qaysi zalda joylashganligi */}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="ar-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Stol turi <span className="text-red-500">*</span>
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="ar-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol turi <span className="text-red-500">*</span>
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => setOpenCreateType(true)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100/80 dark:bg-brand-950/60 dark:text-brand-400 dark:hover:bg-brand-900/50 transition-colors cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" /> Yangi toifa
+                      </button>
+                    </div>
                     <Select
                       id="ar-type"
-                      placeholder="Stol turini tanlang"
+                      placeholder={roomTypes.length === 0 ? "Avval toifa yarating yoki yuklang" : "Stol toifasini tanlang"}
                       value={selectedRoomTypeId}
                       onChange={(e) => handleRoomTypeChange(e.target.value)}
                       options={roomTypeSelectOptions}
@@ -469,7 +571,7 @@ export function AddRoomDialog({
 
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="ar-hall" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Qaysi zalda joylashgan? <span className="text-red-500">*</span>
+                      Joylashgan zali <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       id="ar-hall"
@@ -489,7 +591,7 @@ export function AddRoomDialog({
                 </div>
 
                 {/* 2. Stol raqami va Necha kishilik (Sig'imi) */}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   {creationMode === "single" ? (
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="ar-number" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
@@ -536,28 +638,16 @@ export function AddRoomDialog({
                   )}
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="ar-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                      <span>Necha kishilik? (Sig&apos;imi) <span className="text-red-500">*</span></span>
-                      <span className="text-[11px] font-normal text-zinc-500">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="ar-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol sig&apos;imi <span className="text-red-500">*</span>
+                      </Label>
+                      <span className="text-[11px] font-semibold text-brand-600 dark:text-brand-400">
                         {currentCapacity} kishilik
                       </span>
-                    </Label>
+                    </div>
                     <div className="flex items-center gap-1.5">
-                      <Input
-                        id="ar-capacity"
-                        type="number"
-                        min={1}
-                        max={50}
-                        className="w-20 text-center font-bold"
-                        value={currentCapacity}
-                        onChange={(e) =>
-                          form.setValue("capacity", Number(e.target.value) || 1, {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                          })
-                        }
-                      />
-                      <div className="flex flex-wrap gap-1">
+                      <div className="grid grid-cols-5 gap-1 flex-1">
                         {[2, 4, 6, 8, 12].map((cap) => (
                           <button
                             key={cap}
@@ -569,21 +659,39 @@ export function AddRoomDialog({
                               })
                             }
                             className={cn(
-                              "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer border",
+                              "h-9 rounded-lg text-xs font-bold transition-all border cursor-pointer flex items-center justify-center",
                               currentCapacity === cap
                                 ? "bg-brand-600 text-white border-brand-600 shadow-2xs"
-                                : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+                                : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:bg-zinc-700",
                             )}
                           >
                             {cap}
                           </button>
                         ))}
                       </div>
+                      <div className="relative w-16 shrink-0">
+                        <Input
+                          id="ar-capacity"
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="Boshqa"
+                          title="Boshqa sig'im kiritish"
+                          className="h-9 px-1 text-center text-xs font-bold"
+                          value={currentCapacity}
+                          onChange={(e) =>
+                            form.setValue("capacity", Math.max(1, Number(e.target.value) || 1), {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 3. Stol qulayliklari (Multi-select Interactive Badges) */}
+                {/* 3. Stol qulayliklari (Multi-select Grid) */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
@@ -595,7 +703,7 @@ export function AddRoomDialog({
                         : "Ixtiyoriy"}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-2.5 dark:border-zinc-800 dark:bg-zinc-900/40">
                     {RESTAURANT_TABLE_AMENITY_OPTIONS.map((item) => {
                       const isSelected = currentAmenities.includes(item.value);
                       return (
@@ -604,126 +712,139 @@ export function AddRoomDialog({
                           type="button"
                           onClick={() => toggleAmenity(item.value)}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer border",
+                            "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition-all cursor-pointer border text-left",
                             isSelected
-                              ? "bg-brand-50 text-brand-700 border-brand-300 font-semibold shadow-2xs dark:bg-brand-950/60 dark:text-brand-300 dark:border-brand-700"
-                              : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-100/70 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+                              ? "bg-brand-50/90 text-brand-900 border-brand-400 font-semibold shadow-2xs dark:bg-brand-950/60 dark:text-brand-200 dark:border-brand-600 ring-1 ring-brand-400/40"
+                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-850 dark:text-zinc-300 dark:border-zinc-700/80 dark:hover:bg-zinc-800",
                           )}
                         >
-                          <span>{item.icon}</span>
-                          <span>{item.label}</span>
-                          {isSelected && <Check className="h-3 w-3 text-brand-600 dark:text-brand-400" />}
+                          <span className="text-sm shrink-0">{item.icon}</span>
+                          <span className="truncate flex-1 text-[11px] font-medium">{item.label}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 4. Stol rasmi (Drag & Drop / Upload) */}
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                    <span>Stol rasmi</span>
-                    {currentImageUrl && (
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Rasm biriktirildi
-                      </span>
-                    )}
-                  </Label>
-
-                  {currentImageUrl ? (
-                    <div className="relative group overflow-hidden rounded-xl border border-zinc-200 bg-zinc-900/10 dark:border-zinc-800 h-36 w-full flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={currentImageUrl}
-                        alt="Stol rasmi"
-                        className="h-full w-full object-cover rounded-xl"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-white shadow-sm transition-colors">
-                          <Camera className="h-3.5 w-3.5" />
-                          Almashtirish
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) void handleImageFile(f);
-                            }}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            form.setValue("imageUrl", undefined, { shouldDirty: true });
-                            form.setValue("fileId", undefined, { shouldDirty: true });
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-red-600/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 shadow-sm transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          O&apos;chirish
-                        </button>
-                      </div>
+                {/* 4. Stol rasmi va E'lon statusi (Yonma-yon 2 ustun) */}
+                <div className="grid gap-3.5 sm:grid-cols-2 items-start">
+                  {/* Stol rasmi */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol rasmi
+                      </Label>
+                      <span className="text-[11px] text-zinc-400">Ixtiyoriy</span>
                     </div>
-                  ) : (
-                    <label
-                      className={cn(
-                        "relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all",
-                        isUploadingImage
-                          ? "border-brand-400 bg-brand-50/30 dark:border-brand-700 dark:bg-brand-950/20"
-                          : "border-zinc-200 bg-zinc-50/60 hover:border-zinc-300 hover:bg-zinc-100/60 dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-700",
-                      )}
-                    >
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        disabled={isUploadingImage}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleImageFile(f);
-                        }}
-                      />
-                      {isUploadingImage ? (
-                        <div className="flex flex-col items-center gap-1.5 py-2">
-                          <Loader2 className="h-6 w-6 animate-spin text-brand-600 dark:text-brand-400" />
-                          <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
-                            Rasm yuklanmoqda...
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 py-1">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-950/80 dark:text-brand-400">
-                            <Upload className="h-4 w-4" />
-                          </div>
-                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                            Stol rasmini yuklash
-                          </span>
-                          <span className="text-[11px] text-zinc-500">
-                            PNG, JPG, WEBP (5MB gacha)
-                          </span>
-                        </div>
-                      )}
-                    </label>
-                  )}
-                </div>
 
-                {/* 5. E'longa chiqarish */}
-                <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700"
-                    {...form.register("isListed")}
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Darhol e&apos;longa chiqarilsin (bron uchun ko&apos;rinadi)
-                    </span>
-                    <span className="text-[11px] text-zinc-500">
-                      Mijozlar ushbu stolni platformadan to&apos;g&apos;ridan-to&apos;g&apos;ri band qilishi mumkin bo&apos;ladi
-                    </span>
+                    {currentImageUrl ? (
+                      <div className="relative group overflow-hidden rounded-xl border border-zinc-200 bg-zinc-900/10 dark:border-zinc-800 h-24 w-full flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={currentImageUrl}
+                          alt="Stol rasmi"
+                          className="h-full w-full object-cover rounded-xl"
+                        />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <label className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 hover:bg-white shadow-sm transition-colors">
+                            <Camera className="h-3 w-3" />
+                            Almashtirish
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) void handleImageFile(f);
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              form.setValue("imageUrl", undefined, { shouldDirty: true });
+                              form.setValue("fileId", undefined, { shouldDirty: true });
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md bg-red-600/90 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-600 shadow-sm transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            O&apos;chirish
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        className={cn(
+                          "relative flex items-center justify-between gap-3 rounded-xl border border-dashed p-3 h-24 cursor-pointer transition-all",
+                          isUploadingImage
+                            ? "border-brand-400 bg-brand-50/30 dark:border-brand-700 dark:bg-brand-950/20"
+                            : "border-zinc-300 hover:border-brand-500 bg-zinc-50/60 hover:bg-brand-50/15 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:border-brand-500",
+                        )}
+                      >
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          disabled={isUploadingImage}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleImageFile(f);
+                          }}
+                        />
+                        {isUploadingImage ? (
+                          <div className="flex items-center gap-2 py-1 mx-auto">
+                            <Loader2 className="h-5 w-5 animate-spin text-brand-600 dark:text-brand-400" />
+                            <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                              Rasm yuklanmoqda...
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/80 dark:text-brand-400">
+                                <Upload className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                  Rasm yuklash
+                                </span>
+                                <span className="text-[11px] text-zinc-500 truncate">
+                                  PNG, JPG (5MB)
+                                </span>
+                              </div>
+                            </div>
+                            <span className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs border border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700">
+                              Tanlash
+                            </span>
+                          </>
+                        )}
+                      </label>
+                    )}
                   </div>
-                </label>
+
+                  {/* E'longa chiqarish */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      Sotuv va ko&apos;rinish
+                    </Label>
+                    <label className="flex items-start gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/60 hover:bg-zinc-100/60 dark:border-zinc-800 dark:bg-zinc-900/40 p-3 h-24 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700 shrink-0"
+                        {...form.register("isListed")}
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                          Darhol e&apos;longa chiqarilsin
+                        </span>
+                        <span className="text-[11px] text-zinc-500 leading-tight mt-0.5">
+                          Mijozlar ushbu stolni to&apos;g&apos;ridan-to&apos;g&apos;ri band qilishlari mumkin bo&apos;ladi
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             ) : (
               /* ═══════════════════════════════════════════════════════════════════
@@ -1021,16 +1142,17 @@ export function AddRoomDialog({
         </form>
       </Dialog>
 
-      {/* Xona turi yaratish dialogi (on-the-fly, faqat mehmonxona/hostel uchun) */}
-      {!restaurant && (
-        <RoomTypeDialog
-          open={openCreateType}
-          onClose={() => setOpenCreateType(false)}
-          onSuccess={(newType) => {
-            form.setValue("roomTypeId", newType.id, { shouldValidate: true, shouldDirty: true });
-          }}
-        />
-      )}
+      {/* Xona / Stol turi yaratish dialogi (on-the-fly) */}
+      <RoomTypeDialog
+        open={openCreateType}
+        onClose={() => setOpenCreateType(false)}
+        onSuccess={(newType) => {
+          form.setValue("roomTypeId", newType.id, { shouldValidate: true, shouldDirty: true });
+          if (restaurant && newType.capacity) {
+            form.setValue("capacity", newType.capacity, { shouldValidate: true, shouldDirty: true });
+          }
+        }}
+      />
     </>
   );
 }

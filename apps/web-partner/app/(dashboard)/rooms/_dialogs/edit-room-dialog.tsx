@@ -234,21 +234,30 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
             ? "Stol turi, sig'imi, qulayliklari, zali va rasmini o'zgartiring."
             : `${labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} raqami, ${labels.floorSingular}i, ${labels.unitTypeLabel.toLowerCase()} va sotuv holatini o'zgartiring.`
         }
-        size="md"
+        size="lg"
       >
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isSubmitting} className="flex flex-col gap-4 group-disabled:opacity-75">
             {restaurant ? (
               /* ═══════════════════════════════════════════════════════════════════
-                 RESTORAN STOL TAHRIRLASH (FOYDALANUVCHI TALABIGA MOS)
+                 RESTORAN STOL TAHRIRLASH (PREMIUM MODERN DESIGN & RESPONSIVE)
               ═══════════════════════════════════════════════════════════════════ */
-              <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-4">
                 {/* 1. Stol turi & Qaysi zalda joylashganligi */}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="er-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Stol turi <span className="text-red-500">*</span>
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="er-type" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol turi <span className="text-red-500">*</span>
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => setOpenEditType(true)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100/80 dark:bg-brand-950/60 dark:text-brand-400 dark:hover:bg-brand-900/50 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="h-3 w-3" /> Toifani tahrirlash
+                      </button>
+                    </div>
                     <Select
                       id="er-type"
                       value={selectedRoomTypeId}
@@ -263,7 +272,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
 
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="er-hall" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Qaysi zalda joylashgan? <span className="text-red-500">*</span>
+                      Joylashgan zali <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       id="er-hall"
@@ -283,7 +292,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                 </div>
 
                 {/* 2. Stol raqami va Necha kishilik (Sig'imi) */}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="er-number" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                       Stol raqami yoki nomi <span className="text-red-500">*</span>
@@ -304,28 +313,16 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="er-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                      <span>Necha kishilik? (Sig&apos;imi) <span className="text-red-500">*</span></span>
-                      <span className="text-[11px] font-normal text-zinc-500">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="er-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol sig&apos;imi <span className="text-red-500">*</span>
+                      </Label>
+                      <span className="text-[11px] font-semibold text-brand-600 dark:text-brand-400">
                         {currentCapacity} kishilik
                       </span>
-                    </Label>
+                    </div>
                     <div className="flex items-center gap-1.5">
-                      <Input
-                        id="er-capacity"
-                        type="number"
-                        min={1}
-                        max={50}
-                        className="w-20 text-center font-bold"
-                        value={currentCapacity}
-                        onChange={(e) =>
-                          form.setValue("capacity", Number(e.target.value) || 1, {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                          })
-                        }
-                      />
-                      <div className="flex flex-wrap gap-1">
+                      <div className="grid grid-cols-5 gap-1 flex-1">
                         {[2, 4, 6, 8, 12].map((cap) => (
                           <button
                             key={cap}
@@ -337,21 +334,39 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                               })
                             }
                             className={cn(
-                              "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer border",
+                              "h-9 rounded-lg text-xs font-bold transition-all border cursor-pointer flex items-center justify-center",
                               currentCapacity === cap
                                 ? "bg-brand-600 text-white border-brand-600 shadow-2xs"
-                                : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+                                : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:bg-zinc-700",
                             )}
                           >
                             {cap}
                           </button>
                         ))}
                       </div>
+                      <div className="relative w-16 shrink-0">
+                        <Input
+                          id="er-capacity"
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="Boshqa"
+                          title="Boshqa sig'im kiritish"
+                          className="h-9 px-1 text-center text-xs font-bold"
+                          value={currentCapacity}
+                          onChange={(e) =>
+                            form.setValue("capacity", Math.max(1, Number(e.target.value) || 1), {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 3. Stol qulayliklari (Multi-select Badges) */}
+                {/* 3. Stol qulayliklari (Multi-select Grid) */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
@@ -363,7 +378,7 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                         : "Ixtiyoriy"}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-2.5 dark:border-zinc-800 dark:bg-zinc-900/40">
                     {RESTAURANT_TABLE_AMENITY_OPTIONS.map((item) => {
                       const isSelected = currentAmenities.includes(item.value);
                       return (
@@ -372,143 +387,149 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                           type="button"
                           onClick={() => toggleAmenity(item.value)}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer border",
+                            "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition-all cursor-pointer border text-left",
                             isSelected
-                              ? "bg-brand-50 text-brand-700 border-brand-300 font-semibold shadow-2xs dark:bg-brand-950/60 dark:text-brand-300 dark:border-brand-700"
-                              : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-100/70 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+                              ? "bg-brand-50/90 text-brand-900 border-brand-400 font-semibold shadow-2xs dark:bg-brand-950/60 dark:text-brand-200 dark:border-brand-600 ring-1 ring-brand-400/40"
+                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-850 dark:text-zinc-300 dark:border-zinc-700/80 dark:hover:bg-zinc-800",
                           )}
                         >
-                          <span>{item.icon}</span>
-                          <span>{item.label}</span>
-                          {isSelected && <Check className="h-3 w-3 text-brand-600 dark:text-brand-400" />}
+                          <span className="text-sm shrink-0">{item.icon}</span>
+                          <span className="truncate flex-1 text-[11px] font-medium">{item.label}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 4. Stol rasmi (Drag & Drop / Upload / Preview) */}
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                    <span>Stol rasmi</span>
-                    {currentImageUrl && (
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Rasm biriktirilgan
-                      </span>
-                    )}
-                  </Label>
-
-                  {currentImageUrl ? (
-                    <div className="relative group overflow-hidden rounded-xl border border-zinc-200 bg-zinc-900/10 dark:border-zinc-800 h-36 w-full flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={currentImageUrl}
-                        alt="Stol rasmi"
-                        className="h-full w-full object-cover rounded-xl"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-white shadow-sm transition-colors">
-                          <Camera className="h-3.5 w-3.5" />
-                          Almashtirish
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) void handleImageFile(f);
-                            }}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            form.setValue("imageUrl", undefined, { shouldDirty: true });
-                            form.setValue("fileId", undefined, { shouldDirty: true });
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-red-600/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 shadow-sm transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          O&apos;chirish
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label
-                      className={cn(
-                        "relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all",
-                        isUploadingImage
-                          ? "border-brand-400 bg-brand-50/30 dark:border-brand-700 dark:bg-brand-950/20"
-                          : "border-zinc-200 bg-zinc-50/60 hover:border-zinc-300 hover:bg-zinc-100/60 dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-700",
-                      )}
-                    >
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        disabled={isUploadingImage}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleImageFile(f);
-                        }}
-                      />
-                      {isUploadingImage ? (
-                        <div className="flex flex-col items-center gap-1.5 py-2">
-                          <Loader2 className="h-6 w-6 animate-spin text-brand-600 dark:text-brand-400" />
-                          <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
-                            Rasm yuklanmoqda...
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 py-1">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-950/80 dark:text-brand-400">
-                            <Upload className="h-4 w-4" />
-                          </div>
-                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                            Stol rasmini yuklash
-                          </span>
-                          <span className="text-[11px] text-zinc-500">
-                            PNG, JPG, WEBP (5MB gacha)
-                          </span>
-                        </div>
-                      )}
-                    </label>
-                  )}
-                </div>
-
-                {/* 5. Holati va Sotuvda faolligi */}
-                <div className="grid gap-3 sm:grid-cols-2">
+                {/* 4. Stol rasmi va Holati / Sotuvda faolligi (Yonma-yon 2 ustun) */}
+                <div className="grid gap-3.5 sm:grid-cols-2 items-start">
+                  {/* Stol rasmi */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="er-status" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      Stol holati
-                    </Label>
-                    <Select
-                      id="er-status"
-                      value={currentStatus}
-                      onChange={(e) =>
-                        form.setValue("status", e.target.value as RoomStatus, { shouldDirty: true })
-                      }
-                      options={[
-                        { value: RoomStatus.VACANT_CLEAN, label: "Bo'sh (Buyurtmaga tayyor)" },
-                        { value: RoomStatus.OCCUPIED, label: "Band (Mehmonlar o'tiribdi)" },
-                        { value: RoomStatus.OUT_OF_SERVICE, label: "Vaqtincha xizmatda emas" },
-                      ]}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol rasmi
+                      </Label>
+                      <span className="text-[11px] text-zinc-400">Ixtiyoriy</span>
+                    </div>
+
+                    {currentImageUrl ? (
+                      <div className="relative group overflow-hidden rounded-xl border border-zinc-200 bg-zinc-900/10 dark:border-zinc-800 h-28 w-full flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={currentImageUrl}
+                          alt="Stol rasmi"
+                          className="h-full w-full object-cover rounded-xl"
+                        />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <label className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 hover:bg-white shadow-sm transition-colors">
+                            <Camera className="h-3 w-3" />
+                            Almashtirish
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) void handleImageFile(f);
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              form.setValue("imageUrl", undefined, { shouldDirty: true });
+                              form.setValue("fileId", undefined, { shouldDirty: true });
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md bg-red-600/90 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-600 shadow-sm transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            O&apos;chirish
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        className={cn(
+                          "relative flex items-center justify-between gap-3 rounded-xl border border-dashed p-3 h-28 cursor-pointer transition-all",
+                          isUploadingImage
+                            ? "border-brand-400 bg-brand-50/30 dark:border-brand-700 dark:bg-brand-950/20"
+                            : "border-zinc-300 hover:border-brand-500 bg-zinc-50/60 hover:bg-brand-50/15 dark:border-zinc-700 dark:bg-zinc-900/40 dark:hover:border-brand-500",
+                        )}
+                      >
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          disabled={isUploadingImage}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleImageFile(f);
+                          }}
+                        />
+                        {isUploadingImage ? (
+                          <div className="flex items-center gap-2 py-1 mx-auto">
+                            <Loader2 className="h-5 w-5 animate-spin text-brand-600 dark:text-brand-400" />
+                            <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                              Rasm yuklanmoqda...
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/80 dark:text-brand-400">
+                                <Upload className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                  Rasm yuklash
+                                </span>
+                                <span className="text-[11px] text-zinc-500 truncate">
+                                  PNG, JPG (5MB)
+                                </span>
+                              </div>
+                            </div>
+                            <span className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs border border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700">
+                              Tanlash
+                            </span>
+                          </>
+                        )}
+                      </label>
+                    )}
                   </div>
 
-                  <div className="flex flex-col justify-end">
-                    <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-900/40">
+                  {/* Holati va Sotuvda faolligi */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="er-status" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Stol holati
+                      </Label>
+                      <Select
+                        id="er-status"
+                        value={currentStatus}
+                        onChange={(e) =>
+                          form.setValue("status", e.target.value as RoomStatus, { shouldDirty: true })
+                        }
+                        options={[
+                          { value: RoomStatus.VACANT_CLEAN, label: "Bo'sh (Buyurtmaga tayyor)" },
+                          { value: RoomStatus.OCCUPIED, label: "Band (Mehmonlar o'tiribdi)" },
+                          { value: RoomStatus.OUT_OF_SERVICE, label: "Vaqtincha xizmatda emas" },
+                        ]}
+                      />
+                    </div>
+
+                    <label className="flex items-start gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/60 hover:bg-zinc-100/60 dark:border-zinc-800 dark:bg-zinc-900/40 p-2.5 cursor-pointer transition-colors mt-0.5">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700"
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-700 shrink-0"
                         {...form.register("isListed")}
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                           Sotuvda ko&apos;rinadi
                         </span>
-                        <span className="text-[10px] text-zinc-500">
-                          Platformada bron uchun ochiq
+                        <span className="text-[10px] text-zinc-500 leading-tight">
+                          Platformada bron qilish uchun ochiq
                         </span>
                       </div>
                     </label>
@@ -688,8 +709,8 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
         </form>
       </Dialog>
 
-      {/* Xona turini tahrirlash dialogi (faqat agar foydalanuvchi tur parametrlarini ham o'zgartirmoqchi bo'lsa) */}
-      {selectedRoomType && !restaurant && (
+      {/* Xona / Stol turini tahrirlash dialogi */}
+      {selectedRoomType && (
         <RoomTypeDialog
           open={openEditType}
           onClose={() => setOpenEditType(false)}

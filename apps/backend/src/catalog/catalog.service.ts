@@ -432,6 +432,13 @@ export class CatalogService {
         h.longitude::float8 AS longitude,
         h.check_in_time,
         h.check_out_time,
+        h.smoking_allowed,
+        h.pets_allowed,
+        h.children_allowed,
+        h.cancellation_policy_code,
+        h.extra_fees,
+        h.allows_cash,
+        h.allows_online_payment,
         CASE
           WHEN h.check_in_time IS NOT NULL AND h.check_out_time IS NOT NULL THEN h.check_in_time || ' - ' || h.check_out_time
           ELSE COALESCE(h.check_in_time, h.check_out_time, '')
@@ -463,7 +470,7 @@ export class CatalogService {
     const res = rows[0];
     const hotelId = String(res.id);
 
-    const [mediaRows, roomRows, cmsRows] = await Promise.all([
+    const [mediaRows, roomRows, cmsRows, amenityRows] = await Promise.all([
       this.postgres.query<{ url: string; category?: string | null }>(
         `SELECT url, category FROM media_files WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL AND url IS NOT NULL ORDER BY is_cover DESC, sort_order ASC`,
         [hotelId],
@@ -486,6 +493,14 @@ export class CatalogService {
         `SELECT metadata FROM cms_entries WHERE (id::text = $1 OR slug = $2) AND type = 'restaurant' LIMIT 1`,
         [hotelId, String(res.slug)],
       ),
+      this.postgres.query<{ id: string; code: string; name: unknown }>(
+        `SELECT a.id::text, a.code, a.name
+         FROM hotel_amenities ha
+         JOIN amenities a ON a.id = ha.amenity_id
+         WHERE ha.hotel_id = $1::uuid AND a.is_active = true
+         ORDER BY a.code ASC`,
+        [hotelId],
+      ),
     ]);
 
     const images = mediaRows.map((m) => publicMediaUrl(m.url));
@@ -496,6 +511,25 @@ export class CatalogService {
       capacity: r.max_adults || r.base_occupancy || 4,
       base_price: Number(r.base_price || 0),
     }));
+
+    const amenities = amenityRows.map((a) => ({
+      id: a.id,
+      code: a.code,
+      name: a.name,
+    }));
+
+    const rules = {
+      checkInTime: res.check_in_time,
+      checkOutTime: res.check_out_time,
+      smokingAllowed: Boolean(res.smoking_allowed),
+      petsAllowed: Boolean(res.pets_allowed),
+      childrenAllowed: Boolean(res.children_allowed),
+      cancellationPolicyCode: res.cancellation_policy_code || 'MODERATE',
+      customRules: Array.isArray(res.custom_rules) ? res.custom_rules : [],
+      extraFees: Array.isArray(res.extra_fees) ? res.extra_fees : [],
+      allowsCash: res.allows_cash !== false,
+      allowsOnlinePayment: res.allows_online_payment !== false,
+    };
 
     const cmsMeta = objectValue(cmsRows[0]?.metadata);
     const openingHours =
@@ -580,6 +614,8 @@ export class CatalogService {
       image_url: images[0] ?? '',
       images,
       tables,
+      amenities,
+      rules,
     };
   }
 

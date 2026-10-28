@@ -79,7 +79,9 @@
     "capacity": "Вместимость: {count} чел.",
     "viewMenu": "Посмотреть меню",
     "priceRange": "Диапазон цен",
-    "cuisines": "Кухня"
+    "cuisines": "Кухня",
+    "amenities": "Удобства и услуги",
+    "rules": "Правила и условия ресторана"
   },
   "filtersTitle": "Фильтры",
   "city": "Город",

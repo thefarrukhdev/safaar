@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Phone, Star, Clock, Utensils, Banknote, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { RestaurantBookingSection } from "@/components/features/restaurants/RestaurantBookingSection";
+import { RestaurantGallery } from "@/components/features/restaurants/RestaurantGallery";
+import { RestaurantAmenitiesSection } from "@/components/features/restaurants/RestaurantAmenitiesSection";
+import { RestaurantRulesSection } from "@/components/features/restaurants/RestaurantRulesSection";
 import { DetailLocationSection } from "@/components/features/shared/DetailLocationSection";
 import { ReviewsList } from "@/components/features/reviews/ReviewsList";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -109,41 +112,10 @@ export default async function RestaurantDetailPage({
       </div>
 
       {/* Main Cover and Gallery */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-card">
-        <div className="relative aspect-[21/9] w-full bg-white">
-          {restaurant.imageUrl ? (
-            <Image
-              src={restaurant.imageUrl}
-              alt={restaurant.name}
-              fill
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-slate-400">
-              <Utensils className="h-16 w-16" />
-            </div>
-          )}
-        </div>
-
-        {restaurant.images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-3">
-            {restaurant.images.map((img, idx) => (
-              <div
-                key={idx}
-                className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl bg-white"
-              >
-                <Image
-                  src={img}
-                  alt={`${restaurant.name} ${idx + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <RestaurantGallery
+        images={restaurant.images && restaurant.images.length > 0 ? restaurant.images : [restaurant.imageUrl].filter(Boolean)}
+        alt={restaurant.name}
+      />
 
       {/* Header Info */}
       <header className="flex flex-col gap-3">
@@ -223,7 +195,7 @@ export default async function RestaurantDetailPage({
       </header>
 
       {/* Body Content and Booking Form */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
         <div className="flex flex-col gap-8">
           {restaurant.description && (
             <section className="flex flex-col gap-2">
@@ -235,6 +207,19 @@ export default async function RestaurantDetailPage({
               </p>
             </section>
           )}
+
+          {/* Restaurant Amenities Section */}
+          <RestaurantAmenitiesSection
+            amenities={restaurant.amenities}
+            title={(dict as any).amenities || "Qulayliklar va xizmatlar"}
+          />
+
+          {/* Restaurant Rules Section */}
+          <RestaurantRulesSection
+            rules={restaurant.rules}
+            workingHours={restaurant.workingHours || restaurant.openingHours}
+            title={(dict as any).rules || "Restoran tartib-qoidalari va shartlari"}
+          />
 
           <section id="reviews" className="flex scroll-mt-24 flex-col gap-4 border-t border-slate-200 py-8 first:border-t-0 first:pt-0">
             <h2 className="text-2xl font-bold text-slate-900">
@@ -267,7 +252,7 @@ export default async function RestaurantDetailPage({
         </div>
 
         <aside className="lg:sticky lg:top-24">
-          <RestaurantBookingSection restaurant={restaurant} dict={dict} />
+          <RestaurantBookingSection restaurant={restaurant} dict={dict} isLoggedIn={!!session} />
         </aside>
       </div>
     </main>

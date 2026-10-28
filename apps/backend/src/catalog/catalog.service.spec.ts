@@ -531,11 +531,18 @@ describe('CatalogService.restaurant (single restaurant details with AIO metadata
             cuisine: ['Milliy', 'Turkcha'],
           },
         },
-      ]); // cms_entries metadata
+      ]) // cms_entries metadata
+      .mockResolvedValueOnce([
+        { id: 'amenity-1', code: 'wifi', name: { uz: 'Wi-Fi' } },
+      ]); // hotel_amenities
 
     const result = await service.restaurant('nook-restaurant');
 
     expect(result.id).toBe('rest-uuid-1');
+    expect(result.amenities).toEqual([
+      { id: 'amenity-1', code: 'wifi', name: { uz: 'Wi-Fi' } },
+    ]);
+    expect(result.rules).toBeDefined();
     expect(result.slug).toBe('nook-restaurant');
     expect(result.opening_hours).toBe('10:00 - 23:00');
     expect(result.price_range).toBe('150 000 - 300 000 UZS');

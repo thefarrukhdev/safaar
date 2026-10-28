@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
         hostname: 'pub-9055e0d28a444107a7df2431aff012ee.r2.dev',
       },
       {
+        protocol: 'https',
+        hostname: '**.up.railway.app',
+      },
+      {
+        protocol: 'https',
+        hostname: 'backend-production-87e6.up.railway.app',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
       },

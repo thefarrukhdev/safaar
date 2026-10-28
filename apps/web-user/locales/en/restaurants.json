@@ -79,7 +79,9 @@
     "capacity": "Capacity: {count} persons",
     "viewMenu": "View Menu",
     "priceRange": "Price range",
-    "cuisines": "Cuisines"
+    "cuisines": "Cuisines",
+    "amenities": "Amenities & Services",
+    "rules": "Restaurant Policies & Rules"
   },
   "filtersTitle": "Filters",
   "city": "City",

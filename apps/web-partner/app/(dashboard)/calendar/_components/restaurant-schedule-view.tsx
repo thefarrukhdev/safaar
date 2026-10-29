@@ -132,9 +132,8 @@ export function RestaurantScheduleView() {
   };
 
   const slots = useMemo(() => {
-    const generatedSlots = buildTimeSlots(listing.checkInTime, listing.checkOutTime);
-    return generatedSlots.length > 0 ? generatedSlots : buildTimeSlots("09:00", "23:59");
-  }, [listing.checkInTime, listing.checkOutTime]);
+    return buildTimeSlots(listing?.checkInTime, listing?.checkOutTime);
+  }, [listing?.checkInTime, listing?.checkOutTime]);
 
   const spanSlots = Math.max(1, Math.round(DEFAULT_SLOT_DURATION_MINUTES / SLOT_STEP_MINUTES));
 
@@ -227,11 +226,15 @@ export function RestaurantScheduleView() {
         let slotIdx = slots.indexOf(normSlot);
         if (slotIdx === -1) {
           const rMin = toMinutes(normSlot);
-          slotIdx = slots.findIndex(
-            (s, i) =>
-              toMinutes(s) <= rMin &&
-              (i === slots.length - 1 || toMinutes(slots[i + 1]) > rMin),
-          );
+          let minDiff = Infinity;
+          for (let i = 0; i < slots.length; i++) {
+            const sMin = toMinutes(slots[i]);
+            const diff = Math.abs(rMin - sMin);
+            if (diff < minDiff) {
+              minDiff = diff;
+              slotIdx = i;
+            }
+          }
         }
         if (slotIdx === -1) continue;
 
@@ -830,8 +833,8 @@ function RestaurantTableRow({
         </div>
         <span className="mt-1 flex w-full items-center justify-between gap-1 truncate text-[10px] text-[var(--muted-foreground)]">
           <span className="truncate">{secondaryLabel}</span>
-          {nightlyPrice ? <span>{formatMoney(nightlyPrice)}</span> : null}
         </span>
+
       </div>
 
       {slots.map((slot, i) => (

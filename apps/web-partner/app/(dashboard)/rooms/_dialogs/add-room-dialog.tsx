@@ -378,7 +378,7 @@ export function AddRoomDialog({
           roomTypeId: values.roomTypeId,
           status: values.status,
           isListed: values.isListed,
-          nightlyPrice: values.nightlyPrice,
+          nightlyPrice: restaurant ? 0 : values.nightlyPrice,
           capacity: values.capacity,
           amenities: values.amenities,
           fileId: values.fileId,
@@ -410,11 +410,12 @@ export function AddRoomDialog({
           count: values.count,
           floor: values.floor,
           roomTypeId: values.roomTypeId,
-          basePrice: values.nightlyPrice,
+          basePrice: restaurant ? 0 : values.nightlyPrice,
           capacity: values.capacity ?? selectedRoomType?.capacity,
           prefix: values.prefix?.trim() || undefined,
           amenities: values.amenities,
         });
+
 
         toast.success(
           `${res.added ?? values.count} ta ${labels.unitSingular} muvaffaqiyatli yaratildi!`,
@@ -889,11 +890,16 @@ export function AddRoomDialog({
                       </span>
                       <span>•</span>
                       <span>{selectedRoomType.capacity} {labels.capacitySuffix}</span>
-                      <span>•</span>
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                        {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
-                      </span>
+                      {!restaurant && (
+                        <>
+                          <span>•</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                            {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
+                          </span>
+                        </>
+                      )}
                     </div>
+
                   )}
                 </div>
 
@@ -945,7 +951,7 @@ export function AddRoomDialog({
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className={restaurant ? "grid gap-3" : "grid gap-3 sm:grid-cols-2"}>
                       <div className="flex flex-col gap-1.5">
                         <Label htmlFor="ar-status" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                           Boshlang&apos;ich holat
@@ -966,32 +972,35 @@ export function AddRoomDialog({
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="ar-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                          Maxsus narx (ixtiyoriy)
-                        </Label>
-                        <Controller
-                          name="nightlyPrice"
-                          control={form.control}
-                          render={({ field }) => (
-                            <MoneyInput
-                              id="ar-price"
-                              placeholder={selectedRoomType?.basePrice ? String(selectedRoomType.basePrice) : "Standart narx"}
-                              value={field.value}
-                              onChange={(e) =>
-                                field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                              }
-                              onBlur={field.onBlur}
-                              ref={field.ref}
-                              aria-invalid={Boolean(form.formState.errors.nightlyPrice)}
-                            />
-                          )}
-                        />
-                        <p className="text-[11px] text-zinc-500">
-                          Kiritilmasa, {labels.unitTypeLabel.toLowerCase()} narxi olinadi
-                        </p>
-                      </div>
+                      {!restaurant && (
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="ar-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            Maxsus narx (ixtiyoriy)
+                          </Label>
+                          <Controller
+                            name="nightlyPrice"
+                            control={form.control}
+                            render={({ field }) => (
+                              <MoneyInput
+                                id="ar-price"
+                                placeholder={selectedRoomType?.basePrice ? String(selectedRoomType.basePrice) : "Standart narx"}
+                                value={field.value}
+                                onChange={(e) =>
+                                  field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                                }
+                                onBlur={field.onBlur}
+                                ref={field.ref}
+                                aria-invalid={Boolean(form.formState.errors.nightlyPrice)}
+                              />
+                            )}
+                          />
+                          <p className="text-[11px] text-zinc-500">
+                            Kiritilmasa, {labels.unitTypeLabel.toLowerCase()} narxi olinadi
+                          </p>
+                        </div>
+                      )}
                     </div>
+
 
                     <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
                       <input

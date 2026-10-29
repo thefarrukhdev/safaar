@@ -165,12 +165,11 @@ export default async function RestaurantDetailPage({
               {(dict as any).detail?.workingHours || "Ish vaqti"}: {restaurant.openingHours || restaurant.workingHours}
             </span>
           )}
-          {restaurant.priceRange && (
-            <span className="flex items-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-2.5 py-1.5 shadow-xs">
-              <Banknote className="h-4 w-4 text-emerald-600" />
-              <span>{restaurant.priceRange}</span>
-            </span>
-          )}
+          <span className="flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200/80 px-2.5 py-1.5 shadow-xs">
+            <Banknote className="h-4 w-4 text-emerald-600" />
+            <span className="text-emerald-700 font-semibold">{locale === "ru" ? "Бесплатная бронь стола" : locale === "en" ? "Free table reservation" : "Bepul stol band qilish"}</span>
+          </span>
+
           {(restaurant.contactPhone || restaurant.phone) && (
             <a
               href={`tel:${(restaurant.contactPhone || restaurant.phone).replace(/\s+/g, "")}`}

@@ -191,7 +191,7 @@ export function RoomTypeDialog({
             imageUrl: values.imageUrl,
             bedType: values.bedType,
             sizeSqm: values.sizeSqm,
-            basePrice: values.basePrice,
+            basePrice: restaurant ? 0 : values.basePrice,
             capacity: values.capacity,
             amenities: values.amenities,
           },
@@ -208,10 +208,11 @@ export function RoomTypeDialog({
         imageUrl: values.imageUrl,
         bedType: values.bedType,
         sizeSqm: values.sizeSqm,
-        basePrice: values.basePrice,
+        basePrice: restaurant ? 0 : values.basePrice,
         capacity: values.capacity,
         amenities: values.amenities,
       });
+
 
       toast.success(`Yangi ${labels.unitTypeLabel.toLowerCase()} "${values.name}" qo'shildi`);
       onSuccess?.(created);
@@ -283,37 +284,37 @@ export function RoomTypeDialog({
           </div>
 
           {/* 2. NARX VA SIG'IM (2 ustun) */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rt-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                {restaurant ? "Minimal depozit / xarajat (so'm)" : `${labels.priceLabel} narx (so'm)`}{" "}
-                <span className="text-red-500">*</span>
-              </Label>
-              <Controller
-                name="basePrice"
-                control={form.control}
-                render={({ field }) => (
-                  <MoneyInput
-                    id="rt-price"
-                    placeholder={restaurant ? "0" : "350 000"}
-                    value={field.value}
-                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                    aria-invalid={Boolean(err.basePrice)}
-                  />
+          <div className={restaurant ? "grid gap-3" : "grid gap-3 sm:grid-cols-2"}>
+            {!restaurant && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="rt-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  {`${labels.priceLabel} narx (so'm)`} <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  name="basePrice"
+                  control={form.control}
+                  render={({ field }) => (
+                    <MoneyInput
+                      id="rt-price"
+                      placeholder="350 000"
+                      value={field.value}
+                      onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      aria-invalid={Boolean(err.basePrice)}
+                    />
+                  )}
+                />
+                {err.basePrice ? (
+                  <p className="text-xs text-red-500">{err.basePrice.message}</p>
+                ) : (
+                  <p className="text-[11px] text-zinc-500">
+                    {`Ushbu turdagi ${labels.unitPlural.toLowerCase()} uchun standart ${labels.pricingUnit} narx`}
+                  </p>
                 )}
-              />
-              {err.basePrice ? (
-                <p className="text-xs text-red-500">{err.basePrice.message}</p>
-              ) : (
-                <p className="text-[11px] text-zinc-500">
-                  {restaurant
-                    ? "Ushbu toifadagi stollar uchun minimal depozit miqdori"
-                    : `Ushbu turdagi ${labels.unitPlural.toLowerCase()} uchun standart ${labels.pricingUnit} narx`}
-                </p>
-              )}
-            </div>
+              </div>
+            )}
+
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rt-capacity" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">

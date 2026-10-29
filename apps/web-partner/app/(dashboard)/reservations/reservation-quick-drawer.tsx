@@ -340,36 +340,48 @@ export function ReservationQuickDrawer({
             To'lov va Moliya
           </h3>
           <div className="mt-3 flex flex-col gap-2.5 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[var(--muted-foreground)]">Jami narx:</span>
-              <span className="text-base font-semibold text-[var(--foreground)]">
-                {formatMoney(reservation.totalPrice)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[var(--muted-foreground)]">To'langan:</span>
-              <span
-                className={cn(
-                  "font-medium",
-                  reservation.paidAmount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--muted-foreground)]",
-                )}
-              >
-                {formatMoney(reservation.paidAmount)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between border-t border-[var(--border)] pt-2">
-              <span className="font-medium text-[var(--foreground)]">Qoldiq to'lov:</span>
-              <span
-                className={cn(
-                  "text-base font-bold",
-                  balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
-                )}
-              >
-                {formatMoney(balance)}
-              </span>
-            </div>
+            {reservation.totalPrice <= 0 ? (
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted-foreground)]">To'lov:</span>
+                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                  Bepul bron (Depozitsiz)
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--muted-foreground)]">Jami narx:</span>
+                  <span className="text-base font-semibold text-[var(--foreground)]">
+                    {formatMoney(reservation.totalPrice)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--muted-foreground)]">To'langan:</span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      reservation.paidAmount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--muted-foreground)]",
+                    )}
+                  >
+                    {formatMoney(reservation.paidAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-[var(--border)] pt-2">
+                  <span className="font-medium text-[var(--foreground)]">Qoldiq to'lov:</span>
+                  <span
+                    className={cn(
+                      "text-base font-bold",
+                      balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
+                    )}
+                  >
+                    {formatMoney(balance)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </section>
+
 
         {/* Special requests if present */}
         {reservation.specialRequests && (

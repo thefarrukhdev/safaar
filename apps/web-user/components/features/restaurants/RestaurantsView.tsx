@@ -22,7 +22,7 @@ function RestaurantCard({
  dict: CatalogDict["restaurants"];
  locale: Locale;
 }) {
- const price = item.averageCheckSum > 0 ? item.averageCheckSum : 180000;
+ const freeLabel = locale === "ru" ? "Bepul bron" : locale === "en" ? "Free reservation" : "Bepul bron";
  const tags = [
  item.cuisine,
  item.workingHours ? `🕒 ${item.workingHours}` : "🕒 09:00 - 23:00",
@@ -39,12 +39,12 @@ function RestaurantCard({
  location={[item.cityName, item.address].filter(Boolean).join(" · ")}
  tags={tags}
  price={{
- amount: price,
- period: (dict as any).averageCheck || "o'rtacha chek",
+ amount: freeLabel,
  }}
  actionLabel={(dict as any).viewDetails || "Batafsil"}
  />
  );
+
 }
 
 export function RestaurantsView({

@@ -18,10 +18,11 @@ export function NotificationsButton() {
   const { data } = useReservations();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [now] = useState(() => Date.now());
 
   const notifications = useMemo(() => {
     const isRecent = (createdAt?: string) =>
-      createdAt ? Date.now() - new Date(createdAt).getTime() < 24 * 3600 * 1000 : false;
+      createdAt ? now - new Date(createdAt).getTime() < 24 * 3600 * 1000 : false;
 
     const pending = data.filter(
       (r) =>
@@ -34,7 +35,7 @@ export function NotificationsButton() {
         r.status === BookingStatus.CONFIRMED,
     );
     return { pending, arrivalsToday };
-  }, [data]);
+  }, [data, now]);
 
   const total = notifications.pending.length + notifications.arrivalsToday.length;
 

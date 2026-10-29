@@ -190,8 +190,9 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
           roomTypeId: values.roomTypeId,
           status: values.status,
           isListed: values.isListed,
-          nightlyPrice: values.nightlyPrice,
+          nightlyPrice: restaurant ? 0 : values.nightlyPrice,
           capacity: values.capacity,
+
           amenities: values.amenities,
           fileId: values.fileId,
           imageUrl: values.imageUrl,
@@ -619,15 +620,19 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                       </span>
                       <span>•</span>
                       <span>{selectedRoomType.capacity} {labels.capacitySuffix}</span>
-                      <span>•</span>
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                        {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
-                      </span>
+                      {!restaurant && (
+                        <>
+                          <span>•</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                            {selectedRoomType.basePrice.toLocaleString("ru-RU")} {labels.pricingUnit}
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className={restaurant ? "grid gap-3" : "grid gap-3 sm:grid-cols-2"}>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="er-status" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                       {labels.unitStatusLabel}
@@ -647,31 +652,34 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="er-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                      {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} narxi (so&apos;m override)
-                    </Label>
-                    <Controller
-                      name="nightlyPrice"
-                      control={form.control}
-                      render={({ field }) => (
-                        <MoneyInput
-                          id="er-price"
-                          placeholder={selectedRoomType?.basePrice ? String(selectedRoomType.basePrice) : "Standart narx"}
-                          value={field.value}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                          }
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      )}
-                    />
-                    <p className="text-[11px] text-zinc-500">
-                      Standart narx: {selectedRoomType?.basePrice.toLocaleString("ru-RU") ?? 0} so&apos;m
-                    </p>
-                  </div>
+                  {!restaurant && (
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="er-price" className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        {labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)} narxi (so&apos;m override)
+                      </Label>
+                      <Controller
+                        name="nightlyPrice"
+                        control={form.control}
+                        render={({ field }) => (
+                          <MoneyInput
+                            id="er-price"
+                            placeholder={selectedRoomType?.basePrice ? String(selectedRoomType.basePrice) : "Standart narx"}
+                            value={field.value}
+                            onChange={(e) =>
+                              field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                            }
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                          />
+                        )}
+                      />
+                      <p className="text-[11px] text-zinc-500">
+                        Standart narx: {selectedRoomType?.basePrice.toLocaleString("ru-RU") ?? 0} so&apos;m
+                      </p>
+                    </div>
+                  )}
                 </div>
+
 
                 <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <input

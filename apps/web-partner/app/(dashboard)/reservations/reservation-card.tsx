@@ -266,37 +266,49 @@ export function ReservationCard({
           <div className="flex flex-col justify-between gap-3 border-t border-[var(--border)] p-4 sm:p-5 lg:border-l lg:border-t-0 bg-[var(--surface-muted)]/30">
             {/* Financial Rows */}
             <div className="flex flex-col gap-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--muted-foreground)]">Jami narx:</span>
-                <span className="font-bold text-sm text-[var(--foreground)]">
-                  {formatMoney(reservation.totalPrice)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--muted-foreground)]">To'langan:</span>
-                <span
-                  className={cn(
-                    "font-semibold",
-                    reservation.paidAmount > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-[var(--muted-foreground)]",
-                  )}
-                >
-                  {formatMoney(reservation.paidAmount)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-t border-[var(--border)] pt-1.5">
-                <span className="font-medium text-[var(--foreground)]">Qoldiq:</span>
-                <span
-                  className={cn(
-                    "font-bold text-sm tabular-nums",
-                    balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
-                  )}
-                >
-                  {formatMoney(balance)}
-                </span>
-              </div>
+              {reservation.totalPrice <= 0 ? (
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-[var(--muted-foreground)]">To'lov:</span>
+                  <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                    Bepul bron
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--muted-foreground)]">Jami narx:</span>
+                    <span className="font-bold text-sm text-[var(--foreground)]">
+                      {formatMoney(reservation.totalPrice)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--muted-foreground)]">To'langan:</span>
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        reservation.paidAmount > 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-[var(--muted-foreground)]",
+                      )}
+                    >
+                      {formatMoney(reservation.paidAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-[var(--border)] pt-1.5">
+                    <span className="font-medium text-[var(--foreground)]">Qoldiq:</span>
+                    <span
+                      className={cn(
+                        "font-bold text-sm tabular-nums",
+                        balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
+                      )}
+                    >
+                      {formatMoney(balance)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
+
 
             {/* Actions Bar */}
             <div

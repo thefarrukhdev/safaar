@@ -328,8 +328,23 @@ export function ReservationsTable({
         header: ({ column }) => <SortableHeader column={column} label="Summa & To'lov" />,
         cell: ({ row }) => {
           const r = row.original;
+          const isFree = r.totalPrice <= 0;
           const isPaid = r.paidAmount >= r.totalPrice && r.totalPrice > 0;
           const balance = Math.max(0, r.totalPrice - r.paidAmount);
+
+          if (isFree) {
+            return (
+              <div className="flex flex-col gap-0.5 min-w-[110px]">
+                <span className="font-semibold text-xs text-emerald-600 dark:text-emerald-400">
+                  Bepul bron
+                </span>
+                <span className="text-[11px] text-zinc-400">
+                  Depozitsiz
+                </span>
+              </div>
+            );
+          }
+
           return (
             <div className="flex flex-col gap-0.5 min-w-[110px]">
               <span className="font-semibold text-xs text-[var(--foreground)] tabular-nums">
@@ -347,6 +362,7 @@ export function ReservationsTable({
             </div>
           );
         },
+
       },
       {
         id: "status",

@@ -179,13 +179,14 @@ export function WalkInDialog({
     const nights = restaurant ? 1 : nightsBetween(watchedCheckIn, watchedCheckOut);
     const selectedRoom = rooms.find((r) => r.number === watchedRoomNumber);
     const selectedType = roomTypes.find((t) => t.id === watchedRoomTypeId);
-    const unitPrice = selectedRoom?.nightlyPrice ?? selectedType?.basePrice ?? 0;
+    const unitPrice = restaurant ? 0 : (selectedRoom?.nightlyPrice ?? selectedType?.basePrice ?? 0);
     const total = unitPrice * nights;
     return {
       days: nights,
       total,
       unitName: selectedRoom ? `${selectedRoom.number} (${selectedRoom.roomTypeName})` : selectedType?.name,
     };
+
   }, [
     isBus,
     restaurant,
@@ -286,8 +287,9 @@ export function WalkInDialog({
       const selectedRoom = effectiveRoomNumber
         ? rooms.find((room) => room.number === effectiveRoomNumber)
         : null;
-      const nightlyPrice = selectedRoom?.nightlyPrice ?? roomType.basePrice;
+      const nightlyPrice = restaurant ? 0 : (selectedRoom?.nightlyPrice ?? roomType.basePrice);
       const total = nightlyPrice * nights;
+
 
       const created = await createReservation.mutateAsync({
         fullName: values.fullName.trim(),
@@ -643,13 +645,16 @@ export function WalkInDialog({
             </span>
           </div>
           <div className="text-right">
-            <span className="text-slate-500 dark:text-zinc-400 mr-1.5">Taxminiy to'lov:</span>
+            <span className="text-slate-500 dark:text-zinc-400 mr-1.5">{restaurant ? "Band qilish:" : "Taxminiy to'lov:"}</span>
             <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
-              {liveCalculation.total > 0
-                ? `${liveCalculation.total.toLocaleString("uz-UZ")} so'm`
-                : "—"}
+              {restaurant
+                ? "Bepul"
+                : liveCalculation.total > 0
+                  ? `${liveCalculation.total.toLocaleString("uz-UZ")} so'm`
+                  : "—"}
             </span>
           </div>
+
         </div>
 
       </form>

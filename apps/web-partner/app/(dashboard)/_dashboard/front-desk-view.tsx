@@ -92,6 +92,7 @@ export function FrontDeskView() {
     useState<ReservationView | null>(null);
   const [drawerReservation, setDrawerReservation] =
     useState<ReservationView | null>(null);
+  const [now] = useState(() => Date.now());
 
   // Mantiqiy navbatdagi vazifalar
   const tasks: Task[] = useMemo(() => {
@@ -100,7 +101,7 @@ export function FrontDeskView() {
     const end = dateRange.endDate;
 
     for (const r of reservations.data) {
-      const isRecent = r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 24 * 3600 * 1000;
+      const isRecent = r.createdAt && now - new Date(r.createdAt).getTime() < 24 * 3600 * 1000;
       if (
         r.status === BookingStatus.PENDING ||
         r.status === BookingStatus.AWAITING_PARTNER_CONFIRMATION
@@ -125,7 +126,7 @@ export function FrontDeskView() {
         (b.reservation.createdAt || "").localeCompare(a.reservation.createdAt || "") ||
         a.reservation.checkIn.localeCompare(b.reservation.checkIn),
     );
-  }, [reservations.data, dateRange]);
+  }, [reservations.data, dateRange, now]);
 
   // Hisoblagichlar
   const counts: Record<FilterKey, number> = useMemo(() => {

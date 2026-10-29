@@ -112,6 +112,7 @@ export function ReservationsView() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [now] = useState(() => Date.now());
 
   // Dialog targets
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -268,7 +269,7 @@ export function ReservationsView() {
   const focusItems = useMemo(() => {
     const today = todayIso();
     const isRecent = (r: ReservationView) =>
-      r.createdAt ? Date.now() - new Date(r.createdAt).getTime() < 24 * 3600 * 1000 : false;
+      r.createdAt ? now - new Date(r.createdAt).getTime() < 24 * 3600 * 1000 : false;
     return data
       .filter(
         (r) =>
@@ -292,7 +293,7 @@ export function ReservationsView() {
         );
       })
       .slice(0, 5);
-  }, [data]);
+  }, [data, now]);
 
   // Action handlers
   const handleConfirm = useCallback(

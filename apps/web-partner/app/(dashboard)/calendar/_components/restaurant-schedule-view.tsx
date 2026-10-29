@@ -797,7 +797,6 @@ function RestaurantTableRow({
   primaryLabel,
   secondaryLabel,
   isListed,
-  nightlyPrice,
   gridRow,
   slots,
   bars,

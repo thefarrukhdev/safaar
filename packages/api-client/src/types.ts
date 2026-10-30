@@ -29,6 +29,8 @@ export interface HotelListItem {
   latitude?: number;
   longitude?: number;
   amenities?: string[];
+  type?: string;
+  partnerType?: string;
 }
 
 /** Admin tomonidan tasdiqlangan (`published`) va joriy amaldagi chegirma — faqat ko'rsatish, bron summasidan mustaqil. */

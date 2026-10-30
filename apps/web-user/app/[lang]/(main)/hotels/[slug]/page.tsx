@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { isLocale, type Locale, locales } from '@/i18n/config';
 import { config } from '@/lib/config';
@@ -135,6 +135,13 @@ export default async function Page({
 
   if (hotel === 404) {
     notFound();
+  }
+
+  if (
+    (hotel as any).partnerType === 'restaurant' ||
+    (hotel as any).type === 'restaurant'
+  ) {
+    redirect(`/${locale}/restaurants/${slug}`);
   }
 
   if (!hotel) {

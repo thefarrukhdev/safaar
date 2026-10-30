@@ -152,12 +152,16 @@ interface RawHotel {
   discount_amount?: number;
   city?: RawCity;
   rooms?: RawRoom[];
+  type?: string;
+  partner_type?: string;
+  partnerType?: string;
 }
 
 function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
   const baseMinPriceSum = raw.base_min_price ?? raw.baseMinPrice;
   const minPriceSum = Number(raw.min_price ?? raw.minPrice ?? 0);
   const discountAmount = raw.discount_amount ?? raw.discountAmount ?? (baseMinPriceSum ? baseMinPriceSum - minPriceSum : 0);
+  const type = raw.type ?? raw.partnerType ?? raw.partner_type;
 
   return {
     id: raw.id,
@@ -173,6 +177,7 @@ function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
     latitude: raw.latitude,
     longitude: raw.longitude,
     amenities: raw.amenities ?? [],
+    ...(type ? { type, partnerType: type } : {}),
   };
 }
 

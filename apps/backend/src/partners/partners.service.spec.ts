@@ -91,7 +91,9 @@ describe('PartnersService frontend action endpoints', () => {
       ),
       [actor.organizationId, 50, 0],
     );
-    expect(pgMock.query.mock.calls[0]?.[0]).toContain('AND h.deleted_at IS NULL');
+    expect(pgMock.query.mock.calls[0]?.[0]).toContain(
+      'AND h.deleted_at IS NULL',
+    );
   });
 
   it('keeps a reset draft name empty instead of falling back to its slug', async () => {
@@ -4737,7 +4739,14 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
     it('createRoom handles table amenities, capacity, and photo attachment', async () => {
       const roomTypeId = '00000000-0000-0000-0000-000000000001';
       query
-        .mockResolvedValueOnce([{ id: 'hotel-123', partner_type: 'restaurant', partner_organization_id: partnerActor.organizationId, owner_id: 'partner-user-1' }]) // assertHotel
+        .mockResolvedValueOnce([
+          {
+            id: 'hotel-123',
+            partner_type: 'restaurant',
+            partner_organization_id: partnerActor.organizationId,
+            owner_id: 'partner-user-1',
+          },
+        ]) // assertHotel
         .mockResolvedValueOnce([{ id: roomTypeId, capacity: 4, base_price: 0 }]) // assertRoomType
         .mockResolvedValueOnce([]) // INSERT INTO hotel_rooms
         .mockResolvedValueOnce([{ code: 'window', id: 'amenity-window-id' }]) // SELECT code, id from amenities
@@ -4774,7 +4783,14 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
 
     it('updateRoom updates table amenities, capacity, and photo', async () => {
       query
-        .mockResolvedValueOnce([{ id: 'hotel-123', partner_type: 'restaurant', partner_organization_id: partnerActor.organizationId, owner_id: 'partner-user-1' }]) // assertHotel
+        .mockResolvedValueOnce([
+          {
+            id: 'hotel-123',
+            partner_type: 'restaurant',
+            partner_organization_id: partnerActor.organizationId,
+            owner_id: 'partner-user-1',
+          },
+        ]) // assertHotel
         .mockResolvedValueOnce([{ id: 'amenity-vip-id', code: 'vip' }]) // SELECT code, id from amenities
         .mockResolvedValueOnce([]) // DELETE FROM room_amenities
         .mockResolvedValueOnce([]) // INSERT INTO room_amenities
@@ -4790,12 +4806,17 @@ describe('PartnersService.reviews and replyReview (GET /partners/reviews, POST /
           },
         ]); // SELECT enriched hotel_rooms
 
-      const updated = await service.updateRoom(partnerActor, 'hotel-123', 'room-1', {
-        number: 'VIP-1',
-        capacity: 8,
-        amenities: ['vip'],
-        fileId: 'media-vip-1',
-      });
+      const updated = await service.updateRoom(
+        partnerActor,
+        'hotel-123',
+        'room-1',
+        {
+          number: 'VIP-1',
+          capacity: 8,
+          amenities: ['vip'],
+          fileId: 'media-vip-1',
+        },
+      );
 
       expect(updated).toMatchObject({
         id: 'room-1',

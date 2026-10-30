@@ -1706,11 +1706,7 @@ export class BookingsService {
     // Restoran stoli bron qilishda SMS OTP tasdiqlash talab qilinmaydi
     const consumeOtp = isRestaurant
       ? undefined
-      : await this.validateCashBookingOtpIfNeeded(
-          dto,
-          guest.phone,
-          actor,
-        );
+      : await this.validateCashBookingOtpIfNeeded(dto, guest.phone, actor);
 
     const promoCode = this.optionalText(dto.promo_code ?? dto.promoCode);
     const promo = await this.resolvePromo(promoCode);

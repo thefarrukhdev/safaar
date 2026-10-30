@@ -698,7 +698,6 @@ export function RestaurantScheduleView() {
                   primaryLabel={row.primaryLabel}
                   secondaryLabel={row.secondaryLabel}
                   isListed={row.isListed}
-                  nightlyPrice={row.nightlyPrice}
                   gridRow={gridRow}
                   slots={slots}
                   bars={bars}
@@ -779,7 +778,6 @@ interface RestaurantTableRowProps {
   primaryLabel: string;
   secondaryLabel: string;
   isListed: boolean;
-  nightlyPrice?: number;
   gridRow: number;
   slots: string[];
   bars: Array<{

@@ -12,6 +12,7 @@ import { EmptyState } from "../../../_components/ui/empty-state";
 import { Input } from "../../../_components/ui/input";
 import { Label } from "../../../_components/ui/label";
 import { Tooltip } from "../../../_components/ui/tooltip";
+import { TimePicker, normalizeTimeValue } from "../../../_components/ui/time-picker";
 import {
   useListing,
   useUpdateListingRules,
@@ -106,10 +107,15 @@ export function RulesEditor({
   const { data: rooms } = useRooms();
   const createRoom = useCreateRoom();
 
+  const defaultCheckIn = normalizeTimeValue(data.checkInTime) || (restaurant ? "09:00" : "14:00");
+  const defaultCheckOut = normalizeTimeValue(data.checkOutTime) || (restaurant ? "23:00" : "12:00");
+
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       ...data,
+      checkInTime: defaultCheckIn,
+      checkOutTime: defaultCheckOut,
       customRules: data.customRules ?? [],
       dachaPrice: roomType?.basePrice ?? 0,
       dachaCapacity: roomType?.capacity ?? 2,
@@ -121,15 +127,19 @@ export function RulesEditor({
     if (open) {
       form.reset({
         ...data,
+        checkInTime: normalizeTimeValue(data.checkInTime) || (restaurant ? "09:00" : "14:00"),
+        checkOutTime: normalizeTimeValue(data.checkOutTime) || (restaurant ? "23:00" : "12:00"),
         customRules: data.customRules ?? [],
         dachaPrice: roomType?.basePrice ?? 0,
         dachaCapacity: roomType?.capacity ?? 2,
         dachaRoomsCount: parseInt(roomType?.description || "3", 10) || 3,
       });
     }
-  }, [open, data, form, roomType]);
+  }, [open, data, form, roomType, restaurant]);
 
   const watched = useWatch({ control: form.control });
+  const checkInTime = watched.checkInTime ?? defaultCheckIn;
+  const checkOutTime = watched.checkOutTime ?? defaultCheckOut;
   const currentPolicy = watched.cancellationPolicy ?? data.cancellationPolicy;
   const smokingAllowed = watched.smokingAllowed ?? data.smokingAllowed;
   const petsAllowed = watched.petsAllowed ?? data.petsAllowed;
@@ -138,7 +148,11 @@ export function RulesEditor({
 
   const onSave = form.handleSubmit(async (v) => {
     try {
-      await update.mutateAsync({ ...v, extraFees: data.extraFees });
+      const payload: Record<string, unknown> = { ...v, extraFees: data.extraFees };
+      if (!v.customRules || v.customRules.length === 0) {
+        delete payload.customRules;
+      }
+      await update.mutateAsync(payload as any);
       
       if (dacha) {
         const rtValues = {
@@ -237,25 +251,72 @@ export function RulesEditor({
         )}
         {/* Vaqtlar */}
         <section className="flex flex-col gap-3">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-            {labels.openingTimeLabel} va {labels.closingTimeLabel.toLowerCase()}
-          </h3>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-0.5">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              {labels.openingTimeLabel} va {labels.closingTimeLabel.toLowerCase()}
+            </h3>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              24 soatlik formatda tanlang yoki tezkor tugmalardan foydalaning.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="in">{labels.openingTimeLabel}</Label>
-              <Input
+              <TimePicker
                 id="in"
-                type="time"
-                {...form.register("checkInTime")}
+                value={checkInTime}
+                onChange={(val) =>
+                  form.setValue("checkInTime", val, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                presets={
+                  restaurant
+                    ? ["08:00", "09:00", "10:00", "11:00", "12:00"]
+                    : dacha
+                      ? ["12:00", "14:00", "15:00", "18:00"]
+                      : isBus
+                        ? ["06:00", "08:00", "10:00", "14:00"]
+                        : ["12:00", "13:00", "14:00", "15:00"]
+                }
+                placeholder="Masalan: 09:00"
+                error={Boolean(form.formState.errors.checkInTime)}
               />
+              {form.formState.errors.checkInTime?.message && (
+                <p className="text-xs text-red-500 font-medium">
+                  {form.formState.errors.checkInTime.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="out">{labels.closingTimeLabel}</Label>
-              <Input
+              <TimePicker
                 id="out"
-                type="time"
-                {...form.register("checkOutTime")}
+                value={checkOutTime}
+                onChange={(val) =>
+                  form.setValue("checkOutTime", val, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                presets={
+                  restaurant
+                    ? ["22:00", "23:00", "00:00", "01:00", "02:00"]
+                    : dacha
+                      ? ["10:00", "11:00", "12:00", "17:00"]
+                      : isBus
+                        ? ["18:00", "20:00", "22:00", "00:00"]
+                        : ["10:00", "11:00", "12:00", "13:00"]
+                }
+                placeholder="Masalan: 23:00"
+                error={Boolean(form.formState.errors.checkOutTime)}
               />
+              {form.formState.errors.checkOutTime?.message && (
+                <p className="text-xs text-red-500 font-medium">
+                  {form.formState.errors.checkOutTime.message}
+                </p>
+              )}
             </div>
           </div>
         </section>

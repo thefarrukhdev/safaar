@@ -464,7 +464,8 @@ export class HotelsService {
         updated_at: r.updated_at,
         name: listingData.names.get(String(r.id)) ?? localized(r.name),
         description:
-          listingData.descriptions.get(String(r.id)) ?? localized(r.description),
+          listingData.descriptions.get(String(r.id)) ??
+          localized(r.description),
         city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
         amenities: listingData.amenities.get(String(r.id)) ?? [],
         images,

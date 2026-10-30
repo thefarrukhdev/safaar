@@ -234,7 +234,11 @@ export function AccommodationCard({
       ).slice(0, 3)
     : [];
 
-  const amenityPills = rawPills.length > 0 ? rawPills : ["Wi-Fi"];
+  const isRestaurant = hotel.type === "restaurant" || hotel.partnerType === "restaurant";
+  const defaultPill = isRestaurant
+    ? (locale === "ru" ? "Ресторан" : locale === "en" ? "Restaurant" : "Restoran")
+    : "Wi-Fi";
+  const amenityPills = rawPills.length > 0 ? rawPills : [defaultPill];
 
   const perNight = labels.perNight ?? DEFAULT_PER_NIGHT[locale] ?? "kecha";
   const price = hotel.minPriceSum > 0 ? hotel.minPriceSum : undefined;
@@ -249,6 +253,16 @@ export function AccommodationCard({
     </span>
   ) : undefined;
 
+  const cardPrice = isRestaurant
+    ? { amount: locale === "ru" ? "Бесплатная бронь" : locale === "en" ? "Free booking" : "Bepul bron" }
+    : price
+      ? { amount: price, oldAmount: oldPrice, period: `1 ${perNight}` }
+      : undefined;
+
+  const href = isRestaurant
+    ? `/${locale}/restaurants/${hotel.slug || hotel.id}`
+    : `/${locale}/hotels/${hotel.slug || hotel.id}`;
+
   return (
     <UniversalCard
       imageSrc={imageUrl}
@@ -259,9 +273,9 @@ export function AccommodationCard({
       title={hotel.name}
       location={hotel.cityName}
       tags={amenityPills}
-      href={`/${locale}/hotels/${hotel.slug}`}
+      href={href}
       topLeft={discountBadge}
-      price={price ? { amount: price, oldAmount: oldPrice, period: `1 ${perNight}` } : undefined}
+      price={cardPrice}
       locale={locale}
       actionLabel={actionLabel}
     />

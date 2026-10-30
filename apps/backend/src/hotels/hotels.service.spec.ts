@@ -124,6 +124,21 @@ describe('HotelsService.findAll', () => {
       expect(sql).not.toContain('featured_order');
       expect(sql).toContain('ORDER BY h.rating_average DESC');
     });
+
+    it('includes restaurants in po.type IN list when ?featured=true', async () => {
+      pg.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.findAll({ featured: 'true' });
+
+      const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain(
+        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort', 'restaurant')",
+      );
+    });
   });
 
   it.each(['dacha', 'resort', 'sanatorium'])(
@@ -541,7 +556,7 @@ describe('HotelsService.findOne', () => {
 
     const [sql] = pg.query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain(
-      "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'sanatorium', 'resort', 'mixed')",
+      "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'sanatorium', 'resort', 'mixed', 'restaurant')",
     );
   });
 

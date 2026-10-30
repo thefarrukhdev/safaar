@@ -89,12 +89,21 @@ export class HotelsService {
     const accommodationTypes = normalizeAccommodationTypes(
       query.types ?? query.type,
     );
+    const rawType = String(first(query.types ?? query.type) ?? '')
+      .trim()
+      .toLowerCase();
     if (accommodationTypes.length === 1) {
       conditions.push(`po.type = $${paramIndex++}`);
       params.push(accommodationTypes[0]);
     } else if (accommodationTypes.length > 1) {
       conditions.push(`po.type::text = ANY($${paramIndex++}::text[])`);
       params.push(accommodationTypes);
+    } else if (rawType === 'restaurant' && query.featured === 'true') {
+      conditions.push(`po.type = 'restaurant'`);
+    } else if (query.featured === 'true') {
+      conditions.push(
+        "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort', 'restaurant')",
+      );
     } else {
       conditions.push(
         "po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'mixed', 'sanatorium', 'resort')",
@@ -405,6 +414,9 @@ export class HotelsService {
         ht.name, ht.description,
         c.name as city_name, c.region_id::text,
         rp.min_price::float8,
+        po.type::text as partner_type,
+        po.type::text as type,
+        po.logo_url as partner_logo_url,
         COALESCE(h.allows_cash, true) as allows_cash,
         COALESCE(h.allows_online_payment, true) as allows_online_payment,
         COUNT(*) OVER()::int AS total_count
@@ -423,33 +435,45 @@ export class HotelsService {
       rows.map((row) => String((row as Record<string, unknown>).id)),
     );
 
-    const mapped = rows.map((r: Record<string, unknown>) => ({
-      id: r.id,
-      partner_organization_id: r.partner_organization_id,
-      slug: r.slug,
-      city_id: r.city_id,
-      address: r.address,
-      latitude: Number(r.latitude),
-      longitude: Number(r.longitude),
-      stars: Number(r.stars),
-      rating_average: Number(r.rating_average),
-      reviews_count: Number(r.reviews_count),
-      status: r.status,
-      featured: r.featured ?? false,
-      check_in_time: r.check_in_time,
-      check_out_time: r.check_out_time,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-      name: listingData.names.get(String(r.id)) ?? localized(r.name),
-      description:
-        listingData.descriptions.get(String(r.id)) ?? localized(r.description),
-      city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
-      amenities: listingData.amenities.get(String(r.id)) ?? [],
-      images: listingData.images.get(String(r.id)) ?? [],
-      min_price: Number(r.min_price || 0),
-      allows_cash: Boolean(r.allows_cash ?? true),
-      allows_online_payment: Boolean(r.allows_online_payment ?? true),
-    }));
+    const mapped = rows.map((r: Record<string, unknown>) => {
+      const listingImages = listingData.images.get(String(r.id)) ?? [];
+      const images =
+        listingImages.length > 0
+          ? listingImages
+          : r.partner_logo_url
+            ? [String(r.partner_logo_url)]
+            : [];
+      return {
+        id: r.id,
+        partner_organization_id: r.partner_organization_id,
+        partner_type: r.partner_type,
+        type: r.type ?? r.partner_type,
+        slug: r.slug,
+        city_id: r.city_id,
+        address: r.address,
+        latitude: Number(r.latitude),
+        longitude: Number(r.longitude),
+        stars: Number(r.stars),
+        rating_average: Number(r.rating_average),
+        reviews_count: Number(r.reviews_count),
+        status: r.status,
+        featured: r.featured ?? false,
+        check_in_time: r.check_in_time,
+        check_out_time: r.check_out_time,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        name: listingData.names.get(String(r.id)) ?? localized(r.name),
+        description:
+          listingData.descriptions.get(String(r.id)) ?? localized(r.description),
+        city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
+        amenities: listingData.amenities.get(String(r.id)) ?? [],
+        images,
+        image_url: images[0] ?? null,
+        min_price: Number(r.min_price || 0),
+        allows_cash: Boolean(r.allows_cash ?? true),
+        allows_online_payment: Boolean(r.allows_online_payment ?? true),
+      };
+    });
 
     const total = totalCount(rows);
     return {
@@ -473,7 +497,9 @@ export class HotelsService {
         COALESCE(h.allows_online_payment, true) as allows_online_payment,
         ht.name, ht.description,
         c.name as city_name, c.region_id::text,
-        po.phone as contact_phone
+        po.phone as contact_phone,
+        po.type::text as partner_type,
+        po.type::text as type
       FROM hotels h
       JOIN partner_organizations po ON po.id = h.partner_organization_id
       LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
@@ -482,7 +508,7 @@ export class HotelsService {
         AND h.status = 'published'
         AND h.deleted_at IS NULL
         AND po.status = 'approved'
-        AND po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'sanatorium', 'resort', 'mixed')`,
+        AND po.type IN ('hotel', 'hostel', 'guesthouse', 'motel', 'dacha', 'sanatorium', 'resort', 'mixed', 'restaurant')`,
       [slugOrId],
     );
 
@@ -529,6 +555,8 @@ export class HotelsService {
     return {
       id: h.id,
       partner_organization_id: h.partner_organization_id,
+      partner_type: h.partner_type,
+      type: h.type ?? h.partner_type,
       slug: h.slug,
       city_id: h.city_id,
       address: h.address,

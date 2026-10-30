@@ -5404,14 +5404,26 @@ export class AdminService {
         message: "Nomi (o'zbekcha) kiritilishi shart",
       });
     }
-    const ru = name.ru ? String(name.ru).trim() : body.ru ? String(body.ru).trim() : uz;
-    const en = name.en ? String(name.en).trim() : body.en ? String(body.en).trim() : uz;
+    const ru = name.ru
+      ? String(name.ru).trim()
+      : body.ru
+        ? String(body.ru).trim()
+        : uz;
+    const en = name.en
+      ? String(name.en).trim()
+      : body.en
+        ? String(body.en).trim()
+        : uz;
     const categories = Array.isArray(name.categories)
       ? name.categories.map(String).filter(Boolean)
       : Array.isArray(body.categories)
         ? body.categories.map(String).filter(Boolean)
         : undefined;
-    const icon = name.icon ? String(name.icon).trim() : body.icon ? String(body.icon).trim() : undefined;
+    const icon = name.icon
+      ? String(name.icon).trim()
+      : body.icon
+        ? String(body.icon).trim()
+        : undefined;
 
     const payload: Record<string, unknown> = {
       uz,

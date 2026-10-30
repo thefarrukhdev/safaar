@@ -1911,7 +1911,11 @@ export class PartnersService {
       },
       {
         slug: 'oila-uchun',
-        name: { uz: 'Oila uchun stol', ru: 'Семейный стол', en: 'Family Table' },
+        name: {
+          uz: 'Oila uchun stol',
+          ru: 'Семейный стол',
+          en: 'Family Table',
+        },
         description: 'Oila va bolalar bilan qulay dam olish uchun (4-6 kishi)',
         capacity: 6,
         basePrice: 0,
@@ -1919,15 +1923,24 @@ export class PartnersService {
       },
       {
         slug: 'vip-kabinet',
-        name: { uz: 'VIP kabinet', ru: 'VIP кабинет / Комната', en: 'VIP Booth / Private Room' },
-        description: 'Alohida shinam VIP xona, biznes va maxsus uchrashuvlar uchun (6-8 kishi)',
+        name: {
+          uz: 'VIP kabinet',
+          ru: 'VIP кабинет / Комната',
+          en: 'VIP Booth / Private Room',
+        },
+        description:
+          'Alohida shinam VIP xona, biznes va maxsus uchrashuvlar uchun (6-8 kishi)',
         capacity: 8,
         basePrice: 100000,
         amenities: ['wifi', 'ac', 'tv_screens', 'vip_room'],
       },
       {
         slug: 'ochiq-terrasa',
-        name: { uz: 'Ochiq terrasa', ru: 'Открытая терраса', en: 'Open Terrace' },
+        name: {
+          uz: 'Ochiq terrasa',
+          ru: 'Открытая терраса',
+          en: 'Open Terrace',
+        },
         description: 'Toza havoda ochiq terrasadagi stol (2-4 kishi)',
         capacity: 4,
         basePrice: 0,
@@ -1935,15 +1948,24 @@ export class PartnersService {
       },
       {
         slug: 'katta-kompaniya',
-        name: { uz: 'Katta kompaniya stoli', ru: 'Стол для большой компании', en: 'Large Group Table' },
-        description: "Do'stlar va jamoaviy uchrashuvlar uchun katta stol (8-12 kishi)",
+        name: {
+          uz: 'Katta kompaniya stoli',
+          ru: 'Стол для большой компании',
+          en: 'Large Group Table',
+        },
+        description:
+          "Do'stlar va jamoaviy uchrashuvlar uchun katta stol (8-12 kishi)",
         capacity: 12,
         basePrice: 150000,
         amenities: ['wifi', 'ac'],
       },
       {
         slug: 'tapchan-sori',
-        name: { uz: 'Tapchan / So‘ri', ru: 'Топчан', en: 'Topchan / Traditional Couch' },
+        name: {
+          uz: 'Tapchan / So‘ri',
+          ru: 'Топчан',
+          en: 'Topchan / Traditional Couch',
+        },
         description: "Milliy uslubdagi shinam tapchan/so'ri (6-8 kishi)",
         capacity: 8,
         basePrice: 50000,
@@ -2273,8 +2295,7 @@ export class PartnersService {
               : 'xonalar';
       return {
         ok: false,
-        reason:
-          `Bu turdan foydalanayotgan ${unitPlural} bor. Avval ularni boshqa turga o'tkazing.`,
+        reason: `Bu turdan foydalanayotgan ${unitPlural} bor. Avval ularni boshqa turga o'tkazing.`,
       };
     }
 
@@ -2287,7 +2308,10 @@ export class PartnersService {
     return { ok: true, room_type_id: roomTypeId, deleted: true };
   }
 
-  async syncRoomAmenities(roomId: string, rawAmenities: unknown): Promise<void> {
+  async syncRoomAmenities(
+    roomId: string,
+    rawAmenities: unknown,
+  ): Promise<void> {
     if (!Array.isArray(rawAmenities)) return;
     const codes = Array.from(
       new Set(
@@ -2299,7 +2323,10 @@ export class PartnersService {
     );
 
     if (codes.length === 0) {
-      await this.pg.query(`DELETE FROM room_amenities WHERE room_id = $1::uuid`, [roomId]);
+      await this.pg.query(
+        `DELETE FROM room_amenities WHERE room_id = $1::uuid`,
+        [roomId],
+      );
       return;
     }
 
@@ -2311,18 +2338,49 @@ export class PartnersService {
     const unknownCodes = codes.filter((code) => !codeToId.has(code));
 
     if (unknownCodes.length > 0) {
-      const TABLE_DEFAULTS: Record<string, { uz: string; ru: string; en: string }> = {
+      const TABLE_DEFAULTS: Record<
+        string,
+        { uz: string; ru: string; en: string }
+      > = {
         window: { uz: 'Deraza yonida', ru: 'У окна', en: 'Near window' },
-        terrace: { uz: 'Terrasa / Tashqarida', ru: 'На террасе', en: 'Terrace / Outdoor' },
+        terrace: {
+          uz: 'Terrasa / Tashqarida',
+          ru: 'На террасе',
+          en: 'Terrace / Outdoor',
+        },
         vip: { uz: 'VIP kabinet', ru: 'VIP кабинет', en: 'VIP booth' },
         quiet: { uz: 'Tinch burchak', ru: 'Тихий угол', en: 'Quiet corner' },
         near_stage: { uz: 'Sahna yonida', ru: 'У сцены', en: 'Near stage' },
-        high_chair: { uz: 'Bolalar kursisi', ru: 'Детский стульчик', en: 'High chair' },
-        power_outlet: { uz: 'Rozetka bor', ru: 'Есть розетка', en: 'Power outlet' },
-        near_ac: { uz: 'Konditsioner yonida', ru: 'Рядом с кондиционером', en: 'Near A/C' },
-        near_tv: { uz: 'Katta ekran / TV yonida', ru: 'Рядом с экраном / ТВ', en: 'Near TV' },
-        smoking: { uz: 'Chekish zonasi', ru: 'Зона для курения', en: 'Smoking zone' },
-        wheelchair: { uz: 'Aravachaga mos', ru: 'Для колясок', en: 'Wheelchair accessible' },
+        high_chair: {
+          uz: 'Bolalar kursisi',
+          ru: 'Детский стульчик',
+          en: 'High chair',
+        },
+        power_outlet: {
+          uz: 'Rozetka bor',
+          ru: 'Есть розетка',
+          en: 'Power outlet',
+        },
+        near_ac: {
+          uz: 'Konditsioner yonida',
+          ru: 'Рядом с кондиционером',
+          en: 'Near A/C',
+        },
+        near_tv: {
+          uz: 'Katta ekran / TV yonida',
+          ru: 'Рядом с экраном / ТВ',
+          en: 'Near TV',
+        },
+        smoking: {
+          uz: 'Chekish zonasi',
+          ru: 'Зона для курения',
+          en: 'Smoking zone',
+        },
+        wheelchair: {
+          uz: 'Aravachaga mos',
+          ru: 'Для колясок',
+          en: 'Wheelchair accessible',
+        },
       };
 
       for (const code of unknownCodes) {
@@ -2336,7 +2394,13 @@ export class PartnersService {
           `INSERT INTO amenities (id, code, name, is_active, created_at, updated_at)
            VALUES ($1::uuid, $2, ($3)::jsonb, true, $4, $5)
            ON CONFLICT (code) DO NOTHING`,
-          [id, code, JSON.stringify({ uz, ru, en, categories: ['restaurant', 'table'] }), now, now],
+          [
+            id,
+            code,
+            JSON.stringify({ uz, ru, en, categories: ['restaurant', 'table'] }),
+            now,
+            now,
+          ],
         );
       }
       resolved = await this.pg.query<{ code: string; id: string }>(
@@ -2346,7 +2410,9 @@ export class PartnersService {
       codeToId = new Map(resolved.map((r) => [r.code, r.id]));
     }
 
-    await this.pg.query(`DELETE FROM room_amenities WHERE room_id = $1::uuid`, [roomId]);
+    await this.pg.query(`DELETE FROM room_amenities WHERE room_id = $1::uuid`, [
+      roomId,
+    ]);
     for (const code of codes) {
       const amenityId = codeToId.get(code);
       if (!amenityId) continue;
@@ -2455,7 +2521,12 @@ export class PartnersService {
       await this.syncRoomAmenities(roomId, body.amenities);
     }
 
-    const fileId = String(body.file_id ?? body.fileId ?? (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ?? '').trim();
+    const fileId = String(
+      body.file_id ??
+        body.fileId ??
+        (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ??
+        '',
+    ).trim();
     const imageUrl = String(body.image_url ?? body.imageUrl ?? '').trim();
     if (fileId) {
       await this.pg.query(
@@ -2632,7 +2703,12 @@ export class PartnersService {
       await this.syncRoomAmenities(roomId, body.amenities);
     }
 
-    const fileId = String(body.file_id ?? body.fileId ?? (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ?? '').trim();
+    const fileId = String(
+      body.file_id ??
+        body.fileId ??
+        (Array.isArray(body.file_ids) ? body.file_ids[0] : '') ??
+        '',
+    ).trim();
     const imageUrl = String(body.image_url ?? body.imageUrl ?? '').trim();
     if (fileId) {
       await this.pg.query(
@@ -3416,9 +3492,6 @@ export class PartnersService {
   ) {
     const existing = await this.assertHotel(id, actor);
     const now = new Date().toISOString();
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
 
     const checkInTime = body.checkInTime ?? body.check_in_time ?? undefined;
     const checkOutTime = body.checkOutTime ?? body.check_out_time ?? undefined;
@@ -3469,7 +3542,11 @@ export class PartnersService {
             typeof r === 'string'
               ? r.trim()
               : typeof r === 'object' && r !== null
-                ? String((r as Record<string, unknown>).text ?? (r as Record<string, unknown>).name ?? '').trim()
+                ? String(
+                    (r as Record<string, unknown>).text ??
+                      (r as Record<string, unknown>).name ??
+                      '',
+                  ).trim()
                 : '',
           )
           .filter(Boolean);
@@ -3479,7 +3556,8 @@ export class PartnersService {
       if (checkInTime !== undefined || checkOutTime !== undefined) {
         const existingTyped = existing as Record<string, unknown>;
         const effectiveCheckIn = checkInTime ?? existingTyped['check_in_time'];
-        const effectiveCheckOut = checkOutTime ?? existingTyped['check_out_time'];
+        const effectiveCheckOut =
+          checkOutTime ?? existingTyped['check_out_time'];
         const rulesComplete =
           Boolean(effectiveCheckIn && String(effectiveCheckIn).trim()) &&
           Boolean(effectiveCheckOut && String(effectiveCheckOut).trim());
@@ -3513,7 +3591,9 @@ export class PartnersService {
         err !== null &&
         (('code' in err && (err as { code?: unknown }).code === '42703') ||
           ('message' in err &&
-            String((err as { message?: unknown }).message).includes('custom_rules')));
+            String((err as { message?: unknown }).message).includes(
+              'custom_rules',
+            )));
       if (isMissingCustomRules) {
         this.logger.warn(
           `custom_rules ustuni bazada hali mavjud emas, custom_rules siz saqlanmoqda (hotelId=${id})`,
@@ -3560,7 +3640,9 @@ export class PartnersService {
           const id = randomUUID();
           const now = new Date().toISOString();
           const customName =
-            typeof (body.custom_names as Record<string, string> | undefined)?.[code] === 'string'
+            typeof (body.custom_names as Record<string, string> | undefined)?.[
+              code
+            ] === 'string'
               ? (body.custom_names as Record<string, string>)[code].trim()
               : null;
           const name =
@@ -6941,7 +7023,9 @@ export class PartnersService {
         pets_allowed: Boolean(row['pets_allowed'] ?? false),
         children_allowed: Boolean(row['children_allowed'] ?? true),
         extra_fees: row['extra_fees'] ?? [],
-        custom_rules: Array.isArray(row['custom_rules']) ? row['custom_rules'] : [],
+        custom_rules: Array.isArray(row['custom_rules'])
+          ? row['custom_rules']
+          : [],
         nearby_places: row['nearby_places'] ?? [],
       };
     });

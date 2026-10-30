@@ -390,8 +390,8 @@ export function EditRoomDialog({ open, onClose, room }: EditRoomDialogProps) {
                           className={cn(
                             "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition-all cursor-pointer border text-left",
                             isSelected
-                              ? "bg-brand-50/90 text-brand-900 border-brand-400 font-semibold shadow-2xs dark:bg-brand-950/60 dark:text-brand-200 dark:border-brand-600 ring-1 ring-brand-400/40"
-                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-850 dark:text-zinc-300 dark:border-zinc-700/80 dark:hover:bg-zinc-800",
+                              ? "bg-brand-50/90 text-brand-900 border-brand-400 font-semibold shadow-2xs dark:bg-brand-950/70 dark:text-brand-200 dark:border-brand-500 ring-1 ring-brand-400/40"
+                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700/80 dark:hover:bg-zinc-700/80 dark:hover:border-zinc-600 dark:hover:text-zinc-100",
                           )}
                         >
                           <span className="text-sm shrink-0">{item.icon}</span>

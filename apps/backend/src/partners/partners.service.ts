@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
   UnauthorizedException,
@@ -155,6 +156,8 @@ function listingStatus(value: unknown): HotelListingStatus {
  */
 @Injectable()
 export class PartnersService {
+  private readonly logger = new Logger(PartnersService.name);
+
   constructor(
     private readonly pg: PostgresService,
     private readonly jobs: JobQueueService,
@@ -3427,68 +3430,98 @@ export class PartnersService {
     const extraFees = body.extraFees ?? body.extra_fees;
     const customRules = body.customRules ?? body.custom_rules;
 
-    if (checkInTime !== undefined) {
-      sets.push(`check_in_time = $${idx++}`);
-      params.push(String(checkInTime));
-    }
-    if (checkOutTime !== undefined) {
-      sets.push(`check_out_time = $${idx++}`);
-      params.push(String(checkOutTime));
-    }
-    if (cancellationPolicy !== undefined) {
-      sets.push(`cancellation_policy_code = $${idx++}`);
-      params.push(String(cancellationPolicy).toUpperCase());
-    }
-    if (typeof smokingAllowed === 'boolean') {
-      sets.push(`smoking_allowed = $${idx++}`);
-      params.push(smokingAllowed);
-    }
-    if (typeof petsAllowed === 'boolean') {
-      sets.push(`pets_allowed = $${idx++}`);
-      params.push(petsAllowed);
-    }
-    if (typeof childrenAllowed === 'boolean') {
-      sets.push(`children_allowed = $${idx++}`);
-      params.push(childrenAllowed);
-    }
-    if (Array.isArray(extraFees)) {
-      sets.push(`extra_fees = $${idx++}::jsonb`);
-      params.push(JSON.stringify(extraFees));
-    }
-    if (Array.isArray(customRules)) {
-      const sanitizedRules = customRules
-        .map((r) =>
-          typeof r === 'string'
-            ? r.trim()
-            : typeof r === 'object' && r !== null
-              ? String((r as Record<string, unknown>).text ?? (r as Record<string, unknown>).name ?? '').trim()
-              : '',
-        )
-        .filter(Boolean);
-      sets.push(`custom_rules = $${idx++}::jsonb`);
-      params.push(JSON.stringify(sanitizedRules));
-    }
-    if (checkInTime !== undefined || checkOutTime !== undefined) {
-      const existingTyped = existing as Record<string, unknown>;
-      const effectiveCheckIn = checkInTime ?? existingTyped['check_in_time'];
-      const effectiveCheckOut = checkOutTime ?? existingTyped['check_out_time'];
-      const rulesComplete =
-        Boolean(effectiveCheckIn && String(effectiveCheckIn).trim()) &&
-        Boolean(effectiveCheckOut && String(effectiveCheckOut).trim());
-      sets.push(`rules_completed_at = $${idx++}`);
-      params.push(rulesComplete ? now : null);
-    }
+    const buildQuery = (includeCustomRules: boolean) => {
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
 
-    if (sets.length > 0) {
-      sets.push(`updated_at = $${idx++}`);
-      params.push(now);
-      await this.pg.query(
-        `UPDATE hotels SET ${sets.join(', ')},
-           status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
-           submitted_at = CASE WHEN status = 'published' THEN $${idx} ELSE submitted_at END
-         WHERE id = $${idx + 1}`,
-        [...params, now, id],
-      );
+      if (checkInTime !== undefined) {
+        sets.push(`check_in_time = $${idx++}`);
+        params.push(String(checkInTime));
+      }
+      if (checkOutTime !== undefined) {
+        sets.push(`check_out_time = $${idx++}`);
+        params.push(String(checkOutTime));
+      }
+      if (cancellationPolicy !== undefined) {
+        sets.push(`cancellation_policy_code = $${idx++}`);
+        params.push(String(cancellationPolicy).toUpperCase());
+      }
+      if (typeof smokingAllowed === 'boolean') {
+        sets.push(`smoking_allowed = $${idx++}`);
+        params.push(smokingAllowed);
+      }
+      if (typeof petsAllowed === 'boolean') {
+        sets.push(`pets_allowed = $${idx++}`);
+        params.push(petsAllowed);
+      }
+      if (typeof childrenAllowed === 'boolean') {
+        sets.push(`children_allowed = $${idx++}`);
+        params.push(childrenAllowed);
+      }
+      if (Array.isArray(extraFees)) {
+        sets.push(`extra_fees = $${idx++}::jsonb`);
+        params.push(JSON.stringify(extraFees));
+      }
+      if (includeCustomRules && Array.isArray(customRules)) {
+        const sanitizedRules = customRules
+          .map((r) =>
+            typeof r === 'string'
+              ? r.trim()
+              : typeof r === 'object' && r !== null
+                ? String((r as Record<string, unknown>).text ?? (r as Record<string, unknown>).name ?? '').trim()
+                : '',
+          )
+          .filter(Boolean);
+        sets.push(`custom_rules = $${idx++}::jsonb`);
+        params.push(JSON.stringify(sanitizedRules));
+      }
+      if (checkInTime !== undefined || checkOutTime !== undefined) {
+        const existingTyped = existing as Record<string, unknown>;
+        const effectiveCheckIn = checkInTime ?? existingTyped['check_in_time'];
+        const effectiveCheckOut = checkOutTime ?? existingTyped['check_out_time'];
+        const rulesComplete =
+          Boolean(effectiveCheckIn && String(effectiveCheckIn).trim()) &&
+          Boolean(effectiveCheckOut && String(effectiveCheckOut).trim());
+        sets.push(`rules_completed_at = $${idx++}`);
+        params.push(rulesComplete ? now : null);
+      }
+      return { sets, params, idx };
+    };
+
+    const runUpdate = async (includeCustomRules: boolean) => {
+      const { sets, params, idx } = buildQuery(includeCustomRules);
+      if (sets.length > 0) {
+        let finalIdx = idx;
+        sets.push(`updated_at = $${finalIdx++}`);
+        params.push(now);
+        await this.pg.query(
+          `UPDATE hotels SET ${sets.join(', ')},
+             status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
+             submitted_at = CASE WHEN status = 'published' THEN $${finalIdx} ELSE submitted_at END
+           WHERE id = $${finalIdx + 1}`,
+          [...params, now, id],
+        );
+      }
+    };
+
+    try {
+      await runUpdate(true);
+    } catch (err: unknown) {
+      const isMissingCustomRules =
+        typeof err === 'object' &&
+        err !== null &&
+        (('code' in err && (err as { code?: unknown }).code === '42703') ||
+          ('message' in err &&
+            String((err as { message?: unknown }).message).includes('custom_rules')));
+      if (isMissingCustomRules) {
+        this.logger.warn(
+          `custom_rules ustuni bazada hali mavjud emas, custom_rules siz saqlanmoqda (hotelId=${id})`,
+        );
+        await runUpdate(false);
+      } else {
+        throw err;
+      }
     }
 
     const hotel = await this.assertHotel(id, actor);

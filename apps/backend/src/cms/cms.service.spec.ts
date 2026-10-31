@@ -450,6 +450,45 @@ describe('CmsService pages', () => {
       });
     });
 
+    it('handles entity_type = "room_type" with fallback image and hotel slug', async () => {
+      postgres.query
+        .mockResolvedValueOnce([cmsOfferRow])
+        .mockResolvedValueOnce([
+          {
+            id: 'promo-roomtype-1',
+            entity_type: 'room_type',
+            entity_id: 'rt-uuid-1',
+            name: 'Xona turi: Superior Double',
+            room_base_price: '350000',
+            old_price_sum: '350000',
+            new_price_sum: '315000',
+            discount_percent: 10,
+            end_date: '2026-11-07',
+            status: 'published',
+            hotel_slug: 'yangi-obyekt-ea478e0b',
+            hotel_city_name: { uz: 'Samarqand' },
+            hotel_image: 'https://cdn.example.com/superior-double.jpg',
+            bus_company_id: null,
+            bus_company_name: null,
+            bus_image: null,
+          },
+        ]);
+
+      const result = (await service.offers()) as Array<Record<string, unknown>>;
+      const deal = result.find((r) => r.id === 'promo-roomtype-1');
+
+      expect(deal).toMatchObject({
+        slug: 'hotels/yangi-obyekt-ea478e0b',
+        listingType: 'hotels',
+        listing_type: 'hotels',
+        old_price: 350000,
+        new_price: 315000,
+        discount_percent: 10,
+        ends_at: '2026-11-07',
+        image_url: 'https://cdn.example.com/superior-double.jpg',
+      });
+    });
+
     it('a real database error on the promotions query is logged and degrades to zero promo deals — it never fabricates a fake/error-shaped promotion card', async () => {
       const dbError = Object.assign(
         new Error('invalid input value for enum "PromotionStatus": "approved"'),

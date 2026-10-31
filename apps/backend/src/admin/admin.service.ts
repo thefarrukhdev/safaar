@@ -6580,9 +6580,7 @@ export class AdminService {
       { status: decision },
     );
     this.invalidateAdminCache();
-    if (decision === 'published') {
-      void this.cache.del('cms:promotions:active');
-    }
+    void this.cache.del('cms:promotions:active');
     return toPromotionApiShape(promotion);
   }
 

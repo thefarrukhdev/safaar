@@ -137,34 +137,47 @@ export class CmsService {
           SELECT
             p.id, p.entity_type, p.entity_id, p.entity_name as name,
             p.old_price_sum, p.new_price_sum, p.discount_percent, p.end_date, p.status,
-            hr.base_price::float8 as room_base_price,
+            COALESCE(hr.base_price, rt.base_price)::float8 as room_base_price,
             h.slug as hotel_slug, hc.name as hotel_city_name,
-            (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.visibility = 'public' LIMIT 1) as hotel_image,
+            COALESCE(
+              (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1),
+              rt.image_url,
+              (SELECT url FROM media_files m WHERE m.owner_type IN ('room', 'room_type') AND (m.owner_id = p.entity_id OR m.owner_id = hr.id) AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1)
+            ) as hotel_image,
             v.price_per_day::float8 as vehicle_price_per_day,
             bc.id as bus_company_id, bc.name as bus_company_name,
-            (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.visibility = 'public' LIMIT 1) as bus_image
+            (SELECT url FROM media_files m WHERE m.owner_type = 'bus_company' AND m.owner_id = bc.id AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1) as bus_image
           FROM promotions p
           LEFT JOIN LATERAL (
-            SELECT hr.hotel_id, hr.base_price
+            SELECT hr.id, hr.hotel_id, hr.base_price
             FROM hotel_rooms hr
-            WHERE p.entity_type = 'room' AND (p.entity_id = hr.id OR p.entity_id = hr.room_type_id)
+            WHERE (p.entity_type = 'room' OR p.entity_type = 'room_type')
+              AND (p.entity_id = hr.id OR p.entity_id = hr.room_type_id)
             ORDER BY (CASE WHEN p.entity_id = hr.id THEN 0 ELSE 1 END) ASC, hr.created_at ASC
             LIMIT 1
           ) hr ON TRUE
-          LEFT JOIN hotels h ON hr.hotel_id = h.id
+          LEFT JOIN room_types rt ON ((p.entity_type = 'room' OR p.entity_type = 'room_type') AND rt.id = p.entity_id)
+          LEFT JOIN hotels h ON (
+            h.id = hr.hotel_id
+            OR (hr.hotel_id IS NULL AND (p.entity_type = 'room' OR p.entity_type = 'room_type') AND h.partner_organization_id = p.partner_organization_id)
+          )
           LEFT JOIN cities hc ON h.city_id = hc.id
           LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
           LEFT JOIN bus_companies bc ON v.company_id = bc.id
           WHERE p.status = 'published'::"PromotionStatus"
-            AND p.start_date <= CURRENT_DATE
-            AND p.end_date >= CURRENT_DATE
+            AND (p.start_date <= CURRENT_DATE OR p.start_date <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tashkent')::date)
+            AND (p.end_date >= CURRENT_DATE OR p.end_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tashkent')::date)
         `);
 
           return (rows ?? []).map((row) => {
-            const isRoom = row.entity_type === 'room';
+            const isRoom = row.entity_type === 'room' || row.entity_type === 'room_type';
+            const basePrice =
+              row.room_base_price != null
+                ? Number(row.room_base_price)
+                : Number(row.old_price_sum);
             const roomPrice =
-              isRoom && row.room_base_price != null
-                ? calculateRoomPrice(row.room_base_price, {
+              isRoom && basePrice > 0
+                ? calculateRoomPrice(basePrice, {
                     id: String(row.id),
                     entity_id: '',
                     old_price_sum: Number(row.old_price_sum),
@@ -203,7 +216,7 @@ export class CmsService {
               id: row.id,
               type: 'offer',
               slug: isRoom
-                ? `hotels/${row.hotel_slug}`
+                ? (row.hotel_slug ? `hotels/${row.hotel_slug}` : `hotels/${row.entity_id}`)
                 : `transport/${row.entity_id}`,
               listingType,
               listing_type: listingType,

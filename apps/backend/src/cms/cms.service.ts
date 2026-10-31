@@ -170,7 +170,8 @@ export class CmsService {
         `);
 
           return (rows ?? []).map((row) => {
-            const isRoom = row.entity_type === 'room' || row.entity_type === 'room_type';
+            const isRoom =
+              row.entity_type === 'room' || row.entity_type === 'room_type';
             const basePrice =
               row.room_base_price != null
                 ? Number(row.room_base_price)
@@ -216,7 +217,9 @@ export class CmsService {
               id: row.id,
               type: 'offer',
               slug: isRoom
-                ? (row.hotel_slug ? `hotels/${row.hotel_slug}` : `hotels/${row.entity_id}`)
+                ? row.hotel_slug
+                  ? `hotels/${row.hotel_slug}`
+                  : `hotels/${row.entity_id}`
                 : `transport/${row.entity_id}`,
               listingType,
               listing_type: listingType,

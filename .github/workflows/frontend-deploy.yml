@@ -19,7 +19,7 @@ on:
       - "apps/web-admin/**"
       - "apps/web-partner/**"
       - "apps/web-user/**"
-      - "packages/types/**"
+      - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - ".github/workflows/frontend-deploy.yml"
@@ -46,7 +46,7 @@ jobs:
             shared: &shared
               - 'package.json'
               - 'pnpm-lock.yaml'
-              - 'packages/types/**'
+              - 'packages/**'
               - '.github/workflows/frontend-deploy.yml'
             admin:
               - *shared

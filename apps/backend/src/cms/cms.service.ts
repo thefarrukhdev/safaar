@@ -140,9 +140,10 @@ export class CmsService {
             COALESCE(hr.base_price, rt.base_price)::float8 as room_base_price,
             h.slug as hotel_slug, hc.name as hotel_city_name,
             COALESCE(
-              (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1),
               rt.image_url,
-              (SELECT url FROM media_files m WHERE m.owner_type IN ('room', 'room_type') AND (m.owner_id = p.entity_id OR m.owner_id = hr.id) AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1)
+              (SELECT url FROM media_files m WHERE m.owner_type IN ('room', 'room_type') AND (m.owner_id = p.entity_id OR m.owner_id = hr.id) AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1),
+              (SELECT url FROM media_files m WHERE m.owner_type = 'hotel' AND m.owner_id = h.id AND m.deleted_at IS NULL AND m.url IS NOT NULL ORDER BY m.is_cover DESC, m.sort_order ASC LIMIT 1),
+              po.logo_url
             ) as hotel_image,
             v.price_per_day::float8 as vehicle_price_per_day,
             bc.id as bus_company_id, bc.name as bus_company_name,
@@ -161,6 +162,7 @@ export class CmsService {
             h.id = hr.hotel_id
             OR (hr.hotel_id IS NULL AND (p.entity_type = 'room' OR p.entity_type = 'room_type') AND h.partner_organization_id = p.partner_organization_id)
           )
+          LEFT JOIN partner_organizations po ON po.id = h.partner_organization_id
           LEFT JOIN cities hc ON h.city_id = hc.id
           LEFT JOIN vehicles v ON p.entity_type = 'vehicle' AND p.entity_id = v.id
           LEFT JOIN bus_companies bc ON v.company_id = bc.id

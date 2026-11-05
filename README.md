@@ -81,7 +81,11 @@ Ma'lumotlar bazasi (PostgreSQL) va Redis'ni ko'tarish uchun:
 docker compose -f docker-compose.backend.yml up -d
 ```
 
+## 📄 Litsenziya (License)
+
+Ushbu loyiha [MIT](LICENSE) litsenziyasi ostida taqdim etiladi.
+
 ---
 
-*© 2026 SAFAAR Development Team — Barcha huquqlar himoyalangan.*
+*© 2026 SAFAAR Development Team.*
 

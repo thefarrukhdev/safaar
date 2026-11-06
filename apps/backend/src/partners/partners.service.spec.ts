@@ -73,6 +73,16 @@ describe('PartnersService frontend action endpoints', () => {
     );
   });
 
+  it('hides unpaid online bookings from the partner booking queue', async () => {
+    pgMock.query.mockResolvedValueOnce([]);
+
+    await service.bookings(actor);
+
+    expect(String(pgMock.query.mock.calls[0]?.[0])).toContain(
+      "b.status NOT IN ('pending', 'awaiting_payment')",
+    );
+  });
+
   it('returns the published listing before a pending next-draft, and an active draft before a rejected one', async () => {
     pgMock.query.mockResolvedValueOnce([]);
 
@@ -2389,7 +2399,11 @@ describe('PartnersService.rejectBooking / cancelTrip (regression: explicit cance
   it('rejectBooking releases the seat tied to the rejected booking', async () => {
     pg.query
       .mockResolvedValueOnce([
-        { id: 'booking-1', partner_organization_id: 'org-1' },
+        {
+          id: 'booking-1',
+          partner_organization_id: 'org-1',
+          status: 'awaiting_partner_confirmation',
+        },
       ]) // this.booking() ownership check
       .mockResolvedValueOnce([{ id: 'booking-1', status: 'cancelled' }]) // UPDATE bookings
       .mockResolvedValueOnce([]); // UPDATE trip_seats
@@ -2401,6 +2415,24 @@ describe('PartnersService.rejectBooking / cancelTrip (regression: explicit cance
     );
     expect(seatRelease).toBeDefined();
     expect(seatRelease?.[1]).toEqual(['booking-1']);
+  });
+
+  it('rejectBooking blocks an unpaid pending booking before entering the transaction', async () => {
+    pg.query.mockResolvedValueOnce([
+      {
+        id: 'booking-unpaid',
+        partner_organization_id: 'org-1',
+        status: 'pending',
+      },
+    ]);
+
+    await expect(
+      service.rejectBooking(actor, 'booking-unpaid', { reason: 'Rad' }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'BOOKING_PAYMENT_REQUIRED' },
+    });
+    expect(pg.transaction).not.toHaveBeenCalled();
   });
 
   it('cancelTrip releases ALL seats on the trip and cancels+auto-refunds any still-open bookings', async () => {
@@ -3986,6 +4018,35 @@ describe('PartnersService.bookingStatus (regression: PARTNERS-BOARD-500 — POST
       pg as unknown as PostgresService,
       { add: jest.fn() } as unknown as JobQueueService,
     );
+  });
+
+  it('confirm: blocks an unpaid pending booking and performs no UPDATE', async () => {
+    pg.query.mockResolvedValueOnce([
+      { ...vehicleBookingRow, status: 'pending' },
+    ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'confirmed'),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'BOOKING_PAYMENT_REQUIRED' },
+    });
+    expect(pg.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirm: allows a paid booking awaiting partner confirmation', async () => {
+    pg.query
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, status: 'awaiting_partner_confirmation' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { ...vehicleBookingRow, status: 'confirmed' },
+      ]);
+
+    await expect(
+      service.bookingStatus(actor, 'booking-1', 'confirmed'),
+    ).resolves.toMatchObject({ status: 'confirmed' });
   });
 
   it('board: the UPDATE sent to Postgres normalizes any non-object policy_snapshot to {} instead of relying on COALESCE (which only covers NULL)', async () => {

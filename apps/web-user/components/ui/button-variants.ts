@@ -26,11 +26,11 @@ export const roundedClasses: Record<Rounded, string> = {
 };
 
 export const baseButtonClasses =
-"inline-flex items-center justify-center gap-2 font-medium"+
-"active:scale-[0.97] transition-all duration-200 ease-out"+
-"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"+
-"disabled:pointer-events-none disabled:opacity-40 disabled:"+
-"motion-reduce:transition-none motion-reduce:active:scale-100";
+  "inline-flex items-center justify-center gap-2 font-medium " +
+  "active:scale-[0.96] transition-all duration-150 ease-out select-none cursor-pointer " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " +
+  "disabled:pointer-events-none disabled:opacity-40 " +
+  "motion-reduce:transition-none motion-reduce:active:scale-100";
 
 export function buttonVariants({
  variant ="primary",

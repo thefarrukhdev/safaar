@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { HotelsDict } from "@/i18n/dictionaries";
-import { Select } from "@/components/ui/Select";
+import { FluidDropdown } from "@/components/ui/FluidDropdown";
 
 export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
   const router = useRouter();
@@ -21,11 +21,12 @@ export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
 
   return (
     <div className="relative inline-block w-full sm:w-auto">
-      <Select
+      <FluidDropdown
         value={current}
         onChange={onChange}
         ariaLabel={dict.label}
-        buttonClassName="h-10 max-md:h-11 w-full sm:w-auto min-w-0 sm:min-w-[200px] rounded-full border border-slate-900/[0.06] bg-slate-900/[0.05] hover:bg-slate-900/[0.08]   :bg-slate-700 text-sm font-medium"
+        className="w-full sm:w-auto"
+        buttonClassName="h-10 max-md:h-11 w-full sm:w-auto min-w-0 sm:min-w-[200px]"
         options={[
           { value: "", label: dict.default },
           { value: "price_asc", label: dict.priceAsc },

@@ -4686,6 +4686,12 @@ export class PartnersService {
          )
        LEFT JOIN vehicles v2 ON v2.id = b.vehicle_id
        WHERE b.partner_organization_id = $1
+         -- Onlayn to'lov hali yakunlanmagan bron hamkorning operatsion
+         -- navbatiga tushmasligi kerak. paid webhook kelgach PaymentsService
+         -- statusni awaiting_partner_confirmation yoki confirmedga
+         -- o'tkazadi; cash va 0 UZS bronlar esa BookingsService tomonidan
+         -- darhol shu ko'rinadigan holatlardan biriga o'tkaziladi.
+         AND b.status NOT IN ('pending', 'awaiting_payment')
        ORDER BY ${sortColumn} ${orderDir}
        LIMIT $2 OFFSET $3`,
       [organizationId, pagination.limit, pagination.offset],
@@ -5295,6 +5301,16 @@ export class PartnersService {
     let paramIdx = 2;
 
     if (status === 'confirmed') {
+      if (
+        booking['status'] !==
+        BookingStatus.AWAITING_PARTNER_CONFIRMATION.toLowerCase()
+      ) {
+        throw new ConflictException({
+          code: 'BOOKING_PAYMENT_REQUIRED',
+          message:
+            "Bron faqat to'lov yakunlanib, hamkor tasdig'ini kutayotgan holatda tasdiqlanishi mumkin",
+        });
+      }
       sets.push(`status = $${paramIdx++}`, `confirmed_at = $1::timestamptz`);
       params.push(BookingStatus.CONFIRMED.toLowerCase());
     } else if (status === 'checked_in') {
@@ -5352,7 +5368,17 @@ export class PartnersService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    await this.booking(actor, id); // validate ownership
+    const booking = await this.booking(actor, id); // validate ownership
+    if (
+      booking.status !==
+      BookingStatus.AWAITING_PARTNER_CONFIRMATION.toLowerCase()
+    ) {
+      throw new ConflictException({
+        code: 'BOOKING_PAYMENT_REQUIRED',
+        message:
+          "Bron faqat to'lov yakunlanib, hamkor tasdig'ini kutayotgan holatda rad etilishi mumkin",
+      });
+    }
     const now = new Date().toISOString();
     const reason = String(body.reason ?? 'Partner rad etdi');
 
